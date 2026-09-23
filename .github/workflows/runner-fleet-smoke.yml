@@ -1,0 +1,55 @@
+name: codingVibes runner fleet smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-apk:
+    runs-on: [self-hosted, codingvibes, android-builder]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Android APK
+        run: |
+          set -euo pipefail
+          ./gradlew assembleDebug
+          APK="$(find . -type f -name '*.apk' | head -1)"
+          test -n "$APK"
+          mkdir -p "$RUNNER_TEMP/artifacts"
+          cp "$APK" "$RUNNER_TEMP/artifacts/app-debug.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: ${{ runner.temp }}/artifacts/app-debug.apk
+          if-no-files-found: error
+
+  android-device:
+    needs: android-apk
+    runs-on: [self-hosted, codingvibes, android-device]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: artifact
+      - name: ADB device smoke
+        env:
+          PACKAGE_ID: ${{ vars.CODINGVIBES_ANDROID_PACKAGE_ID }}
+          ACTIVITY: ${{ vars.CODINGVIBES_ANDROID_ACTIVITY }}
+        run: |
+          set -euo pipefail
+          test -n "$PACKAGE_ID"
+          ./infra/runner-fleet/device-smoke.sh artifact/app-debug.apk "$PACKAGE_ID" "$ACTIVITY"
+
+  ios-xcode:
+    runs-on: [self-hosted, codingvibes, macos-xcode, xcode]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode toolchain
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          swift --version
+      - name: Swift build
+        run: swift build

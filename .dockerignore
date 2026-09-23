@@ -1,0 +1,8 @@
+node_modules
+.git
+.gitignore
+data
+workspaces
+*.log
+npm-debug.log*
+coverage

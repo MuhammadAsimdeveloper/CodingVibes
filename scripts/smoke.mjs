@@ -1,0 +1,5 @@
+import {spawn} from 'node:child_process';
+import process from 'node:process';
+const base=process.env.CODINGVIBES_SMOKE_URL||'http://127.0.0.1:4400';let child=null;
+async function health(){const r=await fetch(base+'/health');const body=await r.json();if(!r.ok||!body.ok)throw new Error('Health check failed');return body;}
+try{let body;try{body=await health()}catch{if(process.env.CODINGVIBES_SMOKE_EXTERNAL==='true')throw new Error(`Smoke target unavailable: ${base}`);const u=new URL(base);child=spawn(process.execPath,['src/server.js'],{cwd:new URL('..',import.meta.url),stdio:['ignore','pipe','pipe'],env:{...process.env,HOST:u.hostname,PORT:String(u.port||4400)}});child.stdout.on('data',d=>process.stdout.write(`[server] ${d}`));child.stderr.on('data',d=>process.stderr.write(`[server] ${d}`));const deadline=Date.now()+10000;while(Date.now()<deadline){try{body=await health();break}catch{await new Promise(r=>setTimeout(r,100))}}if(!body)throw new Error('Server did not become healthy');}console.log(JSON.stringify({ok:true,version:body.version,provider:body.model?.provider,runtime:body.runtime},null,2));}finally{if(child)child.kill('SIGTERM')}

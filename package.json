@@ -1,0 +1,24 @@
+{
+  "name": "codingvibes",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "description": "codingVibes \u2014 AI coding platform that ships verified software.",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/version.js && node --check src/server.js && node --check src/agent/orchestrator.js && node --check src/agent/project-generator.js && node --check src/agent/model-generator.js && node --check src/agent/context.js && node --check src/agent/design-system.js && node --check src/agent/dependencies.js && node --check src/db/store.js && node --check src/security/auth.js && node --check src/runtime/container.js && node --check src/runtime/daytona.js && node --check src/runtime/preview.js && node --check src/git/workspace.js && node --check src/ai/router.js && node --check src/projects-workspace.js && node --check src/targets/registry.js && node --check src/targets/detect.js && node --check src/targets/generator.js && node --check src/targets/verify.js && node --check src/runners/command.js && node --check src/runners/isolated.js && node --check src/runners/index.js && node --check src/runners/eas.js && node --check src/runners/remote.js && node --check src/runners/dockerfiles.js && node --check src/runners/fleet.js && node --check src/runners/scheduler.js && node --check src/runners/cache.js && node --check src/runners/device.js && node --check src/runners/failures.js && node --check src/runners/status.js && node --check src/runners/registry.js && node --check src/artifacts/store.js && node --check src/verification/playwright.js && node --check scripts/smoke.mjs && node --check scripts/fleet-doctor.mjs && node --check scripts/launch-check.mjs && node --check public/app.js && node --check src/agent/task-graph.js && node --check src/agent/repository-index.js && node --check src/ai/connectors.js && node --check src/git/checkpoints.js && node --check src/agent/review.js && node --check src/integrations/connectors.js && node --check src/ai/pricing.js && node --check src/agent/diagnostics.js && node --check src/integrations/github.js && node --check src/billing/plans.js && node --check src/billing/stripe.js && node --check src/ops/readiness.js",
+    "start": "node src/server.js",
+    "start:host": "HOST=0.0.0.0 node src/server.js",
+    "smoke": "node scripts/smoke.mjs",
+    "e2e": "node scripts/e2e.mjs",
+    "fleet:doctor": "node scripts/fleet-doctor.mjs",
+    "launch:check": "node scripts/launch-check.mjs"
+  },
+  "optionalDependencies": {
+    "@daytona/sdk": "^0.214.0",
+    "playwright": "^1.55.0"
+  }
+}

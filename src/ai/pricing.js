@@ -1,0 +1,2 @@
+function parse(env){try{const raw=JSON.parse(env.CODINGVIBES_MODEL_PRICING_JSON||'{}');return raw&&typeof raw==='object'?raw:{};}catch{return{};}}
+export function estimateCostUsd({model,inputTokens=0,outputTokens=0,env=process.env}={}){const prices=parse(env)[model];if(!prices)return null;const input=Number(prices.input_per_million||0),output=Number(prices.output_per_million||0);return ((Number(inputTokens)||0)/1_000_000*input)+((Number(outputTokens)||0)/1_000_000*output);}

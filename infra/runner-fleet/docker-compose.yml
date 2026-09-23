@@ -1,0 +1,54 @@
+services:
+  android-builder:
+    image: ${CODINGVIBES_ANDROID_IMAGE:?Set a digest-pinned Android runner image in production}
+    build:
+      context: ../..
+      dockerfile: runners/images/android/Dockerfile
+    working_dir: /workspace
+    volumes:
+      - ${CODINGVIBES_WORKSPACE:-../../}:/workspace:rw
+    network_mode: none
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cpus: 2
+    mem_limit: 4g
+    command: ["bash", "-lc", "./infra/runner-fleet/healthcheck.sh android"]
+    restart: "no"
+
+  flutter-builder:
+    image: ${CODINGVIBES_FLUTTER_IMAGE:?Set a digest-pinned Flutter runner image in production}
+    build:
+      context: ../..
+      dockerfile: runners/images/flutter/Dockerfile
+    working_dir: /workspace
+    volumes:
+      - ${CODINGVIBES_WORKSPACE:-../../}:/workspace:rw
+    network_mode: none
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cpus: 2
+    mem_limit: 4g
+    command: ["bash", "-lc", "./infra/runner-fleet/healthcheck.sh flutter"]
+    restart: "no"
+
+  rust-builder:
+    image: ${CODINGVIBES_RUST_IMAGE:?Set a digest-pinned Rust runner image in production}
+    build:
+      context: ../..
+      dockerfile: runners/images/rust/Dockerfile
+    working_dir: /workspace
+    volumes:
+      - ${CODINGVIBES_WORKSPACE:-../../}:/workspace:rw
+    network_mode: none
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cpus: 2
+    mem_limit: 4g
+    command: ["bash", "-lc", "./infra/runner-fleet/healthcheck.sh rust"]
+    restart: "no"
+
+  # Dependency jobs must use a pre-created, egress-controlled Docker network.
+  # Do not replace this with the default bridge network in production.

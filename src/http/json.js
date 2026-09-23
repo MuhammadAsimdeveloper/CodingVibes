@@ -1,0 +1,4 @@
+export function sendJson(res,status,value,headers={}){res.writeHead(status,{'content-type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(value));}
+export function sendText(res,status,value,type='text/plain; charset=utf-8'){res.writeHead(status,{'content-type':type});res.end(value);}
+export async function readJson(req,maxBytes=1048576){let total=0,s='';for await(const chunk of req){total+=chunk.length;if(total>maxBytes)throw Object.assign(new Error('Payload too large'),{status:413});s+=chunk;}if(!s)return {};try{return JSON.parse(s)}catch{throw Object.assign(new Error('Invalid JSON'),{status:400});}}
+export function streamSse(res){res.writeHead(200,{'content-type':'text/event-stream; charset=utf-8','cache-control':'no-cache','connection':'keep-alive'});return value=>res.write(`data: ${JSON.stringify(value)}\n\n`);}
