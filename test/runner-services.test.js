@@ -1,3 +1,4 @@
+import os from 'node:os';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -18,7 +19,7 @@ test('Linux remote client uses manifest attestation rather than arbitrary comman
   const {remoteLinuxBuild}=await import(`../src/runners/remote.js?linux=${Date.now()}`);
   const oldUrl=process.env.CODINGVIBES_LINUX_RUNNER_URL,oldToken=process.env.CODINGVIBES_LINUX_RUNNER_TOKEN,oldEnv=process.env.NODE_ENV;
   process.env.CODINGVIBES_LINUX_RUNNER_URL='http://127.0.0.1:1';process.env.CODINGVIBES_LINUX_RUNNER_TOKEN='token';process.env.NODE_ENV='development';
-  const root=fs.mkdtempSync('/tmp/cv-remote-linux-');fs.writeFileSync(root+'/package.json','{}');fs.writeFileSync(root+'/.env','SECRET');
+  const root=fs.mkdtempSync(os.tmpdir() + '/cv-remote-linux-');fs.writeFileSync(root+'/package.json','{}');fs.writeFileSync(root+'/.env','SECRET');
   const result=await remoteLinuxBuild({workspace:root,request:'build',target:{id:'android-kotlin'}});
   assert.equal(result.available,true);
   if(oldUrl===undefined)delete process.env.CODINGVIBES_LINUX_RUNNER_URL;else process.env.CODINGVIBES_LINUX_RUNNER_URL=oldUrl;

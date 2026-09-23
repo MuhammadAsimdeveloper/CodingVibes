@@ -1,3 +1,4 @@
+import os from 'node:os';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -14,7 +15,7 @@ test('runner fleet provisioning assets are syntactically valid and fail-closed o
 
 test('Android manifest metadata can be discovered for device smoke',async()=>{
   const {detectAndroidApp}=await import('../src/runners/index.js');
-  const dir=fs.mkdtempSync('/tmp/cv-android-');fs.mkdirSync(`${dir}/app/src/main`,{recursive:true});
+  const dir=fs.mkdtempSync(os.tmpdir() + '/cv-android-');fs.mkdirSync(`${dir}/app/src/main`,{recursive:true});
   fs.writeFileSync(`${dir}/app/src/main/AndroidManifest.xml`,'<manifest package="com.example.app"><application><activity android:name=".MainActivity"/></application></manifest>');
   const result=detectAndroidApp(dir);assert.equal(result.packageId,'com.example.app');assert.equal(result.activity,'com.example.app.MainActivity');
 });
@@ -23,7 +24,7 @@ test('Android manifest metadata can be discovered for device smoke',async()=>{
 test('fleet security contract is explicit and versioned',async()=>{
   const {fleetManifest,makeJobEnvelope}=await import('../src/runners/fleet.js');
   const manifest=fleetManifest();
-  assert.equal(manifest.version,'3.0.0');
+  assert.equal(manifest.version,'3.1.0');
   assert.equal(manifest.security.buildNetwork,'none');
   assert.equal(manifest.security.dependencyNetwork,'named-controlled-egress-only');
   assert.equal(manifest.security.macosAuth,'required');
@@ -38,7 +39,7 @@ test('fleet security contract is explicit and versioned',async()=>{
 
 test('artifact store rejects workspace escape and preserves sha256',async()=>{
   const {copyArtifacts,artifactManifest}=await import('../src/artifacts/store.js');
-  const root=fs.mkdtempSync('/tmp/cv-artifacts-');const out=fs.mkdtempSync('/tmp/cv-out-');
+  const root=fs.mkdtempSync(os.tmpdir() + '/cv-artifacts-');const out=fs.mkdtempSync(os.tmpdir() + '/cv-out-');
   fs.writeFileSync(`${root}/app.apk`,'apk');
   assert.throws(()=>copyArtifacts(root,out,[{path:'../secret.apk'}],'run'));
   const result=copyArtifacts(root,out,[{path:'app.apk',size:3,sha256:'bad'}],'run');
