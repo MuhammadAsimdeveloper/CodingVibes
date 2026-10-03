@@ -1,5 +1,7 @@
 # Repository organization
 
+`main` is the canonical release branch. Feature and release branches are validated through pull-request CI before squash-merging to `main`.
+
 ## Product surfaces
 - `public/` — Coding Vibes web UI and product studio.
 - `src/server.js` — control-plane HTTP API.
@@ -31,3 +33,11 @@ Generated projects follow a portable structure:
 3. Merge validated product stages to `main`.
 4. Release tags are created from green `main`.
 5. Provider credentials and production secrets remain outside Git.
+
+## Release hygiene
+- Security policy: `SECURITY.md`
+- Contribution workflow: `CONTRIBUTING.md`
+- Pull request checklist: `.github/pull_request_template.md`
+- Dependency automation: `.github/dependabot.yml`
+- SEO implementation: `docs/SEO.md`
+- Final gate: `npm run final:check`
