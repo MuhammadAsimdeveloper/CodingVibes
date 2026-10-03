@@ -13,6 +13,7 @@ const SECRET_RE=/(^|\/)(\.env(?:\..*)?|.*\.pem|.*\.key|.*credentials.*)$/i;
 function cleanJson(text){return String(text||'').trim().replace(/^\\`\\`\\`json\\s*/i,'').replace(/\\s*\\`\\`\\`$/,'');}
 function safePath(p){const rel=normalizeRelative(p);if(BLOCKED_TOP.has(rel.split('/')[0])||SECRET_RE.test(rel))throw new Error('Protected or sensitive path: '+rel);return rel;}
 function validateOperations(payload,{target,fresh=false}={}){
+  if(payload&&Array.isArray(payload.files)&&!Array.isArray(payload.operations))payload={...payload,operations:payload.files.map(f=>({type:'write',path:f.path,content:f.content}))};
   if(!payload||!Array.isArray(payload.operations))throw new Error('Model response must contain an operations array');
   if(payload.operations.length<1||payload.operations.length>MAX_OPERATIONS)throw new Error('Model returned '+payload.operations.length+' operations; expected 1-'+MAX_OPERATIONS);
   let total=0;const ops=[],seen=new Set();
