@@ -9,7 +9,7 @@ import {generateProject,materializeProject} from '../src/agent/project-generator
 
 test('generated application data survives a server restart',async()=>{
   const base=analyzeRequirements('Build an appointment booking platform with appointments and customer login.');
-  const spec={...base,dataModel:base.dataModel.some(x=>x.name==='appointments')?base.dataModel:[...base.dataModel,{name:'appointments',fields:['id','name','createdAt']}],apis:[...base.apis.filter(x=>String(x.path)!=='/api/appointments'),{method:'POST',path:'/api/appointments'}]};
+  const spec={...base,dataModel:base.dataModel.some(x=>x.name==='appointments')?base.dataModel:[...base.dataModel,{name:'appointments',fields:['id','name','createdAt']}],apis:[...base.apis.filter(x=>String(x.path)!=='/api/appointments'),{method:'GET',path:'/api/appointments'},{method:'POST',path:'/api/appointments'}]};
   const writeRoute={method:'POST',path:'/api/appointments'};
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'cv-v9-persist-'));
   materializeProject(generateProject(spec),root);
