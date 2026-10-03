@@ -20,7 +20,7 @@ test('workspace motion stylesheet defines reusable app motion states', () => {
 
 test('workspace motion controller exposes builder navigation behavior', () => {
   const js = fs.readFileSync('public/workspace-motion.js', 'utf8');
-  assert.match(js, /data-workspace-nav/);
+  assert.match(js, /dataset\.workspaceNav/);
   assert.match(js, /data-command/);
   assert.match(js, /matchMedia/);
   assert.match(js, /IntersectionObserver/);
