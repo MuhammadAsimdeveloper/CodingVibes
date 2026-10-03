@@ -24,7 +24,7 @@ test('Android manifest metadata can be discovered for device smoke',async()=>{
 test('fleet security contract is explicit and versioned',async()=>{
   const {fleetManifest,makeJobEnvelope}=await import('../src/runners/fleet.js');
   const manifest=fleetManifest();
-  assert.equal(manifest.version,'3.1.0');
+  assert.equal(manifest.version,'5.0.0');
   assert.equal(manifest.security.buildNetwork,'none');
   assert.equal(manifest.security.dependencyNetwork,'named-controlled-egress-only');
   assert.equal(manifest.security.macosAuth,'required');
