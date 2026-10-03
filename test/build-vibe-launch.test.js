@@ -103,6 +103,25 @@ test('app generation covers a mobile target contract without pretending binary v
   for (const required of target.requiredFiles) assert.ok(paths.has(required), required);
 });
 
+test('landing SEO metadata has unique identity and crawl directives', () => {
+  const html = read('public/landing.html');
+  assert.match(html, /<title>Build Vibe — AI Product Builder<\/title>/);
+  assert.match(html, /name="description"/);
+  assert.match(html, /name="robots" content="index,follow"/);
+  assert.match(html, /rel="canonical"/);
+  assert.match(html, /property="og:title"/);
+  assert.match(html, /property="og:description"/);
+  assert.match(html, /name="twitter:card"/);
+});
+
+test('generated sites emit indexability essentials', () => {
+  const source = read('src/agent/project-generator.js');
+  for (const required of ['meta name="description"', 'meta name="robots"', 'rel="canonical"', 'manifest.webmanifest', "robots.txt", "sitemap.xml"]) {
+    assert.ok(source.includes(required), required);
+  }
+  assert.ok(source.includes("Disallow: /admin"));
+});
+
 test('CI runs launch readiness after starting the app', () => {
   const source = read('.github/workflows/ci.yml');
   assert.match(source, /name: Build Vibe CI/);
