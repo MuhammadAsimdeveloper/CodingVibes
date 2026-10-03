@@ -1,0 +1,51 @@
+const cvAi=(()=>{
+  const root=document.querySelector('#appView');if(!root)return null;
+  const api=async(path,options={})=>{const r=await fetch(path,{headers:{'content-type':'application/json',...(options.headers||{})},...options});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'HTTP '+r.status);return j;};
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  let state={providers:[],settings:null,tokens:[]};
+
+  const setStatus=(msg,kind='')=>{const el=document.querySelector('.cv-ai-status');if(el){el.textContent=msg;el.className='cv-ai-status '+kind;}};
+  const configured=()=>state.providers.filter(p=>p.configured);
+  const selectProvider=id=>{
+    const p=state.providers.find(x=>x.id===id);const a=document.querySelector('#cvAiProvider'),b=document.querySelector('#cvAiCustomUrl'),m=document.querySelector('#cvAiModel'),k=document.querySelector('#cvAiApiKey');
+    if(a)a.value=id;if(b)b.value='';if(m)m.value=p?.defaultModel||'';if(k)k.value='';
+  };
+  const renderTokens=()=>{
+    const el=document.querySelector('.cv-ai-token-list');if(!el)return;
+    el.replaceChildren(...(state.tokens||[]).map(t=>{const row=document.createElement('div');row.className='cv-ai-token-item';const left=document.createElement('span');left.innerHTML='<strong>'+esc(t.name)+'</strong><br><code>'+esc(t.token_prefix)+'…</code>';const b=document.createElement('button');b.className='cv-ai-mini';b.textContent=t.revoked_at?'Revoked':'Revoke';b.disabled=!!t.revoked_at;b.onclick=async()=>{if(!confirm('Revoke this integration token?'))return;await api('/api/ai/tokens/'+encodeURIComponent(t.id),{method:'DELETE'});await load();};row.append(left,b);return row;}));
+    if(!state.tokens.length){const e=document.createElement('div');e.className='cv-ai-empty';e.textContent='No external integration tokens yet.';el.append(e);}
+  };
+  const render=()=>{
+    const modal=document.querySelector('.cv-ai-modal');if(!modal)return;
+    const providers=modal.querySelector('.cv-ai-providers');
+    providers.replaceChildren(...state.providers.map(p=>{
+      const row=document.createElement('div');row.className='cv-ai-provider'+(p.configured?' configured':'');
+      row.innerHTML='<div><strong>'+esc(p.label)+'</strong><small>'+esc(p.kind)+' · '+(p.configured?'connected':'not connected')+(p.userConfigured?' · your key':'')+'</small></div><div class="cv-ai-provider-actions"></div>';
+      const actions=row.lastElementChild;
+      const test=document.createElement('button');test.textContent='Test';test.disabled=!p.configured;test.onclick=async()=>{test.disabled=true;test.textContent='…';setStatus('Testing '+p.label+'…');try{const j=await api('/api/ai/providers/'+encodeURIComponent(p.id)+'/test',{method:'POST'});setStatus(j.ok?(p.label+' connected'):(j.error||'Test failed'),j.ok?'ok':'err')}catch(e){setStatus(e.message,'err')}finally{test.disabled=!p.configured;test.textContent='Test';}};
+      actions.append(test);
+      if(p.userConfigured){const del=document.createElement('button');del.textContent='Disconnect';del.onclick=async()=>{if(!confirm('Remove your saved '+p.label+' connection?'))return;await api('/api/ai/providers/'+encodeURIComponent(p.id),{method:'DELETE'});await load();};actions.append(del);}
+      const use=document.createElement('button');use.textContent='Use';use.onclick=()=>selectProvider(p.id);actions.append(use);
+      return row;
+    }));
+    const primary=modal.querySelector('#cvAiPrimary');primary.replaceChildren(...configured().map(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.label;return o;}));primary.value=state.settings?.primary||configured()[0]?.id||'openai';
+    modal.querySelector('#cvAiFallback').value=(state.settings?.chain||[]).filter(x=>x!==primary.value).join(', ');
+    renderTokens();
+  };
+  const load=async()=>{const [j,t]=await Promise.all([api('/api/ai/providers'),api('/api/ai/tokens')]);state.providers=j.providers||[];state.settings=j.settings;state.tokens=t.tokens||[];const select=document.querySelector('#cvAiProvider');if(select)select.replaceChildren(...state.providers.map(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.label;return o;}));render();};
+  const saveSettings=async()=>{const primary=document.querySelector('#cvAiPrimary').value;const fallback=document.querySelector('#cvAiFallback').value.split(',').map(x=>x.trim()).filter(Boolean);try{const j=await api('/api/ai/settings',{method:'PUT',body:JSON.stringify({primary,chain:[primary,...fallback]})});state.settings=j.settings;setStatus('Routing saved','ok');await load();}catch(e){setStatus(e.message,'err');}};
+  const connect=async()=>{const provider=document.querySelector('#cvAiProvider').value,apiKey=document.querySelector('#cvAiApiKey').value,baseUrl=document.querySelector('#cvAiCustomUrl').value,defaultModel=document.querySelector('#cvAiModel').value;setStatus('Saving '+provider+'…');try{await api('/api/ai/providers/connect',{method:'POST',body:JSON.stringify({provider,apiKey,baseUrl:baseUrl||undefined,defaultModel})});document.querySelector('#cvAiApiKey').value='';await load();selectProvider(provider);setStatus('Provider saved.','ok')}catch(e){setStatus(e.message,'err');}};
+  const issueToken=async()=>{const name=prompt('Integration name','My AI tool');if(name===null)return;try{const j=await api('/api/ai/tokens',{method:'POST',body:JSON.stringify({name})});const box=document.querySelector('.cv-ai-token');box.classList.remove('hidden');box.querySelector('code').textContent=j.token;box.querySelector('[data-copy]').onclick=async()=>{try{await navigator.clipboard.writeText(j.token);setStatus('Token copied','ok')}catch{setStatus('Copy failed — store the token securely.','err')}};await load();setStatus('Token created. It is shown only once.','ok');}catch(e){setStatus(e.message,'err');}};
+  const open=async()=>{document.querySelector('.cv-ai-modal')?.classList.add('open');try{await load()}catch(e){setStatus(e.message,'err')}document.querySelector('#cvAiProvider')?.focus();};
+  const close=()=>document.querySelector('.cv-ai-modal')?.classList.remove('open');
+  const install=()=>{
+    const actions=root.querySelector('.cv-top>div:last-child');if(!actions||document.querySelector('.cv-ai-trigger'))return;
+    const button=document.createElement('button');button.className='cv-ai-trigger';button.textContent='AI providers';button.onclick=open;actions.prepend(button);
+    const modal=document.createElement('div');modal.className='cv-ai-modal';modal.innerHTML='<section class="cv-ai-panel" role="dialog" aria-modal="true" aria-label="AI providers and integrations"><header class="cv-ai-head"><div><div class="cv-ai-eyebrow">Universal AI</div><h2>Bring your own models</h2><p>Connect providers, choose routing, or give another AI tool a Coding Vibes gateway token.</p></div><button class="cv-ai-close" aria-label="Close">Close</button></header><div class="cv-ai-body"><div class="cv-ai-grid"><div><section class="cv-ai-section"><h3>Model providers</h3><p>API keys stay encrypted at rest and are used only server-side.</p><div class="cv-ai-providers"></div></section><section class="cv-ai-section"><h3>Connect a provider</h3><p>Standard providers only need a key. Custom endpoints need a HTTPS base URL.</p><div class="cv-ai-form"><div class="cv-ai-row"><div class="cv-ai-field"><label>Provider</label><select id="cvAiProvider"></select></div><div class="cv-ai-field"><label>Default model</label><input id="cvAiModel" placeholder="model id (optional)"></div></div><div class="cv-ai-field"><label>API key</label><input id="cvAiApiKey" type="password" autocomplete="off" placeholder="Paste provider key"></div><div class="cv-ai-field"><label>Custom / local base URL</label><input id="cvAiCustomUrl" placeholder="https://… (custom only)"></div><div class="cv-ai-form-actions"><button class="cv-ai-primary" id="cvAiConnect">Save connection</button></div></div></section></div><div><section class="cv-ai-section"><h3>Routing</h3><p>Pick a primary provider and ordered fallbacks. Builds inherit these preferences.</p><div class="cv-ai-routing"><div class="cv-ai-field"><label>Primary</label><select id="cvAiPrimary"></select></div><div class="cv-ai-field"><label>Fallback chain</label><input id="cvAiFallback" placeholder="openrouter, deepseek"></div><button class="cv-ai-primary" id="cvAiSaveRouting">Save routing</button><div class="cv-ai-code">External override header: <b>X-CodingVibes-Provider</b>.<br>OpenAI-compatible gateway: <b>/v1/chat/completions</b></div></div></section><section class="cv-ai-section"><h3>Use Coding Vibes from another AI tool</h3><p>Create an OpenAI-compatible personal gateway token. Never put it into client-side code or source control.</p><div class="cv-ai-token hidden"><div class="cv-ai-token-row"><span class="cv-ai-badge on">NEW TOKEN · SHOW ONCE</span><button class="cv-ai-mini" data-copy>Copy</button></div><code></code></div><button class="cv-ai-mini" id="cvAiCreateToken">Create gateway token</button><div class="cv-ai-token-list"></div><div class="cv-ai-note">Base URL is your Coding Vibes server URL. Use <code>/v1</code> as the OpenAI-compatible API path.</div></section><div class="cv-ai-status" aria-live="polite"></div></div></div></div></section>';
+    document.body.append(modal);modal.querySelector('.cv-ai-close').onclick=close;modal.addEventListener('click',e=>{if(e.target===modal)close()});modal.querySelector('#cvAiConnect').onclick=connect;modal.querySelector('#cvAiSaveRouting').onclick=saveSettings;modal.querySelector('#cvAiCreateToken').onclick=issueToken;modal.querySelector('#cvAiProvider').addEventListener('change',e=>selectProvider(e.target.value));modal.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+    load().catch(e=>setStatus(e.message,'err'));
+  };
+  install();
+  window.addEventListener('load',install,{once:true});window.addEventListener('keydown',e=>{if(e.key==='Escape')close();if((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key.toLowerCase()==='a'){e.preventDefault();open();}});
+  return {open,close,load};
+})();
