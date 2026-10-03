@@ -50,7 +50,7 @@ export async function generateProjectWithModel({request,spec,context,router,onTo
   if(!out?.model||out.provider==='fallback')return null;
   const payload=JSON.parse(cleanJson(text));
   let operations=validateOperations(payload,{target,fresh});
-  if(fresh&&spec.siteKind){const paths=new Set(operations.map(x=>x.path).filter(Boolean));if(!paths.has('public/content/site.json'))operations.push({type:'write',path:'public/content/site.json',content:JSON.stringify(createDefaultSiteContent({kind:spec.siteKind,templateId:spec.siteTemplateId,templateLabel:spec.siteTemplateLabel,request}),null,2)+'\\n'});if(!paths.has('public/content-runtime.js'))operations.push({type:'write',path:'public/content-runtime.js',content:contentRuntimeJs()});}
+  if(fresh&&spec.siteKind){const paths=new Set(operations.map(x=>x.path).filter(Boolean));if(!paths.has('public/content/site.json'))operations.push({type:'write',path:'public/content/site.json',content:JSON.stringify(createDefaultSiteContent({kind:spec.siteKind,templateId:spec.siteTemplateId,templateLabel:spec.siteTemplateLabel,request}),null,2)+'\n'});if(!paths.has('public/content-runtime.js'))operations.push({type:'write',path:'public/content-runtime.js',content:contentRuntimeJs()});}
   const manifestHash=hash(operations);
   const files=operations.filter(x=>x.type==='write').map(x=>({path:x.path,content:x.content}));
   return {source:'model',model:out.model,summary:String(payload.summary||'Model-generated '+target.label).slice(0,240),operations,files,manifestHash,target:target.id};
