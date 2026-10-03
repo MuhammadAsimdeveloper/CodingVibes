@@ -117,8 +117,8 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
       if(!r.getStatus().configured)return sendJson(res,503,{ok:false,error:'no_ai_provider_configured'});
       const requestedProvider=String(b.provider||req.headers['x-codingvibes-provider']||'').trim()||undefined;
       const requestedModel=String(b.model||'').trim()||undefined;
-      const temperature=Math.max(0,Math.min(2,Number(b.temperature??0)));
-      const maxTokens=Math.min(16384,Math.max(1,Number(b.max_tokens||8192)));
+      const rawTemperature=Number(b.temperature??0),temperature=Number.isFinite(rawTemperature)?Math.max(0,Math.min(2,rawTemperature)):0;
+      const rawMaxTokens=Number(b.max_tokens||8192),maxTokens=Number.isFinite(rawMaxTokens)?Math.min(16384,Math.max(1,rawMaxTokens)):8192;
       const id='chatcmpl-'+randomUUID(),created=Math.floor(Date.now()/1000);
       if(b.stream===true){
         const send=streamSse(res);let usage=null;send({id,object:'chat.completion.chunk',created,model:requestedModel||r.resolveModel('standard',requestedProvider),choices:[{index:0,delta:{role:'assistant'},finish_reason:null}]});
