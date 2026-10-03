@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {normalizeRelative} from '../core/safe-path.js';
+import {searchRepositoryIndex} from './repository-index.js';
 
 const MAX_FILES=80;
 const MAX_BYTES_PER_FILE=9000;
@@ -61,10 +62,12 @@ export function collectProjectContext(root,{index=null,focus=''}={}){
     files.push({path:rel,content});
     if(files.length>=MAX_FILES){truncated=true;break;}
   }
-  return {root:base,files,tree:tree.slice(0,MAX_FILES),truncated,totalBytes,maxFiles:MAX_FILES,maxBytesPerFile:MAX_BYTES_PER_FILE,selection:{focused:Boolean(needles.length),indexUsed:Boolean(indexed.length),candidateCount:candidates.length}};
+  return {root:base,files,tree:tree.slice(0,MAX_FILES),truncated,totalBytes,maxFiles:MAX_FILES,maxBytesPerFile:MAX_BYTES_PER_FILE,index,focus,selection:{focused:Boolean(needles.length),indexUsed:Boolean(indexed.length),candidateCount:candidates.length}};
 }
 
 export function formatContextForModel(context){
+  const indexHits=context.index&&context.focus?searchRepositoryIndex(context.index,context.focus,{limit:40}):[];
+  const indexSummary=indexHits.length?indexHits.map(x=>JSON.stringify({path:x.path,language:x.language,lineCount:x.lineCount,symbols:x.symbols,routes:x.routes})).join('\\n'):'No semantic index matches.';
   const sections=context.files.map(f=>`<untrusted_file path="${f.path}">\n${f.content}\n</untrusted_file>`).join('\n');
-  return `<untrusted_project_tree>\n${context.tree.join('\n')}\n</untrusted_project_tree>\n<untrusted_project_files>\n${sections}\n</untrusted_project_files>`;
+  return `<repository_index_matches>\n${indexSummary}\n</repository_index_matches>\n<untrusted_project_tree>\n${context.tree.join('\n')}\n</untrusted_project_tree>\n<untrusted_project_files>\n${sections}\n</untrusted_project_files>`;
 }
