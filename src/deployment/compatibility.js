@@ -3,6 +3,7 @@ const CAPABILITIES={
   vercel:{source:false,static:true,server:false,native:false},
   netlify:{source:false,static:true,server:false,native:false},
   cloudflare:{source:false,static:true,server:false,native:false},
+  hostinger:{source:true,static:true,server:true,native:false},
   'coding-vibes':{source:false,static:true,server:true,native:true},
   manual:{source:true,static:true,server:true,native:true}
 };

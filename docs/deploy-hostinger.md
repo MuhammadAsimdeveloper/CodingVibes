@@ -1,66 +1,51 @@
-# Coding Vibes on Hostinger
+# Build Vibe on Hostinger
 
-Hostinger is the primary deployment target for the full Coding Vibes service because the app is a Node.js server with SQLite persistence, isolated workspaces, and optional Daytona previews.
+Hostinger currently supports Node.js Web Apps on Business/Cloud hosting and VPS, with GitHub repository import and ZIP upload. Hostinger's current Node.js documentation lists Node.js 18.x, 20.x, 22.x and 24.x; Build Vibe targets Node 22.
 
-## Recommended production shape
+## Recommended customer flow
 
-Internet → Cloudflare DNS/CDN → Hostinger Node.js app or VPS → persistent `data/` volume → optional Daytona for previews.
+1. Build and verify the project in Build Vibe.
+2. Click **Prepare for Hostinger** in the Publish area.
+3. Build Vibe publishes the verified project to the user's GitHub repository.
+4. In Hostinger, choose **Websites → Add Website → Node.js Web App → Import Git Repository** and select that repository.
+5. Enter the generated environment variables in Hostinger and deploy.
 
-### Managed Node.js hosting
+This is intentionally an assisted integration. Build Vibe does **not** pretend to have a private Hostinger deployment API. The source push is automated; the Hostinger-side website creation and account authorization are completed by the customer.
 
-Connect the public GitHub repository in Hostinger's Node.js Web App flow.
+## Node.js Web App configuration
 
-Build / install:
-```bash
-npm install
-```
+Use:
 
-Start:
-```bash
-npm start
-```
+- Install/build command: `npm install`
+- Start command: `npm start`
+- Node.js: 22.x
+- App entry: `src/server.js`/project start command through `npm start`
+- Persistent data paths must point to persistent storage.
 
-Set `HOST=0.0.0.0` and configure these secrets in Hostinger:
+Required production environment includes:
 
-```env
-NODE_ENV=production
-HOST=0.0.0.0
-PORT=4400
-CODINGVIBES_SESSION_SECRET=<long-random-secret>
-DATABASE_PATH=./data/codingvibes.db
-CODINGVIBES_PROJECT_ROOT=./data/projects
-CODINGVIBES_WORK_ROOT=./data/worktrees
-CODINGVIBES_CHECKPOINT_ROOT=./data/checkpoints
-CODINGVIBES_RUNTIME=daytona
-DAYTONA_API_KEY=<your-daytona-key>
-CODINGVIBES_PROVIDER=openrouter
-OPENROUTER_API_KEY=<your-key>
-RUNWAYML_API_SECRET=<your-runway-key>
-CODINGVIBES_ENFORCE_QUOTAS=true
-STRIPE_SECRET_KEY=<optional>
-STRIPE_WEBHOOK_SECRET=<optional>
-STRIPE_PRICE_PRO_MONTHLY=<optional>
-STRIPE_PRICE_TEAM_MONTHLY=<optional>
-```
+`NODE_ENV=production`
+`HOST=0.0.0.0`
+`PORT=4400`
+`CODINGVIBES_PUBLIC_URL=https://your-domain`
+`CODINGVIBES_SESSION_SECRET=<long-random-secret>`
+`DATABASE_PATH=./data/codingvibes.db`
+`CODINGVIBES_PROJECT_ROOT=./data/projects`
+`CODINGVIBES_WORK_ROOT=./data/worktrees`
+`CODINGVIBES_CHECKPOINT_ROOT=./data/checkpoints`
+`CODINGVIBES_BACKUP_ROOT=./data/backups`
+`CODINGVIBES_RUNTIME=daytona`
+`DAYTONA_API_KEY=<key>`
+`CODINGVIBES_ENABLE_BROWSER=true`
+`CODINGVIBES_ENFORCE_QUOTAS=true`
+`CODINGVIBES_BILLING_REQUIRED=true`
 
-### VPS / Docker
+Add your production AI and Stripe secrets separately in Hostinger's environment-variable configuration. Never commit `.env`.
 
-Use the included Dockerfile with a persistent bind mount for `/app/data`. Do not put `codingvibes.db` inside an ephemeral container layer.
+## VPS
 
-Example:
-```bash
-docker build -t codingvibes .
-docker run -d --name codingvibes \
-  -p 4400:4400 \
-  -e NODE_ENV=production \
-  -e HOST=0.0.0.0 \
-  -v /opt/codingvibes/data:/app/data \
-  --env-file /opt/codingvibes/.env \
-  codingvibes
-```
+On a Hostinger VPS, Docker or a managed Node process can run the same Build Vibe application. Keep the database and project/work/checkpoint/backup roots on persistent storage and place TLS/reverse-proxy termination in front of the application.
 
-Put Cloudflare in front of the Hostinger origin for DNS, TLS, caching, WAF, and rate-limit rules. Keep `/api/*` uncached.
+## Generated customer websites
 
-## Free core / paid extras
-
-The free tier is intentionally useful: users can generate basic sites, inspect and edit source, and run the normal verification loop. Paid features are gated server-side so hiding a button cannot bypass the product limits.
+Customer-generated static sites can be deployed through GitHub, ZIP/manual hosting, or compatible static adapters. Server-backed generated projects require a server-capable runtime.

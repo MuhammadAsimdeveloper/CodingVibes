@@ -74,6 +74,14 @@ export const PROVIDERS={
   },
   status:async({credentials,options={},deploymentId})=>{if(!credentials?.accessToken||!credentials?.accountId||!options.projectName)throw authRequired('cloudflare');const d=await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+credentials.accountId+'/pages/projects/'+encodeURIComponent(options.projectName)+'/deployments/'+encodeURIComponent(deploymentId),{token:credentials.accessToken});return{status:d.result?.latest_stage?.status||'unknown',url:d.result?.aliases?.[0]||null,deploymentId:d.result?.id}}
  },
+ hostinger:{id:'hostinger',label:'Hostinger',type:'hosting-assist',auth:'github',supports:{static:true,server:true},description:'Prepare a verified project for Hostinger by publishing it to GitHub, then connect that repository in Hostinger Node.js Web Apps. Direct Hostinger deployment API access is not assumed.',
+  async deploy({artifact,credentials,options={}}){
+    if(!credentials?.accessToken)throw authRequired('hostinger');
+    const result=await PROVIDERS.github.deploy({artifact,credentials,options:{...options,repoName:options.repoName||artifact.projectMetadata.name,branch:options.branch||'main'}});
+    return {status:'ready_for_hostinger',deploymentId:result.deploymentId,url:result.url,branch:result.branch,commitSha:result.commitSha,providerProject:result.providerProject,nextStep:'In Hostinger: Websites → Add Website → Node.js Web App → Import Git Repository, select the repository and deploy.'};
+  },
+  status:async({credentials,deploymentId})=>credentials?.accessToken?{status:'ready_for_hostinger',deploymentId:deploymentId||null,nextStep:'Connect the published GitHub repository from Hostinger Node.js Web Apps and deploy.'}:authRequired('hostinger')
+ },
  'coding-vibes':{id:'coding-vibes',label:'Coding Vibes Hosting',type:'deployment',auth:'internal',supports:{static:true,server:true},description:'Future provider slot for Coding Vibes-managed hosting.',
   async deploy(){if(!process.env.CODINGVIBES_HOSTING_API_URL)throw Object.assign(new Error('Coding Vibes hosting is not available yet. The adapter is ready for the future hosting service.'),{code:'HOSTING_NOT_AVAILABLE',status:503});throw new Error('Coding Vibes hosting API is not configured for deployment yet.')},
   status:async()=>({status:'not_available'})

@@ -19,3 +19,18 @@ test('stripe signatures verify with timestamped payloads',async()=>{
 test('readiness reports production blockers without secrets',()=>{
  const previous={...process.env};try{process.env.NODE_ENV='production';delete process.env.CODINGVIBES_SESSION_SECRET;delete process.env.DAYTONA_API_KEY;delete process.env.CODINGVIBES_ENFORCE_QUOTAS;const r=readiness({router:{getStatus:()=>({configured:false,provider:'openai'})}});assert.equal(r.ready,false);assert.ok(r.blockers.includes('session_secret_too_short'));assert.ok(r.blockers.includes('daytona_api_key_missing'));assert.ok(r.blockers.includes('quota_enforcement_not_enabled'));}finally{for(const k of Object.keys(process.env))if(!(k in previous))delete process.env[k];for(const [k,v] of Object.entries(previous))process.env[k]=v;}
 });
+
+
+test('hostinger assisted deployment reuses the connected GitHub credential and records the next step',async()=>{
+ const index=await import('../src/deployment/index.js?hostinger-test');
+ assert.equal(typeof index.providerSecret,'function');
+ const provider=await import('../src/deployment/providers.js?hostinger-test');
+ assert.equal(provider.PROVIDERS.hostinger.label,'Hostinger');
+ assert.equal(provider.PROVIDERS.hostinger.supports.server,true);
+ assert.equal(provider.PROVIDERS.hostinger.auth,'github');
+});
+
+test('production preflight script is wired into package scripts',async()=>{
+ const pkg=JSON.parse(await (await import('node:fs/promises')).readFile('package.json','utf8'));
+ assert.equal(pkg.scripts['launch:preflight'],'node scripts/production-preflight.mjs');
+});

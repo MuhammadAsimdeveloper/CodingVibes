@@ -13,8 +13,23 @@ export function readiness({router}={}) {
   const db=process.env.DATABASE_PATH||'./data/codingvibes.db';try{fs.accessSync(requireDir(db),fs.constants.R_OK|fs.constants.W_OK);}catch{blockers.push('database_directory_not_writable');}
   const git=spawnSync('git',['--version'],{stdio:'ignore'});if(git.status!==0)blockers.push('git_missing');
   const model=router?.getStatus?.()||{};if(production&&!model.configured)blockers.push('model_provider_not_configured');
-  if(production && process.env.CODINGVIBES_ENABLE_BROWSER!=='true')warnings.push('browser_verification_disabled');
-  if(!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET)warnings.push('stripe_billing_not_configured');
+  if(production && process.env.CODINGVIBES_ENABLE_BROWSER!=='true')blockers.push('browser_verification_required');
+  if(production){
+    const publicUrl=String(process.env.CODINGVIBES_PUBLIC_URL||'').trim();
+    if(!publicUrl)blockers.push('public_url_missing');
+    else {try{const parsed=new URL(publicUrl);if(parsed.protocol!=='https:')blockers.push('public_url_must_use_https')}catch{blockers.push('public_url_invalid')}}
+    for(const dirKey of ['CODINGVIBES_PROJECT_ROOT','CODINGVIBES_WORK_ROOT','CODINGVIBES_CHECKPOINT_ROOT']){
+      const dir=process.env[dirKey]||'';if(!dir){blockers.push(dirKey.toLowerCase()+'_missing');continue;}
+      try{fs.mkdirSync(dir,{recursive:true});fs.accessSync(dir,fs.constants.R_OK|fs.constants.W_OK);}catch{blockers.push(dirKey.toLowerCase()+'_not_writable')}
+    }
+    const billingRequired=String(process.env.CODINGVIBES_BILLING_REQUIRED??'true')==='true';
+    if(billingRequired){
+      if(!process.env.STRIPE_SECRET_KEY)blockers.push('stripe_secret_missing');
+      if(!process.env.STRIPE_WEBHOOK_SECRET)blockers.push('stripe_webhook_secret_missing');
+      if(!process.env.STRIPE_PRICE_PRO_MONTHLY)blockers.push('stripe_pro_price_missing');
+      if(!process.env.STRIPE_PRICE_TEAM_MONTHLY)blockers.push('stripe_team_price_missing');
+    }
+  } else if(!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET)warnings.push('stripe_billing_not_configured');
   if(!process.env.CODINGVIBES_DEPENDENCY_NETWORK)warnings.push('dependency_network_not_configured');
   const admins=String(process.env.CODINGVIBES_SUPERADMIN_EMAILS||'').split(',').map(x=>x.trim()).filter(Boolean);
   if(production&&admins.length===0)blockers.push('superadmin_allowlist_missing');
