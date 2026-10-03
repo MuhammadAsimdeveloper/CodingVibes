@@ -121,7 +121,7 @@ const cvWorkspace=(function(){
         grid.append(input('price','Price',item?.price??0,'number'),input('compareAtPrice','Compare-at price',item?.compareAtPrice??'','number'),input('sku','SKU',item?.sku||''),input('inventory','Inventory',item?.inventory??0,'number'),input('currency','Currency',item?.currency||content?.settings?.currency||'USD'),input('category','Category',item?.category||''));
         editor.append(grid);editor.append(input('tags','Tags (comma separated)',(item?.tags||[]).join(', ')));editor.append(input('images','Image URLs (one per line)',(item?.images||[]).join('\n'),'textarea'));
         var v=document.createElement('label');v.className='content-field';v.innerHTML='<span class="muted small">Variants JSON</span><textarea name="variants" rows="6" placeholder="[{&quot;title&quot;:&quot;Small&quot;,&quot;sku&quot;:&quot;SKU-S&quot;,&quot;price&quot;:49,&quot;inventory&quot;:10}]">'+escJson(item?.variants||[])+'</textarea>';editor.append(v);
-        var custom=document.createElement('label');custom.className='content-field';custom.innerHTML='<span class="muted small">Custom fields JSON</span><textarea name="customFields" rows="4">{}</textarea>';editor.append(custom);
+        var custom=document.createElement('label');custom.className='content-field';custom.innerHTML='<span class="muted small">Custom fields JSON</span><textarea name="customFields" rows="4">'+escJson(item?.customFields||{})+'</textarea>';editor.append(custom);
       } else {
         var meta=document.createElement('label');meta.className='content-field';meta.innerHTML='<span class="muted small">Advanced fields JSON</span><textarea name="advanced" rows="8">'+escJson(item?item:{})+'</textarea>';editor.append(meta);
       }
