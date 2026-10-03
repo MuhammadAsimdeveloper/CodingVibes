@@ -8,7 +8,7 @@ const MAX_FILES=120;
 const MAX_FILE_BYTES=350000;
 const MAX_TOTAL_BYTES=2000000;
 const BLOCKED_TOP=new Set(['.git','.codingvibes','node_modules']);
-const SECRET_RE=/(^|\\/)(\\.env(?:\\..*)?|.*\\.pem|.*\\.key|.*credentials.*)$/i;
+const SECRET_RE=/(^|\/)(\.env(?:\..*)?|.*\.pem|.*\.key|.*credentials.*)$/i;
 
 function cleanJson(text){return String(text||'').trim().replace(/^\\`\\`\\`json\\s*/i,'').replace(/\\s*\\`\\`\\`$/,'');}
 function safePath(p){const rel=normalizeRelative(p);if(BLOCKED_TOP.has(rel.split('/')[0])||SECRET_RE.test(rel))throw new Error('Protected or sensitive path: '+rel);return rel;}
