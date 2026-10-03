@@ -1,5 +1,12 @@
 const has=(s,...xs)=>xs.some(x=>s.includes(x));
 
+const MOTION_PRESETS={
+  reduced:{mode:'reduced',scroll:'none',hover:'subtle'},
+  smooth:{mode:'smooth',scroll:'reveal',hover:'lift'},
+  snappy:{mode:'snappy',scroll:'reveal',hover:'magnetic'},
+  cinematic:{mode:'cinematic',scroll:'story',hover:'magnetic'}
+};
+
 export function inferDesignSystem(text,visual){
   const lower=String(text||'').toLowerCase();
   const style=visual?.style||'modern';
@@ -18,7 +25,13 @@ export function inferDesignSystem(text,visual){
   const palette={...(palettes[style]||palettes.modern)};
   const radius=has(lower,'sharp','square','brutalist')?'4px':has(lower,'pill','rounded','soft')?'24px':'16px';
   const shadow=style==='minimal'||style==='editorial'?'subtle':style==='luxury'||style==='futuristic'?'dramatic':'soft';
-  const motion=visual?.animation?(has(lower,'slow','cinematic')?'cinematic':has(lower,'snappy','fast')?'snappy':'smooth'):'reduced';
+  const requestedMotion=visual?.animation?(has(lower,'slow','cinematic')?'cinematic':has(lower,'snappy','fast')?'snappy':'smooth'):'reduced';
+  const motion={...(MOTION_PRESETS[requestedMotion]||MOTION_PRESETS.reduced),tokens:{
+    duration:{fast:'180ms',base:'420ms',slow:'760ms',scene:'1200ms'},
+    easing:{standard:'cubic-bezier(.22,1,.36,1)',enter:'cubic-bezier(.16,1,.3,1)',exit:'cubic-bezier(.7,0,.84,0)'},
+    stagger:'70ms',
+    distance:'24px'
+  },accessibility:{reducedMotion:true}};
   const layout=has(lower,'bento','asymmetric')?'bento':has(lower,'split','two column')?'split':has(lower,'centered')?'centered':'responsive-grid';
   const type={
     heading:has(lower,'serif','editorial','magazine')?'serif-display':has(lower,'mono','monospace','terminal')?'mono':'display-sans',

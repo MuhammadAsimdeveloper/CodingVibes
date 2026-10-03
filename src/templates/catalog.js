@@ -60,8 +60,11 @@ const TEMPLATES=[
 {id:'saas-product-3d',label:'SaaS Product 3D',category:'SaaS',kind:'business',tier:'pro',style:'futuristic',experience:'3d',tags:['saas','3d','product','interactive'],prompt:'Create a SaaS product marketing site with an interactive 3D product/dashboard scene, feature hotspots, pricing, integrations, testimonials and conversion-focused motion.',features:['advanced_animation']}
 ];
 
-export function listTemplates(){return TEMPLATES.map(t=>({...t,features:[...t.features],prompt:undefined,tags:[...t.tags]}));}
-export function getTemplate(id){return TEMPLATES.find(t=>t.id===String(id))||null;}
+function motionProfile(t){return t.experience==='3d'?{mode:'cinematic',scroll:'camera-story',reveal:'depth',hover:'focus',transition:'shared-camera'}:{mode:'smooth',scroll:'story',reveal:'clip-and-fade',hover:'magnetic',transition:'shared-layout'};}
+function publicTemplate(t){return {...t,motion:motionProfile(t),features:[...t.features],prompt:undefined,tags:[...t.tags]};}
+
+export function listTemplates(){return TEMPLATES.map(publicTemplate);}
+export function getTemplate(id){const t=TEMPLATES.find(t=>t.id===String(id));return t?publicTemplate(t):null;}
 export function searchTemplates(query='',{category='',kind='',experience='',tier='',featured=false,limit=80}={}){
  const q=String(query).toLowerCase().trim(),c=String(category).toLowerCase().trim(),k=String(kind).toLowerCase().trim(),e=String(experience).toLowerCase().trim(),ti=String(tier).toLowerCase().trim();
  return listTemplates().filter(t=>(!c||t.category.toLowerCase()===c||t.tags.some(x=>x.toLowerCase()===c))&&(!k||t.kind.toLowerCase()===k)&&(!e||t.experience.toLowerCase()===e)&&(!ti||t.tier===ti)&&(!featured||t.featured)&&(!q||[t.label,t.category,t.kind,t.experience,t.style,...t.tags].join(' ').toLowerCase().includes(q))).slice(0,Math.max(1,Math.min(Number(limit)||80,100)));
