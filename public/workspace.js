@@ -38,7 +38,7 @@ const cvWorkspace=(function(){
     var composer=q('.composer');if(!composer||q('#templateStudio'))return;
     var box=document.createElement('details');box.id='templateStudio';box.className='template-studio';
     box.innerHTML='<summary>Templates <span class="muted small">basic + animated + 3D</span></summary>'+
-      '<div class="template-tools"><input id="templateSearch" placeholder="Search templates…"><select id="templateCategory"><option value="">All categories</option></select><button type="button" id="templateClear" class="tool-button">Clear</button></div>'+
+      '<div class="template-tools"><select id="templateSelect"><option value="">Start from scratch</option></select><input id="templateSearch" placeholder="Search templates…"><select id="templateCategory"><option value="">All categories</option></select><button type="button" id="templateClear" class="tool-button">Clear</button></div>'+
       '<div id="templateGrid" class="template-grid"></div><div id="templateHint" class="muted small">Choose a template to seed the agent. Your custom requirements always take priority.</div>';
     composer.insertBefore(box,composer.querySelector('.composer-row'));
     var search=q('#templateSearch',box),category=q('#templateCategory',box),grid=q('#templateGrid',box);
@@ -55,7 +55,7 @@ const cvWorkspace=(function(){
         grid.appendChild(b);
       });
     }
-    fetch('/api/templates').then(function(r){return r.json()}).then(function(j){templates=j.templates||[];var cats=[...new Set(templates.map(t=>t.category))].sort();cats.forEach(function(cat){var o=document.createElement('option');o.value=cat;o.textContent=cat;category.append(o)});render()}).catch(function(){});
+    fetch('/api/templates').then(function(r){return r.json()}).then(function(j){templates=j.templates||[];var sel=q('#templateSelect',box);templates.forEach(function(t){var o=document.createElement('option');o.value=t.id;o.textContent=t.label+(t.tier==='pro'?' · PRO':' · FREE');sel.append(o)});var cats=[...new Set(templates.map(t=>t.category))].sort();cats.forEach(function(cat){var o=document.createElement('option');o.value=cat;o.textContent=cat;category.append(o)});render()}).catch(function(){});
     search.addEventListener('input',render);category.addEventListener('change',render);q('#templateClear',box).onclick=function(){var sel=q('#templateSelect');if(sel){sel.value='';sel.dispatchEvent(new Event('change'));}search.value='';category.value='';q('#templateHint').textContent='Choose a template to seed the agent.';render()};
   }
   function createComposerTools(){
