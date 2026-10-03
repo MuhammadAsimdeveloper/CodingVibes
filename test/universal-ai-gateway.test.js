@@ -21,6 +21,7 @@ test('user provider connection input trims credentials and only allows safe URLs
   const out=providerConnectionInput({provider:'openai',apiKey:'  secret  ',defaultModel:'  model-x  '});
   assert.deepEqual(out,{provider:'openai',apiKey:'secret',baseUrl:null,defaultModel:'model-x'});
   assert.throws(()=>providerConnectionInput({provider:'custom',apiKey:'x',baseUrl:'http://169.254.169.254'}),/unsafe_base_url/);
+  assert.throws(()=>providerConnectionInput({provider:'custom',apiKey:'x',baseUrl:'https://169.254.169.254'}),/unsafe_base_url/);
 });
 
 test('user router overlays user connections without exposing secrets in status', () => {
