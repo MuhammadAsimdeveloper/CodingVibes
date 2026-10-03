@@ -7,7 +7,7 @@ const has=(s,...xs)=>xs.some(x=>s.includes(x.toLowerCase()));
 const titleize=s=>String(s).split(/[-_\s]+/).filter(Boolean).map(x=>x[0]?.toUpperCase()+x.slice(1)).join('');
 export function analyzeRequirements(request,{targetId='auto'}={}){
  const text=clean(request), lower=text.toLowerCase(), target=inferTarget(text,targetId);
- const templateMatch=text.match(/TEMPLATE BLUEPRINT:\\s*(\\{[\\s\\S]*?\\})\\s*\\n\\s*CUSTOM USER REQUIREMENTS:/i);
+ const templateMatch=text.match(/TEMPLATE BLUEPRINT:\s*(\{[\s\S]*?\})\s*\n\s*CUSTOM USER REQUIREMENTS:/i);
  let templateMeta=null;try{templateMeta=templateMatch?JSON.parse(templateMatch[1]):null}catch{}
  const inferredKind=templateMeta?.kind||(['shopify','ecommerce','online store','retail','catalog','products','checkout'].some(x=>lower.includes(x))?'ecommerce':['marketplace','multi-vendor'].some(x=>lower.includes(x))?'marketplace':['portfolio','personal site','photographer'].some(x=>lower.includes(x))?'portfolio':['agency','studio','creative agency'].some(x=>lower.includes(x))?'agency':['real estate','property','property developer','listing'].some(x=>lower.includes(x))?'realEstate':['restaurant','hotel','resort','hospitality','cafe'].some(x=>lower.includes(x))?'hospitality':['course','academy','education','learning'].some(x=>lower.includes(x))?'education':['blog','magazine','article','content'].some(x=>lower.includes(x))?'content':['conference','event','speaker'].some(x=>lower.includes(x))?'event':['immersive','3d site','3d experience','webgl'].some(x=>lower.includes(x))?'immersive':['local service','contractor','plumber','clinic','gym'].some(x=>lower.includes(x))?'local':'business');
  const siteKind=SITE_KITS[inferredKind]?inferredKind:'business';const siteKit=kitForKind(siteKind);
