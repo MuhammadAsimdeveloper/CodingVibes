@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {normalizeRelative} from '../core/safe-path.js';
+import {searchRepositoryIndex} from './repository-index.js';
 
 const MAX_FILES=80;
 const MAX_BYTES_PER_FILE=9000;
@@ -39,9 +40,11 @@ export function collectProjectContext(root,{index=null,focus=''}={}){
     if(/(^|\/)(package\.json|vite\.config\.|next\.config\.|src\/main\.|src\/app\.|app\/page\.|index\.(js|ts|jsx|tsx))$/.test(lower))score+=8;
     for(const needle of needles)if(lower.includes(needle))score+=3;
     const indexedEntry=index?.files?.find(x=>x.path===rel);
-    score+=Math.max(0,3-Math.min(3,Number(indexedEntry?.imports?.length||0)/20));
-    for(const symbol of (indexedEntry?.symbols||[])){const sym=String(symbol.name||symbol).toLowerCase();if(needles.some(n=>sym.includes(n)))score+=5;}
-    const importText=(indexedEntry?.imports||[]).join(' ').toLowerCase();for(const needle of needles)if(importText.includes(needle))score+=1;
+    const indexedSymbols=(index?.symbols||[]).filter(x=>x.path===rel).map(x=>x.name);
+    const indexedImports=(index?.imports||[]).filter(x=>x.path===rel).map(x=>x.specifier);
+    score+=Math.max(0,3-Math.min(3,indexedImports.length/20));
+    for(const symbol of indexedSymbols){const sym=String(symbol||'').toLowerCase();if(needles.some(n=>sym.includes(n)))score+=5;}
+    const importText=indexedImports.join(' ').toLowerCase();for(const needle of needles)if(importText.includes(needle))score+=1;
     return {rel,score,position};
   }).sort((a,b)=>b.score-a.score||a.position-b.position).map(x=>x.rel);
   const files=[],tree=[];let totalBytes=0,truncated=false;
@@ -61,10 +64,12 @@ export function collectProjectContext(root,{index=null,focus=''}={}){
     files.push({path:rel,content});
     if(files.length>=MAX_FILES){truncated=true;break;}
   }
-  return {root:base,files,tree:tree.slice(0,MAX_FILES),truncated,totalBytes,maxFiles:MAX_FILES,maxBytesPerFile:MAX_BYTES_PER_FILE,selection:{focused:Boolean(needles.length),indexUsed:Boolean(indexed.length),candidateCount:candidates.length}};
+  return {root:base,files,tree:tree.slice(0,MAX_FILES),truncated,totalBytes,maxFiles:MAX_FILES,maxBytesPerFile:MAX_BYTES_PER_FILE,index,focus,selection:{focused:Boolean(needles.length),indexUsed:Boolean(indexed.length),candidateCount:candidates.length}};
 }
 
 export function formatContextForModel(context){
+  const indexHits=context.index&&context.focus?searchRepositoryIndex(context.index,context.focus,{limit:40}):[];
+  const indexSummary=indexHits.length?indexHits.map(x=>JSON.stringify({path:x.path,language:x.language,lineCount:x.lineCount,symbols:x.symbols,routes:x.routes})).join('\\n'):'No semantic index matches.';
   const sections=context.files.map(f=>`<untrusted_file path="${f.path}">\n${f.content}\n</untrusted_file>`).join('\n');
-  return `<untrusted_project_tree>\n${context.tree.join('\n')}\n</untrusted_project_tree>\n<untrusted_project_files>\n${sections}\n</untrusted_project_files>`;
+  return `<repository_index_matches>\n${indexSummary}\n</repository_index_matches>\n<untrusted_project_tree>\n${context.tree.join('\n')}\n</untrusted_project_tree>\n<untrusted_project_files>\n${sections}\n</untrusted_project_files>`;
 }
