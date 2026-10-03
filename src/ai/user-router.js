@@ -1,4 +1,5 @@
 import {ModelRouter} from './router.js';
+import net from 'node:net';
 import {decryptSecret} from '../security/vault.js';
 import {getConnectorDefinition} from './connectors.js';
 
@@ -7,18 +8,25 @@ function canonicalProvider(id){
   if(!d)throw new Error('unknown_provider');
   return d.aliasOf||d.id;
 }
+function isPrivateLiteralHost(host){
+  if(net.isIP(host)===4){
+    const [a,b]=host.split('.').map(Number);
+    return a===10||a===127||a===0||a===169&&b===254||a===192&&b===168||a===172&&b>=16&&b<=31;
+  }
+  if(net.isIP(host)===6){const h=host.toLowerCase();return h==='::1'||h.startsWith('fc')||h.startsWith('fd')||h.startsWith('fe8')||h.startsWith('fe9')||h.startsWith('fea')||h.startsWith('feb');}
+  return false;
+}
 function safeBaseUrl(value){
   if(value==null||String(value).trim()==='')return null;
   let u;try{u=new URL(String(value).trim())}catch{throw new Error('invalid_base_url');}
-  const host=u.hostname.toLowerCase();
-  const local=['localhost','127.0.0.1','::1'].includes(host)||/^127\./.test(host);
-  if(u.username||u.password)throw new Error('unsafe_base_url');
+  const host=u.hostname.toLowerCase(),local=['localhost','127.0.0.1','::1'].includes(host)||/^127\./.test(host);
+  if(u.username||u.password||isPrivateLiteralHost(host)&&!local||host.endsWith('.internal')||host.endsWith('.local'))throw new Error('unsafe_base_url');
   if(u.protocol!=='https:'&&!(u.protocol==='http:'&&local))throw new Error('unsafe_base_url');
   return u.toString().replace(/\/$/,'');
 }
 export function providerConnectionInput(input={}){
   const provider=canonicalProvider(input.provider);
-  const apiKey=String(input.apiKey||'').trim();
+  const apiKey=String(input.apiKey||'').trim();if(apiKey.length>4096)throw new Error('api_key_too_large');
   const baseUrl=safeBaseUrl(input.baseUrl);
   const defaultModel=String(input.defaultModel||'').trim().slice(0,200);
   const d=getConnectorDefinition(provider);
