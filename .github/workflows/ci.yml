@@ -17,3 +17,17 @@ jobs:
       - run: npm test
       - run: npm run check
       - run: npm run e2e
+      - name: Run launch readiness
+        env:
+          NODE_ENV: development
+          CODINGVIBES_ENABLE_BROWSER: false
+        run: |
+          npm start > /tmp/build-vibe.log 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4400/health >/dev/null; then break; fi
+            sleep 1
+          done
+          test "$i" -le 30
+          npm run launch:check
