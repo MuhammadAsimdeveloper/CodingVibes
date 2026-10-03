@@ -6,21 +6,25 @@ import path from 'node:path';
 const root=process.cwd();
 const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('v3.1 workspace UX assets are wired into the application',()=>{
+test('visual product studio replaces the code-first workspace UI',()=>{
   const html=read('public/index.html');
-  const css=read('public/styles.css');
-  const js=read('public/workspace.js');
-  assert.match(html,/workspace\.js/);
-  assert.match(css,/workspace-toolbar/);
-  assert.match(js,/data-intent/);
-  assert.match(js,/command-palette/);
-  assert.match(js,/Ctrl\/Cmd\+K/);
+  const js=read('public/studio.js');
+  assert.match(html,/AI PRODUCT BUILDER/);
+  assert.match(html,/Content & data/);
+  assert.match(html,/Web & mobile/);
+  assert.match(html,/Publish anywhere/);
+  assert.match(html,/studio\.js/);
+  assert.doesNotMatch(html,/workspace\.js/);
+  assert.doesNotMatch(html,/>Files</);
+  assert.doesNotMatch(html,/>Diff</);
+  assert.match(js,/api\/builder\/blueprint/);
+  assert.match(js,/api\/builder\/research/);
 });
 
-test('v3.1 workspace supports explicit build, modify, debug and review intents',()=>{
-  const js=read('public/workspace.js');
-  for(const intent of ['build','modify','debug','review']) assert.match(js,new RegExp("['\"]"+intent+"['\"]"));
-  assert.match(js,/Modify the existing project:/);
-  assert.match(js,/Debug and fix the existing project:/);
-  assert.match(js,/Review the existing project/);
+test('product studio keeps natural-language build flow and visual preview',()=>{
+  const html=read('public/index.html');
+  assert.match(html,/Describe it\. We build it/);
+  assert.match(html,/Live product/);
+  assert.match(html,/Build product/);
+  assert.match(html,/targetSelect/);
 });
