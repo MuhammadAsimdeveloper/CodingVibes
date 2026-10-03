@@ -9,6 +9,10 @@ import {kitForKind} from '../site/kits.js';
 
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
 function titleForManifest(spec){return String(spec.request||'Build Vibe application').split(/\s+/).slice(0,8).join(' ')||'Build Vibe application';}
+function pageSeoTitle(route,spec){const raw=route==='/'?(spec.siteTemplateLabel||spec.appName||spec.request||'Your new app'):pageTitle(route);const normalized=String(raw).replace(/\s+/g,' ').trim();return normalized.length>58?normalized.slice(0,55).replace(/\s+$/,'')+'…':normalized;}
+function pageSeoDescription(route,spec,title){if(route==='/'){const explicit=spec.seo?.description||spec.siteDescription||'';if(explicit)return String(explicit).replace(/\s+/g,' ').trim().slice(0,160);return String(spec.request||('A '+String(spec.siteKind||'website')+' created with Build Vibe.')).replace(/\s+/g,' ').trim().slice(0,160);}return ('Explore '+title.toLowerCase()+' in this '+String(spec.siteKind||'website').replace(/([A-Z])/g,' $1').toLowerCase()+' built with Build Vibe.').slice(0,160);}
+function seoUrl(pathname){return '__SITE_URL__'+(pathname||'/');}
+function pageSchema(route,spec,title,description){const url=seoUrl(route||'/');const graph=[{'@type':'WebSite','@id':seoUrl('/')+'#website',name:spec.siteTemplateLabel||title,url:seoUrl('/')},{'@type':'WebPage','@id':url+'#webpage',url,name:title,description,inLanguage:'en',isPartOf:{'@id':seoUrl('/')+'#website'}}];return JSON.stringify({'@context':'https://schema.org','@graph':graph}).replaceAll('</','<\\/');}
 function pageTitle(route){if(route==='/')return 'Home';return route.slice(1).split('-').map(x=>x[0]?.toUpperCase()+x.slice(1)).join(' ');}
 function navMarkup(spec){return spec.pages.filter(r=>!['/admin','/login'].includes(r)).map(r=>`<a class="nav-link" data-route="${escHtml(r)}" href="${escHtml(r)}">${escHtml(pageTitle(r))}</a>`).join('');}
 function experienceMarkup(spec){
@@ -41,9 +45,11 @@ function contentSections(spec){
  return `${sec('Services','services','Start with structured service content, then ask the agent to transform the presentation.')}${sec('Testimonials','testimonials')}${sec('Team','team')}`;
 }
 function pageMarkup(route,spec){
- const title=route==='/'?(spec.request.split(/\s+/).slice(0,8).join(' ')||'Your new app'):pageTitle(route);
- const description=route==='/'?String(spec.request||'A complete website or web app generated with Build Vibe.').slice(0,155):`A generated ${pageTitle(route).toLowerCase()} experience built with Build Vibe.`;
+ const title=pageSeoTitle(route,spec);
+ const description=pageSeoDescription(route,spec,title);
  const canonicalPath=route||'/';
+ const seoAbsolute=seoUrl(canonicalPath);
+ const schema=pageSchema(route,spec,title,description);
 
  const apis=spec.apis.filter(a=>a.path.includes(route.slice(1))||route==='/');
  const pills=spec.components.slice(0,6).map(c=>`<span class="pill">${escHtml(c)}</span>`).join('');
