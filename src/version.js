@@ -1,1 +1,1 @@
-export const CODINGVIBES_VERSION='3.1.0';
+export const CODINGVIBES_VERSION='5.0.0';
