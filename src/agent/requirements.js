@@ -30,6 +30,11 @@ export function analyzeRequirements(request,{targetId='auto'}={}){
   density:has(lower,'dense','compact')?'dense':has(lower,'airy','spacious')?'airy':'comfortable'
  };
  const behavior={authentication:has(lower,'login','auth','account'),payments:has(lower,'payment','checkout','purchase'),paymentProvider,realtime:has(lower,'realtime','live','chat'),search:has(lower,'search','filter'),offline:has(lower,'offline','pwa'),camera:has(lower,'camera','scan','barcode','qr'),location:has(lower,'location','gps','geolocation','map'),notifications:has(lower,'notification','push notification'),files:has(lower,'upload','download','file'),biometrics:has(lower,'biometric','fingerprint','face id')};
+ const transformExisting=/\b(transform|convert|turn|redesign|upgrade|animate|make it animated|make this site 3d)\b/.test(lower) && /\b(existing|current|this site|website)\b/.test(lower);
+ const propertyTour=(has(lower,'real estate','property','house','home','villa','apartment')&&has(lower,'3d','three.js','virtual tour','walkthrough','floor plan'));
+ const videoPlayback=has(lower,'video playback','video tour','video walkthrough','mp4','webm','trailer');
+ const recording=has(lower,'record tour','record camera','export video','download tour');
+ const experience={type:propertyTour?'property-tour':visual.threeD?'interactive-3d':visual.animation?'animated-site':'standard-site',threeD:Boolean(visual.threeD),animation:Boolean(visual.animation),transformExisting,propertyTour,videoPlayback,recording,assets:propertyTour?['glb/gltf','floorplan','images','mp4/webm']:[]};
  const seo={title: '',description:'',canonical:true,robots:true,sitemap:true,structuredData:true,semanticHtml:true,openGraph:true};
  const styling={tone:visual.style==='minimal'?'minimal':visual.style==='bold'?'bold':'modern',responsive:true,accessibility:true,reducedMotion:true,darkMode:has(lower,'dark','dark mode'),visual,designSystem:inferDesignSystem(text,visual)};
  const deliverables=[...target.artifactTypes];
@@ -37,7 +42,11 @@ export function analyzeRequirements(request,{targetId='auto'}={}){
  if(behavior.payments)acceptance.push('Payment flow never accepts raw card data on the application server','Checkout/payment provider credentials remain server-side','Payment completion is verified through provider webhook or server confirmation');
  if(visual.animation)acceptance.push('Motion respects prefers-reduced-motion and avoids blocking page content');
  if(visual.threeD)acceptance.push('3D/immersive visual layer loads without uncaught runtime errors and degrades when WebGL is unavailable');
+ if(experience.transformExisting)acceptance.push('Existing working behavior is preserved while the requested visual transformation is isolated and reviewable');
+ if(experience.propertyTour)acceptance.push('3D property experience supports model input, procedural fallback, camera tour, room hotspots, floor plan and video playback');
+ if(experience.videoPlayback)acceptance.push('Video uses accessible controls, responsive loading, poster/fallback messaging and does not block the primary page');
+ if(experience.recording)acceptance.push('Tour recording remains optional, bounded and user-initiated');
  acceptance.push('Core SEO metadata, canonical URL, semantic HTML, Open Graph metadata, robots and sitemap are present');
  if(target.native)acceptance.push(`Target toolchain verification is required before the build can be marked verified`);
- return {version:'spec.v3',id:hash({text,target:target.id}),request:text,appType:type,target,deliverables,stack:{runtime:target.runtime,language:target.language,frontend:target.framework,server:target.family==='web'?'node-http':target.framework,packageManager:target.packageManager},pages,components,apis,dataModel,behavior,styling,seo,acceptance:acceptance.slice(0,60),scope:{words:text.split(/\s+/).filter(Boolean).length}};
+ return {version:'spec.v3',id:hash({text,target:target.id}),request:text,appType:type,target,deliverables,stack:{runtime:target.runtime,language:target.language,frontend:target.framework,server:target.family==='web'?'node-http':target.framework,packageManager:target.packageManager},pages,components,apis,dataModel,behavior,styling,seo,experience,acceptance:acceptance.slice(0,60),scope:{words:text.split(/\s+/).filter(Boolean).length}};
 }
