@@ -23,10 +23,24 @@ function detectKinds(text){
 }
 function unique(a){return [...new Set(a)];}
 
+function resolveTargets(request,targetId){
+  const text=String(request||'').toLowerCase();
+  const primary=inferTarget(request,targetId);
+  const targets=[primary];
+  const wantsWeb=/\b(web|website|web app|pwa|site)\b/.test(text);
+  const wantsAndroid=/\b(android|apk|aab)\b/.test(text);
+  const wantsIos=/\b(ios|iphone|ipad)\b/.test(text);
+  if(wantsWeb && (wantsAndroid||wantsIos) && primary.family!=='web')targets.unshift(getTarget('web-node'));
+  if(wantsAndroid && !targets.some(x=>x.family==='android'||x.id==='mobile-expo'))targets.push(getTarget('mobile-expo'));
+  if(wantsIos && !targets.some(x=>x.family==='ios'||x.id==='mobile-expo'))targets.push(getTarget('mobile-expo'));
+  return [...new Map(targets.filter(Boolean).map(x=>[x.id,x])).values()];
+}
+
 export function buildBlueprint(request,{targetId='auto'}={}){
   const text=String(request||'').toLowerCase();
   const kinds=detectKinds(text);
   const target=inferTarget(request,targetId);
+  const targetMatrix=resolveTargets(request,targetId);
   const authRequired=hasAny(text,WORDS.auth)||hasAny(text,['admin','portal','members','customers']);
   const paymentRequired=hasAny(text,WORDS.payments)||kinds.includes('commerce');
   const databaseRequired=authRequired||paymentRequired||kinds.some(k=>['booking','marketplace','saas','community','education','property'].includes(k));
@@ -48,6 +62,7 @@ export function buildBlueprint(request,{targetId='auto'}={}){
     request:String(request||'').trim(),
     productKinds:kinds,
     target:{id:target.id,family:target.family,label:target.label,framework:target.framework},
+    targets:targetMatrix.map(x=>({id:x.id,family:x.family,label:x.label,framework:x.framework,artifactTypes:x.artifactTypes})),
     capabilities,
     architecture:{
       presentation:'visual-product',
