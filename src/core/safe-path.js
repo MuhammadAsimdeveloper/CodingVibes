@@ -15,7 +15,7 @@ export function assertWritablePath(input){
   const top=parts[0].toLowerCase();
   const base=parts.at(-1).toLowerCase();
   if(top==='.git'||top==='.codingvibes'||top==='node_modules')throw new Error('Protected workspace path');
-  if(base==='.env'||base.startsWith('.env.')||base.endsWith('.pem')||base.endsWith('.key')||base.includes('credentials'))throw new Error('Sensitive file writes are blocked');
+  if((base==='.env'||base.startsWith('.env.'))&&rel!=='.env.example')throw new Error('Sensitive file writes are blocked');if(base.endsWith('.pem')||base.endsWith('.key')||base.includes('credentials'))throw new Error('Sensitive file writes are blocked');
   return rel;
 }
 

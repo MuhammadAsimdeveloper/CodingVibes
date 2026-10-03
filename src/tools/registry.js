@@ -10,7 +10,7 @@ const PERM={read:'safe',search:'safe',symbols:'safe',read_range:'safe',write:'re
 const BLOCKED_TOP=new Set(['.git','.codingvibes','node_modules']);
 const SECRET_RE=/(^|\/)(\.env(?:\..*)?|.*\.pem|.*\.key|.*credentials.*)$/i;
 
-function safePath(workspace,p){const rel=String(p||'');const clean=rel.replaceAll('\\','/');if(BLOCKED_TOP.has(clean.split('/')[0])||SECRET_RE.test(clean))throw new Error('Protected path');return resolveInside(workspace,clean,{forWrite:true});}
+function safePath(workspace,p){const rel=String(p||'');const clean=rel.replaceAll('\\','/');if(BLOCKED_TOP.has(clean.split('/')[0])||(SECRET_RE.test(clean)&&clean!=='.env.example'))throw new Error('Protected path');return resolveInside(workspace,clean,{forWrite:true});}
 function normalizeText(v){return String(v??'').replace(/\r\n/g,'\n');}
 function locate(text,needle,occurrence=1){const n=normalizeText(needle);if(!n)throw new Error('patch oldText cannot be empty');let from=0,pos=-1;for(let i=0;i<occurrence;i++){pos=text.indexOf(n,from);if(pos<0)break;from=pos+n.length;}return pos;}
 

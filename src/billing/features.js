@@ -1,6 +1,6 @@
 const FEATURE_RULES = {
   basic_site: { label: 'Basic website generation', minPlan: 'free' },
-  code_editor: { label: 'Free code editor', minPlan: 'free' },
+  visual_builder: { label: 'Visual product builder', minPlan: 'free' },
   basic_seo: { label: 'Core SEO markup', minPlan: 'free' },
   advanced_animation: { label: 'Advanced motion / 3D', minPlan: 'pro' },
   ai_video: { label: 'AI video generation', minPlan: 'pro' },
