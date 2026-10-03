@@ -14,7 +14,7 @@ test('public product branding is Build Vibe while compatibility identifiers rema
   ]) {
     const source = read(path);
     assert.match(source, /Build Vibe/, path);
-    assert.doesNotMatch(source, /Coding Vibes|codingVibes(?: app)?/i, path);
+    for (const legacy of ['Coding Vibes', 'codingVibes app', 'Generated codingVibes app', 'generated-codingvibes-app', 'codingvibes-preview']) assert.equal(source.includes(legacy), false, path + ': ' + legacy);
   }
   const pkg = JSON.parse(read('package.json'));
   assert.equal(pkg.name, 'build-vibe');
