@@ -104,6 +104,7 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
     const normalFreeTrial=plan.id==='free'&&Number(plan.videoTrialSeconds||0)>0;
     if(!hasFeature(plan.id,'ai_video')&&!normalFreeTrial)return sendJson(res,402,{ok:false,error:'feature_requires_plan',feature:'ai_video',requiredPlan:'pro',plan:plan.id});
     if(plan.id==='free'&&!normalFreeTrial)return sendJson(res,402,{ok:false,error:'video_trial_used',feature:'ai_video',requiredPlan:'pro'});
+    if(plan.id==='free'&&body.duration>Number(plan.videoTrialSeconds||5))return sendJson(res,400,{ok:false,error:'video_trial_duration_exceeded',maxSeconds:Number(plan.videoTrialSeconds||5)});
     if(plan.id!=='free'){const used=store.monthlyVideoSeconds(userId,currentPeriodKey());if(used+body.duration>Number(plan.videoSeconds||0))return sendJson(res,402,{ok:false,error:'video_quota_reached',feature:'ai_video',plan:plan.id,usedSeconds:used,remainingSeconds:Math.max(0,Number(plan.videoSeconds||0)-used),monthlySeconds:Number(plan.videoSeconds||0)});}
     const runwayKey=process.env.RUNWAYML_API_SECRET||process.env.RUNWAY_API_KEY;if(!runwayKey)return sendJson(res,503,{ok:false,error:'video_provider_not_configured'});
     if(plan.id==='free'&&!store.consumeVideoTrial(userId))return sendJson(res,402,{ok:false,error:'video_trial_used',feature:'ai_video',requiredPlan:'pro'});
