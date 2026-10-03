@@ -12,6 +12,8 @@ test('forest commerce prompt becomes a 3D storefront contract and runnable accep
   const spec=analyzeRequirements(prompt);
   assert.equal(spec.target.id,'web-node');
   assert.equal(spec.styling.visual.threeD,true);
+  assert.equal(spec.experience.threeD,true);
+  assert.equal(spec.experience.type,'interactive-3d');
   assert.equal(spec.behavior.payments,true);
   assert.equal(spec.behavior.paymentProvider,'stripe');
   assert.ok(spec.pages.includes('/shop'));
@@ -22,7 +24,9 @@ test('forest commerce prompt becomes a 3D storefront contract and runnable accep
 
   const plan=generateProject(spec);
   const source=plan.files.filter(x=>/\.(js|html|css|json)$/.test(x.path)).map(x=>x.content).join('\n');
-  assert.match(source,/forest-scene/);
+  assert.match(source,/experience-stage/);
+  assert.match(source,/three@0.186.1/);
+  assert.match(plan.files.find(x=>x.path==='public/experience.js')?.content||'',/MediaRecorder/);
   assert.match(source,/data-checkout/);
   assert.match(source,/checkout\/session/);
 

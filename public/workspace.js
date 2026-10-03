@@ -34,6 +34,30 @@ const cvWorkspace=(function(){
     qa('[data-intent]',toolbar).forEach(function(x){x.addEventListener('click',function(){setMode(x.dataset.intent)})});
     q('#paletteButton').onclick=openPalette;
   }
+    function createTemplateStudio(){
+    var composer=q('.composer');if(!composer||q('#templateStudio'))return;
+    var box=document.createElement('details');box.id='templateStudio';box.className='template-studio';
+    box.innerHTML='<summary>Templates <span class="muted small">basic + animated + 3D</span></summary>'+
+      '<div class="template-tools"><select id="templateSelect"><option value="">Start from scratch</option></select><input id="templateSearch" placeholder="Search templates…"><select id="templateCategory"><option value="">All categories</option></select><button type="button" id="templateClear" class="tool-button">Clear</button></div>'+
+      '<div id="templateGrid" class="template-grid"></div><div id="templateHint" class="muted small">Choose a template to seed the agent. Your custom requirements always take priority.</div>';
+    composer.insertBefore(box,composer.querySelector('.composer-row'));
+    var search=q('#templateSearch',box),category=q('#templateCategory',box),grid=q('#templateGrid',box);
+    var templates=[];
+    function render(){
+      var term=(search.value||'').toLowerCase(),cat=category.value;
+      grid.replaceChildren();
+      templates.filter(function(t){return (!cat||t.category===cat)&&(!term||[t.label,t.category].concat(t.tags||[]).join(' ').toLowerCase().includes(term));}).forEach(function(t){
+        var b=document.createElement('button');b.type='button';b.className='template-card';b.dataset.templateId=t.id;
+        var title=document.createElement('strong');title.textContent=t.label;
+        var meta=document.createElement('span');meta.className='muted small';meta.textContent=t.category+' · '+(t.tier==='pro'?'PRO':'FREE');
+        var tags=document.createElement('span');tags.className='template-tags muted small';tags.textContent=(t.tags||[]).slice(0,3).join(' · ');
+        b.append(title,meta,tags);b.onclick=function(){var sel=q('#templateSelect');if(sel){sel.value=t.id;sel.dispatchEvent(new Event('change'));}q('#templateHint').textContent='Selected: '+t.label+(t.tier==='pro'?' · Pro feature may be required':'')};
+        grid.appendChild(b);
+      });
+    }
+    fetch('/api/templates').then(function(r){return r.json()}).then(function(j){templates=j.templates||[];var sel=q('#templateSelect',box);templates.forEach(function(t){var o=document.createElement('option');o.value=t.id;o.textContent=t.label+(t.tier==='pro'?' · PRO':' · FREE');sel.append(o)});var cats=[...new Set(templates.map(t=>t.category))].sort();cats.forEach(function(cat){var o=document.createElement('option');o.value=cat;o.textContent=cat;category.append(o)});render()}).catch(function(){});
+    search.addEventListener('input',render);category.addEventListener('change',render);q('#templateClear',box).onclick=function(){var sel=q('#templateSelect');if(sel){sel.value='';sel.dispatchEvent(new Event('change'));}search.value='';category.value='';q('#templateHint').textContent='Choose a template to seed the agent.';render()};
+  }
   function createComposerTools(){
     var composer=q('.composer');if(!composer||q('#composerTools'))return;
     var row=document.createElement('div');row.id='composerTools';row.className='composer-tools';
@@ -42,6 +66,8 @@ const cvWorkspace=(function(){
       '<button type="button" data-prompt="Make the UI responsive and accessible on mobile and desktop">Responsive</button>'+
       '<button type="button" data-prompt="Find and fix the current failing verification issues">Fix verification</button>'+
       '<button type="button" data-prompt="Review the app for security and obvious UX problems">Review quality</button>'+
+      '<button type="button" data-prompt="Transform the existing website into an immersive 3D experience with cinematic motion, responsive fallback and accessible controls">3D transform</button>'+
+      '<button type="button" data-prompt="Transform the existing website into a polished animated experience with scroll storytelling, micro-interactions and reduced-motion support">Motion</button>'+
       '</div><span id="intentHint" class="muted small">Build mode creates a new application contract.</span>';
     composer.insertBefore(row,composer.querySelector('.composer-row'));
     qa('[data-prompt]',row).forEach(function(b){b.onclick=function(){
@@ -123,7 +149,7 @@ const cvWorkspace=(function(){
       b.addEventListener('click',function(){qa('.file',files).forEach(function(x){x.setAttribute('aria-current',x===b?'true':'false')})});
     })}).observe(files,{childList:true,subtree:true});
   }
-  function boot(){createShell();createComposerTools();enhanceEditor();observeFiles();wireForm();setMode('build')}
+  function boot(){createShell();createComposerTools();createTemplateStudio();enhanceEditor();observeFiles();wireForm();setMode('build')}
   return {boot,setMode,openPalette};
 })();
 window.addEventListener('DOMContentLoaded',function(){cvWorkspace.boot()});
