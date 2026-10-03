@@ -44,7 +44,7 @@ function writeProjectContentFile(project,content){
  if(!project?.repo_path)return;
  const file=path.join(project.repo_path,'public','content','site.json');
  fs.mkdirSync(path.dirname(file),{recursive:true});
- fs.writeFileSync(file,JSON.stringify(content,null,2)+'\\n','utf8');
+ fs.writeFileSync(file,JSON.stringify(content,null,2)+'\n','utf8');
 }
 function syncProjectContent(projectId,userId,content){
  const project=store.getProject(projectId,userId);if(!project)return;
@@ -86,6 +86,19 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   if(method==='GET'&&u.pathname==='/api/fleet')return sendJson(res,200,{ok:true,version:CODINGVIBES_VERSION,...fleetStatus(store)});
   if(method==='GET'&&u.pathname==='/api/targets')return sendJson(res,200,{ok:true,targets:listTargets()});
   if(method==='GET'&&u.pathname==='/api/projects')return sendJson(res,200,{ok:true,projects:store.listProjects(userId)});
+  if(/^\/api\/projects\/[^/]+\/content$/.test(u.pathname)&&method==='GET'){
+    const projectId=pathParam(u.pathname,'/api/projects/').replace(/\/content$/,'');const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});
+    let content=store.getProjectContent(projectId,userId);
+    if(!content){const template=getTemplate(String(u.searchParams.get('templateId')||''));const requestedKind=String(u.searchParams.get('kind')||template?.kind||'business');const safeKind=SITE_KITS[requestedKind]?requestedKind:'business';content=createDefaultSiteContent({kind:safeKind,templateId:template?.id||'',templateLabel:template?.label||'',request:template?.prompt||''});content.meta.managed=false;content=store.upsertProjectContent(projectId,userId,content);}
+    return sendJson(res,200,{ok:true,content,schema:contentSchema(content.kit),summary:contentSummary(content)});
+  }
+  if(/^\/api\/projects\/[^/]+\/content$/.test(u.pathname)&&method==='PUT'){
+    const projectId=pathParam(u.pathname,'/api/projects/').replace(/\/content$/,'');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const body=await readJson(req,MAX_BODY);const requestedKind=String(body.kind||body.content?.kit||'business');const safeKind=SITE_KITS[requestedKind]?requestedKind:'business';let content=normalizeSiteContent(body.content||{},safeKind);content.meta={...(content.meta||{}),managed:true};content=store.upsertProjectContent(projectId,userId,content);syncProjectContent(projectId,userId,content);return sendJson(res,200,{ok:true,content,schema:contentSchema(content.kit),summary:contentSummary(content)});
+  }
+  if(/^\/api\/projects\/[^/]+\/content\/operations$/.test(u.pathname)&&method==='POST'){
+    const projectId=pathParam(u.pathname,'/api/projects/').replace(/\/content\/operations$/,'');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const body=await readJson(req,MAX_BODY);let content=store.getProjectContent(projectId,userId);if(!content){const requestedKind=String(body.kind||'business');const safeKind=SITE_KITS[requestedKind]?requestedKind:'business';content=createDefaultSiteContent({kind:safeKind});}
+    try{content=applyContentOperation(content,body.operation||body,{kind:SITE_KITS[content.kit]?content.kit:'business'});content.meta={...(content.meta||{}),managed:true};content=store.upsertProjectContent(projectId,userId,content);syncProjectContent(projectId,userId,content);return sendJson(res,200,{ok:true,content,summary:contentSummary(content)});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}
+  }
   if(method==='POST'&&u.pathname==='/api/projects'){const b=await readJson(req,MAX_BODY),name=String(b.name||'').trim().slice(0,80);if(!name)return sendJson(res,400,{ok:false,error:'name_required'});const p=store.createProject(userId,{name});try{const repo=await ensureProjectRepository(p);const saved=store.updateProjectRepo(p.id,repo);return sendJson(res,201,{ok:true,project:{...saved,repo_path:undefined}})}catch(e){return sendJson(res,500,{ok:false,error:`project_repo_init_failed: ${e.message}`})}}
   if(method==='GET'&&u.pathname.startsWith('/api/projects/')&&u.pathname.endsWith('/sessions')){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/sessions$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});return sendJson(res,200,{ok:true,sessions:store.listSessions(pid,userId)})}
   if(method==='POST'&&/^\/api\/projects\/[^/]+\/sessions$/.test(u.pathname)){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/sessions$/,'');const b=await readJson(req,MAX_BODY);try{return sendJson(res,201,{ok:true,session:store.createSession(userId,pid,String(b.title||'New build').slice(0,120))})}catch(e){return sendJson(res,404,{ok:false,error:e.message})}}
