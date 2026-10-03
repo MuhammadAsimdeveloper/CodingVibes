@@ -19,7 +19,7 @@ jobs:
           test -n "$APK"
           mkdir -p "$RUNNER_TEMP/artifacts"
           cp "$APK" "$RUNNER_TEMP/artifacts/app-debug.apk"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android-apk
           path: ${{ runner.temp }}/artifacts/app-debug.apk
