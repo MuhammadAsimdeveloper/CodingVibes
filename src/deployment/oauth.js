@@ -12,14 +12,14 @@ function cfg(provider){const c=CONFIG[provider];if(!c)throw Object.assign(new Er
 function verifier(){return crypto.randomBytes(32).toString('base64url')}
 function challenge(v){return crypto.createHash('sha256').update(v).digest('base64url')}
 export function oauthConfigured(provider){try{cfg(provider);return true}catch{return false}}
-export function beginOAuth(provider,{userId,redirectAfter='/app'}={}){
- const c=cfg(provider),state=crypto.randomBytes(24).toString('base64url'),codeVerifier=verifier();pending.set(state,{provider,userId,redirectAfter,codeVerifier,created:Date.now()});setTimeout(()=>pending.delete(state),10*60*1000);
+export function beginOAuth(store,provider,{userId,redirectAfter='/app'}={}){
+ const c=cfg(provider),state=crypto.randomBytes(24).toString('base64url'),codeVerifier=verifier();const created=Date.now(),expiresAt=new Date(created+10*60*1000).toISOString();store.createOAuthState(userId,provider,state,expiresAt,{redirectAfter,codeVerifier});
  const u=new URL(c.authorize);u.searchParams.set('client_id',process.env[c.clientId]);u.searchParams.set('redirect_uri',process.env[c.redirect]);u.searchParams.set('response_type','code');u.searchParams.set('state',state);u.searchParams.set('code_challenge',challenge(codeVerifier));u.searchParams.set('code_challenge_method','S256');if(c.scope)u.searchParams.set('scope',c.scope);return u.toString();
 }
-export async function completeOAuth(provider,{code,state}={}){
- const c=cfg(provider),meta=pending.get(String(state||''));pending.delete(String(state||''));if(!meta||meta.provider!==provider||Date.now()-meta.created>10*60*1000)throw Object.assign(new Error('oauth_state_invalid'),{status:400});
+export async function completeOAuth(store,provider,{code,state}={}){
+ const c=cfg(provider),row=store.consumeOAuthState(provider,String(state||''));const meta=row?{provider:row.provider,userId:row.user_id,redirectAfter:row.metadata?.redirectAfter||'/app',codeVerifier:row.metadata?.codeVerifier}:null;if(!meta)throw Object.assign(new Error('oauth_state_invalid'),{status:400});
  let body={grant_type:'authorization_code',client_id:process.env[c.clientId],client_secret:process.env[c.clientSecret],redirect_uri:process.env[c.redirect],code:String(code||''),code_verifier:meta.codeVerifier};
- if(provider==='netlify')body={client_id:process.env[c.clientId],client_secret:process.env[c.clientSecret],code:String(code||'')};
+ if(provider==='netlify'){const ticket=await fetch('https://api.netlify.com/api/v1/oauth/tickets/'+encodeURIComponent(String(code||''))+'/exchange',{method:'POST',headers:{accept:'application/json','content-type':'application/json'},body:'{}'});const tj=await ticket.json();if(!ticket.ok||!tj.access_token)throw Object.assign(new Error('netlify_oauth_ticket_exchange_failed'),{status:502});return {provider,userId:meta.userId,secret:JSON.stringify({accessToken:tj.access_token}),metadata:{oauth:true,email:tj.user_email||null,userId:tj.user_id||null},redirectAfter:meta.redirectAfter};}
  const res=await fetch(c.token,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded','accept':'application/json'},body:new URLSearchParams(body)});const raw=await res.text();let data={};try{data=JSON.parse(raw)}catch{}
  if(!res.ok||!(data.access_token||data.accessToken||data.token))throw Object.assign(new Error(provider+'_oauth_token_exchange_failed'),{status:502});
  const accessToken=data.access_token||data.accessToken||data.token;let metadata={oauth:true};if(data.refresh_token)metadata.refreshTokenPresent=true;if(data.expires_in)metadata.expiresAt=new Date(Date.now()+Number(data.expires_in)*1000).toISOString();
