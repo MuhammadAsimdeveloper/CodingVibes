@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const html=()=>fs.readFileSync('public/landing.html','utf8');
-const css=()=>fs.readFileSync('public/landing.css','utf8');
-const js=()=>fs.readFileSync('public/landing.js','utf8');
+const html=()=>fs.readFileSync('landing.html','utf8');
+const css=()=>fs.readFileSync('landing.css','utf8');
+const js=()=>fs.readFileSync('landing.js','utf8');
 
 test('landing experience has the complete product narrative and conversion surfaces',()=>{
   const h=html();
@@ -12,6 +12,13 @@ test('landing experience has the complete product narrative and conversion surfa
   assert.ok(h.includes('href="/app"'));
   assert.ok(h.includes('data-reveal'));
   assert.ok(h.includes('data-demo-stage'));
+});
+
+test('reference screenshot surfaces have dedicated structural hooks',()=>{
+  const h=html(),c=css();
+  assert.ok(fs.existsSync('hero-mockup.svg'));
+  for(const token of ['.topbar','.hero-grid','.category-grid','.featured-grid','.proof-bar']) assert.ok(c.includes(token),token);
+  for(const token of ['Popular Templates','Featured Templates','Get Started Free','Sign In']) assert.ok(h.includes(token),token);
 });
 
 test('landing styling defines motion, depth, responsive layout and reduced-motion support',()=>{

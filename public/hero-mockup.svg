@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Build Vibe product preview with desktop and mobile screens">
+<defs>
+ <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5f79ff"/><stop offset=".45" stop-color="#b06cff"/><stop offset="1" stop-color="#ee66ff"/></linearGradient>
+ <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fbfcff"/><stop offset="1" stop-color="#e9eef7"/></linearGradient>
+ <linearGradient id="heroBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5fb7ff"/><stop offset="1" stop-color="#6d56ff"/></linearGradient>
+ <linearGradient id="heroPink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7a50ff"/><stop offset="1" stop-color="#ff40d0"/></linearGradient>
+ <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="22" stdDeviation="18" flood-color="#000" flood-opacity=".42"/></filter>
+ <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="12" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <clipPath id="screenClip"><rect x="83" y="76" width="705" height="310" rx="13"/></clipPath>
+</defs>
+<ellipse cx="520" cy="450" rx="360" ry="33" fill="#1b40a0" opacity=".35" filter="url(#glow)"/>
+<rect x="45" y="30" width="790" height="415" rx="27" fill="#070d1c" stroke="url(#frame)" stroke-width="5" filter="url(#shadow)"/>
+<circle cx="66" cy="53" r="5" fill="#6d5dff"/><circle cx="84" cy="53" r="5" fill="#e66fff"/><circle cx="102" cy="53" r="5" fill="#56d9d9"/>
+<rect x="83" y="76" width="705" height="310" rx="13" fill="url(#screen)"/>
+<g clip-path="url(#screenClip)">
+  <rect x="83" y="76" width="705" height="54" fill="#fff"/>
+  <text x="103" y="108" font-size="13" font-weight="800" fill="#243463">Build<tspan fill="#7b49ff">Vibe</tspan></text>
+  <text x="513" y="106" font-size="8" fill="#3b4b66">Home</text><text x="553" y="106" font-size="8" fill="#3b4b66">Templates</text><text x="605" y="106" font-size="8" fill="#3b4b66">Features</text><text x="649" y="106" font-size="8" fill="#3b4b66">Pricing</text>
+  <rect x="707" y="96" width="60" height="20" rx="10" fill="url(#heroPink)"/><text x="718" y="109" font-size="8" font-weight="700" fill="#fff">Get Started</text>
+  <rect x="103" y="151" width="130" height="20" rx="10" fill="#edeaff"/><text x="114" y="164" font-size="8" font-weight="700" fill="#6d55c9">Build Your Ideas</text>
+  <text x="103" y="204" font-size="30" font-weight="850" fill="#172349">Turn Your Vision</text><text x="103" y="235" font-size="30" font-weight="850" fill="#172349">into Reality</text>
+  <text x="103" y="262" font-size="10" fill="#6f7f99">Create, customize, and launch your website</text><text x="103" y="275" font-size="10" fill="#6f7f99">or app — powered by AI.</text>
+  <rect x="103" y="289" width="93" height="24" rx="12" fill="url(#heroPink)"/><text x="116" y="305" font-size="8" font-weight="700" fill="#fff">Get Started Free</text><rect x="205" y="289" width="73" height="24" rx="12" fill="#fff" stroke="#d9dfe9"/><text x="218" y="305" font-size="8" fill="#51627e">Learn More</text>
+  <rect x="478" y="139" width="269" height="151" rx="12" fill="url(#heroBlue)"/>
+  <path d="M478 244 531 194 577 236 629 170 684 225 714 205 747 237v53H478Z" fill="#8a7ae7" opacity=".62"/>
+  <path d="M478 254 525 217 567 245 613 188 667 243 707 222 747 250v40H478Z" fill="#415899" opacity=".72"/>
+  <circle cx="613" cy="215" r="22" fill="#fff" opacity=".9"/><path d="m608 205 12 10-12 10Z" fill="#5870b7"/>
+  <rect x="456" y="257" width="196" height="93" rx="12" fill="#fff" stroke="#dce3ee"/>
+  <text x="473" y="278" font-size="8" font-weight="800" fill="#1c2d5c">✦ AI is building your website…</text>
+  <text x="473" y="297" font-size="8" fill="#58708f">✓ Creating pages</text><text x="473" y="313" font-size="8" fill="#58708f">✓ Adding components</text><text x="473" y="329" font-size="8" fill="#58708f">✓ Designing UI</text><text x="473" y="345" font-size="8" fill="#58708f">✓ Finalizing and deploying</text>
+  <text x="103" y="356" font-size="12" font-weight="850" fill="#172349">10K+</text><text x="147" y="356" font-size="12" font-weight="850" fill="#172349">500+</text><text x="191" y="356" font-size="12" font-weight="850" fill="#172349">99.9%</text>
+  <text x="103" y="371" font-size="7" fill="#6d7c95">Happy Customers</text><text x="147" y="371" font-size="7" fill="#6d7c95">Templates</text><text x="191" y="371" font-size="7" fill="#6d7c95">Uptime</text>
+</g>
+<path d="M210 468h460l-60 25H270Z" fill="#252d3e"/><path d="M270 492h340" stroke="#43516a" stroke-width="2" opacity=".5"/>
+<rect x="760" y="102" width="117" height="304" rx="24" fill="#050a14" stroke="url(#frame)" stroke-width="4" filter="url(#shadow)"/>
+<rect x="772" y="122" width="93" height="260" rx="18" fill="#fbfcff"/><rect x="807" y="130" width="24" height="4" rx="2" fill="#26324a" opacity=".35"/>
+<text x="783" y="151" font-size="9" font-weight="800" fill="#2d3b67">Build<tspan fill="#7b49ff">Vibe</tspan></text><text x="849" y="151" font-size="10" fill="#3b4b66">☰</text>
+<rect x="783" y="163" width="58" height="13" rx="7" fill="#edeaff"/><text x="789" y="172" font-size="5.5" font-weight="700" fill="#6d55c9">Build Your Ideas</text>
+<text x="783" y="202" font-size="14" font-weight="850" fill="#172349">Turn Your Vision</text><text x="783" y="217" font-size="14" font-weight="850" fill="#172349">into Reality</text>
+<text x="783" y="235" font-size="6.4" fill="#6f7f99">Fast, beautiful websites and apps</text><text x="783" y="244" font-size="6.4" fill="#6f7f99">powered by AI.</text>
+<rect x="783" y="253" width="66" height="15" rx="8" fill="url(#heroPink)"/><text x="791" y="263" font-size="5.8" font-weight="700" fill="#fff">Get Started Free</text>
+<rect x="783" y="279" width="70" height="64" rx="8" fill="url(#heroBlue)"/><path d="M783 321 800 302 814 313 828 293 853 316v27h-70Z" fill="#5263a4" opacity=".8"/><circle cx="818" cy="319" r="11" fill="#fff" opacity=".9"/><path d="m815 313 7 6-7 6Z" fill="#5870b7"/>
+<rect x="802" y="367" width="36" height="3" rx="2" fill="#333d50" opacity=".25"/>
+<path d="M841 81c19 3 29 5 38 15" stroke="#b65cff" stroke-width="2" fill="none"/><path d="m874 95 4 8-8 0" fill="none" stroke="#b65cff" stroke-width="2"/>
+<text x="786" y="70" font-size="11" font-weight="700" fill="#e8f0ff" transform="rotate(-7 786 70)">From idea to</text><text x="794" y="85" font-size="11" font-weight="700" fill="#e8f0ff" transform="rotate(-7 794 85)">live in minutes!</text>
+</svg>
