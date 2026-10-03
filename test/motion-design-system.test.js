@@ -12,7 +12,7 @@ test('motion-first design system exposes reusable Figma-style motion tokens',()=
   assert.equal(ds.motion.accessibility.reducedMotion,true);
 });
 
-test('template motion recipes are explicit and progressive',()=>{
+test('template motion recipes are explicit and progressive',async()=>{
   const fs=await import('../src/agent/experience-recipes.js');
   const recipes=fs.listExperienceRecipes();
   assert.ok(recipes.some(r=>r.motion?.scroll==='story'));
