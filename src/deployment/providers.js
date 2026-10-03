@@ -34,7 +34,7 @@ export const PROVIDERS={
      for(const f of artifact.files){const from=path.join(artifact.root,f.path),to=path.join(filesDir,f.path);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)}
      await exec('git',['config','user.name',user.name||owner],{cwd:filesDir,env});await exec('git',['config','user.email',user.email||owner+'@users.noreply.github.com'],{cwd:filesDir,env});await exec('git',['add','--all'],{cwd:filesDir,env});
      const status=await exec('git',['status','--porcelain'],{cwd:filesDir,env});if(!String(status.stdout||'').trim())return{status:'unchanged',deploymentId:existing.id,url:existing.html_url,branch,providerProject:existing.full_name};
-     await exec('git',['commit','-m',String(options.commitMessage||'Publish from Coding Vibes').slice(0,160)],{cwd:filesDir,env});if(!existing?.id)await exec('git',['remote','add','origin','https://github.com/'+owner+'/'+repo+'.git'],{cwd:filesDir,env});
+     await exec('git',['commit','-m',String(options.commitMessage||'Publish from Coding Vibes').slice(0,160)],{cwd:filesDir,env});if(created)await exec('git',['remote','add','origin','https://github.com/'+owner+'/'+repo+'.git'],{cwd:filesDir,env});
      try{await exec('git',['push','-u','origin','HEAD:'+branch],{cwd:filesDir,env,timeout:180000})}catch(e){throw new Error('GitHub push failed: '+cleanError(e,token))}
      const commit=(await exec('git',['rev-parse','HEAD'],{cwd:filesDir,env})).stdout.trim();return{status:'published',deploymentId:repo,url:existing.html_url,branch,commitSha:commit,providerProject:owner+'/'+repo};
    }finally{try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
