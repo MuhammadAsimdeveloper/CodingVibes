@@ -92,11 +92,25 @@ The current 2.5 build adds model-first application generation, bounded repositor
 
 For model-first generation, use a configured OpenAI-compatible provider, OpenRouter, Ollama, LM Studio, or a compatible custom endpoint. Generated projects are still constrained to the supported Node/browser runtime contract and must pass verification before commit.
 
+## 11.0.0 final hardening
+
+The final release pass adds a search-ready public landing surface and generated-site SEO contract: descriptive titles and descriptions, canonical URLs, Open Graph/Twitter previews, favicon and manifest assets, JSON-LD WebSite/WebPage markup, runtime absolute robots/sitemap URLs, and a noindex boundary for the authenticated builder.
+
+The template studio now includes 61 unique starters, with new job-board, business-directory, appointment-booking, membership-community, documentation, operations-dashboard, subscription-commerce and real-estate-rental recipes.
+
+Repository hygiene is also codified through SECURITY.md, CONTRIBUTING.md, a pull-request checklist and weekly Dependabot configuration. The SEO regression suite is part of npm test via test/seo-template-final.test.js.
+
+SEO is not a ranking guarantee: the implementation focuses on crawlability, accurate metadata, structured data and people-first product content rather than keyword stuffing. See docs/SEO.md.
+
 ## Native/mobile verification runners
 
 Version 2.3 adds isolated native execution instead of pretending source generation is equivalent to a verified binary. Android/Gradle, Flutter, and Rust/Tauri can run in disposable Docker runners with network disabled, resource limits, dropped capabilities, and a writable project mount. Expo/React Native can use EAS cloud builds, and iOS/SwiftUI uses a configured macOS runner because Xcode requires macOS. Built APK/AAB/desktop artifacts are hashed, copied into the artifact store, and can be uploaded through the configured artifact endpoint. Android artifacts can be installed and smoke-tested with `adb` when a real emulator/device is attached to the isolated runner.
 
 See `docs/NATIVE_RUNNERS.md` for configuration and runner boundaries.
+
+### Release verification
+
+`npm run final:check` is the canonical local release command. Pull-request CI runs the same core test, syntax, end-to-end and launch-readiness gates before merge.
 
 ### Acceptance scenario
 
