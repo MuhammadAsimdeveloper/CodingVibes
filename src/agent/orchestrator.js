@@ -25,6 +25,8 @@ import {buildRepositoryIndex} from './repository-index.js';
 import {createCheckpoint} from '../git/checkpoints.js';
 import {reviewWorkspace,reviewWithModel} from './review.js';
 import {createDefaultSiteContent,applyContentOperation} from '../site/content.js';
+import {copyArtifacts,hashFile} from '../artifacts/store.js';
+import {baselinePath} from '../verification/visual.js';
 
 async function collectSourceText(workspace){let out='';const walk=dir=>{if(!fs.existsSync(dir)||out.length>350000)return;for(const name of fs.readdirSync(dir)){if(['.git','node_modules','.codingvibes'].includes(name))continue;const full=path.join(dir,name),st=fs.lstatSync(full);if(st.isDirectory())walk(full);else if(/\.(js|jsx|ts|tsx|html|css|json|dart|kt|swift|rs|yaml|yml)$/.test(name)){try{out+=fs.readFileSync(full,'utf8')+'\n'}catch{}}}};walk(workspace);return out.slice(0,350000)}
 function scrubText(text){return String(text??'').slice(0,12000);}
@@ -33,6 +35,11 @@ function isLiveWebTarget(target){return target.id==='web-node'||target.id==='web
 function statusFromEvidence(evidence){if(evidence?.passed)return 'verified';if(evidence?.status==='blocked')return 'blocked';return 'failed';}
 function checkpointRoot(){return path.resolve(process.env.CODINGVIBES_CHECKPOINT_ROOT||path.join(process.cwd(),'data','checkpoints'));}
 function dependencyGate({workspace,target,run,store}){const plan=inspectDependencies(workspace,target);if(!plan.approvalRequired)return{ok:true,plan,request:null};const existing=store.getLatestDependencyRequest(run.id);const request=existing||store.createDependencyRequest(run.id,plan.dependencies);if(request.status!=='approved')return{ok:false,plan,request};return{ok:true,plan,request};}
+function projectIdForRun(store,run){return store.getSession(run.session_id,run.user_id)?.project_id||null;}
+function recordVisualArtifacts(workspace,runId,browser,store){
+  const files=[];for(const result of browser?.results||[]){for(const key of ['screenshot','domSnapshot'])if(result?.[key]&&fs.existsSync(result[key]))files.push({path:path.relative(workspace,result[key]),size:fs.statSync(result[key]).size,sha256:hashFile(result[key]),type:key==='screenshot'?'visual-screenshot':'dom-snapshot'});if(result?.visual?.diffPath&&fs.existsSync(result.visual.diffPath))files.push({path:path.relative(workspace,result.visual.diffPath),size:fs.statSync(result.visual.diffPath).size,sha256:hashFile(result.visual.diffPath),type:'visual-diff'});}
+  if(!files.length)return[];const copies=copyArtifacts(workspace,path.resolve(process.env.CODINGVIBES_ARTIFACT_ROOT||path.join(process.cwd(),'data','artifacts')),files,runId);return copies.map((x,i)=>store.recordArtifact(runId,{type:x.type,path:x.path,size:x.size,sha256:x.sha256,storedPath:x.storedPath,url:null}));
+}
 function ensureActiveRun(store,run,userId,signal){const current=store.getRun(run.id,userId);if(signal?.aborted||current?.status==='cancelled'){cancelTaskGraph(store,run.id);throw Object.assign(new Error('run_cancelled'),{code:'RUN_CANCELLED'});}}
 
 async function verifyTarget({workspace,spec,target,run,store,onEvent,attempt,signal}){
@@ -99,7 +106,7 @@ async function verifyTarget({workspace,spec,target,run,store,onEvent,attempt,sig
     const tools=new ToolRegistry({workspace,store,runId:run.id,confirm:async()=>true,runner:preview.exec,signal});
     const commands=[{command:'npm run check',...(await tools.call('check'))},{command:'npm test',...(await tools.call('test'))}];
     const http=await httpSmoke(preview.url,[...spec.pages.map(route=>({path:route,method:'GET'})),...spec.apis]);
-    const browser=process.env.CODINGVIBES_ENABLE_BROWSER==='false'?{enabled:false,available:false,passed:true,skipped:'disabled',results:[]}:await browserSmoke(preview.url,spec.pages,{screenshots:process.env.CODINGVIBES_CAPTURE_SCREENSHOTS==='true',artifactDir:path.join(workspace,'.codingvibes','artifacts')});
+    const visualQa=process.env.CODINGVIBES_VISUAL_QA!=='false';const captureScreenshots=visualQa&&process.env.CODINGVIBES_CAPTURE_SCREENSHOTS!=='false';const projectId=projectIdForRun(store,run);const baselineDir=visualQa&&projectId?path.resolve(process.env.CODINGVIBES_VISUAL_BASELINE_ROOT||path.join(process.cwd(),'data','visual-baselines'),projectId):'';const browser=process.env.CODINGVIBES_ENABLE_BROWSER==='false'?{enabled:false,available:false,passed:true,skipped:'disabled',results:[]}:await browserSmoke(preview.url,spec.pages,{screenshots:captureScreenshots,artifactDir:path.join(workspace,'.codingvibes','visual'),baselineDir});recordVisualArtifacts(workspace,run.id,browser,store);
     const sourceText=await collectSourceText(workspace);const contract=verifyContract(spec,{commands,http,browser,sourceText});
     const evidence={attempt,target:target.id,commands,http,browser,...contract};store.addEvidence(run.id,'verification',evidence);onEvent({type:'verification',runId:run.id,...evidence});return{passed:contract.passed,evidence,preview};
   }catch(e){try{await preview.stop()}catch{}throw e;}
