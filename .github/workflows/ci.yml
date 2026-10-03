@@ -1,4 +1,4 @@
-name: codingVibes CI
+name: Build Vibe CI
 on:
   push:
     branches: [main, master]
