@@ -1,0 +1,12 @@
+{
+  "name": "Build Vibe — AI Website & App Builder",
+  "short_name": "Build Vibe",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06080f",
+  "theme_color": "#06080f",
+  "description": "Build websites, web apps, SaaS, ecommerce stores and mobile products with AI.",
+  "icons": [
+    {"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
