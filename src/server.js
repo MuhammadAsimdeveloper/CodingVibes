@@ -25,8 +25,7 @@ import {createCheckoutSession,verifyStripeSignature} from './billing/stripe.js';
 import {readiness} from './ops/readiness.js';
 import {featureGate,hasFeature} from './billing/features.js';
 import {normalizeVideoRequest,createVideoTask,getVideoTask,downloadVideo} from './media/runway.js';
-import {listTemplates,getTemplate,searchTemplates} from './templates/catalog.js';
-import {featureGate} from './billing/features.js';
+import {getTemplate,searchTemplates} from './templates/catalog.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');
 export const store=new Store();export const router=new ModelRouter();
