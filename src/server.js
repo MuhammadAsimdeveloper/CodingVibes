@@ -27,7 +27,7 @@ import {featureGate,hasFeature} from './billing/features.js';
 import {normalizeVideoRequest,createVideoTask,getVideoTask,downloadVideo} from './media/runway.js';
 import {getTemplate,searchTemplates} from './templates/catalog.js';
 import {createDefaultSiteContent,normalizeSiteContent,applyContentOperation,contentSchema,contentSummary} from './site/content.js';
-import {kitForKind} from './site/kits.js';
+import {kitForKind,SITE_KITS} from './site/kits.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');
 export const store=new Store();export const router=new ModelRouter();
