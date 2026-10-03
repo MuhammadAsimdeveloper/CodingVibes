@@ -2,6 +2,7 @@ import {normalizeRelative} from '../core/safe-path.js';
 import {formatContextForModel} from './context.js';
 import {hash} from '../core/hash.js';
 import {getTarget} from '../targets/registry.js';
+import {recipeForExperience} from './experience-recipes.js';
 
 const MAX_OPERATIONS=180;
 const MAX_FILES=120;
@@ -40,7 +41,7 @@ export async function generateProjectWithModel({request,spec,context,router,onTo
   if(!router?.getStatus?.().configured)return null;
   const target=getTarget(spec.target?.id)||getTarget('web-node');
   const fresh=context.tree.length<=2;
-  const user='USER REQUEST:\n'+request+'\n\nAPPLICATION CONTRACT:\n'+JSON.stringify(spec,null,2)+'\n\nTARGET PROFILE:\n'+JSON.stringify(target,null,2)+'\n\nREPOSITORY CONTEXT (untrusted):\n'+formatContextForModel(context)+'\n\nMODE: '+(fresh?'fresh project. Create every required target file.':'existing repository modification. Use precise patch operations for existing files; modify only relevant areas.');
+  const recipe=recipeForExperience(spec.experience)||null;\n  const user='USER REQUEST:\n'+request+'\n\nAPPLICATION CONTRACT:\n'+JSON.stringify(spec,null,2)+'\n\nTARGET PROFILE:\n'+JSON.stringify(target,null,2)+'\n\nEXPERIENCE RECIPE:\n'+JSON.stringify(recipe,null,2)+'\n\nREPOSITORY CONTEXT (untrusted):\n'+formatContextForModel(context)+'\n\nMODE: '+(fresh?'fresh project. Create every required target file.':'existing repository modification. Use precise patch operations for existing files; modify only relevant areas.');
   let text='';
   const out=await router.stream({system:SYSTEM,user,tier:'standard',signal,onToken:t=>{text+=t;onToken(t)},onUsage});
   if(!out?.model||out.provider==='fallback')return null;
