@@ -51,6 +51,19 @@ test('generated site authentication marks session cookies Secure in production',
   assert.ok(source.includes('cookieHeader'));
 });
 
+test('pricing stays below the referenced monthly competitor plans', () => {
+  const plans = (await import('../src/billing/plans.js')).PLANS;
+  assert.equal(plans.pro.priceUsd, 7);
+  assert.equal(plans.team.priceUsd, 15);
+  assert.ok(plans.pro.priceUsd < 9);
+  assert.ok(plans.pro.priceUsd < 25);
+  assert.ok(plans.team.priceUsd < 18);
+  assert.ok(plans.team.priceUsd < 25);
+  const landing = read('public/landing.html');
+  assert.match(landing, /\$7<span>\/month<\/span>/);
+  assert.match(landing, /\$15<span>\/month<\/span>/);
+});
+
 test('CI runs launch readiness after starting the app', () => {
   const source = read('.github/workflows/ci.yml');
   assert.match(source, /name: Build Vibe CI/);
