@@ -31,6 +31,37 @@ async function ensureProject(){if(state.project)return true;const name=prompt('P
 async function importGitHub(){const repoInput=prompt('GitHub repository','owner/repository');if(!repoInput)return;const parts=repoInput.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/i,'').split('/').filter(Boolean);if(parts.length<2){addBubble('GitHub','Use owner/repository.',true);return;}const ref=prompt('Branch or tag (optional)','');const name=prompt('Project name (optional)',parts[1]);try{setStatus('importing');const j=await api('/api/integrations/github/import',{method:'POST',body:JSON.stringify({owner:parts[0],repo:parts[1],ref:ref||'',projectName:name||parts[1]})});addBubble('GitHub',`Imported ${parts[0]}/${parts[1]}${ref?` @ ${ref}`:''} into a new editable project.`,true);state.project=null;await loadProjects();const created=state.projects.find(x=>x.id===j.project.id);if(created)await selectProject(created);setStatus('idle');}catch(e){setStatus('error','err');addBubble('GitHub import',e.message,true)}}
 function renderFiles(){const el=$('#files');el.replaceChildren();$('#fileCount').textContent=String(state.files.length);for(const f of state.files){const e=document.createElement('button');e.className='file';e.type='button';e.textContent=f;e.onclick=async()=>{state.selectedFile=f;const j=await api(`/api/runs/${state.run.id}?file=${encodeURIComponent(f)}`);$('#filePreview').value=j.content;if(window.cvSetEditorContent)window.cvSetEditorContent(j.content,f);};el.append(e);}}
 async function loadFiles(){if(!state.run?.id)return;const j=await api(`/api/runs/${state.run.id}/files`);state.files=j.files;renderFiles();try{const x=await api(`/api/runs/${state.run.id}/inspect`);$('#diffPreview').textContent=x.diff?.stdout||'No uncommitted diff.';}catch{} }
+async function loadVisualQA(){
+ const panel=$('#visualQa'),status=$('#visualQaStatus'),verify=$('#visualVerify'),approve=$('#approveVisual');
+ if(!panel)return;
+ if(!state.run?.id){panel.textContent='Screenshots and visual baselines appear after verification.';status.textContent='not checked';verify.disabled=true;approve.disabled=true;return;}
+ verify.disabled=false;
+ try{
+  const [run,artifacts,baselines]=await Promise.all([api('/api/runs/'+state.run.id),api('/api/runs/'+state.run.id+'/artifacts'),state.project?.id?api('/api/projects/'+state.project.id+'/visual-baselines'):Promise.resolve({baselines:[]})]);
+  const verification=[...(run.evidence||[])].filter(x=>x.type==='verification').at(-1)?.payload;
+  const results=verification?.browser?.results||[];
+  panel.replaceChildren();
+  if(!results.length){panel.textContent='No browser screenshots were captured for this run.';status.textContent='no screenshots';approve.disabled=true;return;}
+  let failures=0;
+  for(const item of results){
+   const row=document.createElement('div');row.className='visual-row';
+   const meta=document.createElement('div');meta.className='visual-meta';
+   const title=document.createElement('strong');title.textContent=item.path;
+   const detail=document.createElement('span');detail.className='muted small';detail.textContent=item.visual?.skipped==='baseline_missing'?'No approved baseline':item.visual?.changedRatio!=null?(Math.round(item.visual.changedRatio*10000)/100)+'% pixels changed':'Snapshot captured';
+   meta.append(title,detail);row.append(meta);
+   const current=(artifacts.artifacts||[]).find(a=>a.type==='visual-screenshot'&&String(a.path).includes(encodeURIComponent(item.path.slice(1)||'home').replace(/%/g,'_')));
+   const diff=(artifacts.artifacts||[]).find(a=>a.type==='visual-diff'&&String(a.path).includes(encodeURIComponent(item.path.slice(1)||'home').replace(/%/g,'_')));
+   const links=document.createElement('div');links.className='visual-links';
+   if(current){const img=document.createElement('img');img.src='/api/runs/'+state.run.id+'/artifacts/'+current.id+'?inline=1';img.alt='Current '+item.path+' screenshot';img.loading='lazy';links.append(img);}
+   if(diff&&item.visual?.passed===false){const a=document.createElement('a');a.href='/api/runs/'+state.run.id+'/artifacts/'+diff.id; a.textContent='Open diff';a.target='_blank';a.rel='noreferrer';links.append(a);}
+   row.append(links);panel.append(row);
+   if(item.visual?.passed===false)failures++;
+  }
+  status.textContent=failures?'visual changes detected':'visual clean';
+  status.className='status '+(failures?'err':'ok');
+  approve.disabled=!(results.some(x=>x.screenshot));
+ }catch(e){panel.textContent=e.message;status.textContent='error';status.className='status err';approve.disabled=true;}
+}
 function handleEvent(e){
  if(e.type==='run_created'){state.run={id:e.runId,status:'running'};setStatus('running');loadRunLifecycle();}
  if(e.type==='workspace_created')addBubble('Agent',`Isolated workspace created on ${e.branch}.`,true);
@@ -40,7 +71,7 @@ function handleEvent(e){
  if(e.type==='changes_applied')addBubble('Agent','Changes applied. Starting preview verification.',true);
  if(e.type==='model_token'){if(!state.tokenBubble){state.tokenBubble=addBubble('Model','',true);}const b=state.tokenBubble.querySelector('div:last-child');b.textContent+=(e.token||'').slice(0,4000);}
  if(e.type==='preview_started'){$('#runMeta').textContent=`${e.mode} · ${e.url}`;$('#previewFrame').src=e.url;$('#previewLink').href=e.url;addBubble('Preview',`Preview ready on ${e.mode}.`,true);}
- if(e.type==='verification'||e.type==='target_verification'){if(state.run)state.run.status=e.passed?'verified':'repairing';loadRunLifecycle();setStatus(e.passed?'verified':(e.status==='blocked'?'blocked':'repairing'),e.passed?'ok':'err');renderArtifacts(e); const row=document.createElement('div');row.className='evi';row.textContent=`Attempt ${(e.attempt??0)+1}: ${e.passed?'passed':'failed'}${e.failures?.length?' — '+e.failures.join('; '):''}`;$('#evidence').prepend(row);}
+ if(e.type==='verification'||e.type==='target_verification'){if(state.run)state.run.status=e.passed?'verified':'repairing';loadRunLifecycle();setStatus(e.passed?'verified':(e.status==='blocked'?'blocked':'repairing'),e.passed?'ok':'err');renderArtifacts(e);loadVisualQA(); const row=document.createElement('div');row.className='evi';row.textContent=`Attempt ${(e.attempt??0)+1}: ${e.passed?'passed':'failed'}${e.failures?.length?' — '+e.failures.join('; '):''}`;$('#evidence').prepend(row);}
  if(e.type==='dependency_approval_required'){loadDependencies();addBubble('Dependencies','This run needs explicit package-install approval before it can continue.',true);}
  if(e.type==='review_completed'){loadRunLifecycle();addBubble('Review',e.passed?'Quality gate passed.':`Quality gate blocked the run with ${e.blockingFindings?.length||0} blocking finding(s).`,true);}
  if(e.type==='cancel_requested')loadRunLifecycle();
@@ -48,9 +79,11 @@ function handleEvent(e){
  if(e.type==='repair_applied'){addBubble('Repair',`Applied ${e.operations} constrained repair operations.`,true);loadRunLifecycle();}
  if(e.type==='committed')addBubble('Git','Verified changes committed on the isolated branch.',true);
  if(e.type==='error'){if(state.run)state.run.status='failed';setStatus('error','err');addBubble('Agent error',e.error,true);loadRunLifecycle();}
- if(e.type==='completed'){state.tokenBubble=null;state.run={id:e.result.runId,status:e.result.status};setStatus(e.result.status,e.result.status==='verified'?'ok':'err');$('#commit').disabled=e.result.status!=='verified';$('#verify').disabled=false;loadFiles();loadRunLifecycle();loadDependencies();}
+ if(e.type==='completed'){state.tokenBubble=null;state.run={id:e.result.runId,status:e.result.status};setStatus(e.result.status,e.result.status==='verified'?'ok':'err');$('#commit').disabled=e.result.status!=='verified';$('#verify').disabled=false;loadFiles();loadRunLifecycle();loadDependencies();loadVisualQA();}
 }
 async function startBuild(request){if(!await ensureProject())return;$('#timeline').replaceChildren();state.tokenBubble=null;addBubble('You',request);setStatus('running');$('#commit').disabled=true;state.run=null;$('#previewFrame').removeAttribute('src');const r=await fetch('/api/agent/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({projectId:state.project.id,sessionId:state.session?.id,request,target:$('#targetSelect').value,templateId:$('#templateSelect')?.value||''})});if(!r.body)throw new Error('Streaming is unavailable');const reader=r.body.getReader();const decoder=new TextDecoder();let buf='';while(true){const {done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});const chunks=buf.split('\n\n');buf=chunks.pop()||'';for(const chunk of chunks){const line=chunk.split('\n').find(x=>x.startsWith('data:'));if(!line)continue;try{handleEvent(JSON.parse(line.slice(6)))}catch{}}}}
+$('#visualVerify').onclick=async()=>{if(!state.run?.id)return;setStatus('verifying');try{const j=await api('/api/runs/'+state.run.id+'/verify',{method:'POST',body:'{}'});setStatus(j.result.passed?'verified':'failed',j.result.passed?'ok':'err');}catch(e){setStatus('error','err')}finally{loadVisualQA();loadFiles();}};
+$('#approveVisual').onclick=async()=>{if(!state.run?.id||!confirm('Approve the current screenshots as the visual baseline for future builds?'))return;try{await api('/api/runs/'+state.run.id+'/visual-baseline',{method:'POST',body:JSON.stringify({confirmed:true})});addBubble('Visual QA','Approved the current verified screenshots as the baseline.',true);loadVisualQA();}catch(e){addBubble('Visual QA',e.message,true);}};
 $('#verify').onclick=async()=>{if(!state.run?.id)return;setStatus('verifying');$('#verify').disabled=true;try{const j=await api(`/api/runs/${state.run.id}/verify`,{method:'POST',body:'{}'});setStatus(j.result.passed?'verified':'failed',j.result.passed?'ok':'err');$('#commit').disabled=!j.result.passed;addBubble('Verification',j.result.passed?'Current files passed verification.':'Current files failed verification; inspect the evidence.',true);}catch(e){setStatus('error','err');addBubble('Verification',e.message,true)}finally{$('#verify').disabled=false;loadFiles();}};
 $('#saveFile').onclick=async()=>{if(!state.run?.id||!state.selectedFile)return;if(window.cvSyncEditor)window.cvSyncEditor();await api(`/api/runs/${state.run.id}/files`,{method:'PUT',body:JSON.stringify({path:state.selectedFile,content:$('#filePreview').value})});addBubble('Editor',`Saved ${state.selectedFile}. Verification is required again before commit.`,true);setStatus('edited');$('#commit').disabled=true;};
 $('#cancelRun').onclick=async()=>{if(!state.run?.id)return;if(!confirm('Cancel this run? The latest checkpoint will remain recoverable.'))return;try{await api(`/api/runs/${state.run.id}/cancel`,{method:'POST',body:'{}'});state.run.status='cancelled';setStatus('cancelled','err');loadRunLifecycle();}catch(e){addBubble('Run',e.message,true)}};
