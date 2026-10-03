@@ -1,9 +1,9 @@
 {
-  "name": "codingvibes",
+  "name": "build-vibe",
   "version": "11.0.0",
   "private": true,
   "type": "module",
-  "description": "codingVibes — AI website and app builder with verified code, content-driven site kits, motion and 3D experiences.",
+  "description": "Build Vibe — AI website and app builder with verified code, content-driven site kits, motion and 3D experiences.",
   "engines": {
     "node": ">=22.0.0"
   },
