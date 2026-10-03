@@ -29,6 +29,7 @@ import {getTemplate,searchTemplates} from './templates/catalog.js';
 import {createDefaultSiteContent,normalizeSiteContent,applyContentOperation,contentSchema,contentSummary} from './site/content.js';
 import {kitForKind,SITE_KITS} from './site/kits.js';
 import {deploymentCatalog,connectProvider,disconnectProvider,deployProject,prepareDeploymentArtifact} from './deployment/index.js';
+import {beginOAuth,completeOAuth,oauthConfigured} from './deployment/oauth.js';
 import {assetType,safeAssetName,hashBuffer,makeAssetRecord,validateAssetUpload,MAX_ASSET_BYTES} from './assets/library.js';
 import {baselinePath} from './verification/visual.js';
 
@@ -91,6 +92,9 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   if(method==='GET'&&u.pathname==='/api/targets')return sendJson(res,200,{ok:true,targets:listTargets()});
   if(method==='GET'&&u.pathname==='/api/projects')return sendJson(res,200,{ok:true,projects:store.listProjects(userId)});
   if(method==='GET'&&u.pathname==='/api/deployment/providers')return sendJson(res,200,{ok:true,providers:deploymentCatalog(),connected:store.listProviderConnections(userId)});
+  if(/^\/api\/deployment\/providers\/[^/]+\/oauth$/.test(u.pathname)&&method==='GET'){const provider=pathParam(u.pathname,'/api/deployment/providers/').replace(/\/oauth$/,'');try{const location=beginOAuth(store,provider,{userId,redirectAfter:'/app'});res.writeHead(302,{location});res.end();return;}catch(e){return sendJson(res,e.status||503,{ok:false,error:e.message})}}
+  if(/^\/api\/deployment\/oauth\/[^/]+\/callback$/.test(u.pathname)&&method==='GET'){const provider=pathParam(u.pathname,'/api/deployment/oauth/').replace(/\/callback$/,'');try{const result=await completeOAuth(store,provider,{code:u.searchParams.get('code'),state:u.searchParams.get('state')});connectProvider(store,userId,provider,{secret:result.secret,metadata:result.metadata});res.writeHead(302,{location:'/app?deployment=connected&provider='+encodeURIComponent(provider)});res.end();return;}catch(e){res.writeHead(302,{location:'/app?deployment=error&provider='+encodeURIComponent(provider)+'&message='+encodeURIComponent(String(e.message||e).slice(0,240))});res.end();return}}
+
   if(/^\/api\/deployment\/providers\/[^/]+\/connect$/.test(u.pathname)&&method==='POST'){const provider=pathParam(u.pathname,'/api/deployment/providers/').replace(/\/connect$/,'');const b=await readJson(req,MAX_BODY);try{return sendJson(res,200,{ok:true,connection:connectProvider(store,userId,provider,{secret:String(b.secret||''),metadata:b.metadata&&typeof b.metadata==='object'?b.metadata:{}})})}catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message})}}
   if(/^\/api\/deployment\/providers\/[^/]+$/.test(u.pathname)&&method==='DELETE'){const provider=pathParam(u.pathname,'/api/deployment/providers/');return sendJson(res,200,{ok:true,connection:disconnectProvider(store,userId,provider)})}
   if(/^\/api\/projects\/[^/]+\/deployments$/.test(u.pathname)&&method==='GET'){const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});return sendJson(res,200,{ok:true,deployments:store.listDeployments(projectId,userId)})}
