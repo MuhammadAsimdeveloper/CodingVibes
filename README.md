@@ -1,8 +1,8 @@
-# codingVibes
+# Build Vibe
 
 **AI coding platform that ships VERIFIED software, not just code.**
 
-codingVibes turns natural-language product requirements into a target-aware application contract, plans and model-generates the correct project shape, uses bounded repository context, executes web builds in an isolated preview runtime, performs target-specific source/toolchain verification for mobile/native/desktop projects, runs bounded AI repair when configured, and leaves the changeset reviewable before an explicit commit.
+Build Vibe turns natural-language product requirements into a target-aware application contract, plans and model-generates the correct project shape, uses bounded repository context, executes web builds in an isolated preview runtime, performs target-specific source/toolchain verification for mobile/native/desktop projects, runs bounded AI repair when configured, and leaves the changeset reviewable before an explicit commit.
 
 ## Core architecture
 
@@ -72,7 +72,7 @@ Repository content is untrusted data, never an instruction source. File paths re
 
 ## Design and UI quality layer
 
-The application contract now carries an explicit design-system intent: palette, typography family, radius language, elevation, layout pattern, motion preset, accessibility expectations, responsive breakpoints, and 3D/canvas/glass/parallax effects. When browser verification is available, codingVibes also checks document title, language, viewport metadata, headings, image alt text, accessible control names, internal links, and horizontal overflow in addition to console/request failures.
+The application contract now carries an explicit design-system intent: palette, typography family, radius language, elevation, layout pattern, motion preset, accessibility expectations, responsive breakpoints, and 3D/canvas/glass/parallax effects. When browser verification is available, Build Vibe also checks document title, language, viewport metadata, headings, image alt text, accessible control names, internal links, and horizontal overflow in addition to console/request failures.
 
 This follows the direction of current AI design/build systems that combine prompt generation with visual refinement and code-backed editing, such as Figma Make, Webflow AI, and Wix Harmony. citeturn985444search0turn889226search0turn889226search2
 
