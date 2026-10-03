@@ -40,7 +40,7 @@ test('model generator accepts a safe model file set',async()=>{
   ]};const raw=JSON.stringify(payload);for(let i=0;i<raw.length;i+=20)onToken(raw.slice(i,i+20));return{provider:'fake',model:'fake-model'};}};
   const result=await generateProjectWithModel({request:'Build a landing page',spec:analyzeRequirements('Build a landing page'),context:{tree:['README.md'],files:[{path:'README.md',content:'# app'}],truncated:false,totalBytes:5},router});
   assert.equal(result.source,'model');
-  assert.equal(result.files.length,6);
+  assert.equal(result.files.length,8);assert.ok(result.files.some(x=>x.path==='public/content/site.json'));assert.ok(result.files.some(x=>x.path==='public/content-runtime.js'));
 });
 
 test('model generator blocks protected paths',async()=>{
