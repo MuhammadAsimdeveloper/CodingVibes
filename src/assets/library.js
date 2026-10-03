@@ -7,7 +7,7 @@ const EXTENSIONS={png:'image',jpg:'image',jpeg:'image',webp:'image',gif:'image',
 const ROLES=new Set(['site-image','site-video','product-image','product-model','product-video','scene-model','scene-poster','scene-video','property-image','property-model','property-video','font','texture','document','other']);
 
 export function safeAssetName(name='asset'){
-  const raw=String(name||'asset').normalize('NFKC').replace(/[\/\\\\]/g,'_').replace(/[^a-zA-Z0-9._-]/g,'_').replace(/_+/g,'_').replace(/^\.+/,'').slice(0,160);
+  const raw=String(name||'asset').normalize('NFKC').replace(/[\/\\\\]/g,'_').replace(/[^a-zA-Z0-9._-]/g,'_').replace(/_+/g,'_').replace(/^[._]+/,'').slice(0,160);
   return raw||'asset';
 }
 export function assetType({name='',mime=''}={}){
