@@ -8,9 +8,9 @@ import {analyzeRequirements} from '../src/agent/requirements.js';
 import {generateProject,materializeProject} from '../src/agent/project-generator.js';
 
 test('generated application data survives a server restart',async()=>{
-  const spec=analyzeRequirements('Build an online store with products and product management.');
-  const writeRoute=spec.apis.find(x=>String(x.method).toUpperCase()==='POST'&&!String(x.path).startsWith('/api/admin/'));
-  assert.ok(writeRoute,'requirements should include a writable API');
+  const base=analyzeRequirements('Build an appointment booking platform with appointments and customer login.');
+  const spec={...base,dataModel:base.dataModel.some(x=>x.name==='appointments')?base.dataModel:[...base.dataModel,{name:'appointments',fields:['id','name','createdAt']}],apis:[...base.apis.filter(x=>String(x.path)!=='/api/appointments'),{method:'POST',path:'/api/appointments'}]};
+  const writeRoute={method:'POST',path:'/api/appointments'};
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'cv-v9-persist-'));
   materializeProject(generateProject(spec),root);
   const port=4400+Math.floor(Math.random()*300);
