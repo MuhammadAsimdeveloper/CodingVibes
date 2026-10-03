@@ -24,11 +24,11 @@ export const PROVIDERS={
  github:{id:'github',label:'GitHub',type:'source',auth:'oauth',supports:{static:true,server:true},description:'Create or update a GitHub repository with the portable project source.',
   async deploy({artifact,credentials,options={}}){
    const token=credentials?.accessToken;if(!token)throw authRequired('github');const user=await githubApi('/user',{token});const owner=user.login,repo=safeName(options.repoName||artifact.projectMetadata.name),branch=String(options.branch||'main').replace(/[^A-Za-z0-9._/-]/g,'-').slice(0,120)||'main';
-   let existing;try{existing=await githubApi('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo),{token})}catch{}
-   if(!existing)existing=await githubApi('/user/repos',{token,method:'POST',body:{name:repo,private:options.private!==false,description:'Generated with Coding Vibes',auto_init:false}});
+   let existing=null;let created=false;try{existing=await githubApi('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo),{token})}catch{}
+   if(!existing){existing=await githubApi('/user/repos',{token,method:'POST',body:{name:repo,private:options.private!==false,description:'Generated with Coding Vibes',auto_init:false}});created=true;}
    const temp=fs.mkdtempSync(path.join(process.cwd(),'data','deploy-tmp-'));try{
      const filesDir=path.join(temp,'site');const env=await gitEnv(token);
-     if(existing?.id){await exec('git',['clone','--depth','1','--single-branch','--branch',branch,'https://github.com/'+owner+'/'+repo+'.git',filesDir],{cwd:temp,env,timeout:180000}).catch(async()=>{await exec('git',['clone','--depth','1','https://github.com/'+owner+'/'+repo+'.git',filesDir],{cwd:temp,env,timeout:180000});await exec('git',['checkout','-B',branch],{cwd:filesDir,env})})}
+     if(existing?.id&&!created){await exec('git',['clone','--depth','1','--single-branch','--branch',branch,'https://github.com/'+owner+'/'+repo+'.git',filesDir],{cwd:temp,env,timeout:180000}).catch(async()=>{await exec('git',['clone','--depth','1','https://github.com/'+owner+'/'+repo+'.git',filesDir],{cwd:temp,env,timeout:180000});await exec('git',['checkout','-B',branch],{cwd:filesDir,env})})}
      else {fs.mkdirSync(filesDir,{recursive:true});await exec('git',['init'],{cwd:filesDir,env});await exec('git',['checkout','-b',branch],{cwd:filesDir,env})}
      const gitFiles=fs.readdirSync(filesDir,{withFileTypes:true}).filter(e=>e.name!=='.git');for(const e of gitFiles){fs.rmSync(path.join(filesDir,e.name),{recursive:true,force:true})}
      for(const f of artifact.files){const from=path.join(artifact.root,f.path),to=path.join(filesDir,f.path);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)}
