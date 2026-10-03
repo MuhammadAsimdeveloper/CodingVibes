@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const html=()=>fs.readFileSync('landing.html','utf8');
-const css=()=>fs.readFileSync('landing.css','utf8');
-const js=()=>fs.readFileSync('landing.js','utf8');
+const ROOT='public/';
+const html=()=>fs.readFileSync(ROOT+'landing.html','utf8');
+const css=()=>fs.readFileSync(ROOT+'landing.css','utf8');
+const js=()=>fs.readFileSync(ROOT+'landing.js','utf8');
 
 test('landing experience has the complete product narrative and conversion surfaces',()=>{
   const h=html();
@@ -16,7 +17,7 @@ test('landing experience has the complete product narrative and conversion surfa
 
 test('reference screenshot surfaces have dedicated structural hooks',()=>{
   const h=html(),c=css();
-  assert.ok(fs.existsSync('hero-mockup.svg'));
+  assert.ok(fs.existsSync(ROOT+'hero-mockup.svg'));
   for(const token of ['.topbar','.hero-grid','.category-grid','.featured-grid','.proof-bar']) assert.ok(c.includes(token),token);
   for(const token of ['Popular Templates','Featured Templates','Get Started Free','Sign In']) assert.ok(h.includes(token),token);
 });
