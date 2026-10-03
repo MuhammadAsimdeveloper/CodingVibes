@@ -39,7 +39,12 @@ test('landing page remains CSP-safe without inline executable code or style muta
   assert.equal(source.includes('.style'), false);
   assert.equal(source.includes('<style'), false);
   const html = read('public/landing.html');
-  assert.doesNotMatch(html, /<script(?![^>]*src=)(?![^>]*type=[\"']application\\/ld\\+json[\"'])[^>]*>/i);
+  const inlineScriptAttrs=[...html.matchAll(/<script\\b([^>]*)>/gi)].map(match=>match[1]);
+  for(const attrs of inlineScriptAttrs){
+    const external=/\\bsrc\\s*=/.test(attrs);
+    const structuredData=/\\btype=[\"']application\\/ld\\+json[\"']/.test(attrs);
+    assert.ok(external||structuredData,'landing page contains an executable inline script');
+  }
   assert.doesNotMatch(html, /\sstyle\s*=/i);
 });
 
