@@ -39,7 +39,7 @@ test('landing page remains CSP-safe without inline executable code or style muta
   assert.equal(source.includes('.style'), false);
   assert.equal(source.includes('<style'), false);
   const html = read('public/landing.html');
-  assert.doesNotMatch(html, /<script(?![^>]*src=)[^>]*>/i);
+  assert.doesNotMatch(html, /<script(?![^>]*src=)(?![^>]*type=[\"']application\\/ld\\+json[\"'])[^>]*>/i);
   assert.doesNotMatch(html, /\sstyle\s*=/i);
 });
 
