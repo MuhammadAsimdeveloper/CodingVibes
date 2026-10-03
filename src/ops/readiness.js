@@ -16,6 +16,10 @@ export function readiness({router}={}) {
   if(production && process.env.CODINGVIBES_ENABLE_BROWSER!=='true')warnings.push('browser_verification_disabled');
   if(!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET)warnings.push('stripe_billing_not_configured');
   if(!process.env.CODINGVIBES_DEPENDENCY_NETWORK)warnings.push('dependency_network_not_configured');
+  const admins=String(process.env.CODINGVIBES_SUPERADMIN_EMAILS||'').split(',').map(x=>x.trim()).filter(Boolean);
+  if(production&&admins.length===0)blockers.push('superadmin_allowlist_missing');
+  const backupRoot=process.env.CODINGVIBES_BACKUP_ROOT||'./data/backups';
+  try{fs.mkdirSync(backupRoot,{recursive:true});fs.accessSync(backupRoot,fs.constants.R_OK|fs.constants.W_OK);}catch{if(production)blockers.push('backup_directory_not_writable');else warnings.push('backup_directory_not_writable');}
   if(!process.env.GITHUB_TOKEN)warnings.push('server_github_token_not_configured');
   return {ready:blockers.length===0,environment:production?'production':'development',runtime,blockers,warnings,model:{configured:Boolean(model.configured),provider:model.provider||null},timestamp:new Date().toISOString(),quotaPlan:getPlan('free').id};
 }
