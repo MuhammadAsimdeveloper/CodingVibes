@@ -135,3 +135,14 @@ Generated web projects now receive a concrete SEO contract covering semantic HTM
 Use Hostinger as the primary Node.js runtime for the full application, with Cloudflare as the DNS/CDN/WAF edge. See `docs/deploy-hostinger.md` and `docs/deploy-cloudflare.md`.
 
 Static-only generated websites can be exported to Cloudflare Pages separately. The full Coding Vibes control plane should not be moved directly into a Pages Function without replacing its Node/SQLite persistence layer.
+
+
+## 5.1 template studio and immersive 3D
+
+Version 5.1 adds a curated template studio with 27 starter blueprints spanning SaaS, agency, commerce, hospitality, real estate, creative, technology, education and immersive experiences. Templates are searchable and categorized in the builder; custom user requirements always override template copy.
+
+Premium templates include an interactive real-estate tour recipe: Three.js rendering, GLB/GLTF model loading, procedural-house fallback, orbit/zoom/pan controls, room hotspots, floor-plan-ready UI, camera-tour choreography, MP4/WebM playback and user-initiated browser recording. The same runtime can be reused by product, automotive, architecture and immersive-story templates.
+
+The model generator receives an explicit experience recipe so an existing basic site can be transformed using precise patches instead of being replaced wholesale.
+
+Research grounding for this stage used current public documentation and product pages for Replit, Spline, Rive, Webflow templates, Dora, and Three.js. Those references inform capability patterns only; generated template content remains original and code-owned.
