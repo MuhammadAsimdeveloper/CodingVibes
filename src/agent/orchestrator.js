@@ -127,10 +127,15 @@ export async function executeBuild({request,userId,sessionId,project,store,route
      if(fallback)plan={...fallback,target:target.id};
      else {const base=generateProject(spec);plan={...base,source:'deterministic',target:target.id};}
    }
-   store.addEvidence(run.id,'generation',{source:plan.source,model:plan.model||'deterministic',target:target.id,targetSummary:targetSummary(target),summary:plan.summary,files:plan.files.map(f=>f.path),manifestHash:plan.manifestHash||null});
+   const operations=Array.isArray(plan.operations)&&plan.operations.length?plan.operations:plan.files.map(f=>({type:'write',path:f.path,content:f.content}));
+   const operationPaths=[...new Set(operations.map(op=>op.path||op.from).filter(Boolean))];
+   store.addEvidence(run.id,'generation',{source:plan.source,model:plan.model||'deterministic',target:target.id,targetSummary:targetSummary(target),summary:plan.summary,operations:operations.map(op=>({type:op.type,path:op.path,from:op.from,to:op.to})),manifestHash:plan.manifestHash||null});
    store.addEvidence(run.id,'dependency_plan',inspectDependencies(ws.worktree,target));
-   changeset=store.createChangeset(run.id,{summary:plan.summary,operations:plan.files.map(f=>({type:'write',path:f.path,content:f.content}))});emit({type:'changeset_proposed',runId:run.id,changesetId:changeset.id,files:plan.files.length,source:plan.source,manifestHash:plan.manifestHash||null,target:target.id});
-   const tools=new ToolRegistry({workspace:ws.worktree,store,runId:run.id,confirm:async()=>true,signal});for(const file of plan.files){ensureActiveRun(store,run,userId,signal);await tools.call('write',file);}store.updateChangeset(changeset.id,{status:'applied'});const appliedCheckpoint=createCheckpoint(ws.worktree,checkpointRoot(),'changes-applied');store.createCheckpoint(run.id,appliedCheckpoint.name,appliedCheckpoint.path,{changesetId:changeset.id});emit({type:'changes_applied',runId:run.id,changesetId:changeset.id,target:target.id});
+   changeset=store.createChangeset(run.id,{summary:plan.summary,operations});
+   emit({type:'changeset_proposed',runId:run.id,changesetId:changeset.id,files:operationPaths.length,operations:operations.length,source:plan.source,manifestHash:plan.manifestHash||null,target:target.id});
+   const tools=new ToolRegistry({workspace:ws.worktree,store,runId:run.id,confirm:async()=>true,signal});
+   for(const operation of operations){ensureActiveRun(store,run,userId,signal);await tools.call(operation.type,operation);}
+   store.updateChangeset(changeset.id,{status:'applied'});const appliedCheckpoint=createCheckpoint(ws.worktree,checkpointRoot(),'changes-applied');store.createCheckpoint(run.id,appliedCheckpoint.name,appliedCheckpoint.path,{changesetId:changeset.id});emit({type:'changes_applied',runId:run.id,changesetId:changeset.id,target:target.id});
    for(let attempt=0;attempt<=MAX_REPAIR_CYCLES;attempt++){ensureActiveRun(store,run,userId,signal);
      if(isLiveWebTarget(target)){
        const checked=await verifyTarget({workspace:ws.worktree,spec,target,run:{...run,user_id:userId},store,onEvent:emit,attempt,signal});finalEvidence=checked.evidence;preview=checked.preview||null;
