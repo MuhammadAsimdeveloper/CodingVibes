@@ -1,6 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {Store} from './db/store.js';
@@ -89,8 +89,16 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   if(method==='GET'&&u.pathname==='/api/fleet')return sendJson(res,200,{ok:true,version:CODINGVIBES_VERSION,...fleetStatus(store)});
   if(method==='GET'&&u.pathname==='/api/targets')return sendJson(res,200,{ok:true,targets:listTargets()});
   if(method==='GET'&&u.pathname==='/api/projects')return sendJson(res,200,{ok:true,projects:store.listProjects(userId)});
+  if(/^\/api\/projects\/[^/]+\/assets\/[^/]+\/attach$/.test(u.pathname)&&method==='POST'){
+    const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5];const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});const b=await readJson(req,MAX_BODY),collection=String(b.collection||''),recordId=String(b.recordId||''),mode=String(b.mode||asset.kind);let content=store.getProjectContent(projectId,userId);if(!content)return sendJson(res,409,{ok:false,error:'project_content_not_initialized'});let patch={};const ref={assetId:asset.id,url:asset.public_path,poster:'',alt:asset.name,scale:1};
+    if(collection==='products'){if(mode==='image')patch={images:[...(content.products.find(x=>x.id===recordId)?.images||[]),asset.public_path]};else if(mode==='video')patch={video:ref};else if(mode==='model')patch={model:ref};else return sendJson(res,400,{ok:false,error:'unsupported_product_asset_mode'});}
+    else if(collection==='scenes'){if(mode==='poster'||mode==='image')patch={poster:ref};else if(mode==='video')patch={video:ref};else if(mode==='model')patch={model:ref};else return sendJson(res,400,{ok:false,error:'unsupported_scene_asset_mode'});}
+    else if(collection==='properties'){if(mode==='image')patch={images:[...(content.properties.find(x=>x.id===recordId)?.images||[]),asset.public_path]};else if(mode==='video')patch={video:ref};else if(mode==='model')patch={model:ref};else if(mode==='poster'||mode==='floorplan')patch={floorplan:ref};else return sendJson(res,400,{ok:false,error:'unsupported_property_asset_mode'});}
+    else return sendJson(res,400,{ok:false,error:'asset_attachment_collection_unsupported'});
+    try{content=applyContentOperation(content,{type:'update',collection,id:recordId,patch},{kind:content.kit});content.meta={...(content.meta||{}),managed:true};content=store.upsertProjectContent(projectId,userId,content);syncProjectContent(projectId,userId,content);return sendJson(res,200,{ok:true,content,asset,attached:{collection,recordId,mode}});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}
+  }
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='GET'){
-    const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});return sendJson(res,200,{ok:true,assets:store.listProjectAssets(projectId,userId)});
+    const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const kind=u.searchParams.get('kind')||'',role=u.searchParams.get('role')||'';const assets=store.listProjectAssets(projectId,userId).filter(a=>(!kind||a.kind===kind)&&(!role||a.role===role));return sendJson(res,200,{ok:true,assets});
   }
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='POST'){
     const projectId=pathParam(u.pathname,'/api/projects/'),project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});
@@ -104,6 +112,12 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   }
   if(/^\/api\/projects\/[^/]+\/assets\/[^/]+\/file$/.test(u.pathname)&&method==='GET'){
     const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5];const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});const file=path.resolve(project.repo_path,'public','assets',path.basename(asset.public_path));const assetRoot=path.resolve(project.repo_path,'public','assets');if(!(file===assetRoot||file.startsWith(assetRoot+path.sep))||!fs.existsSync(file))return sendJson(res,404,{ok:false,error:'asset_file_not_found'});const stat=fs.statSync(file);if(stat.size!==asset.size)return sendJson(res,409,{ok:false,error:'asset_size_changed'});res.writeHead(200,{'content-type':asset.mime,'content-length':String(stat.size),'content-disposition':'attachment; filename="'+safeAssetName(asset.name)+'"','cache-control':'private, no-store'});fs.createReadStream(file).pipe(res);return;
+  }
+  if(/^\/api\/runs\/[^/]+\/visual-baseline$/.test(u.pathname)&&method==='POST'){
+    const runId=pathParam(u.pathname,'/api/runs/').replace(/\/visual-baseline$/,'');const run=store.getRun(runId,userId);if(!run)return sendJson(res,404,{ok:false,error:'not_found'});const b=await readJson(req,MAX_BODY);if(!b.confirmed)return sendJson(res,400,{ok:false,error:'explicit_confirmation_required'});const session=store.getSession(run.session_id,userId),projectId=session?.project_id;if(!projectId)return sendJson(res,409,{ok:false,error:'project_not_found'});const verification=store.listEvidence(runId).filter(x=>x.type==='verification').at(-1)?.payload;const results=verification?.browser?.results||[];if(!results.length)return sendJson(res,409,{ok:false,error:'no_visual_results'});
+    const root=path.resolve(process.env.CODINGVIBES_VISUAL_BASELINE_ROOT||path.join(process.cwd(),'data','visual-baselines'),projectId);fs.mkdirSync(root,{recursive:true});const saved=[];
+    for(const item of results){if(!item.screenshot||!fs.existsSync(item.screenshot))continue;const dest=baselinePath(root,item.path);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(item.screenshot,dest);const sha=createHash('sha256').update(fs.readFileSync(dest)).digest('hex');const base=store.upsertVisualBaseline(projectId,userId,{route:item.path,storedPath:dest,size:fs.statSync(dest).size,sha256:sha,width:item.visual?.width||item.ui?.documentWidth||null,height:item.visual?.height||null});saved.push({...base,stored_path:undefined});}
+    store.addEvidence(runId,'visual_baseline_approved',{projectId,routes:saved.map(x=>x.route),count:saved.length});return sendJson(res,saved.length?200:409,{ok:Boolean(saved.length),baselines:saved});
   }
   if(/^\/api\/projects\/[^/]+\/visual-baselines$/.test(u.pathname)&&method==='GET'){
     const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});return sendJson(res,200,{ok:true,baselines:store.listVisualBaselines(projectId,userId)});
