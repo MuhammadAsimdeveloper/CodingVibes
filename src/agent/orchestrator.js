@@ -24,6 +24,7 @@ import {createTaskGraph,syncTaskForEvent,cancelTaskGraph} from './task-graph.js'
 import {buildRepositoryIndex} from './repository-index.js';
 import {createCheckpoint} from '../git/checkpoints.js';
 import {reviewWorkspace,reviewWithModel} from './review.js';
+import {createDefaultSiteContent,applyContentOperation} from '../site/content.js';
 
 async function collectSourceText(workspace){let out='';const walk=dir=>{if(!fs.existsSync(dir)||out.length>350000)return;for(const name of fs.readdirSync(dir)){if(['.git','node_modules','.codingvibes'].includes(name))continue;const full=path.join(dir,name),st=fs.lstatSync(full);if(st.isDirectory())walk(full);else if(/\.(js|jsx|ts|tsx|html|css|json|dart|kt|swift|rs|yaml|yml)$/.test(name)){try{out+=fs.readFileSync(full,'utf8')+'\n'}catch{}}}};walk(workspace);return out.slice(0,350000)}
 function scrubText(text){return String(text??'').slice(0,12000);}
@@ -128,16 +129,28 @@ export async function executeBuild({request,userId,sessionId,project,store,route
      else {const base=generateProject(spec);plan={...base,source:'deterministic',target:target.id};}
    }
    const operations=Array.isArray(plan.operations)&&plan.operations.length?plan.operations:plan.files.map(f=>({type:'write',path:f.path,content:f.content}));
+   const contentOperations=Array.isArray(plan.contentOperations)?plan.contentOperations:[];
    const operationPaths=[...new Set(operations.map(op=>op.path||op.from).filter(Boolean))];
-   store.addEvidence(run.id,'generation',{source:plan.source,model:plan.model||'deterministic',target:target.id,targetSummary:targetSummary(target),summary:plan.summary,operations:operations.map(op=>({type:op.type,path:op.path,from:op.from,to:op.to})),manifestHash:plan.manifestHash||null});
+   store.addEvidence(run.id,'generation',{source:plan.source,model:plan.model||'deterministic',target:target.id,targetSummary:targetSummary(target),summary:plan.summary,operations:operations.map(op=>({type:op.type,path:op.path,from:op.from,to:op.to})),contentOperations:contentOperations.map(op=>({collection:op.collection,type:op.type,id:op.id})),manifestHash:plan.manifestHash||null});
    store.addEvidence(run.id,'dependency_plan',inspectDependencies(ws.worktree,target));
    changeset=store.createChangeset(run.id,{summary:plan.summary,operations});
    emit({type:'changeset_proposed',runId:run.id,changesetId:changeset.id,files:operationPaths.length,operations:operations.length,source:plan.source,manifestHash:plan.manifestHash||null,target:target.id});
    const tools=new ToolRegistry({workspace:ws.worktree,store,runId:run.id,confirm:async()=>true,signal});
    for(const operation of operations){ensureActiveRun(store,run,userId,signal);await tools.call(operation.type,operation);}
    store.updateChangeset(changeset.id,{status:'applied'});
-   const projectContent=store.getProjectContent(project.id,userId);
+   let projectContent=store.getProjectContent(project.id,userId);
    const contentFile=path.join(ws.worktree,'public','content','site.json');
+   if(contentOperations.length){
+     try{
+       if(!projectContent)projectContent=createDefaultSiteContent({kind:spec.siteKind||'business',templateId:spec.siteTemplateId||'',templateLabel:spec.siteTemplateLabel||'',request:spec.request});
+       for(const operation of contentOperations){projectContent=applyContentOperation(projectContent,operation,{kind:projectContent.kit||spec.siteKind||'business'});}
+       projectContent.meta={...(projectContent.meta||{}),managed:true};
+       projectContent=store.upsertProjectContent(project.id,userId,projectContent);
+       fs.mkdirSync(path.dirname(contentFile),{recursive:true});fs.writeFileSync(contentFile,JSON.stringify(projectContent,null,2)+'\n','utf8');
+       store.addEvidence(run.id,'content_operations',{count:contentOperations.length,operations:contentOperations});
+     }catch(e){store.addEvidence(run.id,'content_operations_error',{error:e.message,operations:contentOperations});}
+   }
+   projectContent=store.getProjectContent(project.id,userId);
    if(projectContent?.meta?.managed){fs.mkdirSync(path.dirname(contentFile),{recursive:true});fs.writeFileSync(contentFile,JSON.stringify(projectContent,null,2)+'\n','utf8');store.addEvidence(run.id,'content_sync',{source:'project',managed:true});}
    else if(fs.existsSync(contentFile)){try{const generatedContent=JSON.parse(fs.readFileSync(contentFile,'utf8'));store.upsertProjectContent(project.id,userId,{...generatedContent,meta:{...(generatedContent.meta||{}),managed:false}});store.addEvidence(run.id,'content_sync',{source:'generated',managed:false});}catch(e){store.addEvidence(run.id,'content_sync_error',{error:e.message});}}
    const appliedCheckpoint=createCheckpoint(ws.worktree,checkpointRoot(),'changes-applied');store.createCheckpoint(run.id,appliedCheckpoint.name,appliedCheckpoint.path,{changesetId:changeset.id});emit({type:'changes_applied',runId:run.id,changesetId:changeset.id,target:target.id});
@@ -168,7 +181,7 @@ export async function executeBuild({request,userId,sessionId,project,store,route
    writeManifest(ws.worktree,{version:'evidence.v3',runId:run.id,status:finalStatus,branch:ws.branch,baseSha:ws.baseSha,spec,target,verification:finalEvidence,review});
    if(finalStatus==='verified')store.updateChangeset(changeset.id,{status:'verified'});else if(finalStatus==='failed')store.updateChangeset(changeset.id,{status:'failed'});
    store.updateGoal(run.id,{status:finalStatus==='verified'?'completed':finalStatus==='blocked'?'blocked':'failed',metadata:{target:target.id,reviewPassed:review?.passed??null}});
-   const result={runId:run.id,workspace:ws.worktree,branch:ws.branch,spec,target,verification:finalEvidence,review,evidence:store.listEvidence(run.id),changesets:store.listChangesets(run.id)};
+   const result={runId:run.id,workspace:ws.worktree,branch:ws.branch,spec,target,contentOperations,evidence:store.listEvidence(run.id),verification:finalEvidence,review,evidence:store.listEvidence(run.id),changesets:store.listChangesets(run.id)};
    store.addMessage(sessionId,'assistant',finalStatus==='verified'?'Build verified, reviewed, and ready for commit.':finalStatus==='blocked'?'Build is blocked by toolchain or review findings.':'Build finished with verification failures.',{runId:run.id,status:finalStatus,target:target.id});emit({type:'completed',runId:run.id,result:{runId:run.id,status:finalStatus,branch:ws.branch,spec,target:target.id,reviewPassed:review?.passed??null}});
    if(commit&&finalStatus==='verified'){const c=await commitWorkspace(ws.worktree,`codingVibes: ${spec.request.slice(0,60)}`);if(c.ok){const sha=c.stdout.match(/\[[^ ]+ ([0-9a-f]+)\]/)?.[1]||null;store.updateChangeset(changeset.id,{status:'committed',commit_sha:sha});emit({type:'committed',runId:run.id,stdout:c.stdout});}}
    store.updateRun(run.id,userId,{status:finalStatus});return {...result,events:store.listEvents(run.id,userId)};
