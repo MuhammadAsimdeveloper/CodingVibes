@@ -75,6 +75,82 @@ const cvWorkspace=(function(){
       var text=b.dataset.prompt.toLowerCase(),inferred=text.indexOf('fix')>=0?'debug':text.indexOf('review')>=0?'review':'modify';setMode(inferred);
     }});
   }
+  function createContentStudio(){
+    var composer=q('.composer');if(!composer||q('#contentStudio'))return;
+    var box=document.createElement('details');box.id='contentStudio';box.className='content-studio';
+    box.innerHTML='<summary>Content Studio <span id="contentSummary" class="muted small">products, services, portfolio & more</span></summary>'+
+      '<div class="content-toolbar"><select id="contentCollection" aria-label="Content collection"></select><input id="contentSearch" placeholder="Search records…"><button type="button" id="contentNew" class="tool-button">New</button><button type="button" id="contentExport" class="tool-button">Export</button><button type="button" id="contentImport" class="tool-button">Import JSON</button><input id="contentImportFile" type="file" accept="application/json" hidden></div>'+
+      '<div class="content-layout"><div id="contentRecords" class="content-records"></div><form id="contentEditor" class="content-editor"></form></div>'+
+      '<div id="contentHint" class="muted small">Edit structured content without rewriting the visual template.</div>';
+    composer.insertBefore(box,composer.querySelector('.composer-row'));
+    var collection=q('#contentCollection',box),search=q('#contentSearch',box),records=q('#contentRecords',box),editor=q('#contentEditor',box),hint=q('#contentHint',box);
+    var content=null,schema=null,currentCollection='',currentId=null;
+    function selectedTemplate(){return q('#templateSelect')?.value||''}
+    async function fetchContent(){
+      var projectId=window.cvProjectId;if(!projectId)return;
+      var url='/api/projects/'+encodeURIComponent(projectId)+'/content?templateId='+encodeURIComponent(selectedTemplate());
+      try{var j=await fetch(url).then(r=>{if(!r.ok)throw new Error('content_unavailable');return r.json()});content=j.content;schema=j.schema;fillCollections();renderRecords();renderEditor();var summary=q('#contentSummary',box);if(summary)summary.textContent=(content.brand?.name||'Site')+' · '+Object.entries(j.summary?.counts||{}).filter(function(x){return x[1]}).map(function(x){return x[0]+': '+x[1]}).slice(0,3).join(' · ');}catch(e){hint.textContent='Content Studio: '+e.message;}}
+    function fillCollections(){
+      var cols=(schema?.editableCollections||[]).filter(function(x){return Array.isArray(content?.[x.name])});
+      collection.replaceChildren(...cols.map(function(c){var o=document.createElement('option');o.value=c.name;o.textContent=c.label+' ('+(content[c.name]?.length||0)+')';return o}));
+      if(!currentCollection||!content?.[currentCollection])currentCollection=cols[0]?.name||'products';
+      collection.value=currentCollection;
+    }
+    function items(){return Array.isArray(content?.[currentCollection])?content[currentCollection]:[]}
+    function renderRecords(){
+      var term=(search.value||'').toLowerCase().trim();records.replaceChildren();
+      items().filter(function(x){return !term||JSON.stringify(x).toLowerCase().includes(term)}).forEach(function(item,i){
+        var row=document.createElement('button');row.type='button';row.className='content-record'+(item.id===currentId?' active':'');
+        var title=document.createElement('strong');title.textContent=item.title||item.name||item.handle||item.id;
+        var meta=document.createElement('span');meta.className='muted small';meta.textContent=(item.category||item.status||'record')+(item.price!=null?' · '+item.currency+' '+item.price:'');
+        row.append(title,meta);row.onclick=function(){currentId=item.id;renderRecords();renderEditor()};records.append(row);
+      });
+      if(!records.children.length){var empty=document.createElement('div');empty.className='muted small';empty.textContent='No records yet. Use New to add one.';records.append(empty);}
+    }
+    function input(name,label,value,type){
+      var wrap=document.createElement('label');wrap.className='content-field';var l=document.createElement('span');l.className='muted small';l.textContent=label;var el=document.createElement(type==='textarea'?'textarea':'input');el.name=name;el.value=value==null?'':String(value);if(type==='number')el.type='number';else if(type!=='textarea')el.type=type==='url'?'url':'text';if(type==='textarea')el.rows=name==='description'?5:3;wrap.append(l,el);return wrap;
+    }
+    function renderEditor(){
+      editor.replaceChildren();var item=items().find(function(x){return x.id===currentId})||null;var isProduct=currentCollection==='products';
+      var head=document.createElement('div');head.className='content-editor-head';var h=document.createElement('strong');h.textContent=item?'Edit '+(item.title||item.name||'record'):'New '+currentCollection.replace(/([A-Z])/g,' $1');head.append(h);editor.append(head);
+      editor.append(input('title','Title / name',item?.title||item?.name||''));
+      editor.append(input('description','Description',item?.description||'','textarea'));
+      editor.append(input('image','Primary image URL',item?.image||item?.images?.[0]||'','url'));
+      if(isProduct){
+        var grid=document.createElement('div');grid.className='content-field-grid';
+        grid.append(input('price','Price',item?.price??0,'number'),input('compareAtPrice','Compare-at price',item?.compareAtPrice??'','number'),input('sku','SKU',item?.sku||''),input('inventory','Inventory',item?.inventory??0,'number'),input('currency','Currency',item?.currency||content?.settings?.currency||'USD'),input('category','Category',item?.category||''));
+        editor.append(grid);editor.append(input('tags','Tags (comma separated)',(item?.tags||[]).join(', ')));editor.append(input('images','Image URLs (one per line)',(item?.images||[]).join('\n'),'textarea'));
+        var v=document.createElement('label');v.className='content-field';v.innerHTML='<span class="muted small">Variants JSON</span><textarea name="variants" rows="6" placeholder="[{&quot;title&quot;:&quot;Small&quot;,&quot;sku&quot;:&quot;SKU-S&quot;,&quot;price&quot;:49,&quot;inventory&quot;:10}]">'+escJson(item?.variants||[])+'</textarea>';editor.append(v);
+        var custom=document.createElement('label');custom.className='content-field';custom.innerHTML='<span class="muted small">Custom fields JSON</span><textarea name="customFields" rows="4">{}</textarea>';editor.append(custom);
+      } else {
+        var meta=document.createElement('label');meta.className='content-field';meta.innerHTML='<span class="muted small">Advanced fields JSON</span><textarea name="advanced" rows="8">'+escJson(item?item:{})+'</textarea>';editor.append(meta);
+      }
+      var status=input('status','Status',item?.status||'active');
+      editor.append(status);
+      var actions=document.createElement('div');actions.className='content-editor-actions';
+      var save=document.createElement('button');save.type='submit';save.className='primary';save.textContent=item?'Save changes':'Add record';actions.append(save);
+      if(item){var del=document.createElement('button');del.type='button';del.className='tool-button danger-button';del.textContent='Delete';del.onclick=async function(){if(!confirm('Delete this record?'))return;await op({type:'delete',collection:currentCollection,id:item.id});currentId=null;};actions.append(del);
+        var up=document.createElement('button');up.type='button';up.className='tool-button';up.textContent='↑';up.title='Move up';up.onclick=function(){move(-1)};var down=document.createElement('button');down.type='button';down.className='tool-button';down.textContent='↓';down.title='Move down';down.onclick=function(){move(1)};actions.append(up,down);}
+      editor.append(actions);
+      editor.onsubmit=async function(e){e.preventDefault();var fd=new FormData(editor),record={};if(isProduct){
+        record={title:fd.get('title'),description:fd.get('description'),images:String(fd.get('images')||'').split(/\r?\n/).map(function(x){return x.trim()}).filter(Boolean),price:Number(fd.get('price')||0),compareAtPrice:fd.get('compareAtPrice')===''?null:Number(fd.get('compareAtPrice')),sku:fd.get('sku'),inventory:Number(fd.get('inventory')||0),currency:fd.get('currency')||'USD',category:fd.get('category'),tags:String(fd.get('tags')||'').split(',').map(function(x){return x.trim()}).filter(Boolean),status:fd.get('status')||'active'};
+        try{record.variants=JSON.parse(String(fd.get('variants')||'[]'));record.customFields=JSON.parse(String(fd.get('customFields')||'{}'));}catch{hint.textContent='Variants/custom fields must be valid JSON.';return;}
+      } else {try{record=JSON.parse(String(fd.get('advanced')||'{}'));}catch{hint.textContent='Advanced fields must be valid JSON.';return;}record.title=fd.get('title')||record.title;record.description=fd.get('description')||record.description;record.image=fd.get('image')||record.image;record.status=fd.get('status')||record.status||'active';}
+        await op(item?{type:'update',collection:currentCollection,id:item.id,patch:record}:{type:'add',collection:currentCollection,record});};
+    }
+    function escJson(x){return JSON.stringify(x,null,2).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+    async function op(operation){
+      var projectId=window.cvProjectId;if(!projectId)return;hint.textContent='Saving…';
+      try{var r=await fetch('/api/projects/'+encodeURIComponent(projectId)+'/content/operations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({operation})});var j=await r.json();if(!r.ok)throw new Error(j.error||'save_failed');content=j.content;currentId=operation.type==='add'?(content[currentCollection]||[]).at(-1)?.id:(operation.id||currentId);fillCollections();renderRecords();renderEditor();hint.textContent='Saved. The content source of truth is updated.';}catch(e){hint.textContent=e.message;}}
+    async function move(delta){var a=items(),i=a.findIndex(function(x){return x.id===currentId});if(i<0)return;var to=i+delta;if(to<0||to>=a.length)return;var ids=a.map(x=>x.id);ids.splice(i,1);ids.splice(to,0,currentId);await op({type:'reorder',collection:currentCollection,ids});}
+    q('#contentNew',box).onclick=function(){currentId=null;renderRecords();renderEditor()};
+    collection.onchange=function(){currentCollection=collection.value;currentId=null;renderRecords();renderEditor()};
+    search.oninput=renderRecords;
+    q('#contentExport',box).onclick=function(){if(!content)return;var blob=new Blob([JSON.stringify(content,null,2)+'\n'],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='codingvibes-content.json';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},500)};
+    q('#contentImport',box).onclick=function(){q('#contentImportFile',box).click()};
+    q('#contentImportFile',box).onchange=async function(e){var file=e.target.files?.[0];if(!file)return;try{var parsed=JSON.parse(await file.text());var projectId=window.cvProjectId;var r=await fetch('/api/projects/'+encodeURIComponent(projectId)+'/content',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({content:parsed,kind:parsed.kit||'business'})});var j=await r.json();if(!r.ok)throw new Error(j.error||'import_failed');content=j.content;currentCollection='products';currentId=null;fillCollections();renderRecords();renderEditor();hint.textContent='Imported content and synchronized the project.';}catch(err){hint.textContent=err.message}e.target.value=''};
+    window.cvRefreshContentStudio=fetchContent;
+  }
   function enhanceEditor(){
     var file=q('#filePreview');if(!file||q('#editorToolbar'))return;
     var bar=document.createElement('div');bar.id='editorToolbar';bar.className='editor-toolbar';
@@ -149,7 +225,7 @@ const cvWorkspace=(function(){
       b.addEventListener('click',function(){qa('.file',files).forEach(function(x){x.setAttribute('aria-current',x===b?'true':'false')})});
     })}).observe(files,{childList:true,subtree:true});
   }
-  function boot(){createShell();createComposerTools();createTemplateStudio();enhanceEditor();observeFiles();wireForm();setMode('build')}
+  function boot(){createShell();createComposerTools();createTemplateStudio();createContentStudio();enhanceEditor();observeFiles();wireForm();setMode('build')}
   return {boot,setMode,openPalette};
 })();
 window.addEventListener('DOMContentLoaded',function(){cvWorkspace.boot()});
