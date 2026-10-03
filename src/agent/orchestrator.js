@@ -135,7 +135,12 @@ export async function executeBuild({request,userId,sessionId,project,store,route
    emit({type:'changeset_proposed',runId:run.id,changesetId:changeset.id,files:operationPaths.length,operations:operations.length,source:plan.source,manifestHash:plan.manifestHash||null,target:target.id});
    const tools=new ToolRegistry({workspace:ws.worktree,store,runId:run.id,confirm:async()=>true,signal});
    for(const operation of operations){ensureActiveRun(store,run,userId,signal);await tools.call(operation.type,operation);}
-   store.updateChangeset(changeset.id,{status:'applied'});const appliedCheckpoint=createCheckpoint(ws.worktree,checkpointRoot(),'changes-applied');store.createCheckpoint(run.id,appliedCheckpoint.name,appliedCheckpoint.path,{changesetId:changeset.id});emit({type:'changes_applied',runId:run.id,changesetId:changeset.id,target:target.id});
+   store.updateChangeset(changeset.id,{status:'applied'});
+   const projectContent=store.getProjectContent(project.id,userId);
+   const contentFile=path.join(ws.worktree,'public','content','site.json');
+   if(projectContent?.meta?.managed){fs.mkdirSync(path.dirname(contentFile),{recursive:true});fs.writeFileSync(contentFile,JSON.stringify(projectContent,null,2)+'\\n','utf8');store.addEvidence(run.id,'content_sync',{source:'project',managed:true});}
+   else if(fs.existsSync(contentFile)){try{const generatedContent=JSON.parse(fs.readFileSync(contentFile,'utf8'));store.upsertProjectContent(project.id,userId,{...generatedContent,meta:{...(generatedContent.meta||{}),managed:false}});store.addEvidence(run.id,'content_sync',{source:'generated',managed:false});}catch(e){store.addEvidence(run.id,'content_sync_error',{error:e.message});}}
+   const appliedCheckpoint=createCheckpoint(ws.worktree,checkpointRoot(),'changes-applied');store.createCheckpoint(run.id,appliedCheckpoint.name,appliedCheckpoint.path,{changesetId:changeset.id});emit({type:'changes_applied',runId:run.id,changesetId:changeset.id,target:target.id});
    for(let attempt=0;attempt<=MAX_REPAIR_CYCLES;attempt++){ensureActiveRun(store,run,userId,signal);
      if(isLiveWebTarget(target)){
        const checked=await verifyTarget({workspace:ws.worktree,spec,target,run:{...run,user_id:userId},store,onEvent:emit,attempt,signal});finalEvidence=checked.evidence;preview=checked.preview||null;
