@@ -113,7 +113,7 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   if(u.pathname==='/v1/chat/completions'&&method==='POST'){
     const tokenUser=apiTokenAuth(req);if(!tokenUser)return sendJson(res,401,{ok:false,error:'invalid_api_token'},{'www-authenticate':'Bearer'});
     try{
-      const b=await readJson(req,MAX_BODY),messages=normalizeGatewayMessages(b.messages),r=userRouter(tokenUser.user_id);
+      const b=await readJson(req,MAX_BODY),messages=normalizeGatewayMessages(b.messages),system=messages.filter(x=>x.role==='system').map(x=>x.content).join('\n\n'),r=userRouter(tokenUser.user_id);
       if(!r.getStatus().configured)return sendJson(res,503,{ok:false,error:'no_ai_provider_configured'});
       const requestedProvider=String(b.provider||req.headers['x-codingvibes-provider']||'').trim()||undefined;
       const requestedModel=String(b.model||'').trim()||undefined;
@@ -122,11 +122,11 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
       const id='chatcmpl-'+randomUUID(),created=Math.floor(Date.now()/1000);
       if(b.stream===true){
         const send=streamSse(res);let usage=null;send({id,object:'chat.completion.chunk',created,model:requestedModel||r.resolveModel('standard',requestedProvider),choices:[{index:0,delta:{role:'assistant'},finish_reason:null}]});
-        const out=await r.stream({messages,tier:String(b.tier||'standard'),temperature,maxTokens,provider:requestedProvider,model:requestedModel,onToken:token=>send({id,object:'chat.completion.chunk',created,model:requestedModel||'',choices:[{index:0,delta:{content:token},finish_reason:null}]}),onUsage:u=>{usage=u;}});
+        const out=await r.stream({system,messages,tier:String(b.tier||'standard'),temperature,maxTokens,provider:requestedProvider,model:requestedModel,onToken:token=>send({id,object:'chat.completion.chunk',created,model:requestedModel||'',choices:[{index:0,delta:{content:token},finish_reason:null}]}),onUsage:u=>{usage=u;}});
         send({id,object:'chat.completion.chunk',created,model:out.model,choices:[{index:0,delta:{},finish_reason:'stop'}],usage:usage?{prompt_tokens:usage.inputTokens,completion_tokens:usage.outputTokens,total_tokens:usage.inputTokens+usage.outputTokens}:undefined});
         res.write('data: [DONE]\\n\\n');res.end();return;
       }
-      const out=await r.complete({messages,tier:String(b.tier||'standard'),temperature,maxTokens,provider:requestedProvider,model:requestedModel});
+      const out=await r.complete({system,messages,tier:String(b.tier||'standard'),temperature,maxTokens,provider:requestedProvider,model:requestedModel});
       return sendJson(res,200,{id,object:'chat.completion',created,model:out.model,choices:[{index:0,message:{role:'assistant',content:out.text||''},finish_reason:'stop'}],usage:{prompt_tokens:out.usage?.inputTokens||0,completion_tokens:out.usage?.outputTokens||0,total_tokens:(out.usage?.inputTokens||0)+(out.usage?.outputTokens||0)},provider:out.provider});
     }catch(e){return sendJson(res,e.status||502,{ok:false,error:e.message});}
   }
