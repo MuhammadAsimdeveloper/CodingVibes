@@ -8,7 +8,8 @@ import {contentRuntimeJs} from '../site/runtime.js';
 import {kitForKind} from '../site/kits.js';
 
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
-function titleForManifest(spec){return String(spec.request||'Build Vibe application').split(/\\s+/).slice(0,8).join(' ')||'Build Vibe application';}\nfunction pageTitle(route){if(route==='/')return 'Home';return route.slice(1).split('-').map(x=>x[0]?.toUpperCase()+x.slice(1)).join(' ');}
+function titleForManifest(spec){return String(spec.request||'Build Vibe application').split(/\\s+/).slice(0,8).join(' ')||'Build Vibe application';
+function pageTitle(route){if(route==='/')return 'Home';return route.slice(1).split('-').map(x=>x[0]?.toUpperCase()+x.slice(1)).join(' ');}
 function navMarkup(spec){return spec.pages.filter(r=>!['/admin','/login'].includes(r)).map(r=>`<a class="nav-link" data-route="${escHtml(r)}" href="${escHtml(r)}">${escHtml(pageTitle(r))}</a>`).join('');}
 function experienceMarkup(spec){
  if(!spec.experience?.threeD)return '';
