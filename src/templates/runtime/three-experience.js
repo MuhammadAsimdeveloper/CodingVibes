@@ -9,6 +9,13 @@ const fallback=document.querySelector('#experienceFallback');
 async function start(){
   if(!canvas)return;
   try{
+    const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    let siteContent=null;try{const response=await fetch('/content/site.json',{cache:'no-store'});if(response.ok)siteContent=await response.json()}catch{}
+    const featuredProduct=siteContent?.products?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.products?.find(p=>p.status!=='draft')||null;
+    const featuredProperty=siteContent?.properties?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.properties?.find(p=>p.status!=='draft')||null;
+    const featuredScene=siteContent?.scenes?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.scenes?.find(p=>p.status!=='draft')||null;
+    const contentModel=featuredProduct?.model?.url||featuredProperty?.model?.url||featuredScene?.model?.url||'';
+    const contentVideo=featuredProduct?.video?.url||featuredProperty?.video?.url||featuredScene?.video?.url||'';
     const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
       import(THREE_URL), import(CTRL_URL), import(GLTF_URL)
     ]);
@@ -66,15 +73,12 @@ async function start(){
     }
 
     let loadedModel=null;
-    async function loadModel(file){
+    async function loadModel(source,label='model'){
       try{
-        const object=await new GLTFLoader().loadAsync(URL.createObjectURL(file));
-        if(loadedModel)scene.remove(loadedModel);
-        loadedModel=object.scene;
-        loadedModel.position.y=0;
-        loadedModel.scale.setScalar(3);
-        scene.add(loadedModel);
-        if(fallback)fallback.textContent='Loaded '+file.name;
+        const url=typeof source==='string'?source:URL.createObjectURL(source);const object=await new GLTFLoader().loadAsync(url);if(typeof source!=='string')setTimeout(()=>URL.revokeObjectURL(url),0);
+        if(loadedModel)scene.remove(loadedModel);loadedModel=object.scene;loadedModel.position.y=0;
+        const box3=new (await import(THREE_URL)).Box3().setFromObject(loadedModel);const size=box3.getSize(new Vector3()),maxSide=Math.max(size.x,size.y,size.z)||1;loadedModel.scale.setScalar(6/maxSide);loadedModel.position.y=Math.max(0,-box3.min.y*loadedModel.scale.y);scene.add(loadedModel);
+        if(fallback)fallback.textContent='Loaded '+label;
       }catch(e){if(fallback)fallback.textContent='Model load failed; showing procedural fallback.';console.error(e)}
     }
 
@@ -118,7 +122,8 @@ async function start(){
 
     document.querySelector('#tourPlay')?.addEventListener('click',playTour);
     document.querySelector('#tourRecord')?.addEventListener('click',recordTour);
-    document.querySelector('#modelInput')?.addEventListener('change',e=>e.target.files[0]&&loadModel(e.target.files[0]));
+    if(contentModel)loadModel(contentModel,featuredProduct?.title||featuredProperty?.title||featuredScene?.title||'site model');
+    document.querySelector('#modelInput')?.addEventListener('change',e=>e.target.files[0]&&loadModel(e.target.files[0],e.target.files[0].name));
     document.querySelector('#videoInput')?.addEventListener('change',e=>{
       const file=e.target.files[0];if(!file)return;
       const video=document.querySelector('#tourVideo');if(video){video.src=URL.createObjectURL(file);video.load()}
@@ -132,10 +137,11 @@ async function start(){
 
     const render=()=>{controls.update();renderer.render(scene,camera);requestAnimationFrame(render)};
     render();
-    if(fallback)fallback.textContent='Interactive 3D ready';
+    if(contentVideo){const video=document.querySelector('#tourVideo');if(video){video.src=contentVideo;video.load();}}
+    if(fallback)fallback.textContent=reducedMotion?'Interactive 3D ready · motion reduced':'Interactive 3D ready';
   }catch(e){
     if(fallback)fallback.textContent='3D unavailable. Responsive content remains usable.';
     console.error(e);
   }
 }
-if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)start();
+start();
