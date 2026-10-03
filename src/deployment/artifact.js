@@ -18,7 +18,7 @@ export function inspectProjectArtifact(root){
  const missing=required.filter(x=>!fs.existsSync(path.join(abs,x)));
  const nodeVersion=String(p?.engines?.node||'').replace(/^[^0-9]*/,'').split(/[<>= ]/)[0]||null;
  const staticDeploy=!buildCommand&&['static-html','vite','react','vue','svelte','astro'].includes(framework)&&!fs.existsSync(path.join(abs,'app','server.js'));
- return {schema:'codingvibes.project-artifact.v1',root:abs,files,framework,language:framework==='static-html'?'html':'javascript',packageManager:pm,buildCommand,devCommand,outputDirectory:outputDir(framework,abs,p),nodeVersion,static:staticDeploy,environmentVariables:envKeys(abs),projectMetadata:{name:p?.name||path.basename(abs),version:p?.version||null},deploymentMetadata:{requiredFiles:required,missingFiles:missing,secrets,serverRequired:!staticDeploy,adminPortal:true,sourcePortable:true}};
+ return {schema:'codingvibes.project-artifact.v1',root:abs,files,framework,language:framework==='static-html'?'html':'javascript',packageManager:pm,buildCommand,devCommand,outputDirectory:outputDir(framework,abs,p),nodeVersion,static:staticDeploy,server:!staticDeploy,environmentVariables:envKeys(abs),projectMetadata:{name:p?.name||path.basename(abs),version:p?.version||null},deploymentMetadata:{requiredFiles:required,missingFiles:missing,secrets,serverRequired:!staticDeploy,adminPortal:true,sourcePortable:true}};
 }
 export function materializePortable(root,target){
  const source=path.resolve(root),dest=path.resolve(target);fs.mkdirSync(dest,{recursive:true});
