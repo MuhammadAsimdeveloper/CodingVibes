@@ -5,6 +5,7 @@
 <title>Coding Vibes — AI Product Builder</title>
 <meta name="description" content="Build websites, web apps, SaaS products, stores and mobile apps from natural language.">
 <link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/workspace-motion.css">
 <style>
 :root{--cv-bg:#080c16;--cv-panel:#101827;--cv-panel2:#0d1422;--cv-line:#23314b;--cv-text:#f3f6fb;--cv-muted:#91a0b7;--cv-accent:#9bf3cf;--cv-blue:#8eb5ff}
 body{background:radial-gradient(circle at 50% -10%,#182744 0,#080c16 48%);color:var(--cv-text)}
@@ -31,7 +32,7 @@ body{background:radial-gradient(circle at 50% -10%,#182744 0,#080c16 48%);color:
   <input id="email" type="email" placeholder="you@example.com" autocomplete="email"><input id="password" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
   <div style="display:flex;gap:8px"><button id="loginBtn" class="cv-primary">Sign in</button><button id="signupBtn" class="cv-secondary">Create account</button></div><p id="authError" class="cv-muted"></p>
 </div>
-<div id="appView" class="cv-app hidden">
+<div id="appView" class="cv-app hidden" data-workspace-shell>
 <aside class="cv-sidebar">
   <div class="cv-logo">coding<span>Vibes</span></div>
   <button id="newProject" class="cv-primary">+ New product</button>
@@ -68,4 +69,5 @@ body{background:radial-gradient(circle at 50% -10%,#182744 0,#080c16 48%);color:
 </main>
 </div>
 <script type="module" src="/studio.js"></script>
+<script type="module" src="/workspace-motion.js"></script>
 </body></html>
