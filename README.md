@@ -48,7 +48,7 @@ Development defaults to `local`. Production defaults to `daytona`.
 
 ## Supported build targets
 
-codingVibes now has first-class target profiles for Node web apps, installable PWAs, Android Trusted Web Activity wrappers, Expo/React Native, Flutter/Dart, native Android/Kotlin, SwiftUI, Electron, Tauri/Rust, and Kotlin Multiplatform. The planner detects these from the prompt or the target selector and the model receives the exact target contract. Native artifacts are never marked verified unless the required toolchain and an isolated target runner actually complete the build.
+Build Vibe now has first-class target profiles for Node web apps, installable PWAs, Android Trusted Web Activity wrappers, Expo/React Native, Flutter/Dart, native Android/Kotlin, SwiftUI, Electron, Tauri/Rust, and Kotlin Multiplatform. The planner detects these from the prompt or the target selector and the model receives the exact target contract. Native artifacts are never marked verified unless the required toolchain and an isolated target runner actually complete the build.
 
 The target catalog mirrors the current platform landscape: Expo/EAS can produce Android/iOS binaries; Kotlin Multiplatform spans Android/iOS/desktop/web/server; SwiftUI spans Apple platforms; Trusted Web Activity can package web content for Android. citeturn393736search0turn757531search0turn757531search1turn757531search8
 
@@ -134,7 +134,7 @@ Generated web projects now receive a concrete SEO contract covering semantic HTM
 
 Use Hostinger as the primary Node.js runtime for the full application, with Cloudflare as the DNS/CDN/WAF edge. See `docs/deploy-hostinger.md` and `docs/deploy-cloudflare.md`.
 
-Static-only generated websites can be exported to Cloudflare Pages separately. The full Coding Vibes control plane should not be moved directly into a Pages Function without replacing its Node/SQLite persistence layer.
+Static-only generated websites can be exported to Cloudflare Pages separately. The full Build Vibe control plane should not be moved directly into a Pages Function without replacing its Node/SQLite persistence layer.
 
 
 ## 5.1 template studio and immersive 3D
