@@ -12,7 +12,7 @@ function openSeal(value){const b=Buffer.from(String(value||''),'base64url');if(b
 export function cookieHeader(value,maxAge=TTL){return value?COOKIE+'='+value+'; Path=/; HttpOnly; SameSite=Lax; Max-Age='+Math.floor(maxAge/1000):COOKIE+'=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'}
 export function createSession(email,role='user'){return sign({email:String(email).toLowerCase(),role:String(role),iat:Date.now(),exp:Date.now()+TTL})}
 export function readSession(req){const raw=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(COOKIE+'='));return raw?verify(raw.slice(COOKIE.length+1)):null}
-export function ownerEmails(){return [...new Set([process.env.CV_OWNER_EMAIL||'',...(String(process.env.CV_GOOGLE_OWNER_EMAILS||'').split(',').map(x=>x.trim().toLowerCase()))].filter(Boolean))}
+export function ownerEmails(){const configured=[process.env.CV_OWNER_EMAIL||'',...String(process.env.CV_GOOGLE_OWNER_EMAILS||'').split(',').map(x=>x.trim().toLowerCase())].filter(Boolean);return [...new Set(configured)]}
 export function isOwnerEmail(email){return ownerEmails().includes(String(email||'').trim().toLowerCase())}
 export function ownerConfigured(){return Boolean(process.env.CV_OWNER_EMAIL&&process.env.CV_OWNER_PASSWORD)||ownerEmails().length>0}
 function h(value){return crypto.createHmac('sha256',secret()).update(String(value||'')).digest()}
