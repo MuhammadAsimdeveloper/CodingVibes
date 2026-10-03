@@ -10,7 +10,6 @@ import {createApiToken} from '../src/security/api-tokens.js';
 test('store persists per-user AI settings, encrypted provider records, and hashed gateway tokens',()=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cv-ai-'));
   const db=path.join(dir,'test.db');
-  const previous=process.env.DATABASE_PATH;process.env.DATABASE_PATH=db;
   try{
     const store=new Store(db);
     const user=store.createUser('ai@example.com','hash');
@@ -27,5 +26,5 @@ test('store persists per-user AI settings, encrypted provider records, and hashe
     assert.equal(store.listApiTokens(user.id)[0].token_prefix,created.prefix);
     assert.equal(store.revokeApiToken(saved.id,user.id).revoked_at!==null,true);
     store.close();
-  } finally {if(previous===undefined)delete process.env.DATABASE_PATH;else process.env.DATABASE_PATH=previous;fs.rmSync(dir,{recursive:true,force:true});}
+  } finally {fs.rmSync(dir,{recursive:true,force:true});}
 });
