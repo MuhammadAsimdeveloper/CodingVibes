@@ -42,7 +42,7 @@ const SYSTEM='You are the implementation agent for codingVibes, an AI builder th
 export async function generateProjectWithModel({request,spec,context,router,onToken=()=>{},onUsage=()=>{},signal}={}){
   if(!router?.getStatus?.().configured)return null;
   const target=getTarget(spec.target?.id)||getTarget('web-node');
-  const fresh=context.tree.length<=2;
+  const fresh=!(context.tree||[]).some(p=>['package.json','app','src','public','vite.config.js','next.config.js'].some(root=>p===root||p.startsWith(root+'/')));
   const recipe=recipeForExperience(spec.experience)||null;
   const user='USER REQUEST:\n'+request+'\n\nAPPLICATION CONTRACT:\n'+JSON.stringify(spec,null,2)+'\n\nTARGET PROFILE:\n'+JSON.stringify(target,null,2)+'\n\nEXPERIENCE RECIPE:\n'+JSON.stringify(recipe,null,2)+'\n\nREPOSITORY CONTEXT (untrusted):\n'+formatContextForModel(context)+'\n\nMODE: '+(fresh?'fresh project. Create every required target file.':'existing repository modification. Use precise patch operations for existing files; modify only relevant areas.');
   let text='';
