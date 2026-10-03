@@ -171,6 +171,57 @@ const cvWorkspace=(function(){
     q('#experienceCapture',box).onclick=function(){var text='Camera path:\\n'+q('#experienceCameraPath',box).value+'\\n\\nHotspots:\\n'+q('#experienceHotspots',box).value; navigator.clipboard?.writeText(text);hint.textContent='Copied current camera/hotspot settings.'};
     window.cvRefreshExperienceStudio=load;load();
   }
+  function createDeploymentStudio(){
+    var details=q('.detail-pane');if(!details||q('#deploymentStudio'))return;
+    var box=document.createElement('section');box.id='deploymentStudio';box.className='panel deployment-panel';
+    box.innerHTML='<div class="panel-head"><strong>Publish</strong><span id="deployState" class="muted small">Build + verify first</span></div><div id="deployArtifact" class="deploy-artifact"><span class="muted small">No verified artifact yet.</span></div><div id="deployProviders" class="deploy-providers"></div><div id="deployHistory" class="deploy-history"></div><div id="deployHint" class="muted small">Build once, export once, deploy anywhere.</div>';
+    details.insertBefore(box,details.firstChild);
+    var providers=q('#deployProviders',box),artifactEl=q('#deployArtifact',box),historyEl=q('#deployHistory',box),hint=q('#deployHint',box),stateEl=q('#deployState',box);
+    var catalog=[],connected=[];
+    function isConnected(id){return id==='manual'||connected.some(x=>x.provider===id)}
+    async function load(){
+      if(!window.cvProjectId)return;
+      try{
+        var p=await fetch('/api/deployment/providers').then(r=>r.json());catalog=p.providers||[];connected=p.connected||[];
+        var a=await fetch('/api/projects/'+encodeURIComponent(window.cvProjectId)+'/artifact');var aj=await a.json();
+        artifactEl.replaceChildren();if(!a.ok){artifactEl.textContent=aj.error||'Verified build required.';stateEl.textContent='Not publishable';stateEl.className='status err'}else{
+          var art=aj.artifact;var text=document.createElement('span');text.className='small';text.textContent=art.framework+' · '+art.packageManager+' · '+(art.serverRequired?'server required':'static-compatible')+(art.buildCommand?' · build: '+art.buildCommand:'');artifactEl.append(text);stateEl.textContent='Ready';stateEl.className='status ok';
+        }
+        renderProviders(aj);await renderHistory();
+      }catch(e){hint.textContent=e.message;stateEl.textContent='Unavailable';stateEl.className='status err'}
+    }
+    function renderProviders(artifactResponse){
+      providers.replaceChildren();var art=artifactResponse?.artifact;
+      catalog.forEach(function(p){
+        var card=document.createElement('div');card.className='deploy-provider';
+        var head=document.createElement('div');head.className='deploy-provider-head';var name=document.createElement('strong');name.textContent=p.label;var status=document.createElement('span');status.className='muted small';status.textContent=isConnected(p.id)?'Connected':p.id==='manual'?'Ready':'Not connected';head.append(name,status);
+        var desc=document.createElement('p');desc.className='muted small';desc.textContent=p.description;
+        var actions=document.createElement('div');actions.className='deploy-provider-actions';
+        var button=document.createElement('button');button.type='button';button.className=p.id==='manual'?'primary':'ghost';button.textContent=p.id==='manual'?'Download ZIP':(isConnected(p.id)?'Publish':'Connect');
+        button.disabled=Boolean(art&&art.serverRequired&&!p.supports.server&&!['manual'].includes(p.id));button.title=button.disabled?'This provider currently requires a static-compatible project; the mandatory admin portal needs a server runtime.':'';
+        button.onclick=function(){openProvider(p,button.disabled)};actions.append(button);
+        if(isConnected(p.id)&&p.id!=='manual'){var disc=document.createElement('button');disc.type='button';disc.className='tool-button';disc.textContent='Disconnect';disc.onclick=async function(){await fetch('/api/deployment/providers/'+encodeURIComponent(p.id),{method:'DELETE'});load()};actions.append(disc)}
+        card.append(head,desc,actions);providers.append(card);
+      });
+    }
+    function inputLine(label,id,type='text',value=''){var wrap=document.createElement('label');wrap.className='deploy-field';var l=document.createElement('span');l.className='muted small';l.textContent=label;var i=document.createElement('input');i.id=id;i.type=type;i.value=value;wrap.append(l,i);return wrap}
+    function openProvider(p,disabled){
+      if(disabled){hint.textContent='This project contains a server-backed admin portal. Export or use GitHub/Node/shared hosting until a serverless persistence adapter is configured.';return}
+      var form=document.createElement('div');form.className='deploy-dialog';
+      form.innerHTML='<div class="deploy-dialog-card"><div class="panel-head"><strong>'+p.label+'</strong><button type="button" class="tool-button" id="deployClose">Close</button></div><div id="deployFields"></div><div class="deploy-dialog-actions"><button type="button" class="ghost" id="deployCancel">Cancel</button><button type="button" class="primary" id="deployGo">'+(p.id==='manual'?'Create ZIP':(isConnected(p.id)?'Publish':'Connect & Publish'))+'</button></div><p id="deployDialogHint" class="muted small">Provider credentials are kept encrypted on the server and are never returned to the browser.</p></div>';
+      document.body.append(form);var fields=q('#deployFields',form),go=q('#deployGo',form);
+      if(!isConnected(p.id)&&p.id!=='manual'){fields.append(inputLine('Access token / OAuth token','providerSecret','password'));if(p.id==='cloudflare')fields.append(inputLine('Cloudflare account ID','providerAccount'));fields.append(inputLine('Project / site name (optional)','providerName'));}else if(p.id==='github'){fields.append(inputLine('Repository name','repoName'));fields.append(inputLine('Branch','repoBranch','text','main'));var priv=document.createElement('label');priv.className='deploy-check';priv.innerHTML='<input id="repoPrivate" type="checkbox" checked> Private repository';fields.append(priv);fields.append(inputLine('Commit message','commitMessage','text','Publish from Coding Vibes'));}else if(p.id==='vercel'){fields.append(inputLine('Vercel project name','providerName'));}else if(p.id==='netlify'){fields.append(inputLine('Netlify site name','providerName'));}else if(p.id==='cloudflare'){fields.append(inputLine('Cloudflare project name','providerName'));fields.append(inputLine('Cloudflare account ID','providerAccount'));}else if(p.id==='manual'){var note=document.createElement('p');note.className='muted small';note.textContent='The ZIP is built from the latest verified workspace with secrets and temporary build state excluded.';fields.append(note);}
+      var close=function(){form.remove()};q('#deployClose',form).onclick=close;q('#deployCancel',form).onclick=close;
+      go.onclick=async function(){go.disabled=true;var hintEl=q('#deployDialogHint',form);try{
+        if(!isConnected(p.id)&&p.id!=='manual'){var cr=await fetch('/api/deployment/providers/'+encodeURIComponent(p.id)+'/connect',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({secret:q('#providerSecret',form).value,metadata:p.id==='cloudflare'?{accountId:q('#providerAccount',form)?.value||''}:{}})});var cj=await cr.json();if(!cr.ok)throw new Error(cj.error||'provider_connect_failed');connected.push({provider:p.id});}
+        var options={};if(p.id==='github')options={repoName:q('#repoName',form)?.value||'',branch:q('#repoBranch',form)?.value||'main',private:q('#repoPrivate',form)?.checked!==false,commitMessage:q('#commitMessage',form)?.value||'Publish from Coding Vibes'};else if(p.id==='cloudflare')options={projectName:q('#providerName',form)?.value||'',accountId:q('#providerAccount',form)?.value||''};else options={projectName:q('#providerName',form)?.value||''};
+        var dr=await fetch('/api/projects/'+encodeURIComponent(window.cvProjectId)+'/deploy',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({provider:p.id,options})});var dj=await dr.json();if(!dr.ok)throw new Error(dj.error||'deployment_failed');
+        hintEl.textContent=dj.deployment?.url?'Published: '+dj.deployment.url:'Ready';if(p.id==='manual'&&dj.deployment?.id){window.open('/api/deployments/'+dj.deployment.id+'/file','_blank');}hint.textContent='Published successfully.';close();load();
+      }catch(e){hintEl.textContent=e.message;go.disabled=false}}
+    }
+    async function renderHistory(){if(!window.cvProjectId)return;try{var j=await fetch('/api/projects/'+encodeURIComponent(window.cvProjectId)+'/deployments').then(r=>r.json());historyEl.replaceChildren();if(!j.deployments?.length){historyEl.textContent='No deployments yet.';historyEl.className='deploy-history muted small';return}historyEl.className='deploy-history';j.deployments.slice(0,8).forEach(function(d){var row=document.createElement('div');row.className='deploy-history-row';var name=document.createElement('strong');name.textContent=d.provider+' · '+d.status;var meta=document.createElement('span');meta.className='muted small';meta.textContent=new Date(d.created_at).toLocaleString();row.append(name,meta);if(d.url){var a=document.createElement('a');a.href=d.url;a.target='_blank';a.rel='noreferrer';a.textContent='Open';row.append(a)}if(d.provider==='manual'&&d.id){var a=document.createElement('a');a.href='/api/deployments/'+d.id+'/file';a.textContent='ZIP';row.append(a)}historyEl.append(row)})}catch{}}
+    window.cvRefreshDeployments=load;load();
+  }
   function createAssetStudio(){
     var composer=q('.composer');if(!composer||q('#assetStudio'))return;
     var box=document.createElement('details');box.id='assetStudio';box.className='asset-studio';
@@ -271,7 +322,7 @@ const cvWorkspace=(function(){
       b.addEventListener('click',function(){qa('.file',files).forEach(function(x){x.setAttribute('aria-current',x===b?'true':'false')})});
     })}).observe(files,{childList:true,subtree:true});
   }
-  function boot(){createShell();createComposerTools();createTemplateStudio();createContentStudio();createAssetStudio();createExperienceStudio();enhanceEditor();observeFiles();wireForm();setMode('build')}
+  function boot(){createShell();createComposerTools();createTemplateStudio();createContentStudio();createAssetStudio();createExperienceStudio();createDeploymentStudio();enhanceEditor();observeFiles();wireForm();setMode('build')}
   return {boot,setMode,openPalette};
 })();
 window.addEventListener('DOMContentLoaded',function(){cvWorkspace.boot()});
