@@ -117,3 +117,21 @@ See `docs/RUNNER_FLEET_SPEC.md` for the v2.5 execution lifecycle, capability mat
 ## 2.6.0 fleet hardening
 
 The runner fleet now has durable runner registration/heartbeat state, sanitized disposable native workspaces, durable artifact metadata and authenticated artifact downloads, plus macOS protocol v3 with simulator tests before Xcode builds. See `docs/RELEASE_2.6.0.md` and `docs/RUNNER_FLEET_SPEC.md`.
+
+## 5.0 free-core business model, motion and video
+
+Version 5 keeps the core code-first workflow free: basic website generation, project source inspection, the Monaco code editor, manual code edits, and normal verification. Server-side feature gates reserve high-cost capabilities for paid plans: advanced GSAP/scroll motion and Three.js/WebGL 3D generation, AI video, one-click deployment, advanced SEO automation, private projects, and custom domains.
+
+Free users receive five AI build runs per month and a one-time short AI-video trial when `RUNWAYML_API_SECRET` is configured. Pro and Team plans have larger build quotas plus monthly video-second allowances. Manual code editing is not gated.
+
+The video workflow uses the Runway Dev API, stores completed MP4 files under the persistent `data/media` volume, and never exposes the provider's expiring output URL directly to the browser. For production, keep the API key server-side and use a persistent storage volume.
+
+### SEO and motion defaults
+
+Generated web projects now receive a concrete SEO contract covering semantic HTML, route metadata, canonical URLs, Open Graph/Twitter metadata, JSON-LD where appropriate, robots and sitemap files. Motion requests are constrained to respect `prefers-reduced-motion`; 3D is treated as progressive enhancement with a content-preserving fallback.
+
+### Hosting
+
+Use Hostinger as the primary Node.js runtime for the full application, with Cloudflare as the DNS/CDN/WAF edge. See `docs/deploy-hostinger.md` and `docs/deploy-cloudflare.md`.
+
+Static-only generated websites can be exported to Cloudflare Pages separately. The full Coding Vibes control plane should not be moved directly into a Pages Function without replacing its Node/SQLite persistence layer.
