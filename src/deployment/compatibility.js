@@ -11,7 +11,7 @@ export function compatibility(provider,artifact){
   if(!cap)return{provider,compatible:false,reason:'Provider is not registered.'};
   const server=Boolean(artifact?.deploymentMetadata?.serverRequired);
   if(server&&!cap.server)return{provider,compatible:false,reason:'Project requires a server-backed runtime. This provider adapter currently supports static output only; use GitHub/manual or a server-capable adapter.'};
-  if(!artifact?.deploymentMetadata?.missingFiles?.length===false)return{provider,compatible:false,reason:'Artifact validation failed.'};
+  if((artifact?.deploymentMetadata?.missingFiles||[]).length)return{provider,compatible:false,reason:'Artifact validation failed.'};
   return{provider,compatible:true,mode:server?'server':'static',sourceUnchanged:true};
 }
 export function compatibilityMatrix(){return Object.entries(CAPABILITIES).map(([provider,capabilities])=>({provider,...capabilities}))}
