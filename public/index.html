@@ -5,32 +5,16 @@
 <title>Coding Vibes — AI Product Builder</title>
 <meta name="description" content="Build websites, web apps, SaaS products, stores and mobile apps from natural language.">
 <link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/app-shell.css">
 <link rel="stylesheet" href="/workspace-motion.css">
-<style>
-:root{--cv-bg:#080c16;--cv-panel:#101827;--cv-panel2:#0d1422;--cv-line:#23314b;--cv-text:#f3f6fb;--cv-muted:#91a0b7;--cv-accent:#9bf3cf;--cv-blue:#8eb5ff}
-body{background:radial-gradient(circle at 50% -10%,#182744 0,#080c16 48%);color:var(--cv-text)}
-.cv-app{min-height:100vh;display:grid;grid-template-columns:250px minmax(0,1fr);grid-template-rows:64px 1fr}
-.cv-sidebar{grid-row:1/3;border-right:1px solid var(--cv-line);background:#09101bdd;padding:20px 14px;display:flex;flex-direction:column;gap:18px}
-.cv-logo{font-weight:900;font-size:20px;letter-spacing:-.03em;padding:8px 10px}
-.cv-logo span{color:var(--cv-accent)}
-.cv-projects{display:grid;gap:5px;overflow:auto}.cv-project{border:1px solid transparent;background:transparent;color:#c7d1e2;text-align:left;border-radius:10px;padding:10px;cursor:pointer}.cv-project:hover,.cv-project.active{background:#121d31;border-color:#263958;color:#fff}
-.cv-nav{display:grid;gap:4px}.cv-nav button{border:0;background:transparent;color:#91a0b7;text-align:left;padding:9px 10px;border-radius:10px;cursor:pointer}.cv-nav button.active,.cv-nav button:hover{background:#121d31;color:#fff}
-.cv-top{border-bottom:1px solid var(--cv-line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#080d18d9;backdrop-filter:blur(14px)}
-.cv-top .status{margin-left:auto;margin-right:10px}.cv-main{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:0}
-.cv-builder{min-width:0;padding:28px;display:flex;flex-direction:column;gap:18px}.cv-right{border-left:1px solid var(--cv-line);padding:18px;background:#0a101caa;overflow:auto}
-.cv-hero{max-width:900px;margin:auto;width:100%}.cv-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#88a8e9}.cv-hero h1{font-size:clamp(36px,6vw,72px);line-height:1;margin:8px 0 12px;letter-spacing:-.05em}.cv-hero p{color:var(--cv-muted);font-size:17px}
-.cv-composer{border:1px solid #304361;background:linear-gradient(150deg,#111c30,#0d1422);border-radius:22px;padding:14px;box-shadow:0 24px 70px #0004}.cv-composer textarea{width:100%;min-height:125px;background:transparent;border:0;outline:0;color:#fff;font:inherit;resize:vertical;padding:8px;font-size:16px}.cv-composer-row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-top:1px solid #22324d;padding-top:10px}.cv-select{background:#101a2c;border:1px solid #2b3d5a;color:#dbe6f8;border-radius:10px;padding:9px}.cv-primary{border:0;background:var(--cv-accent);color:#06130d;font-weight:900;border-radius:11px;padding:10px 15px;cursor:pointer}.cv-secondary{border:1px solid #2b3d5a;background:#111b2e;color:#dbe6f8;border-radius:10px;padding:9px 12px;cursor:pointer}
-.cv-chips{display:flex;gap:7px;flex-wrap:wrap}.cv-chip{border:1px solid #263958;background:#101a2a;color:#b9c8de;border-radius:999px;padding:7px 10px;cursor:pointer;font-size:12px}
-.cv-canvas{border:1px solid var(--cv-line);border-radius:18px;overflow:hidden;background:#050912;min-height:520px}.cv-canvas-head{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--cv-line)}#previewFrame{width:100%;height:580px;border:0;background:#fff}
-.cv-card{border:1px solid var(--cv-line);background:var(--cv-panel2);border-radius:16px;padding:14px;margin-bottom:12px}.cv-card h3{margin:0 0 8px;font-size:14px}.cv-muted{color:var(--cv-muted);font-size:12px}.cv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cv-cap{padding:10px;border:1px solid #24344f;border-radius:12px;background:#0c1423}.cv-cap strong{display:block;font-size:12px}.cv-cap span{display:block;color:#71829d;font-size:10px;margin-top:4px}.cv-feed{display:grid;gap:7px;max-height:260px;overflow:auto}.cv-event{padding:9px 10px;border-left:2px solid #36517d;background:#0b1423;color:#b9c8dc;font-size:11px}.cv-event.ok{border-color:#67d9ac}.cv-event.err{border-color:#e58d8d}.cv-provider{display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #202e45}.cv-provider:last-child{border-bottom:0}.cv-provider button{font-size:11px}.cv-blueprint-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #1d2b42;font-size:11px}.cv-research{font-size:11px;color:#a8b6ca}.cv-research a{color:#8fb5ff;text-decoration:none}.cv-login{max-width:420px;margin:12vh auto;padding:24px;border:1px solid var(--cv-line);background:#0e1626;border-radius:20px}.cv-login input{width:100%;margin:7px 0}.hidden{display:none!important}
-@media(max-width:1050px){.cv-app{grid-template-columns:72px 1fr}.cv-logo{font-size:0}.cv-logo span{font-size:20px}.cv-projects,.cv-nav button span{display:none}.cv-main{grid-template-columns:1fr}.cv-right{display:none}}
-</style>
+<link rel="stylesheet" href="/ai-providers.css">
+
 </head>
 <body>
 <div id="authView" class="cv-login hidden">
   <div class="cv-logo">coding<span>Vibes</span></div><h2>Build anything.</h2><p class="cv-muted">AI product builder for websites, web apps and Android/iOS products.</p>
   <input id="email" type="email" placeholder="you@example.com" autocomplete="email"><input id="password" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
-  <div style="display:flex;gap:8px"><button id="loginBtn" class="cv-primary">Sign in</button><button id="signupBtn" class="cv-secondary">Create account</button></div><p id="authError" class="cv-muted"></p>
+  <div class="cv-auth-actions"><button id="loginBtn" class="cv-primary">Sign in</button><button id="signupBtn" class="cv-secondary">Create account</button></div><p id="authError" class="cv-muted"></p>
 </div>
 <div id="appView" class="cv-app hidden" data-workspace-shell>
 <aside class="cv-sidebar">
@@ -44,7 +28,7 @@ body{background:radial-gradient(circle at 50% -10%,#182744 0,#080c16 48%);color:
     <button data-tab="publish">↗ <span>Publish</span></button>
   </div>
   <div class="cv-muted">Products</div><div id="projects" class="cv-projects"></div>
-  <div style="margin-top:auto" class="cv-muted">Universal builder · portable output</div>
+  <div class="cv-sidebar-foot cv-muted">Universal builder · portable output</div>
 </aside>
 <header class="cv-top"><div><strong id="projectTitle">New product</strong><div id="projectMeta" class="cv-muted">Describe what you want to build</div></div><div><span id="runStatus" class="status idle">ready</span> <button id="logout" class="cv-secondary">Log out</button></div></header>
 <main class="cv-main">
@@ -64,10 +48,11 @@ body{background:radial-gradient(circle at 50% -10%,#182744 0,#080c16 48%);color:
   <div id="tab-content" class="hidden"><div class="cv-card"><h3>Content & data</h3><p class="cv-muted">Structured content, database entities, products, customers, posts, properties and custom collections stay separate from presentation.</p><button class="cv-secondary" id="contentOpen">Open content manager</button></div></div>
   <div id="tab-design" class="hidden"><div class="cv-card"><h3>Design system</h3><p class="cv-muted">Brand, typography, color, spacing, responsive rules, motion and 3D are generated as one coherent system.</p><div class="cv-chips"><span class="cv-chip">Responsive</span><span class="cv-chip">Accessible</span><span class="cv-chip">Motion</span><span class="cv-chip">3D</span></div></div></div>
   <div id="tab-app" class="hidden"><div class="cv-card"><h3>Platform targets</h3><div id="targets" class="cv-feed"></div></div></div>
-  <div id="tab-publish" class="hidden"><div class="cv-card"><h3>Publish anywhere</h3><div id="providers"></div><a id="zipLink" class="cv-secondary" style="display:inline-block;margin-top:10px">Download ZIP</a></div><div class="cv-card"><h3>Research intelligence</h3><div id="research" class="cv-research"></div></div></div>
+  <div id="tab-publish" class="hidden"><div class="cv-card"><h3>Publish anywhere</h3><div id="providers"></div><a id="zipLink" class="cv-secondary cv-zip-link">Download ZIP</a></div><div class="cv-card"><h3>Research intelligence</h3><div id="research" class="cv-research"></div></div></div>
 </aside>
 </main>
 </div>
 <script type="module" src="/studio.js"></script>
 <script type="module" src="/workspace-motion.js"></script>
+<script type="module" src="/ai-providers.js"></script>
 </body></html>
