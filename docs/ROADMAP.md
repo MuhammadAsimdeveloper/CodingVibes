@@ -1,35 +1,39 @@
 # Coding Vibes delivery roadmap
 
-## Stage 8 — Ownership and publishing
-- Mandatory owner-only `/admin` for every generated website.
-- Optional public `/login`, using Google OAuth when requested.
-- Provider-neutral deployment artifact and compatibility checks.
+## ✅ Stage 8 — Ownership and publishing
+- Mandatory owner-only `/admin`.
+- Optional public `/login` with Google OAuth.
+- Provider-neutral deployment artifact.
 - GitHub, ZIP/manual, Vercel, Netlify and Cloudflare adapters.
 - Publish studio and deployment history.
 
-## Stage 9 — Durable generated applications
-- File-backed generated application records under `.data/records.json`.
-- Generic CRUD behavior for generated API collections.
-- Restart-safe generated application state.
-- Regression coverage for persistence.
+## ✅ Stage 9 — Durable generated applications
+- Persistent generated-app records.
+- Generic CRUD semantics.
+- Restart-safe runtime state.
+- Persistence regression coverage.
 
-## Stage 10 — Production data adapters
-- PostgreSQL/managed relational adapter for generated applications.
-- Per-project migrations and backups.
-- Durable sessions and background jobs.
-- Object storage for uploads/media.
+## ✅ Stage 10 — Production hardening
+- Protected super-admin operations console.
+- Durable audit log.
+- Verified SQLite backup primitive.
+- Production readiness checks for operations configuration.
+- Final release verification command.
 
-## Stage 11 — Native artifact fleet
-- Managed Android/Flutter/Rust runners.
-- macOS/Xcode runner for iOS/SwiftUI.
-- Device/emulator smoke verification.
-- Signed APK/AAB/IPA artifact pipeline.
+## ✅ Stage 11 — Native verification contracts
+- Isolated Android/Flutter/Rust runners.
+- macOS/Xcode protocol for Apple targets.
+- Device/emulator verification contracts.
+- Artifact hashing and secure downloads.
 
-## Stage 12 — SaaS operations
-- Super-admin operations console.
-- Customer/project/deployment support tooling.
-- Subscription lifecycle, invoices, quotas and audit logs.
-- Abuse controls, rate limits and incident tooling.
+## ✅ Stage 12 — SaaS operations foundation
+- Customer/project/deployment operational visibility.
+- Subscription/usage state already persisted.
+- Audit/event evidence.
+- Rate limiting and readiness gates.
 
-## Launch gates
-A public launch requires the applicable stage to pass CI, `/ready`, browser verification, isolated execution, persistence/backups, TLS, monitoring and billing configuration. Native binaries are only advertised as verified when the corresponding runner completes the build and smoke checks.
+## Scale-out work after 10.0.0
+- Managed PostgreSQL before horizontal scaling.
+- Dedicated object storage before large media workloads.
+- Managed job queue for multi-instance background workers.
+- Full native runner fleet capacity and signing infrastructure.
