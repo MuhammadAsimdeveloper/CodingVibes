@@ -1,4 +1,5 @@
 import {ModelRouter} from './router.js';
+import {decryptSecret} from '../security/vault.js';
 import {getConnectorDefinition} from './connectors.js';
 
 function canonicalProvider(id){
@@ -22,7 +23,7 @@ export function providerConnectionInput(input={}){
   const defaultModel=String(input.defaultModel||'').trim().slice(0,200);
   const d=getConnectorDefinition(provider);
   if(d?.apiKeyEnv&&!['ollama','lmstudio'].includes(provider)&&!apiKey)throw new Error('api_key_required');
-  if(!apiKey&&['ollama','lmstudio'].includes(provider)===false&&provider!=='custom'&&input.apiKey!==undefined&&apiKey==='')throw new Error('api_key_required');
+  if(provider==='custom'&&!baseUrl)throw new Error('base_url_required');
   return {provider,apiKey,baseUrl,defaultModel:defaultModel||null};
 }
 export function normalizeAiSettings(input={}){
@@ -39,3 +40,16 @@ export function buildUserRouter({env=process.env,connections=[],settings={}}={})
   return new ModelRouter(env,{connections:normalized,settings:normalizeAiSettings(settings)});
 }
 export {canonicalProvider,safeBaseUrl};
+
+export function buildUserRouterForUser({store,userId,env=process.env}={}){
+  const settings=store.getAiSettings(userId);
+  const connections=[];
+  for(const row of store.listProviderConnections(userId)){
+    try{
+      const secure=store.getProviderConnectionSecret(userId,row.provider);
+      const secret=JSON.parse(decryptSecret(secure?.secret_ciphertext||'{}'));
+      connections.push({provider:row.provider,apiKey:String(secret.apiKey||''),baseUrl:secret.baseUrl||null,defaultModel:row.metadata?.defaultModel||null,enabled:row.metadata?.enabled!==false});
+    }catch{}
+  }
+  return buildUserRouter({env,connections,settings});
+}
