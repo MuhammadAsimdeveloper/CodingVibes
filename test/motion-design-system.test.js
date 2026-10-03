@@ -19,7 +19,7 @@ test('template motion recipes are explicit and progressive',async()=>{
   assert.ok(recipes.every(r=>r.performance?.preferReducedMotion===true));
 });
 
-test('generated template stylesheet contains choreographed motion primitives',()=>{
+test('generated template stylesheet contains choreographed motion primitives',async()=>{
   const {generateProject}=await import('../src/agent/project-generator.js');
   const spec={request:'premium agency website',pages:['/'],apis:[],components:['hero','work'],dataModel:[],siteKind:'agency',behavior:{},styling:{visual:{animation:true,style:'editorial'}}};
   const files=generateProject(spec).files;
