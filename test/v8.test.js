@@ -73,3 +73,22 @@ test('deployment compatibility is explicit for server-backed admin projects',()=
   assert.equal(validateProvider('netlify',artifact).compatible,false);
   assert.equal(validateProvider('cloudflare',artifact).compatible,false);
 });
+
+test('generated owner admin enforces authentication and edits real content',async()=>{
+  const spec=analyzeRequirements('Build a portfolio website without a public login page.');
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'cv-v8-admin-'));materializeProject(generateProject(spec),root);
+  const port=4398+Math.floor(Math.random()*50);
+  const child=(await import('node:child_process')).spawn(process.execPath,['app/server.js'],{cwd:root,env:{...process.env,HOST:'127.0.0.1',PORT:String(port),CV_SESSION_SECRET:'test-session-secret-at-least-32',CV_OWNER_EMAIL:'owner@example.com',CV_OWNER_PASSWORD:'correct-owner-password'},stdio:'ignore'});
+  async function wait(){for(let i=0;i<100;i++){try{const r=await fetch('http://127.0.0.1:'+port+'/api/health');if(r.ok)return;}catch{}await new Promise(r=>setTimeout(r,25))}throw new Error('generated admin preview did not start')}
+  try{
+    await wait();
+    assert.equal((await fetch('http://127.0.0.1:'+port+'/admin')).status,200);
+    assert.equal((await fetch('http://127.0.0.1:'+port+'/api/admin/content')).status,401);
+    const login=await fetch('http://127.0.0.1:'+port+'/api/auth/admin-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:'owner@example.com',password:'correct-owner-password'})});
+    assert.equal(login.status,200);const setCookie=login.headers.get('set-cookie');assert.ok(setCookie);
+    const cookie=setCookie.split(';')[0];
+    const read=await fetch('http://127.0.0.1:'+port+'/api/admin/content',{headers:{cookie}});assert.equal(read.status,200);const before=await read.json();assert.ok(Array.isArray(before.content.services));
+    const write=await fetch('http://127.0.0.1:'+port+'/api/admin/content/operations',{method:'POST',headers:{'content-type':'application/json',cookie},body:JSON.stringify({operation:{type:'add',collection:'services',record:{title:'Owner-managed service',status:'active'}}})});
+    assert.equal(write.status,200);const body=await write.json();assert.ok(body.content.services.some(x=>x.title==='Owner-managed service'));
+  }finally{if(child.exitCode===null){child.kill('SIGTERM');await new Promise(resolve=>child.once('exit',resolve))}}
+});
