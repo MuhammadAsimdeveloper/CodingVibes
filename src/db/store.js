@@ -33,8 +33,9 @@ export class Store{
       CREATE TABLE IF NOT EXISTS billing_accounts(user_id TEXT PRIMARY KEY,plan TEXT NOT NULL DEFAULT 'free',status TEXT NOT NULL DEFAULT 'active',stripe_customer_id TEXT,stripe_subscription_id TEXT,current_period_end TEXT,cancel_at_period_end INTEGER DEFAULT 0,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS dependency_requests(id TEXT PRIMARY KEY,run_id TEXT NOT NULL,dependencies_json TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',approved_at TEXT,approved_by TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(run_id) REFERENCES runs(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS media_jobs(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,status TEXT NOT NULL,prompt TEXT NOT NULL,model TEXT NOT NULL,ratio TEXT NOT NULL,duration INTEGER NOT NULL,runway_task_id TEXT,source_url TEXT,stored_path TEXT,size INTEGER DEFAULT 0,error TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+      CREATE TABLE IF NOT EXISTS project_content(project_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,content_json TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id); CREATE INDEX IF NOT EXISTS idx_sessions_project ON sessions(project_id); CREATE INDEX IF NOT EXISTS idx_run_goals_run ON run_goals(run_id);
-      CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id); CREATE INDEX IF NOT EXISTS idx_agent_tasks_run ON agent_tasks(run_id,status); CREATE INDEX IF NOT EXISTS idx_evidence_run ON evidence(run_id); CREATE INDEX IF NOT EXISTS idx_events_run ON run_events(run_id); CREATE INDEX IF NOT EXISTS idx_runner_nodes_capability ON runner_nodes(capability); CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id);
+      CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id); CREATE INDEX IF NOT EXISTS idx_project_content_user ON project_content(user_id); CREATE INDEX IF NOT EXISTS idx_agent_tasks_run ON agent_tasks(run_id,status); CREATE INDEX IF NOT EXISTS idx_evidence_run ON evidence(run_id); CREATE INDEX IF NOT EXISTS idx_events_run ON run_events(run_id); CREATE INDEX IF NOT EXISTS idx_runner_nodes_capability ON runner_nodes(capability); CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id);
     `);
     const projectCols=this.db.prepare('PRAGMA table_info(projects)').all().map(x=>x.name);
     if(!projectCols.includes('repo_path'))this.db.exec('ALTER TABLE projects ADD COLUMN repo_path TEXT');
@@ -65,6 +66,20 @@ export class Store{
   listProjects(userId){return this.db.prepare('SELECT id,name,slug,repo_path,created_at,updated_at FROM projects WHERE user_id=? ORDER BY updated_at DESC').all(userId).map(p=>({...p,repo_path:undefined}));}
   updateProjectRepo(id,repoPath){this.db.prepare('UPDATE projects SET repo_path=?,updated_at=? WHERE id=?').run(repoPath,this.now(),id);return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)||null;}
   deleteProject(id,userId){this.db.prepare('DELETE FROM projects WHERE id=? AND user_id=?').run(id,userId);return true;}
+  getProjectContent(projectId,userId){
+    const project=this.getProject(projectId,userId);if(!project)return null;
+    const row=this.db.prepare('SELECT content_json FROM project_content WHERE project_id=? AND user_id=?').get(projectId,userId);
+    if(!row)return null;
+    try{return JSON.parse(row.content_json)}catch{return null}
+  }
+  upsertProjectContent(projectId,userId,content){
+    const project=this.getProject(projectId,userId);if(!project)throw new Error('Project not found');
+    const normalized=content&&typeof content==='object'?content:{};
+    const now=this.now();
+    this.db.prepare('INSERT INTO project_content(project_id,user_id,content_json,updated_at) VALUES (?,?,?,?) ON CONFLICT(project_id) DO UPDATE SET user_id=excluded.user_id,content_json=excluded.content_json,updated_at=excluded.updated_at').run(projectId,userId,JSON.stringify(normalized),now);
+    this.db.prepare('UPDATE projects SET updated_at=? WHERE id=?').run(now,projectId);
+    return this.getProjectContent(projectId,userId);
+  }
   createSession(userId,projectId,title='New build'){const p=this.getProject(projectId,userId);if(!p)throw new Error('Project not found');const id=randomUUID(),now=this.now();this.db.prepare('INSERT INTO sessions VALUES (?,?,?,?,?,?)').run(id,projectId,userId,String(title).slice(0,120),now,now);return this.getSession(id,userId);}
   getSession(id,userId){return this.db.prepare('SELECT * FROM sessions WHERE id=? AND user_id=?').get(id,userId)||null;}
   listSessions(projectId,userId){return this.db.prepare('SELECT * FROM sessions WHERE project_id=? AND user_id=? ORDER BY updated_at DESC').all(projectId,userId);}
