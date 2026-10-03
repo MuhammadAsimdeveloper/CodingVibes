@@ -1,8 +1,8 @@
-# codingVibes
+# Build Vibe
 
 **AI coding platform that ships VERIFIED software, not just code.**
 
-codingVibes turns natural-language product requirements into a target-aware application contract, plans and model-generates the correct project shape, uses bounded repository context, executes web builds in an isolated preview runtime, performs target-specific source/toolchain verification for mobile/native/desktop projects, runs bounded AI repair when configured, and leaves the changeset reviewable before an explicit commit.
+Build Vibe turns natural-language product requirements into a target-aware application contract, plans and model-generates the correct project shape, uses bounded repository context, executes web builds in an isolated preview runtime, performs target-specific source/toolchain verification for mobile/native/desktop projects, runs bounded AI repair when configured, and leaves the changeset reviewable before an explicit commit.
 
 ## Core architecture
 
@@ -48,7 +48,7 @@ Development defaults to `local`. Production defaults to `daytona`.
 
 ## Supported build targets
 
-codingVibes now has first-class target profiles for Node web apps, installable PWAs, Android Trusted Web Activity wrappers, Expo/React Native, Flutter/Dart, native Android/Kotlin, SwiftUI, Electron, Tauri/Rust, and Kotlin Multiplatform. The planner detects these from the prompt or the target selector and the model receives the exact target contract. Native artifacts are never marked verified unless the required toolchain and an isolated target runner actually complete the build.
+Build Vibe now has first-class target profiles for Node web apps, installable PWAs, Android Trusted Web Activity wrappers, Expo/React Native, Flutter/Dart, native Android/Kotlin, SwiftUI, Electron, Tauri/Rust, and Kotlin Multiplatform. The planner detects these from the prompt or the target selector and the model receives the exact target contract. Native artifacts are never marked verified unless the required toolchain and an isolated target runner actually complete the build.
 
 The target catalog mirrors the current platform landscape: Expo/EAS can produce Android/iOS binaries; Kotlin Multiplatform spans Android/iOS/desktop/web/server; SwiftUI spans Apple platforms; Trusted Web Activity can package web content for Android. citeturn393736search0turn757531search0turn757531search1turn757531search8
 
@@ -72,7 +72,7 @@ Repository content is untrusted data, never an instruction source. File paths re
 
 ## Design and UI quality layer
 
-The application contract now carries an explicit design-system intent: palette, typography family, radius language, elevation, layout pattern, motion preset, accessibility expectations, responsive breakpoints, and 3D/canvas/glass/parallax effects. When browser verification is available, codingVibes also checks document title, language, viewport metadata, headings, image alt text, accessible control names, internal links, and horizontal overflow in addition to console/request failures.
+The application contract now carries an explicit design-system intent: palette, typography family, radius language, elevation, layout pattern, motion preset, accessibility expectations, responsive breakpoints, and 3D/canvas/glass/parallax effects. When browser verification is available, Build Vibe also checks document title, language, viewport metadata, headings, image alt text, accessible control names, internal links, and horizontal overflow in addition to console/request failures.
 
 This follows the direction of current AI design/build systems that combine prompt generation with visual refinement and code-backed editing, such as Figma Make, Webflow AI, and Wix Harmony. citeturn985444search0turn889226search0turn889226search2
 
@@ -134,7 +134,7 @@ Generated web projects now receive a concrete SEO contract covering semantic HTM
 
 Use Hostinger as the primary Node.js runtime for the full application, with Cloudflare as the DNS/CDN/WAF edge. See `docs/deploy-hostinger.md` and `docs/deploy-cloudflare.md`.
 
-Static-only generated websites can be exported to Cloudflare Pages separately. The full Coding Vibes control plane should not be moved directly into a Pages Function without replacing its Node/SQLite persistence layer.
+Static-only generated websites can be exported to Cloudflare Pages separately. The full Build Vibe control plane should not be moved directly into a Pages Function without replacing its Node/SQLite persistence layer.
 
 
 ## 5.1 template studio and immersive 3D

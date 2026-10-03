@@ -79,4 +79,4 @@ The platform already supports bounded task orchestration, repository indexing, c
 
 ## Target builds
 
-Native/mobile targets require their real SDK toolchains. codingVibes now blocks verification when those toolchains are unavailable instead of treating source generation as a successful artifact build. See `docs/TARGET_MATRIX.md`.
+Native/mobile targets require their real SDK toolchains. Build Vibe now blocks verification when those toolchains are unavailable instead of treating source generation as a successful artifact build. See `docs/TARGET_MATRIX.md`.

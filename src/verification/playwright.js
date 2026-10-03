@@ -4,7 +4,7 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
  const fs=await import('node:fs');fs.mkdirSync(artifactDir,{recursive:true});const browser=await pw.chromium.launch({headless:true});const results=[];
  try{
   for(const p of paths){const page=await browser.newPage({viewport});const consoleErrors=[],consoleWarnings=[],requestFailures=[],responseFailures=[];page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());if(m.type()==='warning')consoleWarnings.push(m.text())});page.on('requestfailed',r=>requestFailures.push({url:r.url(),failure:r.failure()?.errorText||'request failed'}));page.on('response',r=>{if(r.status()>=500)responseFailures.push({url:r.url(),status:r.status()});});
-   let status=0,error=null,ui={},screenshot=null,domSnapshot=null;
+   let status=0,error=null,ui={},screenshot=null,domSnapshot=null,visual=null;
    try{
     const r=await page.goto(new URL(p,baseUrl).toString(),{waitUntil:'networkidle',timeout:15000});status=r?.status()||0;
     const links=await page.locator('a[href]').evaluateAll(els=>els.map(e=>e.getAttribute('href')).filter(Boolean).filter(x=>x.startsWith('/')));for(const link of links){const response=await fetch(new URL(link,baseUrl));if(!(response.status>=200&&response.status<400))requestFailures.push({url:response.url(),failure:`internal link ${response.status}`});}
