@@ -1,49 +1,112 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Coding Vibes — Build websites and apps with AI</title>
-<meta name="description" content="Coding Vibes turns plain-language ideas into verified websites and web apps. Build basic sites free, edit the code for free, then unlock 3D motion, AI video, deployment and advanced SEO.">
-<meta name="robots" content="index,follow">
-<link rel="canonical" href="/">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Coding Vibes — AI product builder for web and mobile">
-<meta property="og:description" content="Build a basic website free, edit every file, and upgrade for motion, 3D, AI video, deployment and advanced SEO.">
-<meta property="og:site_name" content="Coding Vibes">
-<meta name="twitter:card" content="summary">
-<link rel="stylesheet" href="/styles.css">
-<style>
-.landing{min-height:100vh;display:grid;place-items:center;padding:32px}.landing-card{width:min(1100px,100%);border:1px solid var(--line);border-radius:28px;background:linear-gradient(180deg,#0d1525f2,#0a101cf2);box-shadow:0 40px 120px #0009;overflow:hidden}.landing-nav{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--line)}.landing-main{padding:70px 7vw 50px}.landing-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}.landing h1{font-size:clamp(44px,7vw,84px);line-height:.98;letter-spacing:-.06em;margin:0 0 20px}.landing .lead{font-size:20px;color:#9eacca;max-width:680px}.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}.pill{border:1px solid #243554;background:#101a2b;border-radius:999px;padding:7px 11px;color:#b7c5dc;font-size:12px}.landing-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}.landing-actions a{text-decoration:none}.preview-card{border:1px solid #26395e;background:#0b1322;border-radius:22px;padding:16px}.preview-window{height:360px;border-radius:16px;background:radial-gradient(circle at 25% 15%,#5349a255,transparent 28%),radial-gradient(circle at 75% 40%,#2c8db755,transparent 26%),#070b13;display:grid;place-items:center;overflow:hidden;position:relative}.orb{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff,transparent 12%),linear-gradient(135deg,#8b7dff,#69d9ff);filter:blur(.2px);animation:float 5s ease-in-out infinite}@keyframes float{50%{transform:translateY(-18px) scale(1.04)}}.landing-features{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}.landing-feature{padding:15px;border:1px solid var(--line);border-radius:15px;background:#0b1321}.landing-feature strong{display:block;margin-bottom:5px}.landing-foot{padding:22px 7vw 34px;color:#7181a2;font-size:12px;border-top:1px solid var(--line)}@media(max-width:820px){.landing-grid{grid-template-columns:1fr}.landing-features{grid-template-columns:1fr 1fr}}@media(max-width:520px){.landing{padding:12px}.landing-main{padding:44px 24px}.landing-features{grid-template-columns:1fr}.landing h1{font-size:52px}}
-</style>
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Coding Vibes","applicationCategory":"DeveloperApplication","operatingSystem":"Web","description":"AI-powered product builder for websites, web apps, CMS, commerce and mobile apps with verification and portable deployment.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","priceCurrency":"USD","name":"Pro"}]}
-</script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coding Vibes — AI Product Builder</title>
+<meta name="description" content="Turn an idea into a verified website, web app or mobile product with Coding Vibes. Build, refine, verify and ship from natural language.">
+<meta name="robots" content="index,follow"><meta property="og:type" content="website"><meta property="og:title" content="Coding Vibes — AI Product Builder"><meta property="og:description" content="Imagine it. Build it. Verify it. Ship it.">
+<link rel="stylesheet" href="/landing.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Coding Vibes","applicationCategory":"DeveloperApplication","operatingSystem":"Web","description":"AI product builder for websites, web apps, CMS, commerce and mobile apps."}</script>
 </head>
 <body>
-<main class="landing">
-<section class="landing-card">
-<nav class="landing-nav"><div class="brand"><span class="brand-mark">⌁</span><span>codingVibes</span></div><a class="ghost" href="/app">Open builder</a></nav>
-<div class="landing-main">
-<div class="landing-grid">
+<nav class="cv-nav"><div class="nav-inner">
+<a class="brand" href="/"><span class="brand-mark">⌁</span><span>codingVibes</span></a>
+<div id="navLinks" class="nav-links"><a href="#product">Product</a><a href="#workflow">How it works</a><a href="#capabilities">Capabilities</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></div>
+<div class="nav-actions"><a class="btn btn-ghost" href="/app">Open builder</a><a class="btn btn-primary" href="/app">Start free</a><button id="menuBtn" class="menu-btn" aria-expanded="false" aria-label="Open navigation">Menu</button></div>
+</div></nav>
+
+<main>
+<section class="hero">
+<div class="hero-grid">
 <div>
-<div class="kicker">AI product builder · visual-first</div>
-<h1>Imagine. Build. Verify. Ship.</h1>
-<p class="lead">Describe a product in plain English and Coding Vibes builds the interface, data, backend behavior, admin portal and platform target. Refine visually, verify automatically, and publish to the destination you choose.</p>
-<div class="pill-row"><span class="pill">Basic sites free</span><span class="pill">Visual product builder</span><span class="pill">Verification + repair</span><span class="pill">3D / motion capable</span></div>
-<div class="landing-actions"><a class="primary" href="/app">Start free</a><a class="ghost" href="#features">See what's included</a></div>
+<div class="eyebrow"><span class="dot"></span> AI PRODUCT BUILDER · VISUAL-FIRST</div>
+<h1>Imagine it.<br><span class="grad">Build it.</span><br>Verify it.<br>Ship it.</h1>
+<p class="hero-copy">Describe the product in plain English. Coding Vibes turns the idea into interface, data, backend behavior, owner admin, platform targets and a verified build you can keep refining.</p>
+<div class="hero-actions"><a class="btn btn-primary" href="/app">Create your first project <span>→</span></a><a class="btn btn-ghost" href="#product">Explore the product</a></div>
+<div class="trust-row"><span><b class="check">✓</b> Basic sites free</span><span><b class="check">✓</b> Verification + repair</span><span><b class="check">✓</b> Deploy anywhere compatible</span></div>
+<div class="marquee"><div class="marquee-track"><span class="tag">Web apps</span><span class="tag">SaaS</span><span class="tag">Ecommerce</span><span class="tag">CMS</span><span class="tag">Portals</span><span class="tag">PWA</span><span class="tag">Android</span><span class="tag">iOS</span><span class="tag">3D</span><span class="tag">AI video</span><span class="tag">SEO</span><span class="tag">GitHub</span><span class="tag">Web apps</span><span class="tag">SaaS</span><span class="tag">Ecommerce</span><span class="tag">CMS</span><span class="tag">Portals</span></div></div>
 </div>
-<div class="preview-card"><div class="preview-window"><div class="orb"></div></div></div>
+<div class="hero-art">
+<div class="halo"></div>
+<div class="builder-card">
+<div class="window-bar"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span><span class="window-title">coding vibes / product studio</span></div>
+<div class="builder-body">
+<aside class="builder-side"><div class="side-label">Project</div><div class="side-item active">Overview</div><div class="side-item">Content</div><div class="side-item">Data</div><div class="side-item">Publish</div><div class="side-label">Verify</div><div class="side-item">Run checks</div><div class="side-item">Visual QA</div></aside>
+<div class="canvas"><div class="canvas-top"><span class="canvas-pill">Live product</span><span class="canvas-pill">Verified preview</span></div><div class="preview-surface">
+<div class="mock-nav"><span class="mock-logo">northstar</span><span class="mock-links"><span>Work</span><span>About</span><span>Contact</span></span></div>
+<div class="mock-hero"><div class="mini">Generated storefront</div><h3>Made for<br>the next idea.</h3><p>Premium products, structured content and a clean commerce experience generated from a single brief.</p><span class="mock-cta">Shop the collection</span></div>
+<div class="mock-cards"><div class="mock-card"><strong>Content</strong><span>Editable records</span></div><div class="mock-card"><strong>Admin</strong><span>Owner controls</span></div><div class="mock-card"><strong>Publish</strong><span>Verified artifact</span></div></div>
+</div></div>
+</div></div>
+<div class="floating-card fc-build" data-demo-stage><strong data-demo-title>Understanding requirements</strong><span data-demo-copy>Mapping pages, data and behavior</span><div class="progress"><i data-demo-progress></i></div></div>
+<div class="floating-card fc-verify"><strong style="font-size:11px">Verification</strong><div class="verify-row"><span class="verify-dot"></span> Routes passed</div><div class="verify-row"><span class="verify-dot"></span> API checks passed</div><div class="verify-row"><span class="verify-dot"></span> Visual QA ready</div></div>
 </div>
-<div id="features" class="landing-features">
-<div class="landing-feature"><strong>Free core</strong><span class="muted small">Website and app generation, structured data and verification.</span></div>
-<div class="landing-feature"><strong>Motion</strong><span class="muted small">GSAP, scroll storytelling and 3D/WebGL builds on paid plans.</span></div>
-<div class="landing-feature"><strong>AI video</strong><span class="muted small">Short generated video clips with provider credits and fair-use limits.</span></div>
-<div class="landing-feature"><strong>SEO</strong><span class="muted small">Semantic markup and metadata by default; advanced SEO automation on paid plans.</span></div>
 </div>
-</div>
-<footer class="landing-foot">Your generated project remains portable. Provider credentials and secrets stay server-side.</footer>
 </section>
+
+<section id="product" class="section">
+<div class="section-head" data-reveal><div><div class="eyebrow">One workflow</div><h2>A builder that keeps the product in view.</h2></div><p>From the first sentence to the final deployment, the workspace is designed around product outcomes—not a maze of disconnected developer tools.</p></div>
+<div class="showcase">
+<div class="show-main" data-reveal><div class="eyebrow">Live product workflow</div><h3>Build from intent, then refine the result.</h3><p>Natural-language requirements become a structured application contract. Generated changes are reviewed, verified and repaired before they are considered shippable.</p><div class="show-line"><div class="row"><b>01</b><span>Describe your product, audience and behavior.</span></div><div class="row"><b>02</b><span>Let the agent plan pages, data, APIs and design.</span></div><div class="row"><b>03</b><span>Review the live preview, content and verification evidence.</span></div><div class="row"><b>04</b><span>Commit, publish or continue iterating from the same project.</span></div></div></div>
+<div class="show-side">
+<div class="mini-panel" data-reveal><h4>Product state</h4><div class="mini-stat"><span>Goal</span><span>Verified build</span></div><div class="mini-stat"><span>Target</span><span>Web + PWA</span></div><div class="mini-stat"><span>Admin</span><span>Owner-only</span></div><div class="mini-stat"><span>Deploy</span><span>Provider-ready</span></div></div>
+<div class="mini-panel" data-reveal><h4>Quality loop</h4><div class="mini-stat"><span>Source checks</span><span>Passed</span></div><div class="mini-stat"><span>Browser checks</span><span>Passed</span></div><div class="mini-stat"><span>Visual baseline</span><span>Available</span></div></div>
+</div></div>
+</section>
+
+<section id="workflow" class="section">
+<div class="section-head" data-reveal><div><div class="eyebrow">How it works</div><h2>From idea to a verified product.</h2></div><p>The important part is the loop: build, inspect, verify, repair, review, then ship.</p></div>
+<div class="steps">
+<div class="step" data-reveal><span class="step-num">01 / PLAN</span><h3>Describe</h3><p>Give Coding Vibes the outcome you want. The builder derives the application shape and target.</p></div>
+<div class="step" data-reveal><span class="step-num">02 / BUILD</span><h3>Generate</h3><p>Pages, components, APIs, data entities, content and visual direction are generated as a controlled change set.</p></div>
+<div class="step" data-reveal><span class="step-num">03 / VERIFY</span><h3>Prove</h3><p>Run source, HTTP, browser and visual checks. Failures feed a bounded repair loop instead of silent guessing.</p></div>
+<div class="step" data-reveal><span class="step-num">04 / SHIP</span><h3>Publish</h3><p>Commit verified changes and deploy the latest compatible artifact through the provider you choose.</p></div>
+</div>
+</section>
+
+<section id="capabilities" class="section">
+<div class="section-head" data-reveal><div><div class="eyebrow">Capabilities</div><h2>Build any website or app.</h2></div><p>Start with a website or go deeper into applications, commerce, portals, content systems and mobile targets.</p></div>
+<div class="capabilities">
+<div class="cap" data-reveal><div class="cap-icon">✦</div><strong>Websites + SaaS</strong><p>Marketing sites, dashboards, portals, landing pages and full web applications.</p></div>
+<div class="cap" data-reveal><div class="cap-icon">◈</div><strong>Commerce + CMS</strong><p>Products, collections, services, posts and owner-editable structured content.</p></div>
+<div class="cap" data-reveal><div class="cap-icon">⌁</div><strong>3D + Motion</strong><p>Interactive experiences, motion-rich layouts and visual storytelling for advanced builds.</p></div>
+<div class="cap" data-reveal><div class="cap-icon">◎</div><strong>Mobile Targets</strong><p>Android, PWA and broader native-target contracts with verification gates.</p></div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-head" data-reveal><div><div class="eyebrow">Built for real products</div><h2>Everything around the build matters too.</h2></div><p>Keep ownership, content, deployments, usage and verification connected to the same project.</p></div>
+<div class="showcase">
+<div class="show-side">
+<div class="mini-panel" data-reveal><h4>Owner control</h4><p>Every generated website gets a dedicated owner-only admin surface. Public login is opt-in.</p></div>
+<div class="mini-panel" data-reveal><h4>Portable delivery</h4><p>Generated source stays provider-neutral so compatible destinations can consume the same artifact.</p></div>
+</div>
+<div class="show-main" data-reveal><div class="eyebrow">Project intelligence</div><h3>Review before you ship.</h3><p>Check files, diffs, goals, diagnostics, evidence, deployment history and visual quality without leaving the project.</p><div class="show-line"><div class="row"><b>✓</b><span>Persistent project and session state</span></div><div class="row"><b>✓</b><span>Usage and billing visibility</span></div><div class="row"><b>✓</b><span>Deployment and provider history</span></div><div class="row"><b>✓</b><span>Audit-ready verification evidence</span></div></div></div>
+</div>
+</section>
+
+<section id="pricing" class="section">
+<div class="section-head" data-reveal><div><div class="eyebrow">Plans</div><h2>Plans that scale with you.</h2></div><p>Start with the core build loop. Advanced media, motion, deployment and other premium capabilities can be unlocked as your projects grow.</p></div>
+<div class="pricing">
+<div class="price" data-reveal><h3>Free</h3><div class="amount">$0<span>/month</span></div><p>Start building basic sites and learning the workflow.</p><ul><li>✓ Basic product generation</li><li>✓ Visual preview</li><li>✓ Core verification</li><li>✓ Project persistence</li></ul><a class="btn btn-ghost" href="/app">Start free</a></div>
+<div class="price featured" data-reveal><span class="badge">Most capability</span><h3>Pro</h3><div class="amount">Paid<span>/month</span></div><p>For builders who need advanced visuals, media and publishing capability.</p><ul><li>✓ Everything in Free</li><li>✓ Advanced motion + 3D</li><li>✓ AI video credits</li><li>✓ Advanced deployment + SEO</li></ul><a class="btn btn-primary" href="/app">Open builder</a></div>
+<div class="price" data-reveal><h3>Team</h3><div class="amount">Scale<span>/month</span></div><p>For teams that need larger usage, operational controls and collaboration depth.</p><ul><li>✓ Everything in Pro</li><li>✓ Higher usage capacity</li><li>✓ Operational visibility</li><li>✓ Team-ready workflows</li></ul><a class="btn btn-ghost" href="/app">Build with team</a></div>
+</div>
+</section>
+
+<section id="faq" class="section">
+<div class="section-head" data-reveal><div><div class="eyebrow">FAQ</div><h2>Frequently asked questions.</h2></div><p>Clear expectations are part of a good product experience.</p></div>
+<div class="faq">
+<details class="faq-item" data-reveal><summary>Does Coding Vibes edit an existing project?</summary><p>Yes. Projects keep persistent sessions and verified workspaces so you can ask for changes, debugging, review and further iteration after the first build.</p></details>
+<details class="faq-item" data-reveal><summary>Does every generated website have an admin portal?</summary><p>Yes. The current product contract gives every generated website an owner-only <code>/admin</code> portal. Public login is added only when requested.</p></details>
+<details class="faq-item" data-reveal><summary>Can I deploy outside Coding Vibes?</summary><p>Yes. The deployment architecture uses a provider-neutral artifact with compatible GitHub, ZIP/manual, Vercel, Netlify and Cloudflare paths.</p></details>
+<details class="faq-item" data-reveal><summary>Are native apps automatically verified?</summary><p>No. Native binaries are marked verified only when the appropriate runner completes the build and required smoke checks.</p></details>
+</div>
+</section>
+
+<section class="cta" data-reveal><div class="cta-box"><div><h2>Build the thing you actually mean.</h2><p>Start with a sentence. Keep refining until the product matches the outcome.</p></div><a class="btn btn-primary" href="/app">Create your first project →</a></div></section>
 </main>
-</body>
-</html>
+
+<footer><div class="footer-in"><span>© 2026 Coding Vibes</span><span>Build · Verify · Ship</span></div></footer>
+<script src="/landing.js" type="module"></script>
+</body></html>
