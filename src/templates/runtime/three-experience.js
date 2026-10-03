@@ -14,6 +14,9 @@ async function start(){
     const featuredProduct=siteContent?.products?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.products?.find(p=>p.status!=='draft')||null;
     const featuredProperty=siteContent?.properties?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.properties?.find(p=>p.status!=='draft')||null;
     const featuredScene=siteContent?.scenes?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.scenes?.find(p=>p.status!=='draft')||null;
+    const experienceRecord=featuredScene||featuredProperty||featuredProduct||null;
+    const contentCameraPath=Array.isArray(experienceRecord?.cameraPath)&&experienceRecord.cameraPath.length?experienceRecord.cameraPath:null;
+    const contentHotspots=Array.isArray(experienceRecord?.hotspots)?experienceRecord.hotspots:[];
     const contentModel=featuredProduct?.model?.url||featuredProperty?.model?.url||featuredScene?.model?.url||'';
     const contentVideo=featuredProduct?.video?.url||featuredProperty?.video?.url||featuredScene?.video?.url||'';
     const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3,Box3}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
@@ -96,11 +99,13 @@ async function start(){
     }
 
     function playTour(){
-      const shots=[new Vector3(12,6,14),new Vector3(-12,5,10),new Vector3(-10,4,-10),new Vector3(10,5,-12),new Vector3(7,3,8)];
+      const fallbackShots=[new Vector3(12,6,14),new Vector3(-12,5,10),new Vector3(-10,4,-10),new Vector3(10,5,-12),new Vector3(7,3,8)];
+      const shots=contentCameraPath?.map(p=>new Vector3(Number(p.x)||0,Number(p.y)||0,Number(p.z)||0)).filter(v=>Number.isFinite(v.x)&&Number.isFinite(v.y)&&Number.isFinite(v.z))||fallbackShots;
+      const durations=contentCameraPath?.map(p=>Math.max(.5,Number(p.duration)||2.2))||[];
       clearInterval(tourTimer);
       let i=0;
-      moveCamera(shots[0]);
-      tourTimer=setInterval(()=>{i=(i+1)%shots.length;moveCamera(shots[i],new Vector3(0,1.4,0),2.4)},2600);
+      moveCamera(shots[0],new Vector3(0,1.4,0),durations[0]||2.2);
+      tourTimer=setInterval(()=>{i=(i+1)%shots.length;moveCamera(shots[i],new Vector3(0,1.4,0),durations[i]||2.4)},Math.max(1400,(durations[0]||2.2)*1000+200));
     }
 
     function recordTour(){
@@ -128,10 +133,13 @@ async function start(){
       const file=e.target.files[0];if(!file)return;
       const video=document.querySelector('#tourVideo');if(video){video.src=URL.createObjectURL(file);video.load()}
     });
-    document.querySelectorAll('[data-room]').forEach(button=>button.addEventListener('click',()=>{
+    const hotspotHost=document.querySelector('[data-experience-hotspots]');if(hotspotHost&&contentHotspots.length){hotspotHost.replaceChildren(...contentHotspots.slice(0,24).map(h=>{const b=document.createElement('button');b.type='button';b.dataset.room=h.room||h.label||'View';b.dataset.x=String(h.position?.x??0);b.dataset.y=String(h.position?.y??1.2);b.dataset.z=String(h.position?.z??0);b.textContent=h.label||h.room||'View';return b}));}
+    const hotspotButtons=hotspotHost?hotspotHost.querySelectorAll('button[data-room]'):document.querySelectorAll('[data-room]');
+    hotspotButtons.forEach(button=>button.addEventListener('click',()=>{
       const presets={Living:new Vector3(7,3,8),Kitchen:new Vector3(-7,3,5),Bedroom:new Vector3(-6,3,-6)};
       const key=button.dataset.room;
-      moveCamera(presets[key]||new Vector3(8,4,10),new Vector3(0,1.2,0),1.4);
+      const custom=button.dataset.x!==undefined?new Vector3(Number(button.dataset.x)||0,Number(button.dataset.y)||1.2,Number(button.dataset.z)||0):null;
+      moveCamera(custom||presets[key]||new Vector3(8,4,10),new Vector3(0,1.2,0),1.4);
       if(fallback)fallback.textContent='Viewing '+key;
     }));
 
