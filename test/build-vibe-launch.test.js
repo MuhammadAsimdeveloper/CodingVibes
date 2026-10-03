@@ -25,10 +25,10 @@ test('landing page JavaScript does not depend on CSP-blocked inline style mutati
   const source = read('public/landing.js');
   assert.doesNotMatch(source, /\.style\b/);
   assert.doesNotMatch(source, /<style/i);
-  assert.doesNotMatch(read('public/landing.html'), /<script\b(?![^>]*src=)[^>]*>/i);
+  assert.doesNotMatch(read('public/landing.html'), /<script\b(?![^>]*src=)[^>]*>/i);\n  assert.doesNotMatch(read('public/landing.html'), /\sstyle\s*=/i);
 });
 
-test('generated site authentication marks session cookies Secure in production', () => {
+test('browser verification initializes visual comparison state', () => {\n  assert.match(read('src/verification/playwright.js'), /domSnapshot=null,visual=null/);\n  assert.match(read('src/verification/playwright.js'), /visual=await comparePng/);\n});\n\ntest('generated site authentication marks session cookies Secure in production', () => {
   const source = read('src/templates/runtime/site-auth.js');
   assert.match(source, /production/);
   assert.match(source, /Secure/);
