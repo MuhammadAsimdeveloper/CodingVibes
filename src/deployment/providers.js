@@ -27,12 +27,14 @@ export const PROVIDERS={
    let existing;try{existing=await githubApi('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo),{token})}catch{}
    if(!existing)existing=await githubApi('/user/repos',{token,method:'POST',body:{name:repo,private:options.private!==false,description:'Generated with Coding Vibes',auto_init:false}});
    const temp=fs.mkdtempSync(path.join(process.cwd(),'data','deploy-tmp-'));try{
-     const filesDir=path.join(temp,'site');fs.mkdirSync(filesDir,{recursive:true});
-     for(const f of artifact.files){const from=path.join(artifact.root,f.path),to=path.join(filesDir,f.path);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to);}
-     const env=await gitEnv(token);await exec('git',['init'],{cwd:filesDir,env});await exec('git',['checkout','-b',branch],{cwd:filesDir,env});await exec('git',['config','user.name',user.name||owner],{cwd:filesDir,env});await exec('git',['config','user.email',user.email||owner+'@users.noreply.github.com'],{cwd:filesDir,env});await exec('git',['add','--all'],{cwd:filesDir,env});
+     const filesDir=path.join(temp,'site');const env=await gitEnv(token);
+     if(existing?.id){await exec('git',['clone','--depth','1','--single-branch','--branch',branch,'https://github.com/'+owner+'/'+repo+'.git',filesDir],{cwd:temp,env,timeout:180000}).catch(async()=>{await exec('git',['clone','--depth','1','https://github.com/'+owner+'/'+repo+'.git',filesDir],{cwd:temp,env,timeout:180000});await exec('git',['checkout','-B',branch],{cwd:filesDir,env})})}
+     else {fs.mkdirSync(filesDir,{recursive:true});await exec('git',['init'],{cwd:filesDir,env});await exec('git',['checkout','-b',branch],{cwd:filesDir,env})}
+     const gitFiles=fs.readdirSync(filesDir,{withFileTypes:true}).filter(e=>e.name!=='.git');for(const e of gitFiles){fs.rmSync(path.join(filesDir,e.name),{recursive:true,force:true})}
+     for(const f of artifact.files){const from=path.join(artifact.root,f.path),to=path.join(filesDir,f.path);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)}
+     await exec('git',['config','user.name',user.name||owner],{cwd:filesDir,env});await exec('git',['config','user.email',user.email||owner+'@users.noreply.github.com'],{cwd:filesDir,env});await exec('git',['add','--all'],{cwd:filesDir,env});
      const status=await exec('git',['status','--porcelain'],{cwd:filesDir,env});if(!String(status.stdout||'').trim())return{status:'unchanged',deploymentId:existing.id,url:existing.html_url,branch,providerProject:existing.full_name};
-     await exec('git',['commit','-m',String(options.commitMessage||'Publish from Coding Vibes').slice(0,160)],{cwd:filesDir,env});
-     await exec('git',['remote','add','origin','https://github.com/'+owner+'/'+repo+'.git'],{cwd:filesDir,env});
+     await exec('git',['commit','-m',String(options.commitMessage||'Publish from Coding Vibes').slice(0,160)],{cwd:filesDir,env});if(!existing?.id)await exec('git',['remote','add','origin','https://github.com/'+owner+'/'+repo+'.git'],{cwd:filesDir,env});
      try{await exec('git',['push','-u','origin','HEAD:'+branch],{cwd:filesDir,env,timeout:180000})}catch(e){throw new Error('GitHub push failed: '+cleanError(e,token))}
      const commit=(await exec('git',['rev-parse','HEAD'],{cwd:filesDir,env})).stdout.trim();return{status:'published',deploymentId:repo,url:existing.html_url,branch,commitSha:commit,providerProject:owner+'/'+repo};
    }finally{try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
@@ -50,9 +52,12 @@ export const PROVIDERS={
  },
  netlify:{id:'netlify',label:'Netlify',type:'deployment',auth:'token-or-oauth',supports:{static:true,server:false},description:'Deploy static-compatible project ZIPs through Netlify.',
   async deploy({artifact,credentials,options={}}){
-   const token=credentials?.accessToken;if(!token)throw authRequired('netlify');ensureStatic(artifact,'Netlify');const temp=fs.mkdtempSync(path.join(process.cwd(),'data','netlify-deploy-'));try{
-    const created=await jsonFetch('https://api.netlify.com/api/v1/sites',{token,method:'POST',body:{name:safeName(options.siteName||artifact.projectMetadata.name)}});const siteId=created.id;if(!siteId)throw new Error('Netlify did not return a site id');const temp=fs.mkdtempSync(path.join(process.cwd(),'data','netlify-deploy-'));try{const zip=path.join(temp,'site.zip');zipDirectory(artifact.root,zip);const body=fs.readFileSync(zip);const r=await fetch('https://api.netlify.com/api/v1/sites/'+encodeURIComponent(siteId)+'/deploys',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/zip','content-length':String(body.length)},body});const text=await r.text();let data={};try{data=text?JSON.parse(text):{}}catch{}if(!r.ok)throw new Error(data?.message||'Netlify deploy failed');return{status:data.state||'published',deploymentId:data.id||siteId,url:data.ssl_url||data.url||created.ssl_url||created.url||null,providerProject:created.name||siteId};}finally{try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
-   }finally{try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
+   const token=credentials?.accessToken;if(!token)throw authRequired('netlify');ensureStatic(artifact,'Netlify');
+   const created=await jsonFetch('https://api.netlify.com/api/v1/sites',{token,method:'POST',body:{name:safeName(options.siteName||artifact.projectMetadata.name)}});
+   const siteId=created.id;if(!siteId)throw new Error('Netlify did not return a site id');
+   const temp=fs.mkdtempSync(path.join(process.cwd(),'data','netlify-deploy-'));
+   try{const zip=path.join(temp,'site.zip');zipDirectory(artifact.root,zip);const body=fs.readFileSync(zip);const r=await fetch('https://api.netlify.com/api/v1/sites/'+encodeURIComponent(siteId)+'/deploys',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/zip','content-length':String(body.length)},body});const text=await r.text();let data={};try{data=text?JSON.parse(text):{}}catch{}if(!r.ok)throw new Error(data?.message||'Netlify deploy failed');return{status:data.state||'published',deploymentId:data.id||siteId,url:data.ssl_url||data.url||created.ssl_url||created.url||null,providerProject:created.name||siteId};}
+   finally{try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
   },
   status:async({credentials,deploymentId})=>{if(!credentials?.accessToken)throw authRequired('netlify');const d=await jsonFetch('https://api.netlify.com/api/v1/deploys/'+encodeURIComponent(deploymentId),{token:credentials.accessToken});return{status:d.state||'unknown',url:d.ssl_url||d.url||null,deploymentId:d.id}}
  },
