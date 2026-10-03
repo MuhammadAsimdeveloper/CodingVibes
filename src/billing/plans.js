@@ -8,13 +8,13 @@ export const PLANS = {
     videoSeconds: 0,
   },
   pro: {
-    id: 'pro', label: 'Pro', monthlyRuns: 100, monthlyTokens: 5000000, priceEnv: 'STRIPE_PRICE_PRO_MONTHLY',
+    id: 'pro', label: 'Pro', priceUsd: 7, monthlyRuns: 100, monthlyTokens: 5000000, priceEnv: 'STRIPE_PRICE_PRO_MONTHLY',
     features: ['basic_site','visual_builder','basic_seo','advanced_animation','ai_video','advanced_seo','deployment','private_projects','custom_domain'],
     videoTrialSeconds: 0,
     videoSeconds: Number(process.env.CODINGVIBES_PRO_VIDEO_SECONDS || 120),
   },
   team: {
-    id: 'team', label: 'Team', monthlyRuns: 1000, monthlyTokens: 25000000, priceEnv: 'STRIPE_PRICE_TEAM_MONTHLY',
+    id: 'team', label: 'Team', priceUsd: 15, monthlyRuns: 1000, monthlyTokens: 25000000, priceEnv: 'STRIPE_PRICE_TEAM_MONTHLY',
     features: ['basic_site','visual_builder','basic_seo','advanced_animation','ai_video','advanced_seo','deployment','private_projects','custom_domain'],
     videoTrialSeconds: 0,
     videoSeconds: Number(process.env.CODINGVIBES_TEAM_VIDEO_SECONDS || 600),
