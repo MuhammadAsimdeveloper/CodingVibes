@@ -40,5 +40,17 @@ test('visual baselines persist per project and route',()=>{
 
 test('3D-capable content keeps model and video bindings during normalization',()=>{
   const content=normalizeSiteContent({products:[{title:'Chair',model:{assetId:'m1',url:'/assets/m1.glb'},video:{assetId:'v1',url:'/assets/v1.mp4'}}],scenes:[{title:'Hero',model:{assetId:'m2',url:'/assets/m2.glb'},hotspots:[{label:'Living',position:{x:1,y:2,z:3}}]}]},'ecommerce');
-  assert.equal(content.products[0].model.assetId,'m1');assert.equal(content.products[0].model.url,'/assets/m1.glb');assert.equal(content.products[0].video.url,'/assets/v1.mp4');assert.equal(content.scenes[0].hotspots.length,1);
+  assert.equal(content.products[0].model.assetId,'m1');assert.equal(content.products[0].model.url,'/assets/m1.glb');assert.equal(content.products[0].video.url,'/assets/v1.mp4');assert.equal(content.scenes[0].hotspots.length,1);assert.equal(content.scenes[0].hotspots[0].position.x,1);
+});
+
+test('generated 3D experience contains content-driven camera and hotspot hooks',async()=>{
+  const {generateProject}=await import('../src/agent/project-generator.js');
+  const {analyzeRequirements}=await import('../src/agent/requirements.js');
+  const spec=analyzeRequirements('Create an immersive 3D real estate property website with custom camera path, room hotspots, model and video assets.');
+  const plan=generateProject(spec);
+  const html=plan.files.find(x=>x.path==='public/index.html')?.content||'';
+  const runtime=plan.files.find(x=>x.path==='public/experience.js')?.content||'';
+  assert.match(html,/data-experience-hotspots/);
+  assert.match(runtime,/contentCameraPath/);
+  assert.match(runtime,/contentHotspots/);
 });
