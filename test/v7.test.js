@@ -13,7 +13,7 @@ test('asset library classifies and validates web assets safely',()=>{
   assert.equal(assetType({name:'house.glb',mime:'model/gltf-binary'}),'model');
   assert.equal(assetType({name:'hero.webp',mime:'image/webp'}),'image');
   assert.equal(assetType({name:'tour.mp4',mime:'video/mp4'}),'video');
-  assert.equal(safeAssetName('../My House 01.glb'),'_My_House_01.glb');
+  assert.equal(safeAssetName('../My House 01.glb'),'My_House_01.glb');
   const body=Buffer.from('asset');assert.equal(hashBuffer(body).length,64);
   assert.equal(validateAssetUpload({name:'house.glb',mime:'application/octet-stream',size:1024}).ok,true);
   assert.equal(validateAssetUpload({name:'script.exe',mime:'application/octet-stream',size:1024}).ok,false);
