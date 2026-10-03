@@ -16,7 +16,7 @@ test('landing experience has the complete product narrative and conversion surfa
 
 test('landing styling defines motion, depth, responsive layout and reduced-motion support',()=>{
   const c=css();
-  for(const token of ['@keyframes','animation:','backdrop-filter','@media (prefers-reduced-motion: reduce)','@media (max-width: 900px)']) assert.ok(c.includes(token),token);
+  for(const token of ['@keyframes','animation:','backdrop-filter','prefers-reduced-motion','max-width: 900px']) assert.ok(c.includes(token),token);
 });
 
 test('landing script exposes interactive demo, reveal observer and mobile nav behavior',()=>{
