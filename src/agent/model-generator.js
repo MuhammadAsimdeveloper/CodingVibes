@@ -49,8 +49,11 @@ export async function generateProjectWithModel({request,spec,context,router,onTo
   const out=await router.stream({system:SYSTEM,user,tier:'standard',signal,onToken:t=>{text+=t;onToken(t)},onUsage});
   if(!out?.model||out.provider==='fallback')return null;
   const payload=JSON.parse(cleanJson(text));
-  let operations=validateOperations(payload,{target,fresh});
   const contentOperations=Array.isArray(payload.contentOperations)?payload.contentOperations.slice(0,100).filter(x=>x&&typeof x.collection==='string'&&['add','update','delete','reorder'].includes(x.type)):[];
+  const hasFileOperations=Array.isArray(payload.operations)||Array.isArray(payload.files);
+  let operations=hasFileOperations?validateOperations(payload,{target,fresh}):[];
+  if(!operations.length&&!contentOperations.length)throw new Error('Model returned neither file operations nor content operations');
+  if(fresh&&target&&!hasFileOperations)for(const required of target.requiredFiles||[])throw new Error('Fresh '+target.id+' application is missing required file: '+required);
   if(contentOperations.length)operations=operations.filter(x=>!(x.path==='public/content/site.json'&&x.type==='write'));
   if(fresh&&spec.siteKind){const paths=new Set(operations.map(x=>x.path).filter(Boolean));if(!paths.has('public/content/site.json'))operations.push({type:'write',path:'public/content/site.json',content:JSON.stringify(createDefaultSiteContent({kind:spec.siteKind,templateId:spec.siteTemplateId,templateLabel:spec.siteTemplateLabel,request}),null,2)+'\n'});if(!paths.has('public/content-runtime.js'))operations.push({type:'write',path:'public/content-runtime.js',content:contentRuntimeJs()});}
   const manifestHash=hash(operations);
