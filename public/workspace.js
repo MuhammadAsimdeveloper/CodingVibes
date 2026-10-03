@@ -52,13 +52,30 @@ const cvWorkspace=(function(){
   function enhanceEditor(){
     var file=q('#filePreview');if(!file||q('#editorToolbar'))return;
     var bar=document.createElement('div');bar.id='editorToolbar';bar.className='editor-toolbar';
-    bar.innerHTML='<span id="editorFileName" class="editor-name">No file selected</span><span class="editor-actions"><button type="button" id="formatHint" class="tool-button">Editor</button></span>';
+    bar.innerHTML='<span id="editorFileName" class="editor-name">No file selected</span><span class="editor-actions"><button type="button" id="editorFind" class="tool-button">Find</button><button type="button" id="editorCommand" class="tool-button">⌘P</button><span class="muted small">Monaco</span></span>';
     file.parentNode.insertBefore(bar,file);
-    file.addEventListener('input',function(){var name=q('#editorFileName');if(name&&!name.textContent.endsWith(' •'))name.textContent+=' •'});
+    var host=document.createElement('div');host.id='monacoEditor';host.className='monaco-editor-host';file.parentNode.insertBefore(host,file);file.classList.add('editor-fallback');
+    var editor=null,currentPath='';
+    function language(path){var x=String(path||'').split('.').pop().toLowerCase();return ({js:'javascript',jsx:'javascript',ts:'typescript',tsx:'typescript',json:'json',css:'css',scss:'scss',html:'html',md:'markdown',py:'python',go:'go',java:'java',kt:'kotlin',swift:'swift',rs:'rust',dart:'dart',yaml:'yaml',yml:'yaml'})[x]||'plaintext';}
+    function sync(){if(editor)file.value=editor.getValue();}
+    function setContent(value,path){currentPath=path||currentPath;file.value=String(value||'');var name=q('#editorFileName');if(name)name.textContent=currentPath||'No file selected';if(editor){editor.setValue(file.value);monaco.editor.setModelLanguage(editor.getModel(),language(currentPath));}}
+    window.cvSetEditorContent=setContent;window.cvSyncEditor=sync;
+    function bootMonaco(){
+      if(!window.require)return;
+      window.require.config({paths:{vs:'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs'}});
+      window.require(['vs/editor/editor.main'],function(){
+        editor=monaco.editor.create(host,{value:file.value||'',language:language(currentPath),theme:'vs-dark',automaticLayout:true,minimap:{enabled:true},fontSize:13,wordWrap:'off',padding:{top:12,bottom:12},scrollBeyondLastLine:false,bracketPairColorization:{enabled:true}});
+        editor.onDidChangeModelContent(sync);
+        file.style.display='none';host.style.display='block';
+      });
+    }
+    file.addEventListener('input',sync);
     var files=q('#files');if(files)new MutationObserver(function(){
-      var selected=files.querySelector('.file[aria-current="true"]');
-      if(selected){var n=q('#editorFileName');if(n)n.textContent=selected.textContent}
+      var selected=files.querySelector('.file[aria-current="true"]');if(selected){var n=q('#editorFileName');if(n)n.textContent=selected.textContent;}
     }).observe(files,{subtree:true,attributes:true,childList:true});
+    q('#editorFind')?.addEventListener('click',function(){if(editor)editor.getAction('actions.find').run();});
+    q('#editorCommand')?.addEventListener('click',function(){if(editor)editor.focus();});
+    bootMonaco();
   }
   function openPalette(){
     closePalette();
