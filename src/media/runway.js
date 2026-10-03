@@ -1,6 +1,7 @@
 const DEFAULT_MODEL = process.env.CODINGVIBES_VIDEO_MODEL || 'gen4_turbo';
 const DEFAULT_RATIO = process.env.CODINGVIBES_VIDEO_RATIO || '1280:720';
 const DEFAULT_DURATION = Number(process.env.CODINGVIBES_VIDEO_DURATION || 5);
+const ALLOWED_MODELS = new Set(String(process.env.CODINGVIBES_VIDEO_ALLOWED_MODELS || DEFAULT_MODEL).split(',').map(x => x.trim()).filter(Boolean));
 const MAX_PROMPT = 4000;
 const MAX_DURATION = 10;
 const API = 'https://api.dev.runwayml.com/v1';
@@ -22,7 +23,8 @@ export function normalizeVideoRequest(body = {}) {
   const duration = Number(body.duration || DEFAULT_DURATION);
   if (![5, 10].includes(duration) || duration > MAX_DURATION) throw Object.assign(new Error('video_duration_must_be_5_or_10'), { status: 400 });
   const ratio = ['1280:720', '720:1280', '960:960'].includes(String(body.ratio || DEFAULT_RATIO)) ? String(body.ratio || DEFAULT_RATIO) : DEFAULT_RATIO;
-  const model = String(body.model || DEFAULT_MODEL).slice(0, 80);
+  const requestedModel = String(body.model || DEFAULT_MODEL).slice(0, 80);
+  const model = ALLOWED_MODELS.has(requestedModel) ? requestedModel : DEFAULT_MODEL;
   return { prompt, duration, ratio, model };
 }
 
@@ -36,7 +38,9 @@ export async function createVideoTask({ prompt, duration = DEFAULT_DURATION, rat
     error.details = data;
     throw error;
   }
-  return { taskId: data.id || data.taskId, raw: data };
+  const taskId = data.id || data.taskId;
+  if (!taskId) throw new Error('Runway did not return a task id');
+  return { taskId, raw: data };
 }
 
 export async function getVideoTask(taskId) {
