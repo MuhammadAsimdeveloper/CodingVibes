@@ -111,7 +111,7 @@ const cvWorkspace=(function(){
       var wrap=document.createElement('label');wrap.className='content-field';var l=document.createElement('span');l.className='muted small';l.textContent=label;var el=document.createElement(type==='textarea'?'textarea':'input');el.name=name;el.value=value==null?'':String(value);if(type==='number')el.type='number';else if(type!=='textarea')el.type=type==='url'?'url':'text';if(type==='textarea')el.rows=name==='description'?5:3;wrap.append(l,el);return wrap;
     }
     function renderEditor(){
-      editor.replaceChildren();var item=items().find(function(x){return x.id===currentId})||null;var isProduct=currentCollection==='products';
+      editor.replaceChildren();var item=items().find(function(x){return x.id===currentId})||null;var isProduct=currentCollection==='products';window.cvContentSelection=item?{collection:currentCollection,id:item.id}:null;
       var head=document.createElement('div');head.className='content-editor-head';var h=document.createElement('strong');h.textContent=item?'Edit '+(item.title||item.name||'record'):'New '+currentCollection.replace(/([A-Z])/g,' $1');head.append(h);editor.append(head);
       editor.append(input('title','Title / name',item?.title||item?.name||''));
       editor.append(input('description','Description',item?.description||'','textarea'));
@@ -151,6 +151,32 @@ const cvWorkspace=(function(){
     q('#contentImport',box).onclick=function(){q('#contentImportFile',box).click()};
     q('#contentImportFile',box).onchange=async function(e){var file=e.target.files?.[0];if(!file)return;try{var parsed=JSON.parse(await file.text());var projectId=window.cvProjectId;if(Array.isArray(parsed)){for(const record of parsed){var rr=await fetch('/api/projects/'+encodeURIComponent(projectId)+'/content/operations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({operation:{type:'add',collection:currentCollection||'products',record}})});var jj=await rr.json();if(!rr.ok)throw new Error(jj.error||'bulk_import_failed')}await fetchContent();hint.textContent='Imported '+parsed.length+' records into '+currentCollection+'.';}else{var r=await fetch('/api/projects/'+encodeURIComponent(projectId)+'/content',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({content:parsed,kind:parsed.kit||'business'})});var j=await r.json();if(!r.ok)throw new Error(j.error||'import_failed');content=j.content;currentCollection=Array.isArray(content.products)?'products':(schema?.editableCollections?.[0]?.name||'products');currentId=null;fillCollections();renderRecords();renderEditor();hint.textContent='Imported content and synchronized the project.';}}catch(err){hint.textContent=err.message}e.target.value=''};
     window.cvRefreshContentStudio=fetchContent;
+  }
+  function createAssetStudio(){
+    var composer=q('.composer');if(!composer||q('#assetStudio'))return;
+    var box=document.createElement('details');box.id='assetStudio';box.className='asset-studio';
+    box.innerHTML='<summary>Asset Library <span id="assetSummary" class="muted small">models, images, video & media</span></summary>'+
+      '<div class="asset-toolbar"><select id="assetRole"><option value="site-image">Site image</option><option value="product-image">Product image</option><option value="product-model">Product 3D model</option><option value="product-video">Product video</option><option value="scene-model">Scene 3D model</option><option value="scene-poster">Scene poster</option><option value="scene-video">Scene video</option><option value="property-image">Property image</option><option value="property-model">Property 3D model</option><option value="property-video">Property video</option><option value="font">Font</option><option value="texture">Texture</option></select><input id="assetFile" type="file" multiple accept="image/*,video/mp4,video/webm,.glb,.gltf,audio/*,.woff,.woff2,.ttf,.otf"><button id="assetUpload" type="button" class="primary">Upload</button></div>'+
+      '<div id="assetList" class="asset-list"></div><div id="assetHint" class="muted small">Upload assets once, then reuse them across your site.</div>';
+    composer.insertBefore(box,composer.querySelector('.composer-row'));
+    var fileInput=q('#assetFile',box),role=q('#assetRole',box),list=q('#assetList',box),hint=q('#assetHint',box);
+    async function loadAssets(){
+      var pid=window.cvProjectId;if(!pid)return;try{var j=await fetch('/api/projects/'+encodeURIComponent(pid)+'/assets').then(function(r){if(!r.ok)throw new Error('asset_library_unavailable');return r.json()});list.replaceChildren();(j.assets||[]).forEach(function(a){
+        var row=document.createElement('div');row.className='asset-row';
+        var info=document.createElement('div');info.className='asset-info';if(a.kind==='image'){var im=document.createElement('img');im.src=a.public_path;im.alt='';im.loading='lazy';info.append(im);}
+        var text=document.createElement('div');text.className='asset-text';var name=document.createElement('strong');name.textContent=a.name;var meta=document.createElement('span');meta.className='muted small';meta.textContent=a.kind+' · '+Math.max(1,Math.round(a.size/1024))+' KB · '+a.role;text.append(name,meta);info.append(text);
+        var actions=document.createElement('div');actions.className='asset-actions';var copy=document.createElement('button');copy.type='button';copy.className='tool-button';copy.textContent='Copy URL';copy.onclick=function(){navigator.clipboard?.writeText(a.public_path);hint.textContent='Copied '+a.public_path;};
+        var attach=document.createElement('button');attach.type='button';attach.className='tool-button';attach.textContent='Attach';attach.onclick=function(){attachAsset(a)};
+        var del=document.createElement('button');del.type='button';del.className='tool-button danger-button';del.textContent='Delete';del.onclick=async function(){if(!confirm('Delete this asset?'))return;var pid=window.cvProjectId;var rr=await fetch('/api/projects/'+encodeURIComponent(pid)+'/assets/'+encodeURIComponent(a.id),{method:'DELETE'});if(!rr.ok){hint.textContent='Asset delete failed';return}loadAssets();};
+        actions.append(copy,attach,del);row.append(info,actions);list.append(row);
+      });var summary=q('#assetSummary',box);if(summary)summary.textContent=(j.assets?.length||0)+' reusable assets';}catch(e){hint.textContent=e.message;}}
+    async function attachAsset(a){
+      var sel=window.cvContentSelection;if(!sel){hint.textContent='Select a product, property or scene in Content Studio first.';return;}
+      var mode=a.kind==='model'?'model':a.kind==='video'?'video':a.kind==='image'?'image':a.kind;
+      if(sel.collection==='scenes'&&a.kind==='image')mode='poster';
+      try{var pid=window.cvProjectId;var rr=await fetch('/api/projects/'+encodeURIComponent(pid)+'/assets/'+encodeURIComponent(a.id)+'/attach',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({collection:sel.collection,recordId:sel.id,mode})});var j=await rr.json();if(!rr.ok)throw new Error(j.error||'attach_failed');hint.textContent='Attached '+a.name+' to '+sel.collection+'.';window.cvRefreshContentStudio?.();}catch(e){hint.textContent=e.message;}}
+    q('#assetUpload',box).onclick=async function(){var pid=window.cvProjectId,files=[...(fileInput.files||[])];if(!pid||!files.length){hint.textContent='Choose one or more assets first.';return}this.disabled=true;for(const file of files){try{var rr=await fetch('/api/projects/'+encodeURIComponent(pid)+'/assets',{method:'POST',headers:{'content-type':file.type||'application/octet-stream','x-asset-name':file.name,'x-asset-role':role.value},body:file});var j=await rr.json();if(!rr.ok)throw new Error(j.error||'upload_failed');hint.textContent='Uploaded '+file.name;}catch(e){hint.textContent=file.name+': '+e.message}}this.disabled=false;fileInput.value='';loadAssets();};
+    window.cvRefreshAssetStudio=loadAssets;loadAssets();
   }
   function enhanceEditor(){
     var file=q('#filePreview');if(!file||q('#editorToolbar'))return;
@@ -226,7 +252,7 @@ const cvWorkspace=(function(){
       b.addEventListener('click',function(){qa('.file',files).forEach(function(x){x.setAttribute('aria-current',x===b?'true':'false')})});
     })}).observe(files,{childList:true,subtree:true});
   }
-  function boot(){createShell();createComposerTools();createTemplateStudio();createContentStudio();enhanceEditor();observeFiles();wireForm();setMode('build')}
+  function boot(){createShell();createComposerTools();createTemplateStudio();createContentStudio();createAssetStudio();enhanceEditor();observeFiles();wireForm();setMode('build')}
   return {boot,setMode,openPalette};
 })();
 window.addEventListener('DOMContentLoaded',function(){cvWorkspace.boot()});
