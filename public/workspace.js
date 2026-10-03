@@ -38,15 +38,15 @@ const cvWorkspace=(function(){
     var composer=q('.composer');if(!composer||q('#templateStudio'))return;
     var box=document.createElement('details');box.id='templateStudio';box.className='template-studio';
     box.innerHTML='<summary>Templates <span class="muted small">basic + animated + 3D</span></summary>'+
-      '<div class="template-tools"><select id="templateSelect"><option value="">Start from scratch</option></select><input id="templateSearch" placeholder="Search templates…"><select id="templateCategory"><option value="">All categories</option></select><button type="button" id="templateClear" class="tool-button">Clear</button></div>'+
+      '<div class="template-tools"><select id="templateSelect"><option value="">Start from scratch</option></select><input id="templateSearch" placeholder="Search templates…"><select id="templateCategory"><option value="">All categories</option></select><select id="templateExperience"><option value="">All experiences</option></select><button type="button" id="templateClear" class="tool-button">Clear</button></div>'+
       '<div id="templateGrid" class="template-grid"></div><div id="templateHint" class="muted small">Choose a template to seed the agent. Your custom requirements always take priority.</div>';
     composer.insertBefore(box,composer.querySelector('.composer-row'));
-    var search=q('#templateSearch',box),category=q('#templateCategory',box),grid=q('#templateGrid',box),sel=q('#templateSelect',box);
+    var search=q('#templateSearch',box),category=q('#templateCategory',box),experience=q('#templateExperience',box),grid=q('#templateGrid',box),sel=q('#templateSelect',box);
     var templates=[];
     function render(){
-      var term=(search.value||'').toLowerCase(),cat=category.value;
+      var term=(search.value||'').toLowerCase(),cat=category.value,exp=experience.value;
       grid.replaceChildren();
-      templates.filter(function(t){return (!cat||t.category===cat)&&(!term||[t.label,t.category].concat(t.tags||[]).join(' ').toLowerCase().includes(term));}).forEach(function(t){
+      templates.filter(function(t){return (!cat||t.category===cat)&&(!exp||t.experience===exp)&&(!term||[t.label,t.category,t.experience,t.style].concat(t.tags||[]).join(' ').toLowerCase().includes(term));}).forEach(function(t){
         var b=document.createElement('button');b.type='button';b.className='template-card';b.dataset.templateId=t.id;
         var title=document.createElement('strong');title.textContent=t.label;
         var meta=document.createElement('span');meta.className='muted small';meta.textContent=t.category+' · '+(t.tier==='pro'?'PRO':'FREE');
@@ -55,8 +55,8 @@ const cvWorkspace=(function(){
         grid.appendChild(b);
       });
     }
-    fetch('/api/templates').then(function(r){return r.json()}).then(function(j){templates=j.templates||[];templates.forEach(function(t){var o=document.createElement('option');o.value=t.id;o.textContent=t.label+(t.tier==='pro'?' · PRO':' · FREE');sel.append(o)});var cats=[...new Set(templates.map(t=>t.category))].sort();cats.forEach(function(cat){var o=document.createElement('option');o.value=cat;o.textContent=cat;category.append(o)});render();window.cvRefreshContentStudio?.(window.cvProjectId)}).catch(function(){});
-    search.addEventListener('input',render);category.addEventListener('change',render);sel?.addEventListener('change',function(){window.cvRefreshContentStudio?.(window.cvProjectId);});q('#templateClear',box).onclick=function(){var sel=q('#templateSelect');if(sel){sel.value='';sel.dispatchEvent(new Event('change'));}search.value='';category.value='';q('#templateHint').textContent='Choose a template to seed the agent.';render()};
+    fetch('/api/templates').then(function(r){return r.json()}).then(function(j){templates=j.templates||[];templates.forEach(function(t){var o=document.createElement('option');o.value=t.id;o.textContent=t.label+(t.tier==='pro'?' · PRO':' · FREE');sel.append(o)});var cats=[...new Set(templates.map(t=>t.category))].sort();cats.forEach(function(cat){var o=document.createElement('option');o.value=cat;o.textContent=cat;category.append(o)});var exps=[...new Set(templates.map(t=>t.experience).filter(Boolean))].sort();exps.forEach(function(exp){var o=document.createElement('option');o.value=exp;o.textContent=exp==='3d'?'3D / Immersive':exp==='motion'?'Motion / Animated':exp;experience.append(o)});render();window.cvRefreshContentStudio?.(window.cvProjectId)}).catch(function(){});
+    search.addEventListener('input',render);category.addEventListener('change',render);experience.addEventListener('change',render);sel?.addEventListener('change',function(){window.cvRefreshContentStudio?.(window.cvProjectId);});q('#templateClear',box).onclick=function(){var sel=q('#templateSelect');if(sel){sel.value='';sel.dispatchEvent(new Event('change'));}search.value='';category.value='';experience.value='';q('#templateHint').textContent='Choose a template to seed the agent.';render()};
   }
   function createComposerTools(){
     var composer=q('.composer');if(!composer||q('#composerTools'))return;
