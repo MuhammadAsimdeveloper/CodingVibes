@@ -22,7 +22,7 @@ For custom providers, use a HTTPS base URL. HTTP is restricted to local loopback
 
 Create a gateway token in the **Use Coding Vibes from another AI tool** section.
 
-Use the Coding Vibes server origin as the base URL and /v1 as the API path.
+Use the Coding Vibes server origin as the base URL and /v1 as the API path. Plugin clients can discover the protocol at /.well-known/codingvibes-ai.json.
 
 Example request shape:
 
