@@ -40,9 +40,11 @@ export function collectProjectContext(root,{index=null,focus=''}={}){
     if(/(^|\/)(package\.json|vite\.config\.|next\.config\.|src\/main\.|src\/app\.|app\/page\.|index\.(js|ts|jsx|tsx))$/.test(lower))score+=8;
     for(const needle of needles)if(lower.includes(needle))score+=3;
     const indexedEntry=index?.files?.find(x=>x.path===rel);
-    score+=Math.max(0,3-Math.min(3,Number(indexedEntry?.imports?.length||0)/20));
-    for(const symbol of (indexedEntry?.symbols||[])){const sym=String(symbol.name||symbol).toLowerCase();if(needles.some(n=>sym.includes(n)))score+=5;}
-    const importText=(indexedEntry?.imports||[]).join(' ').toLowerCase();for(const needle of needles)if(importText.includes(needle))score+=1;
+    const indexedSymbols=(index?.symbols||[]).filter(x=>x.path===rel).map(x=>x.name);
+    const indexedImports=(index?.imports||[]).filter(x=>x.path===rel).map(x=>x.specifier);
+    score+=Math.max(0,3-Math.min(3,indexedImports.length/20));
+    for(const symbol of indexedSymbols){const sym=String(symbol||'').toLowerCase();if(needles.some(n=>sym.includes(n)))score+=5;}
+    const importText=indexedImports.join(' ').toLowerCase();for(const needle of needles)if(importText.includes(needle))score+=1;
     return {rel,score,position};
   }).sort((a,b)=>b.score-a.score||a.position-b.position).map(x=>x.rel);
   const files=[],tree=[];let totalBytes=0,truncated=false;
