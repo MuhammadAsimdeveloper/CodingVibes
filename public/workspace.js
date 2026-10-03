@@ -65,7 +65,9 @@ const cvWorkspace=(function(){
       '<button type="button" data-prompt="Add authentication with protected routes and a polished login flow">Auth</button>'+
       '<button type="button" data-prompt="Make the UI responsive and accessible on mobile and desktop">Responsive</button>'+
       '<button type="button" data-prompt="Find and fix the current failing verification issues">Fix verification</button>'+
-      '<button type="button" data-prompt="Review the app for security and obvious UX problems">Review quality</button>'+<button type="button" data-prompt="Transform the existing website into an immersive 3D experience with cinematic motion, responsive fallback and accessible controls">3D transform</button>'+<button type="button" data-prompt="Transform the existing website into a polished animated experience with scroll storytelling, micro-interactions and reduced-motion support">Motion</button>'+
+      '<button type="button" data-prompt="Review the app for security and obvious UX problems">Review quality</button>'+
+      '<button type="button" data-prompt="Transform the existing website into an immersive 3D experience with cinematic motion, responsive fallback and accessible controls">3D transform</button>'+
+      '<button type="button" data-prompt="Transform the existing website into a polished animated experience with scroll storytelling, micro-interactions and reduced-motion support">Motion</button>'+
       '</div><span id="intentHint" class="muted small">Build mode creates a new application contract.</span>';
     composer.insertBefore(row,composer.querySelector('.composer-row'));
     qa('[data-prompt]',row).forEach(function(b){b.onclick=function(){
