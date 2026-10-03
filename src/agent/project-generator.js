@@ -19,7 +19,7 @@ function experienceMarkup(spec){
  '<label class="file-button">Load 3D model<input id="modelInput" type="file" accept=".glb,.gltf" hidden></label></div></div>'+
  '<div class="experience-stage" data-property-tour="'+(property?'true':'false')+'"><canvas id="experience3d" aria-label="Interactive 3D scene"></canvas>'+
  '<div id="experienceFallback" class="experience-fallback">3D is loading. Your content remains available below.</div>'+
- (property?'<div class="hotspots"><button type="button" data-room="Living">Living room</button><button type="button" data-room="Kitchen">Kitchen</button><button type="button" data-room="Bedroom">Bedroom</button></div>':'')+
+ '<div class="hotspots" data-experience-hotspots>'+ (property?'<button type="button" data-room="Living">Living room</button><button type="button" data-room="Kitchen">Kitchen</button><button type="button" data-room="Bedroom">Bedroom</button>':'') +'</div>'+
  '</div>'+
  (property?'<div class="tour-media"><div><h3>Video walkthrough</h3><p class="muted">Add an MP4/WebM tour or use the camera-tour recording.</p><input id="videoInput" type="file" accept="video/mp4,video/webm"></div><video id="tourVideo" controls playsinline preload="metadata"></video></div>':'')+
  '</section><script type="module" src="/experience.js"></script>';
