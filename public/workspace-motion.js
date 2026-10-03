@@ -7,7 +7,7 @@ const cvMotion=(()=>{
     const nodes=[...root.querySelectorAll('[data-reveal]')];
     if(reduced.matches){nodes.forEach(n=>n.classList.add('is-visible'));return}
     const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-visible');io.unobserve(e.target)}}),{threshold:.08});
-    nodes.forEach((n,i)=>{n.style.transitionDelay=Math.min(i*55,330)+'ms';io.observe(n)});
+    nodes.forEach((n,i)=>{n.dataset.revealIndex=String(Math.min(i,6));io.observe(n)});
   };
   const toast=(message)=>{
     document.querySelector('.cv-toast')?.remove();
