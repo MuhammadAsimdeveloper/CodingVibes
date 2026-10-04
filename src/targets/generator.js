@@ -20,20 +20,22 @@ include ':app'
     {path:'android/build.gradle',content:`plugins { id 'com.android.application' version '8.7.3' apply false }
 `},
     {path:'android/app/build.gradle',content:`plugins { id 'com.android.application' }
-android { namespace 'com.codingvibes.twa'; compileSdk 35
- defaultConfig { applicationId 'com.codingvibes.twa'; minSdk 23; targetSdk 35; versionCode 1; versionName '1.0' }
+android { namespace 'com.codingvibes.twa'; compileSdk 36
+ defaultConfig { applicationId 'com.codingvibes.twa'; minSdk 23; targetSdk 36; versionCode 1; versionName '1.0' }
 }
 dependencies { implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2' }
 `},
     {path:'android/app/src/main/res/values/strings.xml',content:`<resources><string name="app_name">codingVibes</string><string name="launchUrl">https://example.com/</string></resources>
 `},
+    {path:'android/gradle.properties',content:`android.useAndroidX=true\nandroid.enableJetifier=false\n`},
     {path:'android/app/src/main/AndroidManifest.xml',content:`<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" android:label="@string/app_name"><activity android:name="com.google.androidbrowserhelper.trusted.LauncherActivity" android:exported="true"><meta-data android:name="android.support.customtabs.trusted.DEFAULT_URL" android:value="@string/launchUrl"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>
 `},
     {path:'README.md',content:commonReadme(spec,target)+'\nSet the trusted web origin in strings.xml and configure Digital Asset Links for production trust. Then build with Android Gradle tooling.\n'},
   ],summary:`Generate ${target.label}`,manifestHash:hash(spec),source:'deterministic'};
   if(target.id==='mobile-expo')return {files:[
-    {path:'package.json',content:json({name:'codingvibes-mobile',version:'0.1.0',private:true,scripts:{check:'node --check App.tsx',test:'node --test test/smoke.test.js'},dependencies:{expo:'^53.0.0','react':'^19.0.0','react-native':'^0.79.0'},devDependencies:{typescript:'^5.0.0'}})},
-    {path:'app.json',content:json({expo:{name:'codingVibes App',slug:'codingvibes-app',version:'1.0.0',orientation:'portrait',platforms:['android','ios'],android:{package:'com.codingvibes.app'},ios:{bundleIdentifier:'com.codingvibes.app'}}})},
+    {path:'package.json',content:json({name:'codingvibes-mobile',version:'0.1.0',private:true,scripts:{check:'tsc --noEmit',test:'node --test test/smoke.test.js',export:web:'expo export --platform web'},dependencies:{expo:'^57.0.0','react':'19.2.3','react-dom':'19.2.3','react-native':'0.86.0','react-native-web':'0.21.0','@expo/metro-runtime':'~6.1.0'},devDependencies:{typescript:'^5.9.2'}})},
+    {path:'app.json',content:json({expo:{name:'codingVibes App',slug:'codingvibes-app',version:'1.0.0',orientation:'portrait',platforms:['android','ios'],userInterfaceStyle:'automatic',android:{package:'com.codingvibes.app'},ios:{bundleIdentifier:'com.codingvibes.app'}}})},
+    {path:'tsconfig.json',content:json({extends:'expo/tsconfig.base',compilerOptions:{strict:true,noEmit:true},include:['**/*.ts','**/*.tsx']})},
     {path:'eas.json',content:json({build:{development:{developmentClient:true,distribution:'internal'},preview:{distribution:'internal',android:{buildType:'apk'}},production:{}}})},
     {path:'App.tsx',content:`import React from 'react';import{SafeAreaView,Text,StyleSheet,View}from'react-native';export default function App(){return <SafeAreaView style={styles.safe}><View style={styles.card}><Text style={styles.kicker}>codingVibes</Text><Text style={styles.title}>${escapeForCode(spec.request.slice(0,120))}</Text><Text style={styles.body}>Generated for ${target.label}.</Text></View></SafeAreaView>}const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#0b1020'},card:{margin:24,marginTop:80,padding:24,borderRadius:24,backgroundColor:'#121a2d'},kicker:{color:'#8ea8ff',fontWeight:'700'},title:{color:'#fff',fontSize:30,fontWeight:'800',marginTop:12},body:{color:'#aebbd1',marginTop:12}});\n`},
     {path:'test/smoke.test.js',content:`import test from'node:test';import assert from'node:assert/strict';test('mobile source exists',()=>assert.ok(true));\n`},
@@ -66,11 +68,14 @@ dependencies { implementation 'com.google.androidbrowserhelper:androidbrowserhel
     {path:'README.md',content:commonReadme(spec,target)+'\nRun npm install and npm start on the target OS to launch. Package with your preferred Electron distribution tooling.\n'},
   ],summary:`Generate ${target.label}`,manifestHash:hash(spec),source:'deterministic'};
   if(target.id==='desktop-tauri')return {files:[
-    {path:'package.json',content:json({name:'codingvibes-tauri',private:true,type:'module',scripts:{check:'node --check src/main.js'},dependencies:{'@tauri-apps/api':'^2.5.0'}})},
+    {path:'package.json',content:json({name:'codingvibes-tauri',private:true,type:'module',scripts:{check:'node --check src/main.js',test:'node --test test/smoke.test.js'},dependencies:{'@tauri-apps/api':'^2.9.0'},devDependencies:{'@tauri-apps/cli':'^2.9.0'}})},
     {path:'src/main.js',content:`console.log('codingVibes Tauri frontend');\n`},
-    {path:'src-tauri/Cargo.toml',content:`[package]\nname="codingvibes-app"\nversion="0.1.0"\nedition="2021"\n[dependencies]\ntauri={version="2",features=[]}\n`},
-    {path:'src-tauri/src/main.rs',content:`fn main(){tauri::Builder::default().run(tauri::generate_context!()).expect("error while running tauri application");}\n`},
-    {path:'README.md',content:commonReadme(spec,target)+'\nRequires Rust/Cargo and Tauri tooling on the build machine.\n'},
+    {path:'src/index.html',content:`<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>codingVibes</title></head><body><main><h1>codingVibes</h1><p>Build Vibe app for desktop</p></main><script type="module" src="/main.js"></script></body></html>\n`},
+    {path:'src-tauri/tauri.conf.json',content:json({'$schema':'https://schema.tauri.app/config/2',productName:'codingVibes',version:'0.1.0',identifier:'com.codingvibes.app',build:{frontendDist:'../src'},app:{windows:[{title:'codingVibes',width:1280,height:800,resizable:true}],security:{csp:"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"},bundle:{active:true,targets:'all'}}})},
+    {path:'src-tauri/build.rs',content:`fn main(){tauri_build::build()}\n`},
+    {path:'src-tauri/Cargo.toml',content:`[package]\nname="codingvibes-app"\nversion="0.1.0"\nedition="2021"\n\n[build-dependencies]\ntauri-build={version="2"}\n\n[dependencies]\ntauri={version="2",features=[]}\n`},
+    {path:'test/smoke.test.js',content:`import test from'node:test';import assert from'node:assert/strict';test('desktop source exists',()=>assert.ok(true));\n`},
+    {path:'README.md',content:commonReadme(spec,target)+'\nRequires Rust/Cargo and Tauri tooling on the build machine. The generated frontend is bundled from src/index.html.\n'},
   ],summary:`Generate ${target.label}`,manifestHash:hash(spec),source:'deterministic'};
   if(target.id==='multiplatform-kmp')return {files:[
     {path:'settings.gradle.kts',content:`pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\ndependencyResolutionManagement { repositories { google(); mavenCentral() } }\nrootProject.name="codingvibes-kmp"\ninclude(":shared")\n`},
