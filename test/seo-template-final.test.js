@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import {spawn} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {generateProject} from '../src/agent/project-generator.js';
@@ -76,4 +78,16 @@ test('template catalog contains unique ids and the final additions',()=>{
   assert.equal(new Set(ids).size,ids.length);
   for(const id of ['job-board','business-directory','appointment-booking','membership-community','docs-knowledge-base','operations-dashboard','subscription-commerce','real-estate-rentals']) assert.ok(ids.includes(id),id);
   assert.ok(templates.length>=50);
+});
+
+test('generated owner SEO fields are applied to rendered public HTML',async()=>{
+  const spec={request:'Create a boutique consulting website',siteKind:'business',siteTemplateLabel:'Northstar Consulting',siteDescription:'Independent strategy and operations consulting for growing companies.',pages:['/','/services','/about'],apis:[],components:['services','team','contact'],dataModel:[{name:'services'}],behavior:{adminPortal:true,ownerOnlyAdmin:true,publicLogin:false,search:false,payments:false},styling:{visual:{threeD:false}},experience:{threeD:false}};
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cv-seo-runtime-'));
+  const plan=generateProject(spec);
+  for(const file of plan.files){const target=path.join(dir,file.path);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,file.content);}
+  const contentFile=path.join(dir,'public','content','site.json');const content=JSON.parse(fs.readFileSync(contentFile,'utf8'));content.seo={title:'Northstar Consulting | Strategy Services',description:'Independent strategy and operations consulting for SaaS companies, professional services teams and growing businesses.',image:'/og-default.svg',canonical:'/services'};content.brand.name='Northstar Consulting';fs.writeFileSync(contentFile,JSON.stringify(content,null,2)+'\\n');
+  const port=4510+Math.floor(Math.random()*30);const child=spawn(process.execPath,['app/server.js'],{cwd:dir,env:{...process.env,HOST:'127.0.0.1',PORT:String(port),CV_SESSION_SECRET:'01234567890123456789012345678901'},stdio:'ignore'});
+  try{for(let i=0;i<100;i++){try{const health=await fetch('http://127.0.0.1:'+port+'/api/health');if(health.ok)break}catch{}await new Promise(r=>setTimeout(r,25));}
+    const res=await fetch('http://127.0.0.1:'+port+'/');assert.equal(res.status,200);const html=await res.text();assert.match(html,/<title>Northstar Consulting \| Strategy Services<\\/title>/);assert.match(html,/content="Independent strategy and operations consulting for SaaS companies, professional services teams and growing businesses\."/);assert.match(html,/rel="canonical" href="http:\/\/127\.0\.0\.1:\d+\/services"/);assert.match(html,/property="og:url" content="http:\/\/127\.0\.0\.1:\d+\/services"/);assert.match(html,/property="og:image" content="http:\/\/127\.0\.0\.1:\d+\/og-default\.svg"/);
+  }finally{if(child.exitCode===null){child.kill('SIGTERM');await new Promise(resolve=>child.once('exit',resolve));}fs.rmSync(dir,{recursive:true,force:true});}
 });
