@@ -3,6 +3,8 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 
+const WORKSPACE_ROLE_INTERNALS=['owner','admin','editor','reviewer','viewer'];
+
 export class Store{
   constructor(filename=process.env.DATABASE_PATH||'./data/codingvibes.db'){
     fs.mkdirSync(path.dirname(path.resolve(filename)),{recursive:true});
