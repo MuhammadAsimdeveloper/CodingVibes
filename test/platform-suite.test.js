@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from '../src/db/store.js';
-import {canRole,defaultDesignSystem,normalizeDesignSystem,reflectBuild,domainVerificationInstructions,researchWeb} from '../src/platform/feature-suite.js';
+import {canRole,authorizeProjectRole,projectCapabilityMatrix,defaultDesignSystem,normalizeDesignSystem,reflectBuild,domainVerificationInstructions,researchWeb} from '../src/platform/feature-suite.js';
 
 test('workspace collaboration persists roles and grants shared project read access',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cv-suite-workspace-'));const store=new Store(path.join(dir,'db.sqlite'));
@@ -74,6 +74,36 @@ test('reflection produces actionable self-test state',()=>{
 test('research adapter fails closed when live research is not configured',async()=>{
  const out=await researchWeb('market research',{apiUrl:'',apiKey:''});
  assert.equal(out.configured,false);assert.deepEqual(out.results,[]);
+});
+
+test('shared project resources honor workspace membership without owner-only visibility',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cv-suite-shared-resources-'));const store=new Store(path.join(dir,'db.sqlite'));
+ const owner=store.createUser('owner2@example.com','hash'),editor=store.createUser('editor2@example.com','hash'),viewer=store.createUser('viewer2@example.com','hash');
+ const project=store.createProject(owner.id,{name:'Resources'});const ws=store.getWorkspace(project.workspace_id,owner.id);
+ store.upsertWorkspaceMember(ws.id,editor.id,'editor');store.upsertWorkspaceMember(ws.id,viewer.id,'viewer');
+ assert.equal(authorizeProjectRole(store,project.id,editor.id,'editor').role,'editor');
+ assert.throws(()=>authorizeProjectRole(store,project.id,viewer.id,'editor'),e=>e?.status===403);
+ const deployment=store.createDeployment(owner.id,project.id,{provider:'manual',status:'ready'});
+ assert.equal(store.getDeployment(deployment.id,editor.id).id,deployment.id);
+ assert.equal(store.listDeployments(project.id,viewer.id).length,1);
+ const asset=store.createProjectAsset(project.id,owner.id,{name:'hero.png',mime:'image/png',kind:'image',role:'hero',size:3,sha256:'abc',publicPath:'/assets/a-hero.png'});
+ assert.equal(store.getProjectAsset(asset.id,project.id,editor.id).id,asset.id);
+ assert.equal(store.listProjectAssets(project.id,viewer.id).length,1);
+ const baseline=store.upsertVisualBaseline(project.id,owner.id,{route:'/',storedPath:'/tmp/base.png',size:4,sha256:'def'});
+ assert.equal(store.listVisualBaselines(project.id,viewer.id).length,1);
+ const caps=projectCapabilityMatrix({role:'viewer',plan:'free',verified:true,providers:['manual']});
+ assert.equal(caps.canView,true);assert.equal(caps.canEdit,false);assert.equal(caps.canDeploy,false);assert.equal(caps.canManageDomains,false);
+ store.close();fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('platform mutation routes are explicitly role-gated',async()=>{
+ const server=await (await import('node:fs/promises')).readFile('src/server.js','utf8');
+ assert.ok(server.includes("requireProjectRole(projectId,userId,'editor')"));
+ assert.ok(server.includes("requireProjectRole(pid,userId,'admin')"));
+ assert.ok(server.includes("requireProjectRole(pid,userId,'editor')"));
+ assert.ok(server.includes("createContentRevision(pid,userId,content"));
+ assert.ok(server.includes("requireProjectRole(runSession.project_id,userId,'editor')"));
+ assert.ok(server.includes("const depReq=store.getDependencyRequest"));
 });
 
 test('platform feature suite artifacts are present',()=>{
