@@ -11,7 +11,8 @@ export function readiness({router,store}={}) {
   if(production && runtime==='daytona' && !process.env.DAYTONA_API_KEY) blockers.push('daytona_api_key_missing');
   if(production && runtime==='container' && !process.env.CODINGVIBES_CONTAINER_IMAGE) blockers.push('container_image_required');
   if(production && process.env.CODINGVIBES_ENFORCE_QUOTAS!=='true') blockers.push('quota_enforcement_not_enabled');
-  const db=process.env.DATABASE_PATH||'./data/codingvibes.db';try{fs.accessSync(requireDir(db),fs.constants.R_OK|fs.constants.W_OK);}catch{blockers.push('database_directory_not_writable');}\n  if(store?.healthcheck && !store.healthcheck()) blockers.push('database_healthcheck_failed');
+  const db=process.env.DATABASE_PATH||'./data/codingvibes.db';try{fs.accessSync(requireDir(db),fs.constants.R_OK|fs.constants.W_OK);}catch{blockers.push('database_directory_not_writable');}
+  if(store?.healthcheck && !store.healthcheck()) blockers.push('database_healthcheck_failed');
   const git=spawnSync('git',['--version'],{stdio:'ignore'});if(git.status!==0)blockers.push('git_missing');
   const model=router?.getStatus?.()||{};if(production&&!model.configured)blockers.push('model_provider_not_configured');
   if(production && process.env.CODINGVIBES_ENABLE_BROWSER!=='true')blockers.push('browser_verification_required');
