@@ -10,8 +10,9 @@ Describe the user-visible behavior and the main implementation areas.
 - [ ] `npm run launch:check`
 - [ ] SEO / accessibility / security impact reviewed when applicable
 
-## Release notes
+## Build Vibe release notes
 
-- [ ] Documentation updated
+- [ ] Documentation updated and no superseded versioned entrypoints remain
 - [ ] New template or feature has coverage
+- [ ] `npm run final:check` passes when the change affects release/runtime behavior
 - [ ] No secrets or generated runtime state committed
