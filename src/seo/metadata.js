@@ -24,9 +24,9 @@ export function organizationSchema(baseUrl,name='Build Vibe'){
   const base=normalizeBaseUrl(baseUrl)||'__SITE_URL__';
   return {'@type':'Organization','@id':base+'/#organization',name,url:base+'/',logo:absoluteUrl(base,'/favicon.svg')};
 }
-export function websiteSchema(baseUrl,name='Build Vibe',description='AI website and app builder'){
+export function websiteSchema(baseUrl,name='Build Vibe',description='AI website and app builder',{publisher=true}={}){
   const base=normalizeBaseUrl(baseUrl)||'__SITE_URL__';
-  return {'@type':'WebSite','@id':base+'/#website',name,url:base+'/',description,publisher:{'@id':base+'/#organization'}};
+  const schema={'@type':'WebSite','@id':base+'/#website',name,url:base+'/',description};if(publisher)schema.publisher={'@id':base+'/#organization'};return schema;
 }
 export function softwareApplicationSchema(baseUrl){
   const base=normalizeBaseUrl(baseUrl)||'__SITE_URL__';
