@@ -42,7 +42,7 @@ Structured data improves machine understanding and eligibility for supported sea
 
 robots.txt exposes the canonical sitemap and blocks authenticated/API paths. sitemap.xml lists only public URLs and uses absolute URLs.
 
-Published generated sites can optionally use IndexNow by setting CODINGVIBES_INDEXNOW_KEY and, when needed, CODINGVIBES_INDEXNOW_KEY_LOCATION. IndexNow is a freshness notification channel for participating search engines; it does not guarantee indexing or ranking.
+Published generated sites can optionally use IndexNow by setting CODINGVIBES_INDEXNOW_KEY. When the search engine requires the key file at a custom URL, set CODINGVIBES_INDEXNOW_KEY_LOCATION and make that public key file available on the deployed host. IndexNow is a freshness notification channel for participating search engines; it does not guarantee indexing or ranking.
 
 ## Measurement
 
