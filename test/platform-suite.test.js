@@ -20,7 +20,7 @@ test('workspace collaboration persists roles and grants shared project read acce
  store.close();fs.rmSync(dir,{recursive:true,force:true});
 });
 
-test('workspace invites are email-bound and approvals are reviewer/admin controlled',()=>{
+test('workspace invites are email-bound and approvals are reviewer/admin controlled',async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cv-suite-invite-'));const store=new Store(path.join(dir,'db.sqlite'));
  const owner=store.createUser('owner@example.com','hash'),reviewer=store.createUser('reviewer@example.com','hash'),other=store.createUser('other@example.com','hash');
  const ws=store.createWorkspace(owner.id,'Team');
