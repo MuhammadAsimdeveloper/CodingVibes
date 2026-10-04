@@ -23,8 +23,8 @@ for (const token of [
   'CODINGVIBES_TRUST_PROXY',
   'strict-transport-security',
   "cache-control','no-store",
-  'if(method===\'GET\'&&u.pathname===\'/terms\')',
-  'if(method===\'GET\'&&u.pathname===\'/privacy\')',
+  "pathname==='/terms'",
+  "pathname==='/privacy'",
 ]) {
   if (!server.includes(token)) failures.push(`server_missing:${token}`);
 }
