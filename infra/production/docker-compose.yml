@@ -11,7 +11,6 @@ services:
       CODINGVIBES_CONTAINER_IMAGE: ${CODINGVIBES_CONTAINER_IMAGE:?Set the production execution image}
     env_file:
       - ../../.env.production
-    depends_on: {}
     ports:
       - '4400:4400'
     volumes:
@@ -58,11 +57,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
-    healthcheck:
-      test: ['CMD','curl','-f','http://127.0.0.1:9000/minio/health/live']
-      interval: 5s
-      timeout: 5s
-      retries: 12
     restart: unless-stopped
 
 volumes:
