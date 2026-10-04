@@ -40,3 +40,30 @@ test('billing helper maps Stripe price IDs to configured plans',async()=>{const 
 test('target execution availability is classified',async()=>{const {targetExecutionAvailability}=await import('../src/targets/verify.js');const {getTarget}=await import('../src/targets/registry.js');const r=targetExecutionAvailability(getTarget('web-node'));assert.equal(r.canBuild,true);assert.equal(typeof r.host.available,'boolean');});
 
 test('launch center surfaces exist',async()=>{const f=await (await import('node:fs/promises')).readFile('src/server.js','utf8');assert.ok(f.includes('/api/launch/status'));assert.ok(f.includes('/api/billing/webhook'));assert.ok(f.includes('/api/targets/availability'));});
+
+
+test('production readiness forbids host-local execution and requires an explicit container image',()=>{
+ const previous={...process.env};
+ try{
+  process.env.NODE_ENV='production';
+  process.env.CODINGVIBES_SESSION_SECRET='x'.repeat(64);
+  process.env.CODINGVIBES_ENFORCE_QUOTAS='true';
+  process.env.CODINGVIBES_ENABLE_BROWSER='true';
+  process.env.CODINGVIBES_PUBLIC_URL='https://example.com';
+  process.env.CODINGVIBES_SUPERADMIN_EMAILS='ops@example.com';
+  process.env.CODINGVIBES_PROJECT_ROOT='/tmp/cv-readiness-projects';
+  process.env.CODINGVIBES_WORK_ROOT='/tmp/cv-readiness-work';
+  process.env.CODINGVIBES_CHECKPOINT_ROOT='/tmp/cv-readiness-checkpoints';
+  process.env.CODINGVIBES_BACKUP_ROOT='/tmp/cv-readiness-backups';
+  process.env.CODINGVIBES_RUNTIME='local';
+  const local=readiness({router:{getStatus:()=>({configured:true,provider:'openai'})}});
+  assert.ok(local.blockers.includes('host_execution_forbidden_in_production'));
+  process.env.CODINGVIBES_RUNTIME='container';
+  delete process.env.CODINGVIBES_CONTAINER_IMAGE;
+  const container=readiness({router:{getStatus:()=>({configured:true,provider:'openai'})}});
+  assert.ok(container.blockers.includes('container_image_required'));
+ } finally {
+  for(const k of Object.keys(process.env))if(!(k in previous))delete process.env[k];
+  for(const [k,v] of Object.entries(previous))process.env[k]=v;
+ }
+});
