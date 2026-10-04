@@ -7,6 +7,37 @@ export function canRole(role,minimum='viewer'){
   return (ROLE_ORDER[String(role||'viewer')]||0)>=(ROLE_ORDER[minimum]||1);
 }
 
+export function authorizeProjectRole(store,projectId,userId,minimum='viewer'){
+  const project=store?.getProject(projectId,userId);
+  if(!project)throw Object.assign(new Error('project_not_found'),{status:404});
+  const role=project.user_id===userId?'owner':(store.getWorkspace(project.workspace_id,userId)?.role||'viewer');
+  if(!canRole(role,minimum))throw Object.assign(new Error('project_role_required'),{status:403,role,requiredRole:minimum});
+  return {project,role};
+}
+
+export function projectCapabilityMatrix({role='viewer',plan='free',verified=false,providers=[],cloudConfigured=false}={}){
+  const deployProviders=new Set(Array.isArray(providers)?providers:[]);
+  return {
+    role,
+    plan,
+    verified,
+    canView:canRole(role,'viewer'),
+    canEdit:canRole(role,'editor'),
+    canReview:canRole(role,'reviewer'),
+    canAdmin:canRole(role,'admin'),
+    canDesign:canRole(role,'editor'),
+    canContent:canRole(role,'editor'),
+    canAssets:canRole(role,'editor'),
+    canDeploy:canRole(role,'editor')&&verified,
+    canManageDomains:canRole(role,'admin'),
+    canManageCloud:canRole(role,'admin'),
+    canInvite:canRole(role,'admin'),
+    canApprove:canRole(role,'reviewer'),
+    connectedDeployProviders:[...deployProviders],
+    cloudConfigured:Boolean(cloudConfigured),
+  };
+}
+
 export function defaultDesignSystem(request=''){
   const text=String(request||'').toLowerCase();
   const dark=/(dark|black|neon|cyber|futuristic|immersive)/.test(text);
@@ -84,16 +115,24 @@ export async function researchWeb(query,{limit=8,signal,apiUrl=process.env.CODIN
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),Number(process.env.CODINGVIBES_RESEARCH_TIMEOUT_MS||15000));
   const body={query:q,limit:Math.min(12,Math.max(1,Number(limit)||8))};
+  const externalSignal=signal&&typeof signal.addEventListener==='function'?signal:null;
+  const abortFromExternal=()=>controller.abort();
+  if(externalSignal)externalSignal.addEventListener('abort',abortFromExternal,{once:true});
   try{
-    const response=await fetch(apiUrl,{method:'POST',headers:{'content-type':'application/json',accept:'application/json',...(apiKey?{authorization:'Bearer '+apiKey,'x-api-key':apiKey}:{})},body:JSON.stringify(body),signal:signal||controller.signal});
-    const raw=await response.text();if(!response.ok)throw new Error('research_http_'+response.status);
+    const response=await fetch(apiUrl,{method:'POST',headers:{'content-type':'application/json',accept:'application/json',...(apiKey?{authorization:'Bearer '+apiKey,'x-api-key':apiKey}:{})},body:JSON.stringify(body),signal:controller.signal});
+    const contentLength=Number(response.headers.get('content-length')||0);if(contentLength>2*1024*1024)throw new Error('research_response_too_large');
+    const raw=await response.text();if(raw.length>2*1024*1024)throw new Error('research_response_too_large');
+    if(!response.ok)throw new Error('research_http_'+response.status);
     let json={};try{json=JSON.parse(raw)}catch{json={}};
     const rows=Array.isArray(json.results)?json.results:Array.isArray(json.data)?json.data:Array.isArray(json.items)?json.items:[];
     return{configured:true,provider:String(json.provider||process.env.CODINGVIBES_RESEARCH_PROVIDER||'http-search'),results:rows.map(normalizeResearchResult).filter(Boolean).slice(0,12)};
   }catch(error){
     if(error?.name==='AbortError')return{configured:true,provider:'http-search',results:[],status:'timeout',message:'Research request timed out.'};
     return{configured:true,provider:'http-search',results:[],status:'failed',message:String(error.message||error).slice(0,240)};
-  }finally{clearTimeout(timeout);}
+  }finally{
+    clearTimeout(timeout);
+    if(externalSignal)externalSignal.removeEventListener('abort',abortFromExternal);
+  }
 }
 
 export function parallelAgentPlan(request,spec){
