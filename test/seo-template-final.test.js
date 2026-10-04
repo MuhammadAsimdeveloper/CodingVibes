@@ -17,7 +17,7 @@ test('public landing page has complete organic-search metadata',()=>{
   assert.match(html,/<title>Build Vibe — AI Product Builder<\/title>/);
   assert.match(html,/<meta name="description" content="[^"]{80,}">/);
   assert.match(html,/<meta name="robots" content="index,follow,max-image-preview:large/);
-  assert.match(html,/<link rel="canonical" href="__SITE_URL__\//>);
+  assert.match(html,/<link rel="canonical" href="__SITE_URL__\/">);
   assert.match(html,/__SITE_URL__\/og-image\.svg/);
   assert.match(html,/__SITE_URL__\/og-image\.svg/);
   assert.match(html,/name="twitter:image" content="__SITE_URL__\/og-image\.svg"/);
