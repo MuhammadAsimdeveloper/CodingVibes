@@ -34,7 +34,7 @@ const TARGETS = [
   },
   {
     id: 'desktop-tauri', family: 'desktop', label: 'Desktop · Tauri / Rust', language: 'rust', framework: 'tauri', packageManager: 'cargo/npm', runtime: 'rust-node', artifactTypes: ['source','desktop-installer'], preview: 'tauri',
-    requiredFiles: ['package.json','src-tauri/Cargo.toml','src-tauri/src/main.rs'], verify: ['cargo check','npm run check'], supports: ['windows','macos','linux','desktop','rust'], native: true,
+    requiredFiles: ['package.json','src/main.js','src/index.html','src-tauri/Cargo.toml','src-tauri/tauri.conf.json','src-tauri/src/main.rs'], verify: ['cargo check','npm run check'], supports: ['windows','macos','linux','desktop','rust'], native: true,
   },
   {
     id: 'multiplatform-kmp', family: 'multiplatform', label: 'Multiplatform · Kotlin', language: 'kotlin', framework: 'kotlin-multiplatform', packageManager: 'gradle', runtime: 'gradle', artifactTypes: ['source','android','ios','desktop','web'], preview: 'compose',
