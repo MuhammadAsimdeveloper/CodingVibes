@@ -1,6 +1,8 @@
 # Build Vibe
 
-**AI coding platform that ships VERIFIED software, not just code.**
+[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 12.0.0**
+
+**AI product builder that ships verified, portable software — not just code.**
 
 Build Vibe turns natural-language product requirements into a target-aware application contract, plans and model-generates the correct project shape, uses bounded repository context, executes web builds in an isolated preview runtime, performs target-specific source/toolchain verification for mobile/native/desktop projects, runs bounded AI repair when configured, and leaves the changeset reviewable before an explicit commit.
 
@@ -84,7 +86,7 @@ This follows the direction of current AI design/build systems that combine promp
 
 ## Launch-candidate product layer
 
-Version 3.0 adds the product controls needed around the verified software loop: free/pro/team plan definitions, monthly run/token quotas, Stripe Checkout and signed webhook handling, explicit dependency approval before networked package installation, production readiness checks at `/ready`, durable checkpoints, cancellation/resume, connector health, GitHub import, and actionable diagnostics.
+The current release includes free/pro/team plan definitions, monthly run/token quotas, Stripe Checkout and signed webhook handling, explicit dependency approval before networked package installation, production readiness checks at `/ready`, durable checkpoints, cancellation/resume, connector health, GitHub import, and actionable diagnostics.
 
 The research synthesis is documented in `docs/RESEARCH_SYNTHESIS.md`. Multi-agent parallelism, deep screenshot-diff infrastructure and one-click multi-cloud deployment remain later scale features rather than prerequisites for the core verified build workflow.
 
@@ -94,11 +96,11 @@ The application code is launch-candidate quality, but a public deployment still 
 
 ## Current build phase
 
-The current 2.5 build adds model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial and related styles, protected generated-file paths, hashed tool-call snapshots, and session restoration in the UI. The deterministic generator remains the offline fallback.
+Build Vibe 12.0.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
 
 For model-first generation, use a configured OpenAI-compatible provider, OpenRouter, Ollama, LM Studio, or a compatible custom endpoint. Generated projects are still constrained to the supported Node/browser runtime contract and must pass verification before commit.
 
-## 11.0.0 final hardening
+## 12.0.0 current release
 
 The final release pass adds a search-ready public landing surface and generated-site SEO contract: descriptive titles and descriptions, canonical URLs, Open Graph/Twitter previews, favicon and manifest assets, JSON-LD WebSite/WebPage markup, runtime absolute robots/sitemap URLs, and a noindex boundary for the authenticated builder.
 
@@ -110,7 +112,7 @@ SEO is not a ranking guarantee: the implementation focuses on crawlability, accu
 
 ## Native/mobile verification runners
 
-Version 2.3 adds isolated native execution instead of pretending source generation is equivalent to a verified binary. Android/Gradle, Flutter, and Rust/Tauri can run in disposable Docker runners with network disabled, resource limits, dropped capabilities, and a writable project mount. Expo/React Native can use EAS cloud builds, and iOS/SwiftUI uses a configured macOS runner because Xcode requires macOS. Built APK/AAB/desktop artifacts are hashed, copied into the artifact store, and can be uploaded through the configured artifact endpoint. Android artifacts can be installed and smoke-tested with `adb` when a real emulator/device is attached to the isolated runner.
+The current native execution layer adds isolated execution instead of pretending source generation is equivalent to a verified binary. Android/Gradle, Flutter, and Rust/Tauri can run in disposable Docker runners with network disabled, resource limits, dropped capabilities, and a writable project mount. Expo/React Native can use EAS cloud builds, and iOS/SwiftUI uses a configured macOS runner because Xcode requires macOS. Built APK/AAB/desktop artifacts are hashed, copied into the artifact store, and can be uploaded through the configured artifact endpoint. Android artifacts can be installed and smoke-tested with `adb` when a real emulator/device is attached to the isolated runner.
 
 See `docs/NATIVE_RUNNERS.md` for configuration and runner boundaries.
 
@@ -126,43 +128,21 @@ A representative high-complexity prompt is:
 
 The requirements layer now extracts 3D intent, commerce pages, Stripe checkout/webhook routes, product/order entities, payment safety acceptance criteria, and visual/runtime acceptance checks. The regression suite generates a runnable fallback and verifies the generated acceptance project. A real Stripe transaction is intentionally not faked: live payment verification requires the user’s Stripe credentials and provider environment.
 
-## Runner fleet hardening (2.5)
+## Runner fleet hardening
 
 Native verification now uses a hardened runner-fleet contract: dependency egress is restricted to named `codingvibes-deps-*` networks, production runner images can be required to be digest-pinned, child processes inherit only an allowlisted environment by default, native jobs have bounded leases/timeouts, dependency caches are keyed and isolated, artifact uploads have HTTPS/size/timeout controls, Android device verification validates APK checksums and captures failure diagnostics, and the macOS Xcode runner accepts a fixed versioned job schema rather than arbitrary commands.
 
 Self-hosted GitHub runners should remain private/restricted. GitHub documents that self-hosted runners can be compromised by untrusted workflow code and recommends limiting their access and treating their environment as security-sensitive.
 
-See `docs/RUNNER_FLEET_SPEC.md` for the v2.5 execution lifecycle, capability matrix, artifact contract, device verification contract, and production gates. The authenticated `GET /api/fleet` endpoint and `npm run fleet:doctor` expose runner readiness without exposing secrets.
+See `docs/RUNNER_FLEET_SPEC.md` for the execution lifecycle, capability matrix, artifact contract, device verification contract, and production gates. The authenticated `GET /api/fleet` endpoint and `npm run fleet:doctor` expose runner readiness without exposing secrets.
 
-## 2.6.0 fleet hardening
+## Runner fleet security and provenance
 
-The runner fleet now has durable runner registration/heartbeat state, sanitized disposable native workspaces, durable artifact metadata and authenticated artifact downloads, plus macOS protocol v3 with simulator tests before Xcode builds. See `docs/RELEASE_2.6.0.md` and `docs/RUNNER_FLEET_SPEC.md`.
+The runner fleet now has durable runner registration/heartbeat state, sanitized disposable native workspaces, durable artifact metadata and authenticated artifact downloads, plus macOS protocol v3 with simulator tests before Xcode builds. See `docs/RUNNER_FLEET_SPEC.md`.
 
-## 5.0 free-core business model, motion and video
+## Current product capabilities
 
-Version 5 keeps the core code-first workflow free: basic website generation, project source inspection, the Monaco code editor, manual code edits, and normal verification. Server-side feature gates reserve high-cost capabilities for paid plans: advanced GSAP/scroll motion and Three.js/WebGL 3D generation, AI video, one-click deployment, advanced SEO automation, private projects, and custom domains.
+Build Vibe is now a visual universal product builder rather than the former code-first workspace. The active release covers prompt-to-product generation, structured content, Design Mode, responsive experiences, motion and 3D recipes, owner-only generated admin portals, optional Google login, collaboration/RBAC, verified deployments, native target contracts, SEO/AEO, and production scale-out foundations.
 
-Free users receive five AI build runs per month and a one-time short AI-video trial when `RUNWAYML_API_SECRET` is configured. Pro and Team plans have larger build quotas plus monthly video-second allowances. Manual code editing is not gated.
+The generator preserves a deterministic offline fallback, while configured model providers add model-first planning, generation and bounded repair. All generated changes remain verification-gated before an explicit commit.
 
-The video workflow uses the Runway Dev API, stores completed MP4 files under the persistent `data/media` volume, and never exposes the provider's expiring output URL directly to the browser. For production, keep the API key server-side and use a persistent storage volume.
-
-### SEO and motion defaults
-
-Generated web projects now receive a concrete SEO contract covering semantic HTML, route metadata, canonical URLs, Open Graph/Twitter metadata, JSON-LD where appropriate, robots and sitemap files. Motion requests are constrained to respect `prefers-reduced-motion`; 3D is treated as progressive enhancement with a content-preserving fallback.
-
-### Hosting
-
-Use Hostinger as the primary Node.js runtime for the full application, with Cloudflare as the DNS/CDN/WAF edge. See `docs/deploy-hostinger.md` and `docs/deploy-cloudflare.md`.
-
-Static-only generated websites can be exported to Cloudflare Pages separately. The full Build Vibe control plane should not be moved directly into a Pages Function without replacing its Node/SQLite persistence layer.
-
-
-## 5.1 template studio and immersive 3D
-
-Version 5.1 adds a curated template studio with 27 starter blueprints spanning SaaS, agency, commerce, hospitality, real estate, creative, technology, education and immersive experiences. Templates are searchable and categorized in the builder; custom user requirements always override template copy.
-
-Premium templates include an interactive real-estate tour recipe: Three.js rendering, GLB/GLTF model loading, procedural-house fallback, orbit/zoom/pan controls, room hotspots, floor-plan-ready UI, camera-tour choreography, MP4/WebM playback and user-initiated browser recording. The same runtime can be reused by product, automotive, architecture and immersive-story templates.
-
-The model generator receives an explicit experience recipe so an existing basic site can be transformed using precise patches instead of being replaced wholesale.
-
-Research grounding for this stage used current public documentation and product pages for Replit, Spline, Rive, Webflow templates, Dora, and Three.js. Those references inform capability patterns only; generated template content remains original and code-owned.

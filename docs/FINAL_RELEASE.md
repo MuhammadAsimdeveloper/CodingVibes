@@ -1,6 +1,6 @@
-# Build Vibe 11.0.0 — final release contract
+# Build Vibe 12.0.0 — current release contract
 
-Build Vibe 11.0.0 consolidates the verified AI product-builder workflow with the final SEO, template-studio, repository-hygiene and release-gate pass.
+Build Vibe 12.0.0 consolidates the verified AI product-builder workflow with the final SEO, template-studio, repository-hygiene and release-gate pass.
 
 ## Customer flow
 
@@ -26,7 +26,11 @@ The catalog includes curated starters across SaaS, agencies, commerce, hospitali
 
 ## Repository hygiene
 
-The canonical repository remains `MuhammadAsimdeveloper/CodingVibes`. Release work is developed in branches, validated through pull-request CI and squashed to `main`. Dependabot, contribution guidance, security guidance and a pull-request checklist are committed with the release tooling.
+The canonical Git repository remains `MuhammadAsimdeveloper/CodingVibes` for clone/remote compatibility; the product identity is Build Vibe. Release work is developed in branches, validated through pull-request CI and squashed to `main`. Superseded release-note files are removed from the active tree. Dependabot, contribution guidance, security guidance and a pull-request checklist are committed with the release tooling.
+
+## Scale-out foundation
+
+PostgreSQL, S3-compatible object storage, Redis Streams, durable outbox processing and a configurable worker are included as explicit production adapters. These do not silently replace the existing SQLite Store.
 
 ## Operations
 
