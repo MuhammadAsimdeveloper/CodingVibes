@@ -32,7 +32,18 @@
 - Audit/event evidence.
 - Rate limiting and readiness gates.
 
-## Scale-out work after 10.0.0
+## ✅ Stage 13 — scale-out infrastructure primitives
+
+- PostgreSQL pool, transactions, health checks and idempotent reference migration.
+- S3-compatible object storage with checksum and size enforcement.
+- Redis Streams durable queue with consumer groups, retries and stale-message reclaim.
+- PostgreSQL outbox repository plus Redis relay.
+- Graceful configurable worker process.
+- Production compose reference stack and `npm run scaleout:doctor` gate.
+
+The existing Store remains SQLite until a separate, reviewed schema migration is performed.
+
+## Scale-out work after 13.0.0
 - Managed PostgreSQL before horizontal scaling.
 - Dedicated object storage before large media workloads.
 - Managed job queue for multi-instance background workers.

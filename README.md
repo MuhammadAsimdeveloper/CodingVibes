@@ -38,6 +38,12 @@ Open `http://127.0.0.1:4400` and create an account.
 
 The deterministic planner works without a hosted model credential. For model-driven planning/repair configure a provider and model. `CODINGVIBES_PROVIDER=ollama` and `CODINGVIBES_PROVIDER=lmstudio` support local OpenAI-compatible servers; OpenRouter, Anthropic Messages API, and custom OpenAI-compatible base URLs are supported through the same router.
 
+## Scale-out production foundation
+
+The repository now includes optional PostgreSQL, S3-compatible object storage, and Redis Streams adapters plus a PostgreSQL outbox repository, durable worker, outbox relay, production compose reference stack, and `npm run scaleout:doctor` validation.
+
+Development remains SQLite/local by default. The scale-out adapters are explicit foundations for artifacts, asynchronous jobs, and new persistence-backed workloads. The existing application Store is not silently migrated to PostgreSQL.
+
 ## Runtime modes
 
 Development defaults to `local`. Production defaults to `daytona`.
