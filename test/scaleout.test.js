@@ -42,3 +42,20 @@ test('scaleout configuration fails closed for incomplete managed backends',()=>{
  assert.ok(config.blockers.includes('redis_queue_url_missing'));
  const pg=postgresConfigStatus({CODINGVIBES_DB_BACKEND:'postgres'});assert.equal(pg.configured,false);
 });
+import {readiness} from '../src/ops/readiness.js';
+
+test('production readiness gates scaleout only when explicitly required',()=>{
+ const previous={...process.env};
+ try{
+  process.env.NODE_ENV='production';
+  process.env.CODINGVIBES_SCALEOUT_REQUIRED='true';
+  process.env.CODINGVIBES_DB_BACKEND='postgres';
+  delete process.env.DATABASE_URL;
+  const result=readiness({router:{getStatus:()=>({configured:false,provider:null})}});
+  assert.equal(result.ready,false);
+  assert.ok(result.blockers.includes('scaleout_postgres_database_not_configured'));
+ }finally{
+  for(const key of Object.keys(process.env))if(!(key in previous))delete process.env[key];
+  for(const [key,value] of Object.entries(previous))process.env[key]=value;
+ }
+});
