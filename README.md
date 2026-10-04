@@ -40,6 +40,12 @@ Open `http://127.0.0.1:4400` and create an account.
 
 The deterministic planner works without a hosted model credential. For model-driven planning/repair configure a provider and model. `CODINGVIBES_PROVIDER=ollama` and `CODINGVIBES_PROVIDER=lmstudio` support local OpenAI-compatible servers; OpenRouter, Anthropic Messages API, and custom OpenAI-compatible base URLs are supported through the same router.
 
+## Deep SEO and AEO
+
+Build Vibe now ships a crawlable public content layer, absolute runtime canonicals/social URLs, structured data, expanded XML sitemap, robots controls, search-intent pages, owner-editable generated SEO fields, a discoverability scorecard, webmaster verification hooks and optional IndexNow freshness notifications.
+
+SEO remains people-first: useful original content and clean site architecture are prioritized over keyword stuffing or mass-generated landing pages. Run `npm run launch:check` to verify the public SEO routes and sitemap contract. See `docs/SEO.md` for the full ranking/discovery system.
+
 ## Scale-out production foundation
 
 The repository now includes optional PostgreSQL, S3-compatible object storage, and Redis Streams adapters plus a PostgreSQL outbox repository, durable worker, outbox relay, production compose reference stack, and `npm run scaleout:doctor` validation.

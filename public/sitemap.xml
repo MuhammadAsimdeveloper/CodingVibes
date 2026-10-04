@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>__SITE_URL__/</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/features</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/templates</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/pricing</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/ai-website-builder</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/ai-app-builder</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/mobile-app-builder</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/ecommerce-website-builder</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/saas-app-builder</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/3d-website-builder</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/how-it-works</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/faq</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/terms</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>__SITE_URL__/privacy</loc><lastmod>2026-10-04</lastmod></url>
 </urlset>

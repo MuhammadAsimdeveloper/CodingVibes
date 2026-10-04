@@ -110,7 +110,7 @@ test('landing SEO metadata has unique identity and crawl directives', () => {
   const html = read('public/landing.html');
   assert.match(html, /<title>Build Vibe — AI Product Builder<\/title>/);
   assert.match(html, /name="description"/);
-  assert.match(html, /name="robots" content="index,follow"/);
+  assert.match(html, /name="robots" content="index,follow,max-image-preview:large/);
   assert.match(html, /rel="canonical"/);
   assert.match(html, /property="og:title"/);
   assert.match(html, /property="og:description"/);
