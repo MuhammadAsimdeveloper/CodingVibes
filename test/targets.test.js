@@ -37,7 +37,8 @@ test('native fallbacks expose executable project contracts',()=>{
   const expo=generateTargetFallback(expoSpec,getTarget('mobile-expo'));
   const expoFiles=new Map(expo.files.map(x=>[x.path,x.content]));
   assert.ok(expoFiles.has('tsconfig.json'));
-  assert.match(expoFiles.get('package.json'),/"expo":"\\^57\\.0\\.0"/);
+  const expoPackage=JSON.parse(expoFiles.get('package.json'));
+  assert.equal(expoPackage.dependencies.expo,'^57.0.0');
   assert.match(expoFiles.get('package.json'),/"check":"tsc --noEmit"/);
   assert.ok(!expoFiles.get('package.json').includes('node --check App.tsx'));
 
