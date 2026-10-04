@@ -1,5 +1,7 @@
 # Launch guide
 
+## Build Vibe 12.0.0 launch guide
+
 ## 1. Local development
 
 ```bash
@@ -60,7 +62,7 @@ The production image installs Chromium through Playwright. Keep `CODINGVIBES_ENA
 
 ## 5. Persistence and scaling
 
-SQLite is suitable for the initial single-instance MVP. Before horizontal scaling, move the persistence layer to a managed relational database and introduce explicit job coordination/locking.
+SQLite remains the default single-instance control-plane store. For scale-out workloads, use the new PostgreSQL, Redis Streams and S3-compatible adapters; the legacy Store schema must be migrated separately and explicitly.
 
 ## 6. Production requirements
 
@@ -72,9 +74,9 @@ The model receives a bounded, secret-filtered repository context. It can return 
 
 ## 8. Launch candidate gates
 
-Version 3.0 adds explicit dependency approval, billing/usage controls and a production readiness endpoint. Before opening the service to the public, run `GET /ready` and require `ready: true`. Configure a production model provider, a secure session secret, isolated execution, quota enforcement, database persistence/backups, TLS at the edge, monitoring, and (when monetizing) Stripe prices plus the webhook secret.
+The current release includes explicit dependency approval, billing/usage controls and a production readiness endpoint. Before opening the service to the public, run `GET /ready` and require `ready: true`. Configure a production model provider, a secure session secret, isolated execution, quota enforcement, database persistence/backups, TLS at the edge, monitoring, and (when monetizing) Stripe prices plus the webhook secret.
 
-The platform already supports bounded task orchestration, repository indexing, checkpoints, cancellation/resume, review gates, GitHub import, AI connector fallback, target runners and browser verification. Multi-agent parallelism, full visual diffing and one-click multi-cloud deployment remain later scale features rather than prerequisites for the core verified build workflow.
+The platform supports bounded task orchestration, repository indexing, checkpoints, cancellation/resume, review gates, GitHub import, AI connector fallback, target runners, browser verification, parallel agents and scale-out infrastructure adapters.
 
 
 ## Target builds
