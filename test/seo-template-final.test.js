@@ -27,6 +27,7 @@ test('public landing page has complete organic-search metadata',()=>{
   assert.doesNotMatch(html,/<meta[^>]+name="keywords"/i);
   assert.match(html,/\/favicon\.svg/);
   assert.match(html,/\/site\.webmanifest/);
+  for(const href of ['/features','/templates','/pricing','/how-it-works','/ai-website-builder','/ai-app-builder'])assert.match(html,new RegExp('href="'+href.replaceAll('/','\\/')+'"'));
 });
 
 test('public SEO content pages have unique search metadata and crawl paths',()=>{const pages=listPublicSeoPages();const titles=new Set(),descriptions=new Set();assert.equal(pages.length,11);for(const page of pages){assert.ok(!titles.has(page.title),page.path);titles.add(page.title);assert.ok(!descriptions.has(page.description),page.path);descriptions.add(page.description);const html=renderPublicSeoPage(page.path);assert.match(html,/rel="canonical" href="__SITE_URL__\//);assert.match(html,/name="robots" content="index,follow,max-image-preview:large/);assert.match(html,/<h1>/);assert.match(html,/application\/ld\+json/)}assert.equal(pages.find(x=>x.path==='/faq').faqs.length,7)});
