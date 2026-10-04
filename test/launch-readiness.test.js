@@ -34,3 +34,9 @@ test('production preflight script is wired into package scripts',async()=>{
  const pkg=JSON.parse(await (await import('node:fs/promises')).readFile('package.json','utf8'));
  assert.equal(pkg.scripts['launch:preflight'],'node scripts/production-preflight.mjs');
 });
+
+test('billing helper maps Stripe price IDs to configured plans',async()=>{const x=await import('../src/billing/stripe.js');assert.equal(x.planFromStripePrice('p',{STRIPE_PRICE_PRO_MONTHLY:'p'}),'pro');assert.equal(x.planFromStripePrice('t',{STRIPE_PRICE_TEAM_MONTHLY:'t'}),'team');assert.equal(x.planFromStripePrice('x',{STRIPE_PRICE_PRO_MONTHLY:'p'}),null);});
+
+test('target execution availability is classified',async()=>{const {targetExecutionAvailability}=await import('../src/targets/verify.js');const {getTarget}=await import('../src/targets/registry.js');const r=targetExecutionAvailability(getTarget('web-node'));assert.equal(r.canBuild,true);assert.equal(typeof r.host.available,'boolean');});
+
+test('launch center surfaces exist',async()=>{const f=await (await import('node:fs/promises')).readFile('src/server.js','utf8');assert.ok(f.includes('/api/launch/status'));assert.ok(f.includes('/api/billing/webhook'));assert.ok(f.includes('/api/targets/availability'));});

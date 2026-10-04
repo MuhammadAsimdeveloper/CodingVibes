@@ -16,3 +16,6 @@ export async function createCheckoutSession({apiKey,priceId,customerEmail,succes
   if(!r.ok) throw new Error(data?.error?.message||`stripe_checkout_${r.status}`);
   return {id:data.id,url:data.url,status:data.status};
 }
+
+export function planFromStripePrice(priceId, env=process.env){const id=String(priceId||'');if(id&&env.STRIPE_PRICE_TEAM_MONTHLY===id)return'team';if(id&&env.STRIPE_PRICE_PRO_MONTHLY===id)return'pro';return null;}
+export function subscriptionPlanFromEvent(subscription,env=process.env){for(const item of(Array.isArray(subscription?.items?.data)?subscription.items.data:[])){const plan=planFromStripePrice(item?.price?.id,env);if(plan)return plan;}const p=String(subscription?.metadata?.plan||'');return['pro','team'].includes(p)?p:null;}

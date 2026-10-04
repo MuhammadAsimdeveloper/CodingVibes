@@ -14,7 +14,8 @@ import {sendJson,sendText,readJson,streamSse} from './http/json.js';
 import {resolveInside} from './core/safe-path.js';
 import {inspectWorkspace,commitWorkspace,revertWorkspace} from './git/workspace.js';
 import {ensureProjectRepository} from './projects-workspace.js';
-import {listTargets} from './targets/registry.js';
+import {listTargets,getTarget} from './targets/registry.js';
+import {targetExecutionAvailability} from './targets/verify.js';
 import {normalizeTargetId} from './targets/detect.js';
 import {CODINGVIBES_VERSION} from './version.js';
 import {fleetStatus} from './runners/status.js';
@@ -24,7 +25,7 @@ import {listIntegrationDefinitions,testIntegration} from './integrations/connect
 import {importGitHubRepository} from './integrations/github.js';
 import {buildDiagnostics} from './agent/diagnostics.js';
 import {planCatalog,currentPeriodKey,canStartRun,getPlan} from './billing/plans.js';
-import {createCheckoutSession,verifyStripeSignature} from './billing/stripe.js';
+import {createCheckoutSession,verifyStripeSignature,planFromStripePrice,subscriptionPlanFromEvent} from './billing/stripe.js';
 import {readiness} from './ops/readiness.js';
 import {requireSuperAdmin,opsOverview} from './ops/admin.js';
 import {backupStore} from './ops/backup.js';
@@ -102,6 +103,31 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   if(method==='GET'&&u.pathname==='/api/ops/overview'){try{const adminId=requireSuperAdmin(req,store);store.addAuditLog({actorUserId:adminId,action:'ops.overview.viewed',resourceType:'system'});return sendJson(res,200,{ok:true,version:CODINGVIBES_VERSION,overview:opsOverview(store)});}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message});}}
   if(method==='GET'&&u.pathname==='/api/ops/audit'){try{const adminId=requireSuperAdmin(req,store);const limit=Math.min(Math.max(Number(u.searchParams.get('limit')||100),1),500);return sendJson(res,200,{ok:true,audit:store.listAuditLogs({limit})});}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message});}}
   if(method==='POST'&&u.pathname==='/api/ops/backup'){try{const adminId=requireSuperAdmin(req,store);const result=backupStore(store);store.addAuditLog({actorUserId:adminId,action:'ops.backup.created',resourceType:'database',metadata:{size:result.size,sha256:result.sha256}});return sendJson(res,201,{ok:true,backup:{...result,path:undefined}});}catch(e){return sendJson(res,e.status||500,{ok:false,error:e.message});}}
+  if(method==='POST'&&u.pathname==='/api/billing/webhook'){
+    const raw=await readRawBody(req,MAX_BODY),signature=String(req.headers['stripe-signature']||'');
+    if(!verifyStripeSignature(raw,signature,process.env.STRIPE_WEBHOOK_SECRET))return sendJson(res,400,{ok:false,error:'invalid_stripe_signature'});
+    let event;try{event=JSON.parse(raw)}catch{return sendJson(res,400,{ok:false,error:'invalid_stripe_event'})}
+    if(!event?.id||!event?.type)return sendJson(res,400,{ok:false,error:'invalid_stripe_event'});
+    const digest=createHash('sha256').update(raw).digest('hex');
+    if(store.hasBillingEvent(event.id))return sendJson(res,200,{ok:true,duplicate:true,eventId:event.id});
+    const obj=event.data?.object||{};let account=null;
+    if(event.type==='checkout.session.completed'&&obj.client_reference_id)account=store.getBilling(String(obj.client_reference_id));
+    if(!account&&obj.subscription)account=store.getBillingBySubscription(String(obj.subscription));
+    if(!account&&obj.customer)account=store.getBillingByCustomer(String(obj.customer));
+    if(event.type==='checkout.session.completed'){
+      const metadataPlan=['pro','team'].includes(String(obj.metadata?.plan||''))?String(obj.metadata.plan):null,pricePlan=planFromStripePrice(obj.metadata?.price_id);
+      const patch={status:'active'};if(obj.customer)patch.stripe_customer_id=String(obj.customer);if(obj.subscription)patch.stripe_subscription_id=String(obj.subscription);
+      if(pricePlan)patch.plan=pricePlan;else if(metadataPlan)patch.plan=metadataPlan;if(account)store.updateBilling(account.user_id,patch);
+    }else if(event.type==='customer.subscription.created'||event.type==='customer.subscription.updated'){
+      const plan=subscriptionPlanFromEvent(obj),rawStatus=String(obj.status||''),status=['active','trialing'].includes(rawStatus)?'active':rawStatus||'past_due';
+      if(account)store.updateBilling(account.user_id,{plan:plan||account.plan,status,stripe_customer_id:String(obj.customer||account.stripe_customer_id||''),stripe_subscription_id:String(obj.id||account.stripe_subscription_id||''),current_period_end:obj.current_period_end?new Date(Number(obj.current_period_end)*1000).toISOString():account.current_period_end,cancel_at_period_end:Boolean(obj.cancel_at_period_end)});
+    }else if(event.type==='customer.subscription.deleted'){if(account)store.updateBilling(account.user_id,{plan:'free',status:'canceled',cancel_at_period_end:false,current_period_end:obj.ended_at?new Date(Number(obj.ended_at)*1000).toISOString():account.current_period_end});}
+    else if(event.type==='invoice.payment_failed'){if(account)store.updateBilling(account.user_id,{status:'past_due'});}
+    else if(event.type==='invoice.paid'){if(account)store.updateBilling(account.user_id,{status:'active'});}
+    store.recordBillingEvent(event.id,event.type,digest);
+    store.addAuditLog({actorUserId:account?.user_id||null,action:'billing.webhook.processed',resourceType:'billing_event',resourceId:event.id,metadata:{type:event.type,matched:Boolean(account)}});
+    return sendJson(res,200,{ok:true,processed:true,matched:Boolean(account),eventId:event.id});
+  }
   if(method==='GET'&&u.pathname==='/api/auth/me'){const a=auth(req);return sendJson(res,200,{ok:true,user:a?store.getUser(a.user_id):null});}
   if(u.pathname==='/v1/models'&&method==='GET'){
     const tokenUser=apiTokenAuth(req);if(!tokenUser)return sendJson(res,401,{ok:false,error:'invalid_api_token'},{'www-authenticate':'Bearer'});
@@ -184,8 +210,16 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   if(method==='GET'&&u.pathname==='/api/integrations')return sendJson(res,200,{ok:true,integrations:listIntegrationDefinitions()});
   if(method==='POST'&&u.pathname==='/api/integrations/test'){const b=await readJson(req,MAX_BODY);return sendJson(res,200,await testIntegration(String(b.integration||'')));}
   if(method==='POST'&&u.pathname==='/api/integrations/github/import'){const b=await readJson(req,MAX_BODY);let project=null;try{project=store.createProject(userId,{name:String(b.projectName||`${String(b.owner||'')}/${String(b.repo||'')}`).slice(0,80)||'Imported GitHub project'});const imported=await importGitHubRepository({owner:b.owner,repo:b.repo,ref:b.ref,projectName:project.name});const saved=store.updateProjectRepo(project.id,imported.repoPath);return sendJson(res,201,{ok:true,project:{...saved,repo_path:undefined},source:{owner:imported.owner,repo:imported.repo,ref:imported.ref,branch:imported.branch}});}catch(e){if(project)store.deleteProject(project.id,userId);return sendJson(res,400,{ok:false,error:e.message});}}
+  if(method==='GET'&&u.pathname==='/api/launch/status'){
+    const ready=readiness({router:userRouter(userId)}),billing=store.getBilling(userId),usage=store.monthlyUsage(userId,currentPeriodKey());
+    const plans=planCatalog().map(p=>({id:p.id,label:p.label,priceUsd:p.priceUsd||0,monthlyRuns:p.monthlyRuns,monthlyTokens:p.monthlyTokens,features:p.features}));
+    const connectedProviders=store.listProviderConnections(userId).map(x=>x.provider);
+    const targets=listTargets().map(t=>({...t,execution:targetExecutionAvailability(getTarget(t.id))}));
+    return sendJson(res,200,{ok:true,ready,billing:{plan:billing.plan,status:billing.status,usage},plans,providers:deploymentCatalog(),connectedProviders,targets});
+  }
   if(method==='GET'&&u.pathname==='/api/fleet')return sendJson(res,200,{ok:true,version:CODINGVIBES_VERSION,...fleetStatus(store)});
-  if(method==='GET'&&u.pathname==='/api/targets')return sendJson(res,200,{ok:true,targets:listTargets()});
+  if(method==='GET'&&u.pathname==='/api/targets/availability')return sendJson(res,200,{ok:true,targets:listTargets().map(t=>({...t,execution:targetExecutionAvailability(getTarget(t.id))}))});
+    if(method==='GET'&&u.pathname==='/api/targets')return sendJson(res,200,{ok:true,targets:listTargets()});
   if(method==='GET'&&u.pathname==='/api/projects')return sendJson(res,200,{ok:true,projects:store.listProjects(userId)});
   if(method==='GET'&&u.pathname==='/api/deployment/providers')return sendJson(res,200,{ok:true,providers:deploymentCatalog(),connected:store.listProviderConnections(userId)});
   if(/^\/api\/deployment\/providers\/[^/]+\/oauth$/.test(u.pathname)&&method==='GET'){const provider=pathParam(u.pathname,'/api/deployment/providers/').replace(/\/oauth$/,'');try{const location=beginOAuth(store,provider,{userId,redirectAfter:'/app'});res.writeHead(302,{location});res.end();return;}catch(e){return sendJson(res,e.status||503,{ok:false,error:e.message})}}

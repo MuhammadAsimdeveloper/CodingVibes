@@ -14,6 +14,7 @@ export function inspectTargetStructure(workspace,target){
   return {passed:missing.length===0&&details.rootExists,details};
 }
 
+export function targetExecutionAvailability(target){const host=inspectToolchain(target);const remoteLinux=Boolean(process.env.CODINGVIBES_LINUX_RUNNER_URL&&process.env.CODINGVIBES_LINUX_RUNNER_TOKEN&&['android-kotlin','android-twa','mobile-flutter','desktop-tauri'].includes(target.id));const remoteMac=Boolean(process.env.CODINGVIBES_MACOS_RUNNER_URL&&process.env.CODINGVIBES_MACOS_RUNNER_TOKEN&&target.id==='ios-swiftui');return{host,remote:{linux:remoteLinux,macos:remoteMac},canBuild:Boolean(host.available||remoteLinux||remoteMac||['web-node','web-pwa','desktop-electron'].includes(target.id))};}
 export function inspectToolchain(target){
   const checks={node:commandExists('node'),npm:commandExists('npm')};
   if(target.id==='mobile-expo')Object.assign(checks,{expo:commandExists('expo')});

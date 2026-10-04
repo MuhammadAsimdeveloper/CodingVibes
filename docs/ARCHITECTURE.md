@@ -60,6 +60,16 @@ Repository text is data, not instructions. File writes are confined by `safe-pat
 
 A verification report contains command results, HTTP results and browser results. A missing Playwright installation is a verification failure when browser verification is enabled, not a false pass. Each browser route gets a fresh page context to avoid cross-route error contamination.
 
+## Deployment and native execution
+
+Verified project artifacts can be exported as ZIP, pushed to GitHub, or sent through registered deployment adapters. Vercel, Netlify and Cloudflare Pages are direct static adapters; GitHub is the source path; Hostinger is an assisted GitHub-to-Node.js flow. Static-only adapters reject server-required artifacts.
+
+Native source generation covers Android, Expo/React Native, Flutter, SwiftUI, Electron, Tauri/Rust and Kotlin Multiplatform. Local/container runners plus optional remote Linux/macOS runners can perform builds; binary verification is accepted only with required artifact and test evidence.
+
+## Production release invariant
+
+A commercial production launch requires a green /ready response. The gate checks HTTPS public URL, isolated runtime, AI provider, browser verification, persistent storage, quotas, backups, super-admin configuration and Stripe production configuration when billing is required.
+
 ## Intentional deferrals
 
-Multi-agent swarms, deployment automation, team plans, credit packs, desktop/mobile clients, screenshot-diff regression infrastructure and a generic multi-runtime provider abstraction are deferred until the verified build loop is proven at real usage scale.
+Multi-agent swarms, credit packs and a fully managed Coding Vibe hosting control plane remain later scale features. The current deployment and runner abstractions are already used by the verified build workflow.
