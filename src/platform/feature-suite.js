@@ -201,14 +201,17 @@ export async function provisionCloudService({store,userId,projectId,type,config=
     const status=['database','auth','payments'].includes(type)?'ready_local':'planned';
     return store.upsertCloudService(projectId,userId,type,{provider:'build-vibe-local',status,config});
   }
-  const payload={projectId,type,config};
+  const payload={projectId,type,config},controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),Number(process.env.CODINGVIBES_CLOUD_TIMEOUT_MS||15000));
   try{
-    const r=await fetch(external.replace(/\/$/,'')+'/services',{method:'POST',headers:{'content-type':'application/json',...(process.env.CODINGVIBES_CLOUD_API_KEY?{authorization:'Bearer '+process.env.CODINGVIBES_CLOUD_API_KEY}:{})},body:JSON.stringify(payload)});
-    const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data?.error||'cloud_service_provision_failed');
+    const r=await fetch(external.replace(/\/$/,'')+'/services',{method:'POST',headers:{'content-type':'application/json',...(process.env.CODINGVIBES_CLOUD_API_KEY?{authorization:'Bearer '+process.env.CODINGVIBES_CLOUD_API_KEY}: {})},body:JSON.stringify(payload),signal:controller.signal});
+    const contentLength=Number(r.headers.get('content-length')||0);if(contentLength>2*1024*1024)throw new Error('cloud_service_response_too_large');
+    const raw=await r.text();if(raw.length>2*1024*1024)throw new Error('cloud_service_response_too_large');let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+    if(!r.ok)throw new Error(data?.error||'cloud_service_provision_failed');
     return store.upsertCloudService(projectId,userId,type,{provider:data.provider||'coding-vibes-cloud',status:data.status||'ready',config:{...config,...(data.config||{}),externalId:data.id||null}});
   }catch(error){
-    return store.upsertCloudService(projectId,userId,type,{provider:'coding-vibes-cloud',status:'failed',config,error:String(error.message||error).slice(0,500),error:String(error.message||error).slice(0,500)});
-  }
+    const message=error?.name==='AbortError'?'cloud_service_timeout':String(error.message||error).slice(0,500);
+    return store.upsertCloudService(projectId,userId,type,{provider:'coding-vibes-cloud',status:'failed',config:{...config,error:message},error:message});
+  }finally{clearTimeout(timeout);}
 }
 
 export function domainVerificationInstructions(domain,provider='vercel'){
