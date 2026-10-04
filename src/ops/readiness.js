@@ -6,9 +6,10 @@ export function readiness({router}={}) {
   const blockers=[],warnings=[];
   if(production && String(process.env.CODINGVIBES_SESSION_SECRET||'').length<32) blockers.push('session_secret_too_short');
   const runtime=process.env.CODINGVIBES_RUNTIME||(production?'daytona':'local');
-  if(production && runtime==='local' && process.env.CODINGVIBES_ALLOW_HOST_EXECUTION!=='true') warnings.push('local_runtime_selected_but_host_execution_is_disabled');
+  if(production && !['daytona','container'].includes(runtime)) blockers.push('unsupported_production_runtime');
+  if(production && runtime==='local') blockers.push('host_execution_forbidden_in_production');
   if(production && runtime==='daytona' && !process.env.DAYTONA_API_KEY) blockers.push('daytona_api_key_missing');
-  if(production && runtime==='container' && !process.env.CODINGVIBES_CONTAINER_IMAGE) warnings.push('container_image_defaulted');
+  if(production && runtime==='container' && !process.env.CODINGVIBES_CONTAINER_IMAGE) blockers.push('container_image_required');
   if(production && process.env.CODINGVIBES_ENFORCE_QUOTAS!=='true') blockers.push('quota_enforcement_not_enabled');
   const db=process.env.DATABASE_PATH||'./data/codingvibes.db';try{fs.accessSync(requireDir(db),fs.constants.R_OK|fs.constants.W_OK);}catch{blockers.push('database_directory_not_writable');}
   const git=spawnSync('git',['--version'],{stdio:'ignore'});if(git.status!==0)blockers.push('git_missing');
