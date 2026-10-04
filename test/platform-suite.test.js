@@ -36,6 +36,7 @@ test('workspace invites are email-bound and approvals are reviewer/admin control
  assert.equal(accepted.id,ws.id);
  const approval=store.createWorkspaceApproval(ws.id,project.id,{requestedBy:reviewer.id,kind:'publish'});
  assert.equal(store.decideWorkspaceApproval(approval.id,reviewer.id,'approved').status,'approved');
+ const updated=store.updateWorkspaceMemberRole(ws.id,reviewer.id,owner.id,'editor');assert.equal(updated.role,'editor');assert.equal(store.removeWorkspaceMember(ws.id,reviewer.id,owner.id).removed,true);
  store.close();fs.rmSync(dir,{recursive:true,force:true});
 });
 
