@@ -19,7 +19,7 @@ test('proxy trust and auth throttling are explicit',()=>{
 
 test('billing has a single canonical Stripe webhook route',()=>{
   const source=fs.readFileSync('src/server.js','utf8');
-  assert.equal((source.match(/\/api\/billing\/webhook/g)||[]).length,2);
+  assert.equal((source.match(/u\.pathname==='\/api\/billing\/webhook'/g)||[]).length,1);
   assert.equal(source.includes("/api/webhooks/stripe"),false);
 });
 
@@ -30,7 +30,7 @@ test('public legal and security files are present and static routing is wired',(
   const source=fs.readFileSync('src/server.js','utf8');
   assert.match(source,/pathname==='\/terms'/);
   assert.match(source,/pathname==='\/privacy'/);
-  assert.match(source/,"'.txt':'text/plain");
+  assert.match(source,/'.txt':'text\/plain/);
   for(const file of ['public/terms.html','public/privacy.html']) assert.doesNotMatch(fs.readFileSync(file,'utf8'),/\sstyle\s*=/i);
 });
 
