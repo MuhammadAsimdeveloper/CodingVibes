@@ -110,7 +110,7 @@ See `docs/NATIVE_RUNNERS.md` for configuration and runner boundaries.
 
 ### Release verification
 
-`npm run final:check` is the canonical local release command. Pull-request CI runs the same core test, syntax, end-to-end and launch-readiness gates before merge.
+`npm run final:check` is the canonical local release command. It also runs `npm run security:check`, which protects the public health/readiness boundary, legal/security files, and trust-critical marketing claims. Pull-request CI runs the same core test, syntax, end-to-end and launch-readiness gates before merge.
 
 ### Acceptance scenario
 

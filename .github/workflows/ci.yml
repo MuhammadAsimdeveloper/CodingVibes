@@ -17,6 +17,7 @@ jobs:
       - run: npm test
       - run: npm run check
       - run: npm run e2e
+      - run: npm run security:check
       - name: Run launch readiness
         env:
           NODE_ENV: development

@@ -13,3 +13,9 @@ Never commit production API keys, OAuth client secrets, signing credentials, dat
 ## Scope
 
 Security issues in the control plane, generated-project runtime, authentication, deployment connectors, AI gateway, runner fleet, or verification system are in scope for responsible disclosure.
+
+## Service security configuration
+
+In production, set `CODINGVIBES_TRUST_PROXY=true` only when a trusted reverse proxy overwrites `X-Forwarded-For`/`X-Forwarded-Proto`. Use `CODINGVIBES_PUBLIC_URL` and, when needed, `CODINGVIBES_ALLOWED_ORIGINS` to pin browser origins. The public health endpoint intentionally exposes liveness only; detailed readiness diagnostics belong to operators.
+
+A vulnerability reporting route is published at `/.well-known/security.txt`.

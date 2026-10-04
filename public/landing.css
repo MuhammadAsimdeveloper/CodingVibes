@@ -20,3 +20,5 @@ main{position:relative;z-index:1}.hero{max-width:var(--max);margin:0 auto;paddin
 @media(prefers-reduced-motion:reduce){.hero-art>img,.site-glow-a{animation:none!important}.btn,.category-card{transition:none}}
 
 @supports (-webkit-background-clip:text){.brand-name strong{background:linear-gradient(90deg,#20c6ff,#9d55ff 50%,#ff42d4);-webkit-background-clip:text;background-clip:text;color:transparent}.hero h1 span{background:linear-gradient(90deg,#18c0ff 5%,#754bff 53%,#ff35d2 100%);-webkit-background-clip:text;background-clip:text;color:transparent}}
+
+.legal-page{max-width:900px;margin:0 auto;padding-top:120px;padding-bottom:120px}.legal-page h1{margin-bottom:8px}.legal-page h2{margin-top:30px;font-size:20px}.legal-page p{max-width:760px;line-height:1.75}.legal-page a{color:inherit}
