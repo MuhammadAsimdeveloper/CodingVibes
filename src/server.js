@@ -42,6 +42,7 @@ import {beginOAuth,completeOAuth,oauthConfigured} from './deployment/oauth.js';
 import {assetType,safeAssetName,hashBuffer,makeAssetRecord,validateAssetUpload,MAX_ASSET_BYTES} from './assets/library.js';
 import {baselinePath} from './verification/visual.js';
 import {WORKSPACE_ROLES,canRole,normalizeDesignSystem,designModeContract,researchWeb,provisionCloudService,CLOUD_SERVICE_CATALOG,domainVerificationInstructions,hashInviteToken,makeInviteToken} from './platform/feature-suite.js';
+import {auditDiscoverability,aeoSummary} from './verification/discoverability.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');
 export const store=new Store();export const router=new ModelRouter();
@@ -183,6 +184,8 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   const a=requireAuth(req,res);if(!a)return;const userId=a.user_id;
   if(method==='GET'&&u.pathname==='/api/builder/research')return sendJson(res,200,{ok:true,research:builderResearch()});
   if(method==='GET'&&u.pathname==='/api/cloud/catalog')return sendJson(res,200,{ok:true,services:CLOUD_SERVICE_CATALOG});
+  if(/^\/api\/projects\/[^/]+\/discoverability$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/discoverability$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(pid,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});const audit=auditDiscoverability(latest.workspace,{baseUrl:publicOrigin(req)});return sendJson(res,200,{ok:true,audit,aeo:aeoSummary(audit),verifiedRunId:latest.run.id});}
+  if(/^\/api\/projects\/[^/]+\/discoverability\/audit$/.test(u.pathname)&&method==='POST'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/discoverability\/audit$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(pid,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});const audit=auditDiscoverability(latest.workspace,{baseUrl:publicOrigin(req)});store.addEvidence(latest.run.id,'discoverability',audit);return sendJson(res,200,{ok:true,audit,aeo:aeoSummary(audit),verifiedRunId:latest.run.id});}
   if(method==='GET'&&u.pathname==='/api/workspaces')return sendJson(res,200,{ok:true,workspaces:store.listWorkspaces(userId)});
   if(method==='POST'&&u.pathname==='/api/workspaces'){const b=await readJson(req,MAX_BODY);const ws=store.createWorkspace(userId,String(b.name||'Workspace'));store.addAuditLog({actorUserId:userId,action:'workspace.created',resourceType:'workspace',resourceId:ws.id,metadata:{name:ws.name}});return sendJson(res,201,{ok:true,workspace:ws});}
   if(/^\/api\/workspaces\/[^/]+\/members$/.test(u.pathname)&&method==='GET'){const wid=pathParam(u.pathname,'/api/workspaces/').replace(/\/members$/,'');if(!store.getWorkspace(wid,userId))return sendJson(res,404,{ok:false,error:'workspace_not_found'});return sendJson(res,200,{ok:true,members:store.listWorkspaceMembers(wid,userId)});}
