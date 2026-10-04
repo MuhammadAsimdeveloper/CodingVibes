@@ -1,0 +1,86 @@
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4400
+      CODINGVIBES_RUNTIME: container
+      CODINGVIBES_DB_BACKEND: ${CODINGVIBES_DB_BACKEND:-postgres}
+      DATABASE_URL: postgresql://buildvibe:${POSTGRES_PASSWORD}@postgres:5432/buildvibe
+      CODINGVIBES_PG_SSL_MODE: disable
+      CODINGVIBES_OBJECT_BACKEND: ${CODINGVIBES_OBJECT_BACKEND:-s3}
+      CODINGVIBES_OBJECT_ENDPOINT: http://minio:9000
+      CODINGVIBES_OBJECT_REGION: us-east-1
+      CODINGVIBES_OBJECT_BUCKET: ${MINIO_BUCKET:-buildvibe}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      CODINGVIBES_QUEUE_BACKEND: ${CODINGVIBES_QUEUE_BACKEND:-redis}
+      CODINGVIBES_REDIS_URL: redis://redis:6379
+      CODINGVIBES_CONTAINER_IMAGE: ${CODINGVIBES_CONTAINER_IMAGE:?Set the production execution image}
+    env_file:
+      - ../../.env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - '4400:4400'
+    volumes:
+      - buildvibe_data:/app/data
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:17-alpine}
+    environment:
+      POSTGRES_DB: buildvibe
+      POSTGRES_USER: buildvibe
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL','pg_isready -U buildvibe -d buildvibe']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    command: ['redis-server','--appendonly','yes','--save','60','1']
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD','redis-cli','ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  minio:
+    image: ${MINIO_IMAGE:?Set a pinned MinIO image or digest}
+    command: ['server','/data','--console-address',':9001']
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD','curl','-f','http://127.0.0.1:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  buildvibe_data:
+  postgres_data:
+  redis_data:
+  minio_data:
