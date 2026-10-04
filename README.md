@@ -134,37 +134,15 @@ Native verification now uses a hardened runner-fleet contract: dependency egress
 
 Self-hosted GitHub runners should remain private/restricted. GitHub documents that self-hosted runners can be compromised by untrusted workflow code and recommends limiting their access and treating their environment as security-sensitive.
 
-See `docs/RUNNER_FLEET_SPEC.md` for the v2.5 execution lifecycle, capability matrix, artifact contract, device verification contract, and production gates. The authenticated `GET /api/fleet` endpoint and `npm run fleet:doctor` expose runner readiness without exposing secrets.
+See `docs/RUNNER_FLEET_SPEC.md` for the execution lifecycle, capability matrix, artifact contract, device verification contract, and production gates. The authenticated `GET /api/fleet` endpoint and `npm run fleet:doctor` expose runner readiness without exposing secrets.
 
 ## Runner fleet security and provenance
 
 The runner fleet now has durable runner registration/heartbeat state, sanitized disposable native workspaces, durable artifact metadata and authenticated artifact downloads, plus macOS protocol v3 with simulator tests before Xcode builds. See `docs/RUNNER_FLEET_SPEC.md`.
 
-## 5.0 free-core business model, motion and video
+## Current product capabilities
 
-Version 5 keeps the core code-first workflow free: basic website generation, project source inspection, the Monaco code editor, manual code edits, and normal verification. Server-side feature gates reserve high-cost capabilities for paid plans: advanced GSAP/scroll motion and Three.js/WebGL 3D generation, AI video, one-click deployment, advanced SEO automation, private projects, and custom domains.
+Build Vibe is now a visual universal product builder rather than the former code-first workspace. The active release covers prompt-to-product generation, structured content, Design Mode, responsive experiences, motion and 3D recipes, owner-only generated admin portals, optional Google login, collaboration/RBAC, verified deployments, native target contracts, SEO/AEO, and production scale-out foundations.
 
-Free users receive five AI build runs per month and a one-time short AI-video trial when `RUNWAYML_API_SECRET` is configured. Pro and Team plans have larger build quotas plus monthly video-second allowances. Manual code editing is not gated.
+The generator preserves a deterministic offline fallback, while configured model providers add model-first planning, generation and bounded repair. All generated changes remain verification-gated before an explicit commit.
 
-The video workflow uses the Runway Dev API, stores completed MP4 files under the persistent `data/media` volume, and never exposes the provider's expiring output URL directly to the browser. For production, keep the API key server-side and use a persistent storage volume.
-
-### SEO and motion defaults
-
-Generated web projects now receive a concrete SEO contract covering semantic HTML, route metadata, canonical URLs, Open Graph/Twitter metadata, JSON-LD where appropriate, robots and sitemap files. Motion requests are constrained to respect `prefers-reduced-motion`; 3D is treated as progressive enhancement with a content-preserving fallback.
-
-### Hosting
-
-Use Hostinger as the primary Node.js runtime for the full application, with Cloudflare as the DNS/CDN/WAF edge. See `docs/deploy-hostinger.md` and `docs/deploy-cloudflare.md`.
-
-Static-only generated websites can be exported to Cloudflare Pages separately. The full Build Vibe control plane should not be moved directly into a Pages Function without replacing its Node/SQLite persistence layer.
-
-
-## 5.1 template studio and immersive 3D
-
-Version 5.1 adds a curated template studio with 27 starter blueprints spanning SaaS, agency, commerce, hospitality, real estate, creative, technology, education and immersive experiences. Templates are searchable and categorized in the builder; custom user requirements always override template copy.
-
-Premium templates include an interactive real-estate tour recipe: Three.js rendering, GLB/GLTF model loading, procedural-house fallback, orbit/zoom/pan controls, room hotspots, floor-plan-ready UI, camera-tour choreography, MP4/WebM playback and user-initiated browser recording. The same runtime can be reused by product, automotive, architecture and immersive-story templates.
-
-The model generator receives an explicit experience recipe so an existing basic site can be transformed using precise patches instead of being replaced wholesale.
-
-Research grounding for this stage used current public documentation and product pages for Replit, Spline, Rive, Webflow templates, Dora, and Three.js. Those references inform capability patterns only; generated template content remains original and code-owned.
