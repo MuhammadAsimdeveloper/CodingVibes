@@ -174,10 +174,9 @@ export async function provisionCloudService({store,userId,projectId,type,config=
 
 export function domainVerificationInstructions(domain,provider='vercel'){
   const host=String(domain).trim().toLowerCase();
-  const apex=host.split('.').slice(-2).join('.');
   return provider==='vercel'
-    ? {provider,records:[{type:'A',name:apex,value:'76.76.21.21'},{type:'CNAME',name:'www',value:'cname.vercel-dns.com'}],note:'Confirm the exact DNS values in the provider dashboard before changing production DNS.'}
-    : {provider,records:[],note:'Connect the domain through the selected hosting provider and verify ownership there.'};
+    ? {provider,domain:host,records:[],note:'Open the connected Vercel project and copy the current domain verification/DNS records shown there before changing production DNS.'}
+    : {provider,domain:host,records:[],note:'Connect the domain through the selected hosting provider and verify ownership there.'};
 }
 
 export function hashInviteToken(token){return crypto.createHash('sha256').update(String(token||'')).digest('hex');}
