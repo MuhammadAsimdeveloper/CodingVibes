@@ -82,9 +82,25 @@ export const PROVIDERS={
   },
   status:async({credentials,deploymentId})=>credentials?.accessToken?{status:'ready_for_hostinger',deploymentId:deploymentId||null,nextStep:'Connect the published GitHub repository from Hostinger Node.js Web Apps and deploy.'}:authRequired('hostinger')
  },
- 'coding-vibes':{id:'coding-vibes',label:'Coding Vibes Hosting',type:'deployment',auth:'internal',supports:{static:true,server:true},description:'Future provider slot for Coding Vibes-managed hosting.',
-  async deploy(){if(!process.env.CODINGVIBES_HOSTING_API_URL)throw Object.assign(new Error('Coding Vibes hosting is not available yet. The adapter is ready for the future hosting service.'),{code:'HOSTING_NOT_AVAILABLE',status:503});throw new Error('Coding Vibes hosting API is not configured for deployment yet.')},
-  status:async()=>({status:'not_available'})
+ 'coding-vibes':{id:'coding-vibes',label:'Build Vibe Cloud Hosting',type:'deployment',auth:'internal',supports:{static:true,server:true},description:'First-party hosting adapter for verified Build Vibe artifacts.',
+  async deploy({artifact,options={}}){
+    const base=String(process.env.CODINGVIBES_HOSTING_API_URL||process.env.CODINGVIBES_CLOUD_API_URL||'').replace(/\/$/,'');
+    const token=process.env.CODINGVIBES_HOSTING_API_KEY||process.env.CODINGVIBES_CLOUD_API_KEY;
+    if(!base)throw Object.assign(new Error('Build Vibe Cloud hosting is not configured.'),{code:'HOSTING_NOT_AVAILABLE',status:503});
+    const tmp=fs.mkdtempSync(path.join(process.cwd(),'data','cloud-deploy-'));
+    try{
+      const zip=path.join(tmp,'artifact.zip');zipDirectory(artifact.root,zip);const bytes=fs.readFileSync(zip);
+      if(bytes.length>100*1024*1024)throw Object.assign(new Error('Cloud deployment artifact exceeds 100 MiB.'),{code:'HOSTING_ARTIFACT_TOO_LARGE',status:413});
+      const response=await fetch(base+'/deploy',{method:'POST',headers:{'content-type':'application/json',accept:'application/json',...(token?{authorization:'Bearer '+token}: {})},body:JSON.stringify({project:artifact.projectMetadata,name:safeName(options.projectName||artifact.projectMetadata.name),framework:artifact.framework,fingerprint:artifact.fingerprint||null,fileName:path.basename(zip),artifactBase64:bytes.toString('base64'),target:options.target||'production'})});
+      const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data?.error||'Build Vibe Cloud deploy failed');
+      return{status:data.status||'published',deploymentId:data.id||data.deploymentId||null,url:data.url||null,providerProject:data.projectId||data.project||null,nextStep:data.nextStep||null};
+    }finally{try{fs.rmSync(tmp,{recursive:true,force:true})}catch{}}
+  },
+  status:async({credentials,deploymentId})=>{
+    const base=String(process.env.CODINGVIBES_HOSTING_API_URL||process.env.CODINGVIBES_CLOUD_API_URL||'').replace(/\/$/,'');const token=process.env.CODINGVIBES_HOSTING_API_KEY||process.env.CODINGVIBES_CLOUD_API_KEY;
+    if(!base)throw Object.assign(new Error('Build Vibe Cloud hosting is not configured.'),{code:'HOSTING_NOT_AVAILABLE',status:503});
+    const data=await jsonFetch(base+'/deployments/'+encodeURIComponent(String(deploymentId)),{token});return{status:data.status||data.state||'unknown',deploymentId:data.id||deploymentId,url:data.url||null,providerProject:data.projectId||data.project||null};
+  }
  },
  manual:{id:'manual',label:'Download ZIP / Other Hosting',type:'export',auth:'none',supports:{static:true,server:true},description:'Export a validated portable project ZIP for any compatible host.',
   async deploy({artifact}){const out=path.resolve(process.env.CODINGVIBES_EXPORT_ROOT||path.join(process.cwd(),'data','exports'),safeName(artifact.projectMetadata.name)+'-'+Date.now()+'.zip');return{status:'ready',deploymentId:out,url:null,file:zipDirectory(artifact.root,out)}},
