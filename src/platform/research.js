@@ -13,6 +13,8 @@ export function builderResearch(){
       {name:'FlutterFlow',url:'https://flutterflow.io/ai',patterns:['mobile','AI agent','testing','Android/iOS/web']},
       {name:'Bolt',url:'https://bolt.new/use-cases/ai-website-builder',patterns:['prompt build','preview','deployment','responsive']},
       {name:'Base44',url:'https://base44.com/features',patterns:['auth','database','storage','email','AI','integrations']},
+      {name:'v0',url:'https://v0.dev',patterns:['visual design mode','GitHub sync','Vercel deployment','team collaboration']},
+      {name:'Webflow',url:'https://webflow.com/pricing',patterns:['visual builder','CMS','SEO/AEO','publishing','workspace governance']},
     ],
     patterns:competitorResearch(),
     capabilityCount:listCapabilities().length,
