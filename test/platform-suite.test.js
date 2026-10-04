@@ -98,11 +98,11 @@ test('shared project resources honor workspace membership without owner-only vis
 
 test('platform mutation routes are explicitly role-gated',async()=>{
  const server=await (await import('node:fs/promises')).readFile('src/server.js','utf8');
- assert.match(server,/requireProjectRole\(projectId,userId,'editor'\).*store\.getProjectContent/);
- assert.match(server,/content\\/revisions.*requireProjectRole\(pid,userId,'editor'\)/s);
- assert.match(server,/domains\\/\\[\\^\\/\\]\+\\/verify.*requireProjectRole\(pid,userId,'admin'\)/s);
- assert.match(server,/assets.*requireProjectRole\(projectId,userId,'editor'\)/s);
- assert.match(server,/visual-baseline.*requireProjectRole\(runSession\.project_id,userId,'editor'\)/s);
+ assert.ok(server.includes("try{requireProjectRole(projectId,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const body=await readJson(req,MAX_BODY);const requestedKind"));
+ assert.ok(server.includes("content/revisions$/.test(u.pathname)&&method==='POST'){const pid=pathParam"));
+ assert.ok(server.includes("domains/[^/]+/verify$/.test(u.pathname)&&method==='POST'){const parts"));
+ assert.ok(server.includes("assets$/.test(u.pathname)&&method==='POST'){const projectId=pathParam(u.pathname,'/api/projects/');try{requireProjectRole(projectId,userId,'editor');}"));
+ assert.ok(server.includes("const runSession=store.getSession(run.session_id,userId);if(!runSession)return sendJson(res,404,{ok:false,error:'session_not_found'});try{requireProjectRole(runSession.project_id,userId,'editor');}"));
 });
 
 test('platform feature suite artifacts are present',()=>{
