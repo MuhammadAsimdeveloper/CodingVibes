@@ -3,7 +3,7 @@
 `main` is the canonical release branch. Feature and release branches are validated through pull-request CI before squash-merging to `main`.
 
 ## Product surfaces
-- `public/` — Coding Vibes web UI and product studio.
+- `public/` — Build Vibe web UI and product studio.
 - `src/server.js` — control-plane HTTP API.
 - `src/agent/` — planning, generation, repair and review.
 - `src/platform/` — product blueprint and capability model.
@@ -14,7 +14,7 @@
 - `src/verification/` — source, HTTP, browser and visual verification.
 - `src/billing/` — plans, feature gates and Stripe integration.
 - `src/security/` — sessions, vault and safe-path controls.
-- `src/db/` — durable control-plane persistence.
+- `src/db/` — SQLite control-plane persistence plus PostgreSQL scale-out primitives.
 
 ## Generated customer projects
 Generated projects follow a portable structure:
@@ -33,6 +33,11 @@ Generated projects follow a portable structure:
 3. Merge validated product stages to `main`.
 4. Release tags are created from green `main`.
 5. Provider credentials and production secrets remain outside Git.
+
+## Release identity
+
+Current product release: Build Vibe 12.0.0.
+The GitHub repository name remains CodingVibes for remote/clone compatibility; product-facing documentation uses Build Vibe.
 
 ## Release hygiene
 - Security policy: `SECURITY.md`
