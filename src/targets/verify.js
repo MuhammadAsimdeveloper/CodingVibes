@@ -15,11 +15,11 @@ export function inspectTargetStructure(workspace,target){
 }
 
 export function targetExecutionAvailability(target){const host=inspectToolchain(target);const remoteLinux=Boolean(process.env.CODINGVIBES_LINUX_RUNNER_URL&&process.env.CODINGVIBES_LINUX_RUNNER_TOKEN&&['android-kotlin','android-twa','mobile-flutter','desktop-tauri'].includes(target.id));const remoteMac=Boolean(process.env.CODINGVIBES_MACOS_RUNNER_URL&&process.env.CODINGVIBES_MACOS_RUNNER_TOKEN&&target.id==='ios-swiftui');return{host,remote:{linux:remoteLinux,macos:remoteMac},canBuild:Boolean(host.available||remoteLinux||remoteMac||['web-node','web-pwa','desktop-electron'].includes(target.id))};}
-export function inspectToolchain(target){
+export function inspectToolchain(target,workspace=null){
   const checks={node:commandExists('node'),npm:commandExists('npm')};
   if(target.id==='mobile-expo')Object.assign(checks,{expo:commandExists('expo')});
   if(target.id==='mobile-flutter')Object.assign(checks,{flutter:commandExists('flutter'),dart:commandExists('dart')});
-  if(['android-kotlin','android-twa'].includes(target.id))Object.assign(checks,{java:commandExists('java'),gradle:commandExists('gradle'),adb:commandExists('adb')});
+  if(['android-kotlin','android-twa'].includes(target.id))Object.assign(checks,{java:commandExists('java'),gradle:commandExists('gradle')||Boolean(workspace&&fs.existsSync(path.join(workspace,'gradlew'))),adb:commandExists('adb')});
   if(target.id==='ios-swiftui')Object.assign(checks,{swift:commandExists('swift'),xcodebuild:commandExists('xcodebuild')});
   if(target.id==='desktop-tauri')Object.assign(checks,{rustc:commandExists('rustc'),cargo:commandExists('cargo'),node:commandExists('node')});
   if(target.id==='multiplatform-kmp')Object.assign(checks,{java:commandExists('java'),gradle:commandExists('gradle')});
@@ -34,7 +34,7 @@ export function inspectToolchain(target){
 
 export async function verifyTargetSource(workspace,target,{runner,execution=null,artifacts=[]}={}){
   const structure=inspectTargetStructure(workspace,target);
-  const hostToolchain=inspectToolchain(target);
+  const hostToolchain=inspectToolchain(target,workspace);
   const toolchain=runner?{...hostToolchain,available:true,missing:[]}:hostToolchain;
   const commands=[];
     const run=async(command,args=[])=>{if(!runner){return {ok:false,code:127,stdout:'',stderr:'isolated target runner required'};}const result=await runner(command,args);commands.push({...result,command:[command,...args].join(' ')});return result;};

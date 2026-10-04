@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {getPlan} from '../billing/plans.js';
-export function readiness({router}={}) {
+export function readiness({router,store}={}) {
   const production=process.env.NODE_ENV==='production';
   const blockers=[],warnings=[];
   if(production && String(process.env.CODINGVIBES_SESSION_SECRET||'').length<32) blockers.push('session_secret_too_short');
@@ -12,6 +12,7 @@ export function readiness({router}={}) {
   if(production && runtime==='container' && !process.env.CODINGVIBES_CONTAINER_IMAGE) blockers.push('container_image_required');
   if(production && process.env.CODINGVIBES_ENFORCE_QUOTAS!=='true') blockers.push('quota_enforcement_not_enabled');
   const db=process.env.DATABASE_PATH||'./data/codingvibes.db';try{fs.accessSync(requireDir(db),fs.constants.R_OK|fs.constants.W_OK);}catch{blockers.push('database_directory_not_writable');}
+  if(store?.healthcheck && !store.healthcheck()) blockers.push('database_healthcheck_failed');
   const git=spawnSync('git',['--version'],{stdio:'ignore'});if(git.status!==0)blockers.push('git_missing');
   const model=router?.getStatus?.()||{};if(production&&!model.configured)blockers.push('model_provider_not_configured');
   if(production && process.env.CODINGVIBES_ENABLE_BROWSER!=='true')blockers.push('browser_verification_required');

@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {analyzeRequirements} from '../src/agent/requirements.js';
 import {validateSpec} from '../src/agent/app-spec.js';
 import {listTargets,getTarget,inferTarget} from '../src/targets/registry.js';
@@ -27,6 +30,32 @@ test('every target has a valid contract and deterministic fallback shape',()=>{
     const plan=generateTargetFallback(spec,getTarget(target.id));
     if(plan){const paths=new Set(plan.files.map(x=>x.path));for(const required of getTarget(target.id).requiredFiles)assert.ok(paths.has(required),`${target.id} missing ${required}`);}
   }
+});
+
+test('native fallbacks expose executable project contracts',()=>{
+  const expoSpec=analyzeRequirements('Build a cross platform mobile app',{targetId:'mobile-expo'});
+  const expo=generateTargetFallback(expoSpec,getTarget('mobile-expo'));
+  const expoFiles=new Map(expo.files.map(x=>[x.path,x.content]));
+  assert.ok(expoFiles.has('tsconfig.json'));
+  const expoPackage=JSON.parse(expoFiles.get('package.json'));
+  assert.equal(expoPackage.dependencies.expo,'^57.0.0');
+  assert.equal(expoPackage.scripts.check,'tsc --noEmit');
+  assert.ok(!expoFiles.get('package.json').includes('node --check App.tsx'));
+
+  const tauriSpec=analyzeRequirements('Build a Tauri desktop app',{targetId:'desktop-tauri'});
+  const tauri=generateTargetFallback(tauriSpec,getTarget('desktop-tauri'));
+  const tauriFiles=new Map(tauri.files.map(x=>[x.path,x.content]));
+  for(const required of getTarget('desktop-tauri').requiredFiles)assert.ok(tauriFiles.has(required),required);
+  assert.ok(tauriFiles.has('src-tauri/build.rs'));
+  assert.ok(tauriFiles.has('test/smoke.test.js'));
+  assert.match(tauriFiles.get('src/index.html'),/Tauri|codingVibes|Build Vibe/);
+});
+
+test('Android verifier recognizes project-local Gradle wrappers',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'cv-gradle-'));
+  fs.writeFileSync(path.join(root,'gradlew'),'#!/bin/sh\nexit 0\n');
+  const toolchain=inspectToolchain(getTarget('android-kotlin'),root);
+  assert.equal(toolchain.checks.gradle,true);
 });
 
 test('target structure verifier reports missing files without running project code',()=>{
