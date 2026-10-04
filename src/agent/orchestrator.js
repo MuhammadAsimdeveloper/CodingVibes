@@ -27,6 +27,7 @@ import {reviewWorkspace,reviewWithModel} from './review.js';
 import {createDefaultSiteContent,applyContentOperation} from '../site/content.js';
 import {copyArtifacts,hashFile} from '../artifacts/store.js';
 import {baselinePath} from '../verification/visual.js';
+import {runParallelAgentAnalysis,defaultDesignSystem,reflectBuild} from '../platform/feature-suite.js';
 
 async function collectSourceText(workspace){let out='';const walk=dir=>{if(!fs.existsSync(dir)||out.length>350000)return;for(const name of fs.readdirSync(dir)){if(['.git','node_modules','.codingvibes'].includes(name))continue;const full=path.join(dir,name),st=fs.lstatSync(full);if(st.isDirectory())walk(full);else if(/\.(js|jsx|ts|tsx|html|css|json|dart|kt|swift|rs|yaml|yml)$/.test(name)){try{out+=fs.readFileSync(full,'utf8')+'\n'}catch{}}}};walk(workspace);return out.slice(0,350000)}
 function scrubText(text){return String(text??'').slice(0,12000);}
@@ -124,12 +125,17 @@ export async function executeBuild({request,userId,sessionId,project,store,route
  const baseCheckpoint=createCheckpoint(ws.worktree,checkpointRoot(),'workspace-created');store.createCheckpoint(run.id,baseCheckpoint.name,baseCheckpoint.path,{baseSha:ws.baseSha,branch:ws.branch});
  const repoIndex=buildRepositoryIndex(ws.worktree); store.saveRepositoryIndex(run.id,repoIndex);
  emit({type:'workspace_created',runId:run.id,workspace:ws.worktree,branch:ws.branch,baseSha:ws.baseSha});
- let preview=null,finalEvidence=null,changeset=null,spec=null,target=initialTarget;
+ let preview=null,finalEvidence=null,changeset=null,spec=null,target=initialTarget,intelligence=null,reflection=null;
  try{
    ensureActiveRun(store,run,userId,signal);const planned=await planRequirements(request,{router,targetId,signal,onToken:t=>emit({type:'model_token',runId:run.id,phase:'planning',token:scrubText(t)}),onUsage:usage=>store.addUsage(run.id,userId,usage)});spec=normalizeSpec(planned.spec);const v=validateSpec(spec);if(!v.ok)throw new Error(v.errors.join('; '));target=getTarget(spec.target?.id)||initialTarget;store.updateRun(run.id,userId,{target_id:target.id,spec_json:JSON.stringify(spec)});
    ensureActiveRun(store,run,userId,signal);const context=collectProjectContext(ws.worktree,{index:repoIndex,focus:request});store.addEvidence(run.id,'context',{fileCount:context.files.length,treeCount:context.tree.length,truncated:context.truncated,totalBytes:context.totalBytes});emit({type:'context_loaded',runId:run.id,fileCount:context.files.length,truncated:context.truncated});
-   store.addEvidence(run.id,'plan',{source:planned.source,model:planned.model,spec,target:target.id});emit({type:'planned',runId:run.id,source:planned.source,model:planned.model,spec,target:target.id,targetSummary:targetSummary(target)});
-   ensureActiveRun(store,run,userId,signal);let plan=await generateProjectWithModel({request,spec,context,router,signal,onToken:t=>emit({type:'model_token',runId:run.id,phase:'generation',token:scrubText(t)}),onUsage:usage=>store.addUsage(run.id,userId,usage)}).catch(e=>{store.addEvidence(run.id,'generation_model_error',{error:e.message});emit({type:'generation_model_error',runId:run.id,error:e.message});return null});
+   intelligence=await runParallelAgentAnalysis({request,spec,store,runId:run.id,onEvent:emit,signal});
+   store.upsertDesignSystem(project.id,userId,{name:'Build Vibe Design System',system:defaultDesignSystem(request)});
+   emit({type:'research_completed',runId:run.id,configured:intelligence.research.configured,results:intelligence.research.results||[]});
+   emit({type:'design_completed',runId:run.id,tokens:intelligence.design?.results?.[0]?.text||null});
+   store.addEvidence(run.id,'design_system',{source:'parallel-design-agent',system:store.getDesignSystem(project.id,userId)?.system||defaultDesignSystem(request)});
+   store.addEvidence(run.id,'plan',{source:planned.source,model:planned.model,spec,target:target.id,intelligence:intelligence.plan});emit({type:'planned',runId:run.id,source:planned.source,model:planned.model,spec,target:target.id,targetSummary:targetSummary(target)});
+   ensureActiveRun(store,run,userId,signal);let plan=await generateProjectWithModel({request,spec,context,intelligence,router,signal,onToken:t=>emit({type:'model_token',runId:run.id,phase:'generation',token:scrubText(t)}),onUsage:usage=>store.addUsage(run.id,userId,usage)}).catch(e=>{store.addEvidence(run.id,'generation_model_error',{error:e.message});emit({type:'generation_model_error',runId:run.id,error:e.message});return null});
    if(!plan){
      const fallback=generateTargetFallback(spec,target);
      if(fallback)plan={...fallback,target:target.id};
@@ -185,10 +191,14 @@ export async function executeBuild({request,userId,sessionId,project,store,route
      store.addEvidence(run.id,'review',review);emit({type:'review_completed',runId:run.id,passed:review.passed,summary:review.summary,findings:review.findings,blockingFindings:review.blockingFindings});
      if(!review.passed){finalStatus='blocked';store.updateChangeset(changeset.id,{status:'blocked'});}
    }
-   writeManifest(ws.worktree,{version:'evidence.v3',runId:run.id,status:finalStatus,branch:ws.branch,baseSha:ws.baseSha,spec,target,verification:finalEvidence,review});
+   reflection=reflectBuild({spec,verification:finalEvidence,review,inspect:inspected});
+   store.addEvidence(run.id,'reflection',reflection);
+   emit({type:'reflection_completed',runId:run.id,status:reflection.status,score:reflection.score,recommendations:reflection.recommendations});
+   if(finalStatus==='verified'&&reflection.status==='blocked'){finalStatus='blocked';store.updateChangeset(changeset.id,{status:'blocked'});}
+   writeManifest(ws.worktree,{version:'evidence.v3',runId:run.id,status:finalStatus,branch:ws.branch,baseSha:ws.baseSha,spec,target,verification:finalEvidence,review,reflection});
    if(finalStatus==='verified')store.updateChangeset(changeset.id,{status:'verified'});else if(finalStatus==='failed')store.updateChangeset(changeset.id,{status:'failed'});
    store.updateGoal(run.id,{status:finalStatus==='verified'?'completed':finalStatus==='blocked'?'blocked':'failed',metadata:{target:target.id,reviewPassed:review?.passed??null}});
-   const result={runId:run.id,workspace:ws.worktree,branch:ws.branch,spec,target,contentOperations,verification:finalEvidence,review,evidence:store.listEvidence(run.id),changesets:store.listChangesets(run.id)};
+   const result={runId:run.id,workspace:ws.worktree,branch:ws.branch,spec,target,contentOperations,verification:finalEvidence,review,reflection,evidence:store.listEvidence(run.id),changesets:store.listChangesets(run.id)};
    store.addMessage(sessionId,'assistant',finalStatus==='verified'?'Build verified, reviewed, and ready for commit.':finalStatus==='blocked'?'Build is blocked by toolchain or review findings.':'Build finished with verification failures.',{runId:run.id,status:finalStatus,target:target.id});emit({type:'completed',runId:run.id,result:{runId:run.id,status:finalStatus,branch:ws.branch,spec,target:target.id,reviewPassed:review?.passed??null}});
    if(commit&&finalStatus==='verified'){const c=await commitWorkspace(ws.worktree,`codingVibes: ${spec.request.slice(0,60)}`);if(c.ok){const sha=c.stdout.match(/\[[^ ]+ ([0-9a-f]+)\]/)?.[1]||null;store.updateChangeset(changeset.id,{status:'committed',commit_sha:sha});emit({type:'committed',runId:run.id,stdout:c.stdout});}}
    store.updateRun(run.id,userId,{status:finalStatus});return {...result,events:store.listEvents(run.id,userId)};

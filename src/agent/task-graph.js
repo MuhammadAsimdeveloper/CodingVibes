@@ -3,7 +3,9 @@ import {randomUUID} from 'node:crypto';
 export const TASK_DEFINITIONS = [
   ['requirements','Understand requirements',[], 'planning'],
   ['context','Index repository context',['requirements'],'context'],
-  ['architecture','Create application plan',['requirements','context'],'planning'],
+  ['research','Research current requirements',['requirements'],'research'],
+  ['design','Design system + interaction contract',['requirements'],'design'],
+  ['architecture','Create application plan',['requirements','context','research','design'],'planning'],
   ['generation','Generate implementation',['architecture'],'generation'],
   ['verification','Build and verify',['generation'],'verification'],
   ['repair','Repair verification failures',['verification'],'repair'],
@@ -36,7 +38,7 @@ export function cancelTaskGraph(store,runId,reason='run_cancelled'){
 
 export function syncTaskForEvent(store, runId, event, payload={}) {
   const map = {
-    context_loaded:['context','succeeded'], planned:['architecture','succeeded'], changeset_proposed:['generation','running'],
+    context_loaded:['context','succeeded'], research_completed:['research','succeeded'], design_completed:['design','succeeded'], planned:['architecture','succeeded'], changeset_proposed:['generation','running'],
     changes_applied:['generation','succeeded'], verification:['verification',payload.passed?'succeeded':'failed'],
     target_verification:['verification',payload.passed?'succeeded':'failed'], repair_requested:['repair','running'],
     repair_applied:['repair','succeeded'], repair_error:['repair','failed'], completed:['ready',payload.status==='verified'?'succeeded':'blocked']
