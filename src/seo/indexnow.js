@@ -2,7 +2,7 @@ const ENDPOINT='https://api.indexnow.org/indexnow';
 
 function validHttpUrl(value){try{const u=new URL(String(value));return /^https?:$/.test(u.protocol)?u:null}catch{return null}}
 
-export async function submitIndexNow({url,urls,key,endpoint=ENDPOINT,keyLocation}={}){
+export async function submitIndexNow({url,urls,key,endpoint=ENDPOINT,keyLocation,timeoutMs=5000}={}){
   const items=[...(Array.isArray(urls)?urls:[]),url].filter(Boolean).map(String);
   const unique=[...new Set(items)];
   if(!unique.length)throw new Error('indexnow_urls_required');
@@ -13,7 +13,7 @@ export async function submitIndexNow({url,urls,key,endpoint=ENDPOINT,keyLocation
   const payload=unique.length===1
     ?{host:[...hosts][0],key:token,url:unique[0],...(keyLocation?{keyLocation}: {})}
     :{host:[...hosts][0],key:token,urlList:unique,...(keyLocation?{keyLocation}: {})};
-  const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json; charset=utf-8'},body:JSON.stringify(payload)});
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),Math.max(1000,Number(timeoutMs)||5000));let response;try{response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json; charset=utf-8'},body:JSON.stringify(payload),signal:controller.signal});}catch(e){throw new Error(e.name==='AbortError'?'indexnow_timeout':'indexnow_request_failed')}finally{clearTimeout(timer)}
   const body=await response.text();
   if(!response.ok)throw new Error('indexnow_http_'+response.status);
   return {ok:true,submitted:unique.length,status:response.status,body:body.slice(0,500)};
