@@ -25,6 +25,7 @@ test('workspace invites are email-bound and approvals are reviewer/admin control
  const owner=store.createUser('owner@example.com','hash'),reviewer=store.createUser('reviewer@example.com','hash'),other=store.createUser('other@example.com','hash');
  const ws=store.createWorkspace(owner.id,'Team');
  const project=store.createProject(owner.id,{name:'App'});
+ store.moveProjectToWorkspace(project.id,ws.id,owner.id);
  store.upsertWorkspaceMember(ws.id,reviewer.id,'reviewer');
  const crypto=(await import('node:crypto')); const token=crypto.randomBytes(20).toString('hex');
  const expires=new Date(Date.now()+3600000).toISOString();
