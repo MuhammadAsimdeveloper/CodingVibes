@@ -39,7 +39,7 @@ test('native fallbacks expose executable project contracts',()=>{
   assert.ok(expoFiles.has('tsconfig.json'));
   const expoPackage=JSON.parse(expoFiles.get('package.json'));
   assert.equal(expoPackage.dependencies.expo,'^57.0.0');
-  assert.match(expoFiles.get('package.json'),/"check":"tsc --noEmit"/);
+  assert.equal(expoPackage.scripts.check,'tsc --noEmit');
   assert.ok(!expoFiles.get('package.json').includes('node --check App.tsx'));
 
   const tauriSpec=analyzeRequirements('Build a Tauri desktop app',{targetId:'desktop-tauri'});
