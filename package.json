@@ -16,8 +16,9 @@
     "e2e": "node scripts/e2e.mjs",
     "fleet:doctor": "node scripts/fleet-doctor.mjs",
     "launch:check": "node scripts/launch-check.mjs",
-    "final:check": "npm test && npm run check && npm run e2e && npm run launch:check",
-    "launch:preflight": "node scripts/production-preflight.mjs"
+    "final:check": "npm test && npm run check && npm run security:check && npm run e2e && npm run launch:check",
+    "launch:preflight": "node scripts/production-preflight.mjs",
+    "security:check": "node scripts/security-preflight.mjs"
   },
   "optionalDependencies": {
     "@daytona/sdk": "^0.214.0",
