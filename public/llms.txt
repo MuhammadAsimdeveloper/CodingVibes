@@ -1,0 +1,32 @@
+# Build Vibe
+
+> Build Vibe is an AI website and app builder for creating verified, portable websites, web applications and mobile product foundations.
+
+## What it does
+
+- Generate websites, SaaS products, ecommerce stores, dashboards, portals and mobile app foundations from natural-language requirements.
+- Use Design Mode for visual tokens, responsive layout, motion, accessibility and experience direction.
+- Verify generated output with source checks, application tests, HTTP/browser verification and bounded repair before commit.
+- Publish verified output through supported providers or export the source tree.
+
+## Core public pages
+
+- /
+- /features
+- /templates
+- /pricing
+- /ai-website-builder
+- /ai-app-builder
+- /mobile-app-builder
+- /ecommerce-website-builder
+- /saas-app-builder
+- /3d-website-builder
+- /how-it-works
+- /faq
+
+## Trust and implementation notes
+
+- The public marketing pages are crawlable.
+- The authenticated builder workspace is not intended for indexing.
+- Product claims should match shipped functionality and configured provider capabilities.
+- This file is a supplemental machine-readable index. It is not a substitute for normal SEO, crawlability or Search Console.
