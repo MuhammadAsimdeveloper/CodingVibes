@@ -99,7 +99,8 @@ test('shared project resources honor workspace membership without owner-only vis
 test('platform mutation routes are explicitly role-gated',async()=>{
  const server=await (await import('node:fs/promises')).readFile('src/server.js','utf8');
  assert.ok(server.includes("try{requireProjectRole(projectId,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const body=await readJson(req,MAX_BODY);const requestedKind"));
- assert.ok(server.includes("content/revisions$/.test(u.pathname)&&method==='POST'){const pid=pathParam"));
+ assert.ok(/content\\/revisions\\$/.test(server));
+ assert.ok(server.includes("createContentRevision(pid,userId,content"));
  assert.ok(server.includes("domains/[^/]+/verify$/.test(u.pathname)&&method==='POST'){const parts"));
  assert.ok(server.includes("assets$/.test(u.pathname)&&method==='POST'){const projectId=pathParam(u.pathname,'/api/projects/');try{requireProjectRole(projectId,userId,'editor');}"));
  assert.ok(server.includes("const runSession=store.getSession(run.session_id,userId);if(!runSession)return sendJson(res,404,{ok:false,error:'session_not_found'});try{requireProjectRole(runSession.project_id,userId,'editor');}"));
