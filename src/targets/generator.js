@@ -73,7 +73,7 @@ dependencies { implementation 'com.google.androidbrowserhelper:androidbrowserhel
     {path:'src/index.html',content:`<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>codingVibes</title></head><body><main><h1>codingVibes</h1><p>${escapeForHtml(spec.request.slice(0,220))}</p></main><script type="module" src="/main.js"></script></body></html>\n`},
     {path:'src-tauri/tauri.conf.json',content:json({'$schema':'https://schema.tauri.app/config/2',productName:'codingVibes',version:'0.1.0',identifier:'com.codingvibes.app',build:{frontendDist:'../src'},app:{windows:[{title:'codingVibes',width:1280,height:800,resizable:true}],security:{csp:"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"},bundle:{active:true,targets:'all'}}})},
     {path:'src-tauri/build.rs',content:`fn main(){tauri_build::build()}\n`},
-    {path:'src-tauri/src/main.rs',content:`fn main(){codingvibes_app_lib::run()}\n`},
+    {path:'src-tauri/src/main.rs',content:`fn main(){tauri::Builder::default().run(tauri::generate_context!()).expect("error while running codingVibes");}\n`},
     {path:'src-tauri/Cargo.toml',content:`[package]\nname="codingvibes-app"\nversion="0.1.0"\nedition="2021"\n\n[build-dependencies]\ntauri-build={version="2"}\n\n[dependencies]\ntauri={version="2",features=[]}\n`},
     {path:'test/smoke.test.js',content:`import test from'node:test';import assert from'node:assert/strict';test('desktop source exists',()=>assert.ok(true));\n`},
     {path:'README.md',content:commonReadme(spec,target)+'\nRequires Rust/Cargo and Tauri tooling on the build machine. The generated frontend is bundled from src/index.html.\n'},
