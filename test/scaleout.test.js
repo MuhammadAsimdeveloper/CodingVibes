@@ -59,3 +59,35 @@ test('production readiness gates scaleout only when explicitly required',()=>{
   for(const [key,value] of Object.entries(previous))process.env[key]=value;
  }
 });
+
+import {JobWorker} from '../src/jobs/worker.js';
+import {OutboxRelay} from '../src/jobs/outbox-relay.js';
+
+test('job worker dispatches a registered handler and acknowledges the job',async()=>{
+ const calls=[];let served=false;
+ const queue={
+  async reserve(){if(served)return [];served=true;return [{id:'job-1',type:'demo',payload:{value:7},streamId:'1-0'}];},
+  async ack(id){calls.push(['ack',id]);return true;},
+  async fail(job){calls.push(['fail',job.type]);return {requeued:false,job};},
+  async reclaim(){return [];}
+ };
+ const worker=new JobWorker({queue,handlers:{demo:async payload=>calls.push(['handle',payload.value])},idleDelayMs:1,reclaimEveryMs:5000});
+ const controller=new AbortController();
+ const run=worker.start();
+ await new Promise(r=>setTimeout(r,20));
+ controller.abort();worker.stop();await run;
+ assert.deepEqual(calls,[['handle',7],['ack','1-0']]);
+});
+
+test('outbox relay publishes and completes claimed work',async()=>{
+ const calls=[];
+ const repository={
+  async claimOutbox(){return [{id:'o1',topic:'build.verify',payload:{projectId:'p1'},attempts:1}]},
+  async completeOutbox(id){calls.push(['complete',id]);return {id,status:'complete'};},
+  async failOutbox(){calls.push(['fail']);}
+ };
+ const queue={async enqueue(job){calls.push(['enqueue',job.id,job.type]);return job;}};
+ const relay=new OutboxRelay({repository,queue});
+ assert.equal(await relay.once(),1);
+ assert.deepEqual(calls,[['enqueue','o1','build.verify'],['complete','o1']]);
+});
