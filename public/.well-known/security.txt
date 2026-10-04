@@ -1,0 +1,3 @@
+Contact: https://github.com/MuhammadAsimdeveloper/CodingVibes/security/advisories/new
+Expires: 2027-10-04T00:00:00.000Z
+Preferred-Languages: en
