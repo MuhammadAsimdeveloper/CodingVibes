@@ -10,7 +10,7 @@ jobs:
   android-apk:
     runs-on: [self-hosted, codingvibes, android-builder]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Android APK
         run: |
           set -euo pipefail
@@ -45,7 +45,7 @@ jobs:
   ios-xcode:
     runs-on: [self-hosted, codingvibes, macos-xcode, xcode]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Xcode toolchain
         run: |
           set -euo pipefail
