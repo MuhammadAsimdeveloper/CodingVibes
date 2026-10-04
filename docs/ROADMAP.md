@@ -43,7 +43,7 @@
 
 The existing Store remains SQLite until a separate, reviewed schema migration is performed.
 
-## Scale-out work after 13.0.0
+## Next scale-out work after 12.0.0
 - Managed PostgreSQL before horizontal scaling.
 - Dedicated object storage before large media workloads.
 - Managed job queue for multi-instance background workers.
