@@ -226,5 +226,6 @@ export class Store{
   listCloudServices(projectId,userId){if(!this.getProject(projectId,userId))return [];return this.db.prepare('SELECT * FROM cloud_services WHERE project_id=? ORDER BY type').all(projectId).map(x=>({...x,config:x.config_json?JSON.parse(x.config_json):{}}));}
   createResearchRun(projectId,userId,{query,provider='none',status='completed',results=[]}={}){if(!this.getProject(projectId,userId))throw new Error('Project not found');const id=randomUUID();this.db.prepare('INSERT INTO research_runs(id,project_id,user_id,query,status,provider,results_json,created_at) VALUES (?,?,?,?,?,?,?,?)').run(id,projectId,userId,String(query).slice(0,5000),String(status),String(provider),JSON.stringify(results||[]),this.now());return this.db.prepare('SELECT * FROM research_runs WHERE id=?').get(id);}
   listResearchRuns(projectId,userId){if(!this.getProject(projectId,userId))return [];return this.db.prepare('SELECT * FROM research_runs WHERE project_id=? ORDER BY created_at DESC').all(projectId).map(x=>({...x,results:x.results_json?JSON.parse(x.results_json):[]}));}
-  healthcheck(){try{return Boolean(this.db.prepare('SELECT 1 AS ok').get()?.ok===1);}catch{return false;}}\n  close(){this.db.close();}
+  healthcheck(){try{return Boolean(this.db.prepare('SELECT 1 AS ok').get()?.ok===1);}catch{return false;}}
+  close(){this.db.close();}
 }
