@@ -38,7 +38,10 @@ export function readiness({router,store}={}) {
   if(production&&admins.length===0)blockers.push('superadmin_allowlist_missing');
   const backupRoot=process.env.CODINGVIBES_BACKUP_ROOT||'./data/backups';
   try{fs.mkdirSync(backupRoot,{recursive:true});fs.accessSync(backupRoot,fs.constants.R_OK|fs.constants.W_OK);}catch{if(production)blockers.push('backup_directory_not_writable');else warnings.push('backup_directory_not_writable');}
-  const scaleout=scaleOutConfig();\n  if(production&&String(process.env.CODINGVIBES_SCALEOUT_REQUIRED||'false')==='true'&&!scaleout.ready)blockers.push(...scaleout.blockers.map(x=>'scaleout_'+x));\n  else if(!scaleout.ready)warnings.push(...scaleout.blockers.map(x=>'scaleout_'+x));\n  if(!process.env.GITHUB_TOKEN)warnings.push('server_github_token_not_configured');
+  const scaleout=scaleOutConfig();
+  if(production&&String(process.env.CODINGVIBES_SCALEOUT_REQUIRED||'false')==='true'&&!scaleout.ready)blockers.push(...scaleout.blockers.map(x=>'scaleout_'+x));
+  else if(!scaleout.ready)warnings.push(...scaleout.blockers.map(x=>'scaleout_'+x));
+  if(!process.env.GITHUB_TOKEN)warnings.push('server_github_token_not_configured');
   return {ready:blockers.length===0,environment:production?'production':'development',runtime,blockers,warnings,model:{configured:Boolean(model.configured),provider:model.provider||null},timestamp:new Date().toISOString(),quotaPlan:getPlan('free').id};
 }
 function requireDir(file){return file.includes('/')?file.slice(0,file.lastIndexOf('/'))||'.':'.';}
