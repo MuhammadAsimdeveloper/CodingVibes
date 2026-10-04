@@ -26,6 +26,7 @@ jobs:
       - run: npm run check
       - run: npm run e2e
       - run: npm run security:check
+      - run: npm run scaleout:doctor
       - name: Run launch readiness
         env:
           NODE_ENV: development
