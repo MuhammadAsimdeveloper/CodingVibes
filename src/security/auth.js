@@ -48,5 +48,6 @@ export function clearSessionCookie(res) {
 export function readSessionCookie(req) {
   const header = req.headers.cookie || '';
   const item = header.split(';').map(x => x.trim()).find(x => x.startsWith(`${COOKIE}=`));
-  return item ? decodeURIComponent(item.slice(COOKIE.length + 1)) : null;
+  if (!item) return null;
+  try { return decodeURIComponent(item.slice(COOKIE.length + 1)); } catch { return null; }
 }
