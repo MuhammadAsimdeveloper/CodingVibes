@@ -20,7 +20,7 @@ test('local object store writes, hashes, reads and deletes safely',async()=>{
  assert.equal((await store.delete({key:'runs/test/output.txt'})).deleted,true);
  assert.equal(await store.get({key:'runs/test/output.txt'}),null);
  assert.equal(await store.healthcheck(),true);
- assert.throws(()=>store.get({key:'../secret'}));
+ await assert.rejects(()=>store.get({key:'../secret'}));
 });
 
 test('in-memory queue preserves jobs and supports bounded retry',async()=>{
