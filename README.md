@@ -138,7 +138,7 @@ See `docs/RUNNER_FLEET_SPEC.md` for the v2.5 execution lifecycle, capability mat
 
 ## Runner fleet security and provenance
 
-The runner fleet now has durable runner registration/heartbeat state, sanitized disposable native workspaces, durable artifact metadata and authenticated artifact downloads, plus macOS protocol v3 with simulator tests before Xcode builds. See `docs/RELEASE_2.6.0.md` and `docs/RUNNER_FLEET_SPEC.md`.
+The runner fleet now has durable runner registration/heartbeat state, sanitized disposable native workspaces, durable artifact metadata and authenticated artifact downloads, plus macOS protocol v3 with simulator tests before Xcode builds. See `docs/RUNNER_FLEET_SPEC.md`.
 
 ## 5.0 free-core business model, motion and video
 
