@@ -17,8 +17,9 @@ test('backend runtime initializes local services and reports their health',async
     }
   });
   await runtime.init();
-  const status=await runtime.healthcheck();
-  assert.equal(status.ok,true);
+  const health=await runtime.healthcheck();
+  const status=await runtime.status();
+  assert.equal(health.ok,true);
   assert.equal(status.database.backend,'sqlite');
   assert.equal(status.objectStorage.backend,'local');
   assert.equal(status.queue.backend,'local');
