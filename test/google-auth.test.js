@@ -1,10 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync} from 'node:fs';
+import fs,{mkdtempSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-
-const freshEnv={...process.env};
 
 test('Google OAuth is disabled unless all production credentials are configured',async()=>{
   const {googleOAuthConfigured}=await import('../src/security/google-auth.js?config-test');
@@ -118,8 +116,8 @@ test('Google identities can link to the existing user without exposing credentia
 });
 
 test('auth and app UI expose both email and Google entry points',()=>{
-  const html=require('node:fs').readFileSync('public/index.html','utf8');
-  const studio=require('node:fs').readFileSync('public/studio.js','utf8');
+  const html=fs.readFileSync('public/index.html','utf8');
+  const studio=fs.readFileSync('public/studio.js','utf8');
   assert.match(html,/Continue with Google/);
   assert.match(html,/id="googleBtn"/);
   assert.match(studio,//api/auth/google/);
