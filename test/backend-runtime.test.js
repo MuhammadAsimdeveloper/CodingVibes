@@ -80,3 +80,33 @@ test('backend runtime can audit to the local store without exposing secrets',asy
   assert.doesNotMatch(JSON.stringify(rows[0]),/should-not-be-returned/);
   await runtime.close();
 });
+
+test('production readiness treats declared managed backends as required even without the global scaleout flag',async()=>{
+  const {readiness}=await import('../src/ops/readiness.js?backend-readiness');
+  const previous={...process.env};
+  try{
+    process.env.NODE_ENV='production';
+    process.env.CODINGVIBES_SESSION_SECRET='x'.repeat(64);
+    process.env.CODINGVIBES_ENFORCE_QUOTAS='true';
+    process.env.CODINGVIBES_PUBLIC_URL='https://example.com';
+    process.env.CODINGVIBES_ENABLE_BROWSER='true';
+    process.env.CODINGVIBES_RUNTIME='container';
+    process.env.CODINGVIBES_CONTAINER_IMAGE='node:22-bookworm-slim';
+    process.env.CODINGVIBES_PROJECT_ROOT='/tmp/bv-projects';
+    process.env.CODINGVIBES_WORK_ROOT='/tmp/bv-work';
+    process.env.CODINGVIBES_CHECKPOINT_ROOT='/tmp/bv-checkpoints';
+    process.env.CODINGVIBES_DB_BACKEND='postgres';
+    process.env.CODINGVIBES_OBJECT_BACKEND='s3';
+    process.env.CODINGVIBES_QUEUE_BACKEND='redis';
+    delete process.env.DATABASE_URL;
+    delete process.env.CODINGVIBES_OBJECT_BUCKET;
+    delete process.env.CODINGVIBES_REDIS_URL;
+    const result=readiness({router:{getStatus:()=>({configured:true,provider:'openai'})}});
+    assert.ok(result.blockers.includes('backend_postgres_database_not_configured'));
+    assert.ok(result.blockers.includes('backend_s3_object_storage_not_configured'));
+    assert.ok(result.blockers.includes('backend_redis_queue_not_configured'));
+  } finally {
+    for(const key of Object.keys(process.env))if(!(key in previous))delete process.env[key];
+    for(const [key,value] of Object.entries(previous))process.env[key]=value;
+  }
+});
