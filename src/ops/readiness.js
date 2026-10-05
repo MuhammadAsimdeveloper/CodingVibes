@@ -43,6 +43,14 @@ export function readiness({router,store}={}) {
   else if(!scaleout.ready)warnings.push(...scaleout.blockers.map(x=>'scaleout_'+x));
   if(!process.env.GITHUB_TOKEN)warnings.push('server_github_token_not_configured');
   if(!process.env.GOOGLE_CLIENT_ID||!process.env.GOOGLE_CLIENT_SECRET||!process.env.GOOGLE_REDIRECT_URI)warnings.push('google_oauth_not_configured');
+  if(production){
+    const managedDb=String(process.env.CODINGVIBES_DB_BACKEND||'sqlite').toLowerCase();
+    const managedObject=String(process.env.CODINGVIBES_OBJECT_BACKEND||'local').toLowerCase();
+    const managedQueue=String(process.env.CODINGVIBES_QUEUE_BACKEND||'local').toLowerCase();
+    if(managedDb==='postgres'&&!process.env.DATABASE_URL)blockers.push('backend_postgres_database_not_configured');
+    if(managedObject==='s3'&&!process.env.CODINGVIBES_OBJECT_BUCKET)blockers.push('backend_s3_object_storage_not_configured');
+    if(managedQueue==='redis'&&!process.env.CODINGVIBES_REDIS_URL)blockers.push('backend_redis_queue_not_configured');
+  }
   return {ready:blockers.length===0,environment:production?'production':'development',runtime,blockers,warnings,model:{configured:Boolean(model.configured),provider:model.provider||null},timestamp:new Date().toISOString(),quotaPlan:getPlan('free').id};
 }
 function requireDir(file){return file.includes('/')?file.slice(0,file.lastIndexOf('/'))||'.':'.';}
