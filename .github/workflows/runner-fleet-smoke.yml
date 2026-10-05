@@ -8,9 +8,10 @@ permissions:
 
 jobs:
   android-apk:
+    timeout-minutes: 30
     runs-on: [self-hosted, codingvibes, android-builder]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Android APK
         run: |
           set -euo pipefail
@@ -19,17 +20,18 @@ jobs:
           test -n "$APK"
           mkdir -p "$RUNNER_TEMP/artifacts"
           cp "$APK" "$RUNNER_TEMP/artifacts/app-debug.apk"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android-apk
           path: ${{ runner.temp }}/artifacts/app-debug.apk
           if-no-files-found: error
 
   android-device:
+    timeout-minutes: 20
     needs: android-apk
     runs-on: [self-hosted, codingvibes, android-device]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: android-apk
           path: artifact
@@ -43,9 +45,10 @@ jobs:
           ./infra/runner-fleet/device-smoke.sh artifact/app-debug.apk "$PACKAGE_ID" "$ACTIVITY"
 
   ios-xcode:
+    timeout-minutes: 30
     runs-on: [self-hosted, codingvibes, macos-xcode, xcode]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Xcode toolchain
         run: |
           set -euo pipefail
