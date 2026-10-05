@@ -110,3 +110,25 @@ test('production readiness treats declared managed backends as required even wit
     for(const [key,value] of Object.entries(previous))process.env[key]=value;
   }
 });
+
+test('backend audit replication strips credential-like metadata before the PostgreSQL control plane',async()=>{
+  const {BackendRuntime}=await import('../src/backend/runtime.js?audit-replication');
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-backend-'));
+  const runtime=new BackendRuntime({
+    env:{NODE_ENV:'development',CODINGVIBES_DB_BACKEND:'sqlite',CODINGVIBES_OBJECT_BACKEND:'local',CODINGVIBES_QUEUE_BACKEND:'local',CODINGVIBES_OBJECT_ROOT:path.join(root,'objects')}
+  });
+  await runtime.init();
+  let replicated=null;
+  runtime.repository={audit:async({metadata})=>{replicated=metadata;}};
+  await runtime.audit({action:'backend.replication.test',resourceType:'backend',metadata:{token:'secret-token',nested:{apiKey:'secret-key',safe:'kept'}}});
+  assert.deepEqual(replicated,{nested:{safe:'kept'}});
+  await runtime.close();
+});
+
+test('backend preflight is wired into the repository release command set',()=>{
+  const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+  assert.equal(pkg.scripts['backend:preflight'],'node scripts/backend-preflight.mjs');
+  assert.ok(fs.existsSync('scripts/backend-preflight.mjs'));
+  const preflight=fs.readFileSync('scripts/production-preflight.mjs','utf8');
+  assert.match(preflight,/BackendRuntime/);
+});
