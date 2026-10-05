@@ -52,7 +52,7 @@ import {scaleOutConfig as scaleOutConfigSnapshot} from './platform/scaleout.js';
 import {BackendRuntime} from './backend/runtime.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');const PUBLIC_SEO_ROUTES=listPublicSeoPages().map(x=>x.path);
-export const store=new Store();export const router=new ModelRouter();export const backend=new BackendRuntime({store});
+export const store=new Store();export const router=new ModelRouter();export const backend=new BackendRuntime({store,closeStore:true});
 const HOST=process.env.HOST||'127.0.0.1';const PORT=Number(process.env.PORT||4400);const MAX_BODY=Number(process.env.CODINGVIBES_MAX_BODY_BYTES||2*1024*1024);const activeBuilds=new Map();const buckets=new Map();const authBuckets=new Map();
 function clientAddress(req){if(process.env.CODINGVIBES_TRUST_PROXY==='true'){const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();if(forwarded)return forwarded;}return req.socket.remoteAddress||'unknown';}
 function consumeRateLimit(bucketMap,key,limit,windowMs){const now=Date.now();if(bucketMap.size>10000){for(const [k,v] of bucketMap){if(now-v.start>windowMs)bucketMap.delete(k);}}const b=bucketMap.get(key)||{start:now,count:0};if(now-b.start>windowMs){b.start=now;b.count=0}b.count++;bucketMap.set(key,b);return b.count<=limit;}
