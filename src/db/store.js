@@ -5,6 +5,16 @@ import {DatabaseSync} from 'node:sqlite';
 
 const WORKSPACE_ROLE_INTERNALS=['owner','admin','editor','reviewer','viewer'];
 
+function sanitizeAuditMetadata(value,depth=0){
+  if(depth>4||value===null||value===undefined)return value===undefined?null:value;
+  if(Array.isArray(value))return value.slice(0,50).map(item=>sanitizeAuditMetadata(item,depth+1));
+  if(typeof value!=='object')return typeof value==='string'?value.slice(0,1000):value;
+  const out={};
+  const blocked=/(secret|token|password|api[_-]?key|private[_-]?key|authorization|cookie|credential|session)/i;
+  for(const [key,item] of Object.entries(value).slice(0,100)){if(blocked.test(String(key)))continue;out[String(key).slice(0,120)]=sanitizeAuditMetadata(item,depth+1);}
+  return out;
+}
+
 export class Store{
   constructor(filename=process.env.DATABASE_PATH||'./data/codingvibes.db'){
     fs.mkdirSync(path.dirname(path.resolve(filename)),{recursive:true});
@@ -193,7 +203,7 @@ export class Store{
   recordArtifact(runId,{type='binary',path,size=0,sha256,storedPath=null,url=null}){const id=randomUUID();this.db.prepare('INSERT INTO artifacts(id,run_id,type,path,size,sha256,stored_path,url,created_at) VALUES (?,?,?,?,?,?,?,?,?)').run(id,runId,String(type),String(path),Number(size)||0,String(sha256||''),storedPath,url,this.now());return this.getArtifact(id);}
   getArtifact(id){return this.db.prepare('SELECT * FROM artifacts WHERE id=?').get(id)||null;}
   listArtifacts(runId){return this.db.prepare('SELECT * FROM artifacts WHERE run_id=? ORDER BY created_at').all(runId);}
-  addAuditLog({actorUserId=null,action,resourceType,resourceId=null,metadata={}}={}){const id=randomUUID();this.db.prepare('INSERT INTO audit_logs(id,actor_user_id,action,resource_type,resource_id,metadata_json,created_at) VALUES (?,?,?,?,?,?,?)').run(id,actorUserId,String(action),String(resourceType),resourceId,JSON.stringify(metadata&&typeof metadata==='object'?metadata:{}),this.now());return this.getAuditLog(id);}
+  addAuditLog({actorUserId=null,action,resourceType,resourceId=null,metadata={}}={}){const id=randomUUID(),safeMetadata=sanitizeAuditMetadata(metadata);this.db.prepare('INSERT INTO audit_logs(id,actor_user_id,action,resource_type,resource_id,metadata_json,created_at) VALUES (?,?,?,?,?,?,?)').run(id,actorUserId,String(action),String(resourceType),resourceId,JSON.stringify(safeMetadata),this.now());return this.getAuditLog(id);}
   getAuditLog(id){const x=this.db.prepare('SELECT * FROM audit_logs WHERE id=?').get(id);return x?{...x,metadata:x.metadata_json?JSON.parse(x.metadata_json):{}}:null;}
   listAuditLogs({actorUserId=null,limit=200}={}){const safeLimit=Math.min(Math.max(Number(limit)||200,1),1000);const rows=actorUserId?this.db.prepare('SELECT * FROM audit_logs WHERE actor_user_id=? ORDER BY created_at DESC LIMIT ?').all(actorUserId,safeLimit):this.db.prepare('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ?').all(safeLimit);return rows.map(x=>({...x,metadata:x.metadata_json?JSON.parse(x.metadata_json):{}}));}
   systemOverview(){const users=this.db.prepare('SELECT COUNT(*) count FROM users').get();const projects=this.db.prepare('SELECT COUNT(*) count FROM projects').get();const sessions=this.db.prepare('SELECT COUNT(*) count FROM sessions').get();const runs=this.db.prepare("SELECT COUNT(*) total,COALESCE(SUM(CASE WHEN status='verified' THEN 1 ELSE 0 END),0) verified,COALESCE(SUM(CASE WHEN status IN ('failed','cancelled') THEN 1 ELSE 0 END),0) failed FROM runs").get();const deployments=this.db.prepare('SELECT provider,status,COUNT(*) count FROM deployments GROUP BY provider,status ORDER BY provider,status').all();const planCounts=this.db.prepare('SELECT plan,COUNT(*) count FROM billing_accounts GROUP BY plan ORDER BY plan').all();return {users:Number(users?.count||0),projects:Number(projects?.count||0),sessions:Number(sessions?.count||0),runs:{total:Number(runs?.total||0),verified:Number(runs?.verified||0),failed:Number(runs?.failed||0)},deployments,plans:planCounts};}
