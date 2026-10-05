@@ -7,6 +7,7 @@ import {scaleOutConfig} from '../platform/scaleout.js';
 import {Store} from '../db/store.js';
 
 function sanitizeError(error){return String(error?.message||error||'unknown').replace(/[\r\n]+/g,' ').slice(0,500);}
+function sanitizeMetadata(value,depth=0){if(depth>4||value===null||value===undefined)return value===undefined?null:value;if(Array.isArray(value))return value.slice(0,50).map(item=>sanitizeMetadata(item,depth+1));if(typeof value!=='object')return typeof value==='string'?value.slice(0,1000):value;const out={},blocked=/(secret|token|password|api[_-]?key|private[_-]?key|authorization|cookie|credential|session)/i;for(const [key,item] of Object.entries(value).slice(0,100)){if(blocked.test(String(key)))continue;out[String(key).slice(0,120)]=sanitizeMetadata(item,depth+1);}return out;}
 
 export class BackendRuntime{
   constructor({store=null,env=process.env,logger=console,closeStore=false}={}){
@@ -95,9 +96,9 @@ export class BackendRuntime{
   }
 
   async audit({actorUserId=null,action,resourceType,resourceId=null,metadata={}}={}){
-    const local=this.store.addAuditLog({actorUserId,action,resourceType,resourceId,metadata});
+    const safeMetadata=sanitizeMetadata(metadata),local=this.store.addAuditLog({actorUserId,action,resourceType,resourceId,metadata:safeMetadata});
     if(this.repository){
-      try{await this.repository.audit({actorUserId,action,resourceType,resourceId,metadata});}
+      try{await this.repository.audit({actorUserId,action,resourceType,resourceId,metadata:safeMetadata});}
       catch(error){this.logger.error?.('backend_audit_replication_failed',sanitizeError(error));}
     }
     return local;
