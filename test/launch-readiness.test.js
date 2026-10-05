@@ -90,3 +90,11 @@ test('server exposes a request id and protected launch status surface',()=>{
  assert.match(source,/\/api\/ops\/metrics/);
  assert.match(source,/telemetry\.snapshot\(\)/);
 });
+test('final release contract is checked into the repository',()=>{
+ assert.ok(fs.existsSync('docs/FINAL_RELEASE_12.1.md'));
+ const workflow=fs.readFileSync('.github/workflows/runner-fleet-smoke.yml','utf8');
+ assert.match(workflow,/actions\/checkout@v7/);
+ assert.match(workflow,/actions\/upload-artifact@v7/);
+ assert.match(workflow,/actions\/download-artifact@v8/);
+ assert.match(workflow,/timeout-minutes:/);
+});
