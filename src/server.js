@@ -46,6 +46,8 @@ import {WORKSPACE_ROLES,canRole,authorizeProjectRole,projectCapabilityMatrix,nor
 import {auditDiscoverability,aeoSummary} from './verification/discoverability.js';
 import {submitIndexNow} from './seo/indexnow.js';
 import {listPublicSeoPages,renderPublicSeoPage} from './seo/public-pages.js';
+import {telemetry} from './ops/telemetry.js';
+import {scaleOutConfig as scaleOutConfigSnapshot} from './platform/scaleout.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');const PUBLIC_SEO_ROUTES=listPublicSeoPages().map(x=>x.path);
 export const store=new Store();export const router=new ModelRouter();
@@ -100,10 +102,13 @@ function syncProjectContent(projectId,userId,content){
 
 export function createAppServer(){return http.createServer(async(req,res)=>{
  try{
+  const requestId=randomUUID();const startedAt=Date.now();res.setHeader('x-request-id',requestId);res.once('finish',()=>telemetry.record({method:req.method||'GET',path:req.url||'/',status:res.statusCode,durationMs:Date.now()-startedAt}));
   res.setHeader('x-content-type-options','nosniff');res.setHeader('x-frame-options','SAMEORIGIN');res.setHeader('referrer-policy','same-origin');res.setHeader('cross-origin-resource-policy','same-origin');res.setHeader('cross-origin-opener-policy','same-origin');res.setHeader('permissions-policy','camera=(),microphone=(),geolocation=()');res.setHeader('content-security-policy',"default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.dev.runwayml.com; frame-src http: https:; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");if(process.env.NODE_ENV==='production')res.setHeader('strict-transport-security','max-age=15552000; includeSubDomains');
   if(!rateLimit(req))return sendJson(res,429,{ok:false,error:'rate_limit'});
   const u=new URL(req.url||'/',`http://${req.headers.host||HOST}`),method=req.method||'GET';if(u.pathname==='/health'||u.pathname==='/ready'||u.pathname.startsWith('/api/')||u.pathname.startsWith('/v1/'))res.setHeader('cache-control','no-store');
   if(method==='GET'&&u.pathname==='/health')return sendJson(res,200,{ok:true,service:'build-vibe',version:CODINGVIBES_VERSION,time:new Date().toISOString()});
+  if(method==='GET'&&u.pathname==='/api/launch/status'){try{const adminId=requireSuperAdmin(req,store);const r=readiness({router,store});const fleet=fleetStatus(store),scaleout=scaleOutConfigSnapshot();store.addAuditLog({actorUserId:adminId,action:'launch.status.viewed',resourceType:'system'});return sendJson(res,200,{ok:true,version:CODINGVIBES_VERSION,readiness:{ready:r.ready,runtime:r.runtime,blockers:r.blockers,warnings:r.warnings},fleet:{ready:fleet.ready,mode:fleet.mode,production:fleet.production,security:fleet.security,macos:fleet.macos},scaleout:{ready:scaleout.ready,database:scaleout.database.backend,objectStorage:scaleout.objectStorage.backend,queue:scaleout.queue.backend,blockers:scaleout.blockers},telemetry:telemetry.snapshot()});}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}}
+  if(method==='GET'&&u.pathname==='/api/ops/metrics'){try{const adminId=requireSuperAdmin(req,store);store.addAuditLog({actorUserId:adminId,action:'ops.metrics.viewed',resourceType:'system'});return sendJson(res,200,{ok:true,telemetry:telemetry.snapshot()});}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}}
   if(method==='GET'&&u.pathname==='/robots.txt')return sendText(res,200,`User-agent: *\\nAllow: /\\nDisallow: /api/\\nDisallow: /app\\nSitemap: ${publicOrigin(req)}/sitemap.xml\\n`,'text/plain; charset=utf-8');
   if(method==='GET'&&u.pathname==='/sitemap.xml'){const base=publicOrigin(req),routes=['/',...PUBLIC_SEO_ROUTES,'/terms','/privacy'],unique=[...new Set(routes)];const xml=unique.map(route=>`<url><loc>${base}${route}</loc></url>`).join('');return sendText(res,200,`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${xml}</urlset>`,'application/xml; charset=utf-8');}
 if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPublicSeoPage(u.pathname,{baseUrl:publicOrigin(req)});if(html)return sendText(res,200,html,'text/html; charset=utf-8');}
