@@ -86,7 +86,7 @@ test('launch telemetry is bounded and excludes credentials',async()=>{
 test('server exposes a request id and protected launch status surface',()=>{
  const source=fs.readFileSync('src/server.js','utf8');
  assert.match(source,/x-request-id/);
- assert.match(source,/\/api\/launch\/status/);
+ assert.match(source,/\/api\/launch\/status/);\n  assert.match(source,/backendStatus=await backend.status\(\)/);
  assert.match(source,/\/api\/ops\/metrics/);
  assert.match(source,/telemetry\.snapshot\(\)/);
 });
