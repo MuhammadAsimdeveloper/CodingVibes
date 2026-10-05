@@ -1,7 +1,7 @@
 import {resolveAny} from 'node:dns/promises';
 import http from 'node:http';
 import fs from 'node:fs';
-import {createHash,randomUUID} from 'node:crypto';
+import {createHash,randomUUID,randomBytes} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {Store} from './db/store.js';
@@ -10,7 +10,7 @@ import {buildUserRouterForUser,providerConnectionInput,normalizeAiSettings,canon
 import {encryptSecret,decryptSecret} from './security/vault.js';
 import {createApiToken,hashApiToken,verifyApiToken,isApiToken} from './security/api-tokens.js';
 import {executeBuild,verifyExistingRun} from './agent/orchestrator.js';
-import {hashPassword,verifyPassword,signSession,verifySessionToken,setSessionCookie,clearSessionCookie,readSessionCookie} from './security/auth.js';
+import {hashPassword,verifyPassword,signSession,verifySessionToken,setSessionCookie,sessionCookieHeader,clearSessionCookie,readSessionCookie} from './security/auth.js';
 import {sendJson,sendText,readJson,streamSse} from './http/json.js';
 import {resolveInside} from './core/safe-path.js';
 import {inspectWorkspace,commitWorkspace,revertWorkspace} from './git/workspace.js';
@@ -40,6 +40,7 @@ import {createDefaultSiteContent,normalizeSiteContent,applyContentOperation,cont
 import {kitForKind,SITE_KITS} from './site/kits.js';
 import {deploymentCatalog,connectProvider,disconnectProvider,deployProject,prepareDeploymentArtifact,getDeploymentStatus,cancelDeployment} from './deployment/index.js';
 import {beginOAuth,completeOAuth,oauthConfigured} from './deployment/oauth.js';
+import {beginGoogleOAuth,completeGoogleOAuth,googleOAuthConfigured,readGoogleOAuthStateCookie,setGoogleOAuthStateCookie,clearGoogleOAuthStateCookieHeader} from './security/google-auth.js';
 import {assetType,safeAssetName,hashBuffer,makeAssetRecord,validateAssetUpload,MAX_ASSET_BYTES} from './assets/library.js';
 import {baselinePath} from './verification/visual.js';
 import {WORKSPACE_ROLES,canRole,authorizeProjectRole,projectCapabilityMatrix,normalizeDesignSystem,designModeContract,researchWeb,provisionCloudService,CLOUD_SERVICE_CATALOG,domainVerificationInstructions,hashInviteToken,makeInviteToken} from './platform/feature-suite.js';
@@ -115,6 +116,38 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
 if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPublicSeoPage(u.pathname,{baseUrl:publicOrigin(req)});if(html)return sendText(res,200,html,'text/html; charset=utf-8');}
   if(method==='GET'&&u.pathname==='/ready'){const r=readiness({router,store});if(process.env.NODE_ENV==='production'&&!r.ready)return sendJson(res,503,{ok:false,ready:false,service:'build-vibe',status:'not_ready'});if(process.env.NODE_ENV==='production')return sendJson(res,200,{ok:true,ready:true,service:'build-vibe',status:'ready'});return sendJson(res,r.ready?200:503,{ok:r.ready,...r});}
   if(['POST','PUT','PATCH','DELETE'].includes(method)&&u.pathname!=='/api/billing/webhook'&&!sameOrigin(req))return sendJson(res,403,{ok:false,error:'cross_origin_request_blocked'});
+  if(method==='GET'&&u.pathname==='/api/auth/google/config'){return sendJson(res,200,{ok:true,configured:googleOAuthConfigured()});}
+  if(method==='GET'&&u.pathname==='/api/auth/google'){
+    if(!googleOAuthConfigured())return sendJson(res,503,{ok:false,error:'google_oauth_not_configured'});
+    try{
+      const base=publicOrigin(req),redirectAfter=normalizeReturnUrl(u.searchParams.get('redirect'),base+'/app');
+      const started=beginGoogleOAuth(store,{redirectAfter});
+      setGoogleOAuthStateCookie(res,started.state);
+      res.writeHead(302,{'Location':started.url,'Cache-Control':'no-store'});return res.end();
+    }catch(e){return sendJson(res,e.status||503,{ok:false,error:e.message});}
+  }
+  if(method==='GET'&&u.pathname==='/api/auth/google/callback'){
+    const state=String(u.searchParams.get('state')||''),cookieState=readGoogleOAuthStateCookie(req),error=String(u.searchParams.get('error')||'');
+    const fail=(reason,status=400)=>{res.setHeader('Set-Cookie',clearGoogleOAuthStateCookieHeader());const target=publicOrigin(req)+'/app?auth_error='+encodeURIComponent(reason);res.writeHead(302,{'Location':target,'Cache-Control':'no-store'});return res.end();};
+    if(!state||!cookieState||state!==cookieState)return fail('oauth_state_invalid');
+    if(error)return fail('google_'+String(error).replace(/[^a-z0-9_]+/gi,'_').slice(0,80),400);
+    try{
+      const result=await completeGoogleOAuth(store,{code:u.searchParams.get('code'),state});
+      const profile=result.profile;
+      let identity=store.getAuthIdentity('google',profile.sub),user=identity?store.getUser(identity.user_id):null,created=false;
+      if(!user){
+        user=store.getUserByEmail(profile.email);
+        if(!user){created=true;user=store.createUser(profile.email,await hashPassword(randomBytes(32).toString('base64url')));}
+        identity=store.createAuthIdentity(user.id,{provider:'google',subject:profile.sub,email:profile.email,metadata:{name:profile.name,picture:profile.picture}});
+        if(!identity)throw Object.assign(new Error('google_identity_persistence_failed'),{status:500});
+      }
+      const session=store.createAuthSession(user.id);
+      store.addAuditLog({actorUserId:user.id,action:created?'auth.google.signup':'auth.google.login',resourceType:'user',resourceId:user.id,metadata:{provider:'google'}});
+      const target=normalizeReturnUrl(result.redirectAfter,publicOrigin(req)+'/app');
+      res.setHeader('Set-Cookie',[sessionCookieHeader(signSession(session.id)),clearGoogleOAuthStateCookieHeader()]);
+      res.writeHead(302,{'Location':target,'Cache-Control':'no-store'});return res.end();
+    }catch(e){return fail(e.message==='google_email_not_verified'?'google_email_not_verified':'google_auth_failed',e.status||400);}
+  }
   if(method==='POST'&&u.pathname==='/api/auth/signup'){if(!authRateLimit(req,'signup'))return sendJson(res,429,{ok:false,error:'rate_limit',retry_after_seconds:60});const b=await readJson(req,MAX_BODY);const email=String(b.email||'').trim().toLowerCase(),password=String(b.password||'');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<8)return sendJson(res,400,{ok:false,error:'valid email and password (8+ characters) required'});if(store.getUserByEmail(email))return sendJson(res,409,{ok:false,error:'account_exists'});const user=store.createUser(email,await hashPassword(password));store.addAuditLog({actorUserId:user.id,action:'auth.signup',resourceType:'user',resourceId:user.id});const session=store.createAuthSession(user.id);setSessionCookie(res,signSession(session.id));return sendJson(res,201,{ok:true,user});}
   if(method==='POST'&&u.pathname==='/api/auth/login'){if(!authRateLimit(req,'login'))return sendJson(res,429,{ok:false,error:'rate_limit',retry_after_seconds:60});const b=await readJson(req,MAX_BODY),user=store.getUserByEmail(String(b.email||''));if(!user||!(await verifyPassword(String(b.password||''),user.password_hash)))return sendJson(res,401,{ok:false,error:'invalid_credentials'});const session=store.createAuthSession(user.id);store.addAuditLog({actorUserId:user.id,action:'auth.login',resourceType:'user',resourceId:user.id});setSessionCookie(res,signSession(session.id));return sendJson(res,200,{ok:true,user:{id:user.id,email:user.email,created_at:user.created_at}});}
   if(method==='POST'&&u.pathname==='/api/auth/logout'){const token=readSessionCookie(req);const id=token&&verifySessionToken(token);if(id)store.deleteAuthSession(id);clearSessionCookie(res);return sendJson(res,200,{ok:true});}
