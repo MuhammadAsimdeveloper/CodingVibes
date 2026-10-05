@@ -81,8 +81,8 @@ test('Google authorization callback exchanges code and requires a verified email
   assert.equal(result.profile.email,'person@example.com');
   assert.equal(result.profile.emailVerified,true);
   assert.equal(calls.length,2);
-  assert.match(String(calls[0].options.body),'code=auth-code');
-  assert.match(String(calls[0].options.body),'code_verifier=verifier');
+  assert.match(String(calls[0].options.body),/code=auth-code/);
+  assert.match(String(calls[0].options.body),/code_verifier=verifier/);
 });
 
 test('Google authorization callback rejects an unverified email',async()=>{
