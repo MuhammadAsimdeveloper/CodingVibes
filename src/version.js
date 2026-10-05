@@ -1,2 +1,2 @@
-export const BUILD_VIBE_VERSION='12.0.0';
+export const BUILD_VIBE_VERSION='12.1.0';
 export const CODINGVIBES_VERSION=BUILD_VIBE_VERSION;

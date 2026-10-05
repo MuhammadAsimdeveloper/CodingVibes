@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync} from 'node:fs';
@@ -66,4 +67,34 @@ test('production readiness forbids host-local execution and requires an explicit
   for(const k of Object.keys(process.env))if(!(k in previous))delete process.env[k];
   for(const [k,v] of Object.entries(previous))process.env[k]=v;
  }
+});
+
+test('launch telemetry is bounded and excludes credentials',async()=>{
+ const {RequestTelemetry}=await import('../src/ops/telemetry.js?telemetry-test');
+ const t=new RequestTelemetry({maxRoutes:2});
+ t.record({method:'GET',path:'/api/a',status:200,durationMs:10});
+ t.record({method:'POST',path:'/api/a',status:500,durationMs:20});
+ t.record({method:'GET',path:'/api/b',status:404,durationMs:30});
+ t.record({method:'GET',path:'/api/c?token=secret',status:200,durationMs:40});
+ const s=t.snapshot();
+ assert.equal(s.requests.total,4);
+ assert.equal(s.requests.errors,1);
+ assert.ok(s.routes.length<=2);
+ assert.equal(JSON.stringify(s).includes('secret'),false);
+});
+
+test('server exposes a request id and protected launch status surface',()=>{
+ const source=fs.readFileSync('src/server.js','utf8');
+ assert.match(source,/x-request-id/);
+ assert.match(source,/\/api\/launch\/status/);
+ assert.match(source,/\/api\/ops\/metrics/);
+ assert.match(source,/telemetry\.snapshot\(\)/);
+});
+test('final release contract is checked into the repository',()=>{
+ assert.ok(fs.existsSync('docs/FINAL_RELEASE_12.1.md'));
+ const workflow=fs.readFileSync('.github/workflows/runner-fleet-smoke.yml','utf8');
+ assert.match(workflow,/actions\/checkout@v7/);
+ assert.match(workflow,/actions\/upload-artifact@v7/);
+ assert.match(workflow,/actions\/download-artifact@v8/);
+ assert.match(workflow,/timeout-minutes:/);
 });
