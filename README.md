@@ -102,11 +102,11 @@ The application code is launch-candidate quality, but a public deployment still 
 
 ## Current build phase
 
-Build Vibe 12.0.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
+Build Vibe 12.2.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
 
 For model-first generation, use a configured OpenAI-compatible provider, OpenRouter, Ollama, LM Studio, or a compatible custom endpoint. Generated projects are still constrained to the supported Node/browser runtime contract and must pass verification before commit.
 
-## 12.0.0 current release
+## 12.0.0 historical release baseline
 
 The final release pass adds a search-ready public landing surface and generated-site SEO contract: descriptive titles and descriptions, canonical URLs, Open Graph/Twitter previews, favicon and manifest assets, JSON-LD WebSite/WebPage markup, runtime absolute robots/sitemap URLs, and a noindex boundary for the authenticated builder.
 
