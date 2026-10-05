@@ -9,10 +9,11 @@ import {Store} from '../db/store.js';
 function sanitizeError(error){return String(error?.message||error||'unknown').replace(/[\r\n]+/g,' ').slice(0,500);}
 
 export class BackendRuntime{
-  constructor({store=null,env=process.env,logger=console}={}){
+  constructor({store=null,env=process.env,logger=console,closeStore=false}={}){
     this.env=env;
     this.logger=logger;
     this.store=store||new Store(env.DATABASE_PATH||undefined);
+    this.closeStore=Boolean(closeStore||!store);
     this.ownsStore=!store;
     this.config=scaleOutConfig(env);
     this.database=null;
@@ -136,6 +137,6 @@ export class BackendRuntime{
     try{this.relay?.stop();if(this.relayTask)await Promise.race([this.relayTask,new Promise(resolve=>setTimeout(resolve,1000))]);}catch{}
     try{await this.queue?.close();}catch{}
     try{await this.database?.close();}catch{}
-    if(this.ownsStore)try{this.store.close();}catch{}
+    if(this.closeStore)try{this.store.close();}catch{}
   }
 }
