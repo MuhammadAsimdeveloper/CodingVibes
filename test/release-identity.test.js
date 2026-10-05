@@ -10,9 +10,9 @@ test('Build Vibe has one canonical active release identity',async()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   const versionModule=await import('../src/version.js');
   assert.equal(pkg.name,'build-vibe');
-  assert.equal(pkg.version,'12.1.0');
-  assert.equal(versionModule.BUILD_VIBE_VERSION,'12.1.0');
-  assert.equal(versionModule.CODINGVIBES_VERSION,'12.1.0');
+  assert.equal(pkg.version,'12.2.0');
+  assert.equal(versionModule.BUILD_VIBE_VERSION,'12.2.0');
+  assert.equal(versionModule.CODINGVIBES_VERSION,'12.2.0');
 });
 
 test('superseded version entrypoints are absent from the active tree',()=>{
