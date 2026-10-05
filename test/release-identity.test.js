@@ -30,5 +30,5 @@ test('repository-facing docs use the current product release identity',()=>{
   assert.match(readme,/Current release: 12\.1\.0/);
   assert.doesNotMatch(readme,/## 11\.0\.0 final hardening/);
   assert.doesNotMatch(readme,/Version 3\.0 adds/);
-  assert.match(release,/Build Vibe 12\.0\.0/);
+  assert.match(release,/Build Vibe 12\.1\.0/);
 });
