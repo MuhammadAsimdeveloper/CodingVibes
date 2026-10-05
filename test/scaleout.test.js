@@ -91,3 +91,10 @@ test('outbox relay publishes and completes claimed work',async()=>{
  assert.equal(await relay.once(),1);
  assert.deepEqual(calls,[['enqueue','o1','build.verify'],['complete','o1']]);
 });
+
+test('SQLite is reported as a configured database backend when selected',()=>{
+ const status=postgresConfigStatus({CODINGVIBES_DB_BACKEND:'sqlite'});
+ assert.equal(status.backend,'sqlite');
+ assert.equal(status.configured,true);
+ assert.deepEqual(status.missing,[]);
+});
