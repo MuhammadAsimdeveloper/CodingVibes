@@ -1,6 +1,6 @@
-# Build Vibe 12.0.0 — current release contract
+# Build Vibe 12.1.0 — current release contract
 
-Build Vibe 12.0.0 consolidates the verified AI product-builder workflow with the final SEO, template-studio, repository-hygiene and release-gate pass.
+Build Vibe 12.1.0 consolidates the verified AI product-builder workflow with the final SEO, template-studio, repository-hygiene and release-gate pass.
 
 ## Customer flow
 
@@ -31,6 +31,10 @@ The canonical Git repository remains `MuhammadAsimdeveloper/CodingVibes` for clo
 ## Scale-out foundation
 
 PostgreSQL, S3-compatible object storage, Redis Streams, durable outbox processing and a configurable worker are included as explicit production adapters. These do not silently replace the existing SQLite Store.
+
+## Launch operations
+
+The protected `/api/launch/status` endpoint returns the sanitized production readiness, runner, scale-out and telemetry state for an authorized super-admin. The protected `/api/ops/metrics` endpoint exposes bounded request telemetry, and every HTTP response carries an `x-request-id` for incident correlation.
 
 ## Operations
 
