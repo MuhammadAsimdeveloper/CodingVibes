@@ -120,7 +120,7 @@ test('auth and app UI expose both email and Google entry points',()=>{
   const studio=fs.readFileSync('public/studio.js','utf8');
   assert.match(html,/Continue with Google/);
   assert.match(html,/id="googleBtn"/);
-  assert.match(studio,//api/auth/google/);
+  assert.match(studio,/api\\/auth\\/google/);
 });
 
 test('Build Vibe server has Google auth routes and no client-side secret dependency',()=>{
