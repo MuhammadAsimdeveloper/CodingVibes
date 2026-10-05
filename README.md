@@ -152,3 +152,9 @@ Build Vibe is now a visual universal product builder rather than the former code
 
 The generator preserves a deterministic offline fallback, while configured model providers add model-first planning, generation and bounded repair. All generated changes remain verification-gated before an explicit commit.
 
+
+
+## 12.1 final launch loop
+The 12.1 release line adds protected operator launch status, bounded request telemetry, trusted reverse-proxy origin handling, safe Stripe redirect validation, and refreshed native runner workflow actions. The canonical release contract is documented in `docs/FINAL_RELEASE_12.1.md`.
+
+For operators, `GET /api/launch/status` provides a sanitized launch snapshot and `GET /api/ops/metrics` provides bounded in-memory request telemetry to an authorized super-admin. Every response carries an `x-request-id` for incident correlation.
