@@ -80,13 +80,13 @@ test('public robots and sitemap endpoints are registered once',()=>{
 
 test('Stripe checkout base URL uses the trusted public-origin helper',()=>{
   const source=fs.readFileSync('src/server.js','utf8');
-  assert.match(source,/const base=publicOrigin\\(req\\);/);
-  assert.match(source,/createCheckoutSession/);
-  assert.doesNotMatch(source,/const base=\\`\\$\\{req\\.headers\\['x-forwarded-proto'\\]/);
+  assert.ok(source.includes('const base=publicOrigin(req);'));
+  assert.ok(source.includes('createCheckoutSession'));
+  assert.equal(source.includes("const base=`${req.headers['x-forwarded-proto']"),false);
 });
 test('Stripe checkout redirect URLs are constrained to the trusted public origin',()=>{
- const source=fs.readFileSync('src/server.js','utf8');
- assert.match(source,/normalizeReturnUrl\(b\.successUrl,base\)/);
- assert.match(source,/normalizeReturnUrl\(b\.cancelUrl,base\)/);
- assert.match(source,/cross_origin_redirect_url/);
+  const source=fs.readFileSync('src/server.js','utf8');
+  assert.ok(source.includes('normalizeReturnUrl(b.successUrl'));
+  assert.ok(source.includes('normalizeReturnUrl(b.cancelUrl'));
+  assert.ok(source.includes('cross_origin_redirect_url'));
 });
