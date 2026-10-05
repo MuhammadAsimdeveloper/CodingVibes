@@ -1,6 +1,6 @@
-# Build Vibe 12.2.0 — current release contract
+# Build Vibe 12.3.0 — current release contract
 
-Build Vibe 12.2.0 consolidates the verified AI product-builder workflow with the final SEO, template-studio, repository-hygiene and release-gate pass.
+Build Vibe 12.3.0 consolidates the verified AI product-builder workflow with the final SEO, template-studio, repository-hygiene and release-gate pass.
 
 ## Account authentication
 
@@ -67,3 +67,8 @@ Run:
 `npm run final:check`
 
 This executes the complete automated test, syntax, end-to-end and launch-readiness sequence. GitHub Actions mirrors these gates on pull requests targeting `main`.
+
+## Backend runtime
+Build Vibe 12.3 coordinates application persistence, object storage, queueing and durable outbox delivery behind a single backend runtime. The server initializes this runtime before accepting traffic when launched as the main process. PostgreSQL is used as the durable control plane for outbox, object references and audit replication; SQLite remains the development/application Store unless the service is explicitly migrated to a full Postgres application store in a later persistence migration.
+
+The protected GET /api/ops/backend endpoint reports backend topology and health without exposing credentials.
