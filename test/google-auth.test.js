@@ -122,3 +122,17 @@ test('auth and app UI expose both email and Google entry points',()=>{
   assert.match(html,/id="googleBtn"/);
   assert.match(studio,//api/auth/google/);
 });
+
+test('Build Vibe server has Google auth routes and no client-side secret dependency',()=>{
+  const server=fs.readFileSync('src/server.js','utf8');
+  const env=fs.readFileSync('.env.example','utf8');
+  assert.match(server,/\/api\/auth\/google\/config/);
+  assert.match(server,/\/api\/auth\/google\/callback/);
+  assert.match(server,/readGoogleOAuthStateCookie\(req\)/);
+  assert.match(server,/setGoogleOAuthStateCookie\(res,started\.state\)/);
+  assert.match(server,/sessionCookieHeader\(signSession\(session\.id\)\)/);
+  assert.match(env,/GOOGLE_CLIENT_ID=/);
+  assert.match(env,/GOOGLE_CLIENT_SECRET=/);
+  assert.match(env,/GOOGLE_REDIRECT_URI=/);
+  assert.doesNotMatch(fs.readFileSync('public/studio.js','utf8'),/GOOGLE_CLIENT_SECRET/);
+});
