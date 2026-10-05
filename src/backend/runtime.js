@@ -84,7 +84,7 @@ export class BackendRuntime{
       ok:health.ok,
       initialized:this.initialized,
       mode:this.config.database.backend==='postgres'?'postgres-control-plane':'sqlite',
-      database:{backend:this.config.database.backend,configured:this.config.database.configured,connected:Boolean(this.database)},
+      database:{backend:this.config.database.backend,configured:this.config.database.backend==='sqlite'||this.config.database.configured,connected:Boolean(this.database)||this.config.database.backend==='sqlite'},
       objectStorage:{backend:this.config.objectStorage.backend,configured:this.config.objectStorage.configured,connected:Boolean(this.objectStore)},
       queue:{backend:this.config.queue.backend,configured:this.config.queue.configured,connected:Boolean(this.queue)},
       outbox:{enabled:Boolean(this.repository&&this.relay),running:Boolean(this.relayTask&&!this.relay?.stopping)},
