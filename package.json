@@ -1,6 +1,6 @@
 {
   "name": "build-vibe",
-  "version": "12.0.0",
+  "version": "12.1.0",
   "private": true,
   "type": "module",
   "description": "Build Vibe — visual AI website and app builder with verified output, admin-ready products, deployment adapters, native build contracts, and production scale-out foundations.",
