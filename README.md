@@ -1,6 +1,6 @@
 # Build Vibe
 
-[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 12.2.0**
+[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 12.3.0**
 
 **AI product builder that ships verified, portable software — not just code.**
 
@@ -102,7 +102,7 @@ The application code is launch-candidate quality, but a public deployment still 
 
 ## Current build phase
 
-Build Vibe 12.2.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
+Build Vibe 12.3.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
 
 For model-first generation, use a configured OpenAI-compatible provider, OpenRouter, Ollama, LM Studio, or a compatible custom endpoint. Generated projects are still constrained to the supported Node/browser runtime contract and must pass verification before commit.
 
@@ -158,3 +158,8 @@ The generator preserves a deterministic offline fallback, while configured model
 The 12.2 release line adds real Build Vibe account authentication with email/password and Google OAuth. Google uses a server-side authorization-code flow with PKCE, one-time persisted state and a browser-bound state cookie; verified Google email identities can create a new Build Vibe account or link to an existing account by email. The session remains the same signed, HTTP-only Build Vibe session after OAuth callback.
 
 Google OAuth is optional and activates only when `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` are configured. The deployment environment must register the exact callback URI with Google before enabling the button.
+
+## 12.3 backend runtime
+Build Vibe 12.3 adds a coordinated backend runtime around the existing application Store. It initializes the configured object-storage and job-queue backends, can connect PostgreSQL as the durable control plane for outbox, object references and audit replication, starts the outbox relay when PostgreSQL and Redis are enabled, exposes protected backend health to operators, and fails closed during production startup when the declared backend topology is invalid.
+
+The default development topology remains SQLite + local object storage + in-memory queue. Production can opt into PostgreSQL, S3-compatible object storage and Redis by setting the corresponding backend variables in .env.example.
