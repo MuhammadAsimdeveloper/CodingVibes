@@ -83,3 +83,9 @@ test('Stripe checkout base URL uses the trusted public-origin helper',()=>{
   assert.match(source,/const base=publicOrigin\(req\);try\{const checkout=await createCheckoutSession/);
   assert.doesNotMatch(source,/const base=\$\{req\.headers\['x-forwarded-proto'\]/);
 });
+test('Stripe checkout redirect URLs are constrained to the trusted public origin',()=>{
+ const source=fs.readFileSync('src/server.js','utf8');
+ assert.match(source,/normalizeReturnUrl\(b\.successUrl,base\)/);
+ assert.match(source,/normalizeReturnUrl\(b\.cancelUrl,base\)/);
+ assert.match(source,/cross_origin_redirect_url/);
+});
