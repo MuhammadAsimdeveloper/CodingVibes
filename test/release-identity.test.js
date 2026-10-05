@@ -27,7 +27,7 @@ test('superseded version entrypoints are absent from the active tree',()=>{
 test('repository-facing docs use the current product release identity',()=>{
   const readme=fs.readFileSync(path.join(root,'README.md'),'utf8');
   const release=fs.readFileSync(path.join(root,'docs','FINAL_RELEASE.md'),'utf8');
-  assert.match(readme,/Current release: 12\.1\.0/);
+  assert.match(readme,/Current release: 12.2.0/);
   assert.doesNotMatch(readme,/## 11\.0\.0 final hardening/);
   assert.doesNotMatch(readme,/Version 3\.0 adds/);
   assert.match(release,/Build Vibe 12\.1\.0/);
