@@ -98,3 +98,19 @@ test('final release contract is checked into the repository',()=>{
  assert.match(workflow,/actions\/download-artifact@v8/);
  assert.match(workflow,/timeout-minutes:/);
 });
+
+test('readiness reports Google OAuth as an explicit optional warning when unconfigured',()=>{
+ const previous={...process.env};
+ try{
+  process.env.NODE_ENV='development';
+  delete process.env.GOOGLE_CLIENT_ID;
+  delete process.env.GOOGLE_CLIENT_SECRET;
+  delete process.env.GOOGLE_REDIRECT_URI;
+  const r=readiness({router:{getStatus:()=>({configured:false,provider:'openai'})}});
+  assert.ok(r.warnings.includes('google_oauth_not_configured'));
+  assert.equal(r.blockers.includes('google_oauth_not_configured'),false);
+ } finally {
+  for(const k of Object.keys(process.env))if(!(k in previous))delete process.env[k];
+  for(const [k,v] of Object.entries(previous))process.env[k]=v;
+ }
+});
