@@ -52,3 +52,34 @@ test('release hardening artifacts and CI gate exist',()=>{
   const ci=fs.readFileSync('.github/workflows/ci.yml','utf8');
   assert.match(ci,/npm run security:check/);
 });
+
+
+test('public origin only trusts forwarded host/proto when proxy trust is enabled',async()=>{
+  const {publicOrigin}=await import('../src/server.js?origin-boundary');
+  const previous={...process.env};
+  try{
+    delete process.env.CODINGVIBES_PUBLIC_URL;
+    process.env.CODINGVIBES_TRUST_PROXY='false';
+    const request={headers:{host:'internal.example','x-forwarded-host':'evil.example','x-forwarded-proto':'https'},socket:{encrypted:false}};
+    assert.equal(publicOrigin(request),'http://internal.example');
+    process.env.CODINGVIBES_TRUST_PROXY='true';
+    assert.equal(publicOrigin(request),'https://evil.example');
+    process.env.CODINGVIBES_PUBLIC_URL='https://configured.example';
+    assert.equal(publicOrigin(request),'https://configured.example');
+  }finally{
+    for(const k of Object.keys(process.env))if(!(k in previous))delete process.env[k];
+    for(const [k,v] of Object.entries(previous))process.env[k]=v;
+  }
+});
+
+test('public robots and sitemap endpoints are registered once',()=>{
+  const source=fs.readFileSync('src/server.js','utf8');
+  assert.equal((source.match(/u\.pathname==='\/robots\.txt'/g)||[]).length,1);
+  assert.equal((source.match(/u\.pathname==='\/sitemap\.xml'/g)||[]).length,1);
+});
+
+test('Stripe checkout base URL uses the trusted public-origin helper',()=>{
+  const source=fs.readFileSync('src/server.js','utf8');
+  assert.match(source,/const base=publicOrigin\(req\);try\{const checkout=await createCheckoutSession/);
+  assert.doesNotMatch(source,/const base=\$\{req\.headers\['x-forwarded-proto'\]/);
+});
