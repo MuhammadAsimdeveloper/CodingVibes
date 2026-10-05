@@ -16,11 +16,12 @@
     "e2e": "node scripts/e2e.mjs",
     "fleet:doctor": "node scripts/fleet-doctor.mjs",
     "launch:check": "node scripts/launch-check.mjs",
-    "final:check": "npm test && npm run check && npm run security:check && npm run scaleout:doctor && npm run e2e && npm run launch:check",
+    "final:check": "npm test && npm run check && npm run security:check && npm run scaleout:doctor && npm run backend:preflight && npm run e2e && npm run launch:check",
     "launch:preflight": "node scripts/production-preflight.mjs",
     "security:check": "node scripts/security-preflight.mjs",
     "scaleout:doctor": "node scripts/scaleout-doctor.mjs",
-    "scaleout:worker": "node scripts/scaleout-worker.mjs"
+    "scaleout:worker": "node scripts/scaleout-worker.mjs",
+    "backend:preflight": "node scripts/backend-preflight.mjs"
   },
   "optionalDependencies": {
     "@daytona/sdk": "^0.220.0",
