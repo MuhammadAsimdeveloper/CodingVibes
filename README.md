@@ -1,6 +1,6 @@
 # Build Vibe
 
-[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 12.0.0**
+[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 12.1.0**
 
 **AI product builder that ships verified, portable software — not just code.**
 
