@@ -1,6 +1,6 @@
 # Build Vibe
 
-[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 12.1.0**
+[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 12.2.0**
 
 **AI product builder that ships verified, portable software — not just code.**
 
@@ -102,11 +102,11 @@ The application code is launch-candidate quality, but a public deployment still 
 
 ## Current build phase
 
-Build Vibe 12.0.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
+Build Vibe 12.2.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
 
 For model-first generation, use a configured OpenAI-compatible provider, OpenRouter, Ollama, LM Studio, or a compatible custom endpoint. Generated projects are still constrained to the supported Node/browser runtime contract and must pass verification before commit.
 
-## 12.0.0 current release
+## 12.0.0 historical release baseline
 
 The final release pass adds a search-ready public landing surface and generated-site SEO contract: descriptive titles and descriptions, canonical URLs, Open Graph/Twitter previews, favicon and manifest assets, JSON-LD WebSite/WebPage markup, runtime absolute robots/sitemap URLs, and a noindex boundary for the authenticated builder.
 
@@ -154,7 +154,7 @@ The generator preserves a deterministic offline fallback, while configured model
 
 
 
-## 12.1 final launch loop
-The 12.1 release line adds protected operator launch status, bounded request telemetry, trusted reverse-proxy origin handling, safe Stripe redirect validation, and refreshed native runner workflow actions. The canonical release contract is documented in `docs/FINAL_RELEASE_12.1.md`.
+## 12.2 account authentication enhancement
+The 12.2 release line adds real Build Vibe account authentication with email/password and Google OAuth. Google uses a server-side authorization-code flow with PKCE, one-time persisted state and a browser-bound state cookie; verified Google email identities can create a new Build Vibe account or link to an existing account by email. The session remains the same signed, HTTP-only Build Vibe session after OAuth callback.
 
-For operators, `GET /api/launch/status` provides a sanitized launch snapshot and `GET /api/ops/metrics` provides bounded in-memory request telemetry to an authorized super-admin. Every response carries an `x-request-id` for incident correlation.
+Google OAuth is optional and activates only when `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` are configured. The deployment environment must register the exact callback URI with Google before enabling the button.

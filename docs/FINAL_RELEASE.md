@@ -1,6 +1,16 @@
-# Build Vibe 12.1.0 — current release contract
+# Build Vibe 12.2.0 — current release contract
 
-Build Vibe 12.1.0 consolidates the verified AI product-builder workflow with the final SEO, template-studio, repository-hygiene and release-gate pass.
+Build Vibe 12.2.0 consolidates the verified AI product-builder workflow with the final SEO, template-studio, repository-hygiene and release-gate pass.
+
+## Account authentication
+
+Email/password signup and login remain available. Google account creation/sign-in is available when Google OAuth credentials are configured. The Google callback validates one-time state and PKCE, requires a verified email, links identities by Google subject or existing email, and then creates the same signed HTTP-only Build Vibe session used by email authentication.
+
+Required settings for Google OAuth:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI` (must exactly match the Google Cloud OAuth redirect URI)
 
 ## Customer flow
 

@@ -12,7 +12,7 @@ function secret() {
 export async function hashPassword(password) {
   const salt = randomBytes(16).toString('hex');
   const derived = await scrypt(String(password), salt, 32);
-  return `${salt}:${Buffer.from(derived).toString('hex')}`;
+  return salt + ':' + Buffer.from(derived).toString('hex');
 }
 
 export async function verifyPassword(password, encoded) {
@@ -25,7 +25,7 @@ export async function verifyPassword(password, encoded) {
 
 export function signSession(id) {
   const sig = createHmac('sha256', secret()).update(id).digest('hex');
-  return `${id}.${sig}`;
+  return id + '.' + sig;
 }
 
 export function verifySessionToken(token) {
@@ -36,18 +36,22 @@ export function verifySessionToken(token) {
   return id;
 }
 
-export function setSessionCookie(res, token) {
+export function sessionCookieHeader(token) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', `${COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`);
+  return COOKIE + '=' + encodeURIComponent(token) + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800' + secure;
+}
+
+export function setSessionCookie(res, token) {
+  res.setHeader('Set-Cookie', sessionCookieHeader(token));
 }
 
 export function clearSessionCookie(res) {
-  res.setHeader('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+  res.setHeader('Set-Cookie', COOKIE + '=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
 }
 
 export function readSessionCookie(req) {
   const header = req.headers.cookie || '';
-  const item = header.split(';').map(x => x.trim()).find(x => x.startsWith(`${COOKIE}=`));
+  const item = header.split(';').map(x => x.trim()).find(x => x.startsWith(COOKIE + '='));
   if (!item) return null;
   try { return decodeURIComponent(item.slice(COOKIE.length + 1)); } catch { return null; }
 }

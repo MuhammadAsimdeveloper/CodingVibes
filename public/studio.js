@@ -100,7 +100,27 @@ async function runDiscoverability(){if(!state.project)return;try{const j=await a
 async function loadFeatureSuite(){if(!state.project)return;await Promise.all([loadWorkspaceSuite(),loadDesignMode(),loadCloudServices(),loadDomains(),loadContentRevisions()]);}
 
 $('#launchCheck')?.addEventListener('click',loadLaunchStatus);$('#inviteMember')?.addEventListener('click',async()=>{try{const j=await api('/api/workspaces/'+state.project.workspace_id+'/invites',{method:'POST',body:JSON.stringify({email:$('#inviteEmail').value,role:$('#inviteRole').value})});feed('Invite created. Share token securely: '+j.token,'ok');await loadWorkspaceSuite();}catch(e){feed('Invite: '+e.message,'err')}});$('#saveDesign')?.addEventListener('click',saveDesignMode);$('#resetDesign')?.addEventListener('click',resetDesignMode);$('#provisionCloud')?.addEventListener('click',provisionCloud);$('#addDomain')?.addEventListener('click',addDomain);$('#newContentRevision')?.addEventListener('click',newContentRevision);$('#runResearch')?.addEventListener('click',runProjectResearch);$('#runDiscoverability')?.addEventListener('click',runDiscoverability);$('#buildBtn').onclick=startBuild;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>{$('#request').value=b.dataset.prompt;$('#request').focus();previewBlueprint()});$('#request').addEventListener('input',()=>{clearTimeout(window.cvPlanTimer);window.cvPlanTimer=setTimeout(previewBlueprint,500)});$('#newProject').onclick=async()=>{state.project=null;state.session=null;$('#projectTitle').textContent='New product';$('#request').value='';await ensureProject();};$('#logout').onclick=async()=>{await api('/api/auth/logout',{method:'POST'});location.reload()};
-async function auth(){const j=await api('/api/auth/me');if(j.user){state.user=j.user;$('#appView').classList.remove('hidden');await Promise.all([loadCapabilities(),loadTargets(),loadProjects()]);}else $('#authView').classList.remove('hidden')}
+async function initGoogleAuth(){
+  const button=$('#googleBtn');if(!button)return;
+  try{
+    const j=await api('/api/auth/google/config');
+    button.classList.toggle('hidden',!j.configured);
+    const hint=$('#authProviderHint');
+    if(hint)hint.textContent=j.configured?'Sign in or create your Build Vibe account with Google.':'Google sign-in is not configured yet; email sign-in is available.';
+  }catch{button.classList.add('hidden');}
+}
+function showAuthError(){
+  const code=new URLSearchParams(location.search).get('auth_error');if(!code)return;
+  const messages={google_email_not_verified:'Your Google account email must be verified before you can continue.',oauth_state_invalid:'Google sign-in expired or was interrupted. Please try again.',google_auth_failed:'Google sign-in could not be completed. Please try again.'};
+  const el=$('#authError');if(el)el.textContent=messages[code]||'Google sign-in could not be completed. Please try again.';
+  history.replaceState(null,'',location.pathname+location.hash);
+}
+async function auth(){
+  const j=await api('/api/auth/me');
+  if(j.user){state.user=j.user;$('#appView').classList.remove('hidden');await Promise.all([loadCapabilities(),loadTargets(),loadProjects()]);}
+  else{$('#authView').classList.remove('hidden');showAuthError();await initGoogleAuth();}
+}
 $('#loginBtn').onclick=async()=>{try{await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:$('#email').value,password:$('#password').value})});location.reload()}catch(e){$('#authError').textContent=e.message}};
 $('#signupBtn').onclick=async()=>{try{await api('/api/auth/signup',{method:'POST',body:JSON.stringify({email:$('#email').value,password:$('#password').value})});location.reload()}catch(e){$('#authError').textContent=e.message}};
+$('#googleBtn')?.addEventListener('click',()=>{location.href='/api/auth/google?redirect=%2Fapp';});
 auth();
