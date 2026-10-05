@@ -15,6 +15,7 @@ for (const file of required) {
   if (!fs.existsSync(file)) failures.push(`missing:${file}`);
 }
 const server = fs.readFileSync('src/server.js', 'utf8');
+const googleAuth = fs.readFileSync('src/security/google-auth.js', 'utf8');
 const landing = fs.readFileSync('public/landing.html', 'utf8');
 
 for (const token of [
@@ -30,6 +31,9 @@ for (const token of [
 }
 
 if (server.includes("u.pathname==='/api/webhooks/stripe'")) failures.push('legacy_stripe_webhook_route_present');
+if (!googleAuth.includes('code_challenge_method')) failures.push('google_auth_missing_pkce');
+if (!googleAuth.includes('email_verified')) failures.push('google_auth_missing_verified_email_check');
+if (!googleAuth.includes('STATE_COOKIE')) failures.push('google_auth_missing_state_cookie');
 
 for (const claim of ['100,000+', '100+ Modern', 'No Code • No Limits', '24/7 Support', 'Drag &amp; Drop']) {
   if (landing.includes(claim)) failures.push(`stale_marketing_claim:${claim}`);
