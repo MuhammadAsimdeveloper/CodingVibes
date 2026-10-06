@@ -12,17 +12,52 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  bootstrap-lockfile:
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           package-manager-cache: false
-      - run: npm install --no-audit --no-fund
+      - name: Generate package-lock.json when absent
+        run: |
+          set -euo pipefail
+          if test -f package-lock.json; then
+            echo "package-lock.json already exists; nothing to bootstrap."
+            exit 0
+          fi
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "build: add npm lockfile"
+          git push
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          if test -f package-lock.json; then
+            npm ci --no-audit --no-fund
+          else
+            echo "::warning::package-lock.json is not present yet; using npm install for this bootstrap run."
+            npm install --no-audit --no-fund
+          fi
       - run: npm test
+      - run: npm run test:coverage
       - run: npm run check
       - run: npm run e2e
       - run: npm run security:check
@@ -32,6 +67,7 @@ jobs:
           NODE_ENV: development
           CODINGVIBES_ENABLE_BROWSER: false
         run: |
+          set -euo pipefail
           npm start > /tmp/build-vibe.log 2>&1 &
           pid=$!
           trap 'kill $pid 2>/dev/null || true' EXIT

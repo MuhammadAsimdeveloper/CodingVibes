@@ -2,17 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 
 test('Build Vibe has one canonical active release identity',async()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-  const versionModule=await import('../src/version.js');
+  const versionModule=await import('../src/version.js?release-test='+Date.now());
   assert.equal(pkg.name,'build-vibe');
-  assert.equal(pkg.version,'12.2.0');
-  assert.equal(versionModule.BUILD_VIBE_VERSION,'12.2.0');
-  assert.equal(versionModule.CODINGVIBES_VERSION,'12.2.0');
+  assert.equal(pkg.version,versionModule.BUILD_VIBE_VERSION);
+  assert.equal(versionModule.CODINGVIBES_VERSION,versionModule.BUILD_VIBE_VERSION);
+  assert.match(versionModule.BUILD_VIBE_VERSION,/^\d+\.\d+\.\d+$/);
+});
+
+test('release contract script validates repository identity',()=>{
+  const output=execFileSync(process.execPath,['scripts/release-check.mjs'],{cwd:root,encoding:'utf8'});
+  assert.match(output,/Build Vibe release check: PASS/);
 });
 
 test('superseded version entrypoints are absent from the active tree',()=>{
@@ -24,11 +30,12 @@ test('superseded version entrypoints are absent from the active tree',()=>{
   for(const rel of ['test/video-billing.test.js','test/content-commerce.test.js','test/assets-visual.test.js','test/admin-deployment.test.js'])assert.equal(fs.existsSync(path.join(root,rel)),true,rel);
 });
 
-test('repository-facing docs use the current product release identity',()=>{
+test('repository-facing docs use the current product release identity',async()=>{
+  const {BUILD_VIBE_VERSION}=await import('../src/version.js?docs-test='+Date.now());
   const readme=fs.readFileSync(path.join(root,'README.md'),'utf8');
   const release=fs.readFileSync(path.join(root,'docs','FINAL_RELEASE.md'),'utf8');
-  assert.match(readme,/Current release: 12.2.0/);
+  assert.match(readme,new RegExp('Current release: '+BUILD_VIBE_VERSION.replaceAll('.','\\.')));
   assert.doesNotMatch(readme,/## 11\.0\.0 final hardening/);
   assert.doesNotMatch(readme,/Version 3\.0 adds/);
-  assert.match(release,/Build Vibe 12.2.0/);
+  assert.match(release,new RegExp('Build Vibe '+BUILD_VIBE_VERSION.replaceAll('.','\\.')));
 });

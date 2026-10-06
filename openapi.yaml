@@ -1,0 +1,224 @@
+openapi: 3.1.0
+info:
+  title: Build Vibe API
+  version: 12.2.0
+  description: >-
+    Stable Build Vibe control-plane and public discovery API surfaces. The
+    running server may expose additional internal or UI routes; this contract
+    intentionally documents launch-critical and integration-facing endpoints.
+servers:
+  - url: https://{host}
+    variables:
+      host:
+        default: example.com
+tags:
+  - name: System
+  - name: Auth
+  - name: Builder
+  - name: Projects
+  - name: Workspaces
+  - name: Billing
+  - name: AI
+  - name: Integrations
+  - name: Deployment
+  - name: Targets
+  - name: Operations
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Liveness
+      responses:
+        '200':
+          description: Service is alive
+  /ready:
+    get:
+      tags: [System]
+      summary: Readiness
+      responses:
+        '200':
+          description: Readiness state (may contain production blockers)
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current authenticated user
+      responses:
+        '200': {description: Authenticated user}
+        '401': {description: Not authenticated}
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Create an account
+      responses:
+        '200': {description: Account created}
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Sign in
+      responses:
+        '200': {description: Signed session established}
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Sign out
+      responses:
+        '200': {description: Session revoked}
+  /api/templates:
+    get:
+      tags: [Builder]
+      summary: List project templates
+      responses:
+        '200': {description: Template catalog}
+  /api/builder/capabilities:
+    get:
+      tags: [Builder]
+      summary: Builder capability catalog
+      responses:
+        '200': {description: Capabilities}
+  /api/builder/research:
+    post:
+      tags: [Builder]
+      summary: Run configured builder research
+      responses:
+        '200': {description: Research result or explicit provider state}
+  /api/builder/blueprint:
+    post:
+      tags: [Builder]
+      summary: Create a deterministic application blueprint
+      responses:
+        '200': {description: AppSpec-compatible blueprint}
+  /api/projects:
+    get:
+      tags: [Projects]
+      summary: List projects available to the authenticated user
+      responses:
+        '200': {description: Project list}
+    post:
+      tags: [Projects]
+      summary: Create a project
+      responses:
+        '201': {description: Project created}
+  /api/workspaces:
+    get:
+      tags: [Workspaces]
+      summary: List accessible workspaces
+      responses:
+        '200': {description: Workspace list}
+  /api/workspaces/invites/accept:
+    post:
+      tags: [Workspaces]
+      summary: Accept a workspace invite
+      responses:
+        '200': {description: Invite accepted}
+  /api/billing:
+    get:
+      tags: [Billing]
+      summary: Billing state and plan catalog
+      responses:
+        '200': {description: Billing state}
+  /api/billing/checkout:
+    post:
+      tags: [Billing]
+      summary: Start a billing checkout
+      responses:
+        '200': {description: Checkout redirect contract}
+  /api/billing/webhook:
+    post:
+      tags: [Billing]
+      summary: Receive provider-signed billing webhooks
+      responses:
+        '200': {description: Event accepted}
+        '400': {description: Invalid event}
+  /api/model/status:
+    get:
+      tags: [AI]
+      summary: Sanitized model provider status
+      responses:
+        '200': {description: Provider status without secrets}
+  /api/ai/providers:
+    get:
+      tags: [AI]
+      summary: AI provider catalog and connection status
+      responses:
+        '200': {description: Provider list}
+  /api/ai/settings:
+    get:
+      tags: [AI]
+      summary: Read user AI routing settings
+      responses:
+        '200': {description: AI settings}
+    put:
+      tags: [AI]
+      summary: Update user AI routing settings
+      responses:
+        '200': {description: AI settings saved}
+  /api/ai/providers/connect:
+    post:
+      tags: [AI]
+      summary: Connect a user AI provider
+      responses:
+        '200': {description: Connection stored without returning the secret}
+  /api/connectors:
+    get:
+      tags: [Integrations]
+      summary: List integration definitions and status
+      responses:
+        '200': {description: Connector status}
+  /api/connectors/test:
+    post:
+      tags: [Integrations]
+      summary: Validate a configured connector
+      responses:
+        '200': {description: Connector health}
+  /api/integrations:
+    get:
+      tags: [Integrations]
+      summary: List integration connections
+      responses:
+        '200': {description: Integration status}
+  /api/integrations/test:
+    post:
+      tags: [Integrations]
+      summary: Test an integration connection
+      responses:
+        '200': {description: Integration health}
+  /api/deployment/providers:
+    get:
+      tags: [Deployment]
+      summary: List deployment adapters
+      responses:
+        '200': {description: Deployment provider catalog}
+  /api/targets:
+    get:
+      tags: [Targets]
+      summary: List supported build targets
+      responses:
+        '200': {description: Target registry}
+  /api/targets/availability:
+    get:
+      tags: [Targets]
+      summary: Report target execution availability
+      responses:
+        '200': {description: Capability and verification status}
+  /api/launch/status:
+    get:
+      tags: [Operations]
+      summary: Protected sanitized launch status
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Launch status for an authorized operator}
+        '403': {description: Operator access denied}
+  /api/ops/metrics:
+    get:
+      tags: [Operations]
+      summary: Protected bounded request telemetry
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Telemetry snapshot}
+        '403': {description: Operator access denied}
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: codingvibes_session
