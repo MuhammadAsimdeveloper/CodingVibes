@@ -50,10 +50,10 @@ try{
   if(!probe.ok)throw new Error('health_probe_http_'+probe.status);
 }catch(error){
   console.error(JSON.stringify({status:'BLOCKED',reason:'load_target_unreachable',baseUrl,error:String(error?.message||error)},null,2));
-  process.exit(2);
+  throw Object.assign(new Error('load_target_unreachable'),{code:'BLOCKED'});
 }
 const results=[];for(const level of levels)results.push(await runLevel(level));
 const ok=results.every(x=>x.passed);
 console.log(JSON.stringify({status:ok?'PASS':'FAIL',baseUrl,p95LimitMs:p95Limit,results},null,2));
-if(!ok)process.exit(1);
+if(!ok)process.exitCode=1;
 }finally{if(child)child.kill('SIGTERM');}
