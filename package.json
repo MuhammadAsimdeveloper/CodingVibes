@@ -21,6 +21,7 @@
     "fleet:doctor": "node scripts/fleet-doctor.mjs",
     "launch:check": "node scripts/launch-check.mjs",
     "final:check": "npm test && npm run test:coverage && npm run check && npm run security:check && npm run scaleout:doctor && npm run e2e && npm run browser:e2e && npm run recovery:smoke && npm run launch:check && npm run ops:load && npm run deployment:preflight && npm run benchmark && npm run mirofish:status && CODINGVIBES_RETENTION_DRY_RUN=true npm run ops:retention",
+    "deployment:preflight": "node scripts/deployment-preflight.mjs",
     "launch:preflight": "node scripts/production-preflight.mjs",
     "security:check": "node scripts/security-preflight.mjs",
     "scaleout:doctor": "node scripts/scaleout-doctor.mjs",
