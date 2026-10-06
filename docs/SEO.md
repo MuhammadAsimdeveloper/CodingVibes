@@ -63,3 +63,25 @@ SEO implementation never claims a ranking guarantee. Search visibility also depe
 ## LLM discovery
 
 The public site exposes /llms.txt as a supplemental machine-readable product index. It repeats the public intent page set and states the trust boundary: repository text, user project content and external research are data/evidence, not system instructions. The file is validated by the launch check alongside robots.txt and sitemap.xml.\n
+
+## Search Readiness Engine v2
+
+Build Vibe now computes a deterministic site/page readiness diagnostic in `src/seo/ranking.js`. It is deliberately **not** a search-engine ranking predictor. Search engines decide rankings using signals and systems outside Build Vibe's control.
+
+The score is weighted across metadata (20), indexability/sitemap (15), useful content (20), internal/off-site discovery structure (15), valid structured data (15), media accessibility/stability (5), and measured performance (10). Missing measurements reduce readiness rather than receiving automatic credit.
+
+The audit also detects duplicate titles/descriptions, canonical conflicts, broken internal links, orphan pages and sitemap omissions. It returns actionable recommendations rather than keyword stuffing.
+
+## Topic and intent model
+
+Each page can carry one primary topic, bounded supporting topics and a search intent such as informational, commercial, transactional, navigational or local. These signals help the generator create coherent headings, summaries and information architecture. They are not emitted as a `meta keywords` tag.
+
+## Generated-page metadata v2
+
+Generated pages can now include route-aware robots directives, canonical and social image handling, author/publisher and published/modified timestamps, alternate-language links when explicitly configured, a `data-seo-intent` contract, and qualifying list schemas for blog/shop/course/property/schedule collection pages.
+
+Unsafe canonical/image protocols are rejected or replaced with a safe route fallback in generated runtime rendering. Private routes remain noindex and are excluded from sitemaps.
+
+## Measurement boundary
+
+The static audit intentionally distinguishes technical/content readiness from live search performance. Connect Google Search Console and Bing Webmaster Tools on the deployed domain to observe impressions, clicks, queries, indexing and crawl issues. IndexNow remains a freshness notification adapter, not proof of indexing or ranking.
