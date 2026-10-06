@@ -84,6 +84,26 @@ export async function runBoundedAgents(tasks,{budget=new AgentExecutionBudget(),
   return results;
 }
 
+export async function runBudgetedAgent({budget,role,run,signal,timeoutMs=DEFAULT_AGENT_POLICY.timeoutMs,estimatedCostUsd=0,onUsage=()=>{}}={}){
+  if(!budget)throw new Error('agent_budget_required');
+  budget.reserve({role,estimatedCostUsd});
+  try{
+    return await withAgentTimeout(
+      childSignal=>run({
+        signal:childSignal,
+        onUsage:usage=>{
+          const cost=Number(usage?.estimatedCostUsd||0);
+          if(cost)budget.record({costUsd:cost});
+          onUsage(usage);
+        }
+      }),
+      {timeoutMs,signal}
+    );
+  }finally{
+    budget.release();
+  }
+}
+
 export function makeAgentHandoff({runId,from,to,summary,evidence=[],artifacts=[],constraints=[]}={}){
   const normalizedEvidence=(Array.isArray(evidence)?evidence:[]).map((x,i)=>({
     index:i,
