@@ -150,12 +150,12 @@ export function parallelAgentPlan(request,spec){
   };
 }
 
-export async function runParallelAgentAnalysis({request,spec,store,runId,onEvent=()=>{},signal}={}){
+export async function runParallelAgentAnalysis({request,spec,store,runId,onEvent=()=>{},signal,budget:providedBudget=null}={}){
   const researchQuery=String(request||'').slice(0,1800);
   const started=Date.now();
-  const budget=new AgentExecutionBudget({
+  const budget=providedBudget||new AgentExecutionBudget({
     maxConcurrent:Number(process.env.CODINGVIBES_AGENT_MAX_CONCURRENCY||3),
-    maxCalls:Number(process.env.CODINGVIBES_AGENT_MAX_CALLS||8),
+    maxCalls:Number(process.env.CODINGVIBES_AGENT_MAX_CALLS||12),
     maxCostUsd:Number(process.env.CODINGVIBES_AGENT_MAX_COST_USD||1)
   });
   const tasks=[
