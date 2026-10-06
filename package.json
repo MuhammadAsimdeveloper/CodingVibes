@@ -15,6 +15,7 @@
     "start": "node --env-file-if-exists=.env.local src/server.js",
     "start:host": "HOST=0.0.0.0 node --env-file-if-exists=.env.local src/server.js",
     "setup": "node scripts/setup.mjs",
+    "docker:local": "docker compose -f compose.local.yml up --build",
     "smoke": "node scripts/smoke.mjs",
     "e2e": "node scripts/e2e.mjs",
     "fleet:doctor": "node scripts/fleet-doctor.mjs",
