@@ -1,6 +1,6 @@
 # Build Vibe competitive positioning
 
-**Snapshot date: October 4, 2026**
+**Snapshot date: October 6, 2026**
 
 Build Vibe should position itself as the **verified, portable AI product builder**: prompt-first generation plus source inspection, bounded repair, browser/runtime evidence and target-aware native verification. The goal is to compete on trustworthy shipping rather than copy another builder's interface or proprietary implementation.
 
@@ -44,3 +44,15 @@ The current $7 Pro / $15 Team prices are a strong acquisition position against t
 - https://api2.v0.dev/pricing
 - https://webflow.com/pricing
 - https://help.webflow.com/hc/en-us/articles/38840145286035-Build-a-site-with-Webflow-s-AI-site-builder
+
+
+## New competitive build priorities
+
+The October 6 review of public product documentation emphasizes four areas where Build Vibe should keep improving:
+
+1. **Visual refinement:** Figma Make and v0 make visual point-and-edit/design systems a major interaction model. Build Vibe should make Design Mode source-safe, reversible and checkpointed.
+2. **Context + research:** Replit Agent and Figma Make expose web/context grounding. Build Vibe should keep research provider content untrusted/evidence-only while making source freshness and provenance visible.
+3. **Browser/self-test loops:** Replit Agent and Cursor Agent emphasize testing and autonomous repair. Build Vibe should preserve its stricter verification gates while improving browser diagnostics and repair evidence.
+4. **Production workflow:** Lovable, Bolt and v0 reduce the gap between generated code and deployment. Build Vibe should keep provider portability but make deployment preflight, domain setup, post-deploy smoke checks and rollback more ergonomic.
+
+The SEO/ranking system is now an additional differentiation layer: it measures a site's technical/content search readiness and provides actionable remediation without pretending to know or control search-engine rankings.
