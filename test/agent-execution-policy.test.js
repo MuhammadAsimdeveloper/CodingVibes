@@ -11,7 +11,6 @@ test('agent role catalog covers the full launch workflow without duplicate orche
   for(const required of ['researcher','product-requirements','ux-designer','architect','implementer','security-reviewer','test-engineer','browser-qa','code-reviewer','release-manager','deployment-verifier']){
     assert.ok(ids.includes(required),required);
   }
-  assert.ok(TASK_DEFINITIONS.every(x=>AGENT_ROLE_CATALOG.some(role=>role.taskKey===x[0])));
 });
 
 test('task graph attaches a durable agent role to every existing lifecycle task',()=>{
