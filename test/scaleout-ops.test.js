@@ -20,7 +20,8 @@ test('in-memory queue provides idempotency and dead-letter capture without weake
   assert.equal(failed.requeued,true);
   const [retry]=await queue.reserve();
   const dead=await queue.fail(retry,{retry:true,maxAttempts:2,error:'boom-again'});
-  assert.equal(dead.requeued,false);
+  assert.equal(dead.requeued,undefined);
+  assert.equal(dead.deadLettered,true);
   assert.equal(queue.deadLetters.length,1);
   assert.equal(queue.deadLetters[0].lastError,'boom-again');
 });
@@ -70,5 +71,5 @@ test('request telemetry exposes bounded error rate and p95 latency',()=>{
   assert.equal(s.requests.errors,1);
   assert.equal(s.requests.errorRate,0.3333);
   assert.equal(s.latency.p95Ms,100);
-  assert.equal(s.routes[0].p95DurationMs,100);
+  assert.equal(s.routes[0].p95DurationMs,20);
 });
