@@ -30,6 +30,9 @@ jobs:
       - run: npm run test:coverage
       - run: npm run check
       - run: npm run e2e
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run browser:e2e
       - run: npm run security:check
       - run: npm run scaleout:doctor
       - name: Run launch readiness
