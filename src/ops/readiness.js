@@ -41,6 +41,7 @@ export function readiness({router,store}={}) {
         if(!process.env.PADDLE_WEBHOOK_SECRET)blockers.push('paddle_webhook_secret_missing');
         if(!process.env.PADDLE_PRICE_PRO_MONTHLY)blockers.push('paddle_pro_price_missing');
         if(!process.env.PADDLE_PRICE_TEAM_MONTHLY)blockers.push('paddle_team_price_missing');
+        if(!process.env.PADDLE_CLIENT_TOKEN)blockers.push('paddle_client_token_missing');
       }
     }
   } else {
