@@ -28,6 +28,7 @@ Set:
 - `PADDLE_PRICE_PRO_MONTHLY`
 - `PADDLE_PRICE_TEAM_MONTHLY`
 - `PADDLE_CHECKOUT_URL` (your approved Paddle checkout/default payment URL)
+- `PADDLE_CLIENT_TOKEN` (the browser-safe Paddle client-side token used by `/pay`)
 
 Paddle checkout transactions are created through `/transactions`, and customers can use the hosted customer portal. Paddle webhooks are verified from the raw request body and `Paddle-Signature`, then the subscription state is synchronized into the same billing account.
 
@@ -40,3 +41,6 @@ Set `CODINGVIBES_BILLING_REQUIRED=true`. Readiness fails closed when the selecte
 Never put provider API keys in source control. Keep production secrets in your host's secret manager/environment and rotate webhook secrets when necessary.
 
 For a new deployment, run the readiness/launch checks after configuring the selected provider.
+
+
+Paddle's checkout payment link should target an approved page that includes Paddle.js. Build Vibe ships `/pay`; it accepts the transaction ID, opens the hosted checkout, and redirects back to the app after completion. Paddle customer-portal links are temporary and are created on demand, so the app never stores them.
