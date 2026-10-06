@@ -135,3 +135,32 @@ test('session authentication helpers round-trip signed cookies and passwords saf
     process.env.NODE_ENV=previous.NODE_ENV;process.env.CODINGVIBES_SESSION_SECRET=previous.CODINGVIBES_SESSION_SECRET;
   }
 });
+
+
+test('SEO helpers normalize public URLs and IndexNow submits validated URLs',async()=>{
+  const meta=await import('../src/seo/metadata.js?coverage-meta');
+  assert.equal(meta.normalizeBaseUrl('https://example.com/path'),'https://example.com');
+  assert.equal(meta.normalizeBaseUrl('not-a-url'),'');
+  assert.equal(meta.absoluteUrl('https://example.com','/pricing'),'https://example.com/pricing');
+  assert.equal(meta.cleanTitle('  A   title  '),'A title');
+  assert.equal(meta.cleanDescription('  A   description  '),'A description');
+  assert.deepEqual(meta.keywordSet('Build Vibe, AI builder, Build Vibe'),['build','vibe','ai','builder']);
+  assert.equal(meta.organizationSchema('https://example.com').url,'https://example.com/');
+  assert.equal(meta.websiteSchema('https://example.com','Build Vibe').publisher['@id'],'https://example.com/#organization');
+  assert.equal(meta.softwareApplicationSchema('https://example.com').applicationCategory,'DeveloperApplication');
+  assert.equal(meta.breadcrumbSchema('https://example.com',[{name:'Home',path:'/'}]).itemListElement[0].position,1);
+  assert.match(meta.jsonLdGraph([{ '@type':'Thing',name:'x'}]),/schema\.org/);
+  assert.match(meta.publicSeoGraph('https://example.com',{title:'Home',description:'Site'}),/WebPage/);
+  const indexnow=await import('../src/seo/indexnow.js?coverage-indexnow');
+  const originalFetch=globalThis.fetch;
+  try{
+    globalThis.fetch=async()=>new Response('ok',{status:200});
+    const one=await indexnow.submitIndexNow({url:'https://example.com/home',key:'indexnow-key'});
+    assert.equal(one.submitted,1);
+    const many=await indexnow.submitIndexNow({urls:['https://example.com/a','https://example.com/b','https://example.com/a'],key:'indexnow-key'});
+    assert.equal(many.submitted,2);
+    await assert.rejects(indexnow.submitIndexNow({urls:['https://a.example.com/x','https://b.example.com/y'],key:'indexnow-key'}),/one_host/);
+    const skipped=await indexnow.submitIndexNow({url:'https://example.com/home',key:''});
+    assert.equal(skipped.skipped,true);
+  }finally{globalThis.fetch=originalFetch;}
+});
