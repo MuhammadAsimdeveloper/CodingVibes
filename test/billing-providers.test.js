@@ -76,3 +76,42 @@ test('Paddle API helpers create customer, transaction and portal links through t
     assert.match(String(calls[1].options.body),/pri_pro/);
   }finally{globalThis.fetch=originalFetch;}
 });
+
+
+test('Paddle request layer fails closed for missing configuration, provider errors and timeouts',async()=>{
+  await assert.rejects(
+    createPaddleCustomer({email:'x@example.com',userId:'u',env:{}}),
+    /paddle_billing_not_configured/
+  );
+  await assert.rejects(
+    createPaddleCheckoutTransaction({priceId:'',env:{PADDLE_API_KEY:'k'}}),
+    /paddle_price_not_configured/
+  );
+  await assert.rejects(
+    createPaddlePortalSession({customerId:'',env:{PADDLE_API_KEY:'k'}}),
+    /paddle_customer_missing/
+  );
+  const originalFetch=globalThis.fetch;
+  try{
+    globalThis.fetch=async()=>new Response(JSON.stringify({error:{detail:'bad request'}}),{status:400});
+    await assert.rejects(
+      createPaddleCustomer({email:'x@example.com',userId:'u',env:{PADDLE_API_KEY:'k'}}),
+      /bad request/
+    );
+    globalThis.fetch=async()=>{throw new DOMException('aborted','AbortError');};
+    await assert.rejects(
+      createPaddleCustomer({email:'x@example.com',userId:'u',env:{PADDLE_API_KEY:'k'}}),
+      /paddle_request_timeout/
+    );
+    globalThis.fetch=async()=>new Response('not-json',{status:200});
+    const portal=await createPaddlePortalSession({customerId:'ctm',env:{PADDLE_API_KEY:'k'}});
+    assert.equal(portal.url,null);
+  }finally{globalThis.fetch=originalFetch;}
+});
+
+test('Paddle subscription mapping tolerates custom data and unrecognized prices',()=>{
+  const env={PADDLE_PRICE_PRO_MONTHLY:'pri_pro',PADDLE_PRICE_TEAM_MONTHLY:'pri_team'};
+  assert.equal(paddlePlanFromSubscription({items:[{price:{id:'unknown'}}],custom_data:{plan:'pro'}},env),'pro');
+  assert.equal(paddlePlanFromSubscription({items:[{price_id:'pri_team'}]},env),'team');
+  assert.equal(paddlePlanFromSubscription({items:[],custom_data:{plan:'free'}},env),null);
+});
