@@ -90,3 +90,9 @@ test('Stripe checkout redirect URLs are constrained to the trusted public origin
   assert.ok(source.includes('normalizeReturnUrl(b.cancelUrl'));
   assert.ok(source.includes('cross_origin_redirect_url'));
 });
+
+test('cross-site Fetch Metadata is rejected even when Origin is absent',()=>{
+  const source=fs.readFileSync('src/server.js','utf8');
+  assert.match(source,/sec-fetch-site/);
+  assert.match(source,/fetchSite==='cross-site'/);
+});
