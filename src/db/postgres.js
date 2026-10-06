@@ -34,7 +34,7 @@ export async function ensurePostgresMigrations(db){
 export function postgresConfigStatus(env=process.env){
   const url=String(env.DATABASE_URL||'').trim();
   const backend=String(env.CODINGVIBES_DB_BACKEND||'sqlite').toLowerCase();
-  return {backend,configured:backend==='postgres'&&Boolean(url),sslMode:String(env.CODINGVIBES_PG_SSL_MODE||'require'),poolMax:Number(env.CODINGVIBES_PG_POOL_MAX||DEFAULT_MAX),missing:backend==='postgres'&&!url?['DATABASE_URL']:[]};
+  return {backend,configured:backend==='sqlite'||Boolean(url),sslMode:String(env.CODINGVIBES_PG_SSL_MODE||'require'),poolMax:Number(env.CODINGVIBES_PG_POOL_MAX||DEFAULT_MAX),missing:backend==='postgres'&&!url?['DATABASE_URL']:[]};
 }
 
 function migration0001(){

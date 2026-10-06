@@ -40,7 +40,7 @@ test('billing helper maps Stripe price IDs to configured plans',async()=>{const 
 
 test('target execution availability is classified',async()=>{const {targetExecutionAvailability}=await import('../src/targets/verify.js');const {getTarget}=await import('../src/targets/registry.js');const r=targetExecutionAvailability(getTarget('web-node'));assert.equal(r.canBuild,true);assert.equal(typeof r.host.available,'boolean');});
 
-test('launch center surfaces exist',async()=>{const f=await (await import('node:fs/promises')).readFile('src/server.js','utf8');assert.ok(f.includes('/api/launch/status'));assert.ok(f.includes('/api/billing/webhook'));assert.ok(f.includes('/api/targets/availability'));});
+test('launch center surfaces exist',async()=>{const f=await (await import('node:fs/promises')).readFile('src/server.js','utf8');assert.ok(f.includes('/api/launch/status'));assert.ok(f.includes('/api/ops/backend'));assert.ok(f.includes('/api/billing/webhook'));assert.ok(f.includes('/api/targets/availability'));});
 
 
 test('production readiness forbids host-local execution and requires an explicit container image',()=>{
@@ -86,12 +86,12 @@ test('launch telemetry is bounded and excludes credentials',async()=>{
 test('server exposes a request id and protected launch status surface',()=>{
  const source=fs.readFileSync('src/server.js','utf8');
  assert.match(source,/x-request-id/);
- assert.match(source,/\/api\/launch\/status/);
+ assert.match(source,/\/api\/launch\/status/);\n  assert.match(source,/backendStatus=await backend.status\(\)/);
  assert.match(source,/\/api\/ops\/metrics/);
  assert.match(source,/telemetry\.snapshot\(\)/);
 });
 test('final release contract is checked into the repository',()=>{
- assert.ok(fs.existsSync('docs/FINAL_RELEASE_12.1.md'));
+ assert.ok(fs.existsSync('docs/FINAL_RELEASE_12.1.md'));assert.ok(fs.existsSync('src/backend/runtime.js'));
  const workflow=fs.readFileSync('.github/workflows/runner-fleet-smoke.yml','utf8');
  assert.match(workflow,/actions\/checkout@v7/);
  assert.match(workflow,/actions\/upload-artifact@v7/);
