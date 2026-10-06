@@ -30,7 +30,8 @@
     "recovery:smoke": "node scripts/recovery-smoke.mjs",
     "benchmark": "node src/evaluation/run-benchmark.mjs",
     "mirofish:status": "node --input-type=module -e \"import {getMiroFishStatus} from './src/platform/mirofish.js'; console.log(JSON.stringify(getMiroFishStatus(),null,2))\"",
-    "ops:retention": "node scripts/retention.mjs"
+    "ops:retention": "node scripts/retention.mjs",
+    "mirofish:smoke": "node --test test/mirofish-adapter.test.js"
   },
   "optionalDependencies": {
     "@daytona/sdk": "^0.220.0",
