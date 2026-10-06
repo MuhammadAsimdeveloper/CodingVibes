@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {AGENT_ROLE_CATALOG,TASK_DEFINITIONS,createTaskGraph} from '../src/agent/task-graph.js';
 import {AgentExecutionBudget,runBoundedAgents,withAgentTimeout,makeAgentHandoff} from '../src/agent/execution-policy.js';
 import {normalizeResearchResult} from '../src/platform/feature-suite.js';
+import {assessBrowserQuality} from '../src/verification/playwright.js';
 
 test('agent role catalog covers the full launch workflow without duplicate orchestration',()=>{
   const ids=AGENT_ROLE_CATALOG.map(x=>x.id);
@@ -100,4 +101,25 @@ test('research evidence is normalized with provenance and cannot carry provider 
   assert.match(item.provenanceHash,/^[a-f0-9]{64}$/);
   assert.equal('instruction' in item,false);
   assert.equal(normalizeResearchResult({url:'file:///tmp/secret',text:'local'}).url,'');
+});
+
+
+test('browser quality converts runtime, visual, performance and accessibility failures into launch failures',()=>{
+  const bad=assessBrowserQuality({
+    status:200,error:null,consoleErrors:[],requestFailures:[],responseFailures:[],
+    uiFailures:[],visual:{passed:false},performance:{navigationDurationMs:6001,transferBytes:9_000_000},
+    accessibility:{keyboard:{focusableCount:2,firstTabFocused:false}}
+  });
+  assert.equal(bad.ok,false);
+  assert.ok(bad.failures.some(x=>x.includes('visual regression')));
+  assert.ok(bad.failures.some(x=>x.includes('navigation took')));
+  assert.ok(bad.failures.some(x=>x.includes('page transfer')));
+  assert.ok(bad.failures.some(x=>x.includes('keyboard Tab')));
+
+  const good=assessBrowserQuality({
+    status:200,error:null,consoleErrors:[],requestFailures:[],responseFailures:[],uiFailures:[],
+    visual:{passed:true},performance:{navigationDurationMs:50,transferBytes:1000},
+    accessibility:{keyboard:{focusableCount:1,firstTabFocused:true}}
+  });
+  assert.equal(good.ok,true);
 });
