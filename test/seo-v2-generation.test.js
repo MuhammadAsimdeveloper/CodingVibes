@@ -38,6 +38,17 @@ test('content normalization rejects unsafe SEO URL schemes and robots directives
   assert.equal(normalized.seo.image,'');
   assert.equal(normalized.seo.robots,'index,nofollow');
 });
+test('deterministic requirements planning creates route-level SEO intent metadata',()=>{
+  const {analyzeRequirements}=await import('../src/agent/requirements.js');
+  const spec=analyzeRequirements('Create an AI SaaS website with pricing, features, blog and contact pages');
+  assert.equal(typeof spec.seo.pages,'object');
+  assert.ok(spec.seo.pages['/']);
+  assert.ok(spec.seo.pages['/pricing']);
+  assert.ok(spec.seo.pages['/blog']);
+  assert.equal(spec.seo.pages['/pricing'].searchIntent,'commercial');
+  assert.equal(spec.seo.pages['/blog'].searchIntent,'informational');
+  assert.equal(spec.seo.useInMetaKeywords,false);
+});
 test('generated HTML includes SEO v2 signals and qualifying content schemas',()=>{
   const spec={
     request:'Create a content website with a blog, author profiles and SEO-ready articles',
