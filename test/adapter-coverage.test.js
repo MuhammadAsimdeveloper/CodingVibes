@@ -109,3 +109,29 @@ test('Android device smoke fails safely before touching adb for bad artifacts an
     assert.equal(wrongHash.reason,'artifact sha256 mismatch');
   }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+
+test('session authentication helpers round-trip signed cookies and passwords safely',async()=>{
+  const auth=await import('../src/security/auth.js?coverage-auth');
+  const previous={NODE_ENV:process.env.NODE_ENV,CODINGVIBES_SESSION_SECRET:process.env.CODINGVIBES_SESSION_SECRET};
+  try{
+    process.env.NODE_ENV='test';
+    process.env.CODINGVIBES_SESSION_SECRET='coverage-session-secret';
+    const encoded=await auth.hashPassword('correct-password');
+    assert.equal(await auth.verifyPassword('correct-password',encoded),true);
+    assert.equal(await auth.verifyPassword('wrong-password',encoded),false);
+    assert.equal(await auth.verifyPassword('malformed','bad'),false);
+    const token=auth.signSession('user-coverage');
+    assert.equal(auth.verifySessionToken(token),'user-coverage');
+    assert.equal(auth.verifySessionToken(token+'.tampered'),null);
+    const cookie=auth.sessionCookieHeader(token);
+    assert.match(cookie,/HttpOnly/);assert.match(cookie,/SameSite=Lax/);
+    let header='';const res={setHeader:(k,v)=>{header=String(v)}};
+    auth.setSessionCookie(res,token);assert.match(header,/cv_session=/);
+    auth.clearSessionCookie(res);assert.match(header,/Max-Age=0/);
+    assert.equal(auth.readSessionCookie({headers:{cookie:cookie}}),token);
+    assert.equal(auth.readSessionCookie({headers:{cookie:'other=x'}}),null);
+  }finally{
+    process.env.NODE_ENV=previous.NODE_ENV;process.env.CODINGVIBES_SESSION_SECRET=previous.CODINGVIBES_SESSION_SECRET;
+  }
+});
