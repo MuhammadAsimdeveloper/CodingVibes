@@ -35,5 +35,5 @@ export function ingestMiroFishResult(result){
 }
 export function normalizeMiroFishScore(value){
   const n=Number(value);if(!Number.isFinite(n))return null;
-  return Number(Math.min(100,Math.max(0,n)).toFixed(2));
+  const clamped=Math.min(100,Math.max(0,n));return Math.round((clamped+Number.EPSILON)*100)/100;
 }
