@@ -8,6 +8,9 @@ const FEATURE_RULES = {
   deployment: { label: 'One-click deployment', minPlan: 'pro' },
   private_projects: { label: 'Private projects', minPlan: 'pro' },
   custom_domain: { label: 'Custom domains', minPlan: 'pro' },
+  team_collaboration: { label: 'Team collaboration controls', minPlan: 'team' },
+  audit_export: { label: 'Audit and release evidence export', minPlan: 'team' },
+  scaleout: { label: 'Production scale-out controls', minPlan: 'team' },
 };
 
 const PLAN_ORDER = { free: 0, pro: 1, team: 2 };
