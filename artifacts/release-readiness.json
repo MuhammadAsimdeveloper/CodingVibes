@@ -1,0 +1,79 @@
+{
+  "schema": "build-vibe.release-readiness.v1",
+  "version": "12.2.0",
+  "commitSha": "8aa58a93dd955a2c5239491691bb0916a9c75280",
+  "branch": "codex/launch-complete-13",
+  "auditedAt": "2026-10-06",
+  "overall": "BLOCKED",
+  "gates": {
+    "releaseIdentity": "PASS",
+    "lockfile": "PASS",
+    "npmCi": "NOT_REVERIFIED",
+    "tests": "NOT_REVERIFIED",
+    "coverage": "NOT_REVERIFIED",
+    "staticCheck": "NOT_REVERIFIED",
+    "securityCheck": "NOT_REVERIFIED",
+    "codeQL": "LAST_KNOWN_PASS_ON_PRE_FIX_SNAPSHOT",
+    "dependencyReview": "BLOCKED",
+    "scaleout": "NOT_REVERIFIED",
+    "e2e": "NOT_REVERIFIED",
+    "browserE2e": "NOT_REVERIFIED",
+    "accessibility": "NOT_REVERIFIED",
+    "visual": "NOT_REVERIFIED",
+    "launchCheck": "NOT_REVERIFIED",
+    "loadTest": "NOT_REVERIFIED",
+    "backupRestore": "NOT_REVERIFIED",
+    "deployment": "NOT_CONFIGURED_UNLESS_PROVIDER_SELECTED",
+    "benchmark": "NOT_RUN_AT_CURRENT_HEAD",
+    "mirofish": "NOT_CONFIGURED"
+  },
+  "testEvidence": {
+    "baseline": {
+      "commitSha": "09b980928d0f8414577ead1dc087cd946f56feae",
+      "passed": 182,
+      "failed": 0,
+      "skipped": 0
+    },
+    "latestPreFixBranch": {
+      "commitSha": "45bfb7b670a2d0a7e3ca0ab523dfed40e25a8406",
+      "passed": 200,
+      "failed": 8,
+      "total": 208
+    },
+    "currentHead": "NOT_REVERIFIED"
+  },
+  "benchmark": {
+    "scenarioCount": 60,
+    "measurementStatus": "PLANNING_CONTRACT_ONLY",
+    "resultStatus": "NOT_RUN_AT_CURRENT_HEAD"
+  },
+  "targets": {
+    "status": "NOT_REVERIFIED",
+    "truthModel": "PASS/BLOCKED/NOT_CONFIGURED"
+  },
+  "security": {
+    "codeQL": "LAST_KNOWN_PASS",
+    "dependencyReview": "BLOCKED",
+    "threatModel": "IMPLEMENTED"
+  },
+  "seo": {
+    "status": "IMPLEMENTED_NOT_REVERIFIED",
+    "llmsTxt": true,
+    "robots": true,
+    "sitemap": true,
+    "structuredData": true
+  },
+  "deployment": {
+    "status": "NOT_CONFIGURED_UNLESS_PROVIDER_SELECTED",
+    "attestation": "IMPLEMENTED"
+  },
+  "mirofish": {
+    "status": "NOT_CONFIGURED"
+  },
+  "blockers": [
+    "No fresh GitHub Actions run/checks are associated with the current audited commit.",
+    "GitHub Dependency Graph is disabled, so Dependency Review remains BLOCKED.",
+    "Managed deployment infrastructure is not configured for a real provider/target launch claim.",
+    "MiroFish is NOT_CONFIGURED."
+  ]
+}
