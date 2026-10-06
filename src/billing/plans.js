@@ -2,20 +2,20 @@ import {featureCatalog,hasFeature,featureGate} from './features.js';
 
 export const PLANS = {
   free: {
-    id: 'free', label: 'Free', monthlyRuns: 5, monthlyTokens: 250000, priceEnv: null,
+    id: 'free', label: 'Free', monthlyRuns: 5, monthlyTokens: 250000, priceEnv: null, paddlePriceEnv: null,
     features: ['basic_site','visual_builder','basic_seo'],
     videoTrialSeconds: Number(process.env.CODINGVIBES_VIDEO_TRIAL_SECONDS || 5),
     videoSeconds: 0,
   },
   pro: {
-    id: 'pro', label: 'Pro', priceUsd: 7, monthlyRuns: 100, monthlyTokens: 5000000, priceEnv: 'STRIPE_PRICE_PRO_MONTHLY',
-    features: ['basic_site','visual_builder','basic_seo','advanced_animation','ai_video','advanced_seo','deployment','private_projects','custom_domain'],
+    id: 'pro', label: 'Pro', priceUsd: 7, monthlyRuns: 100, monthlyTokens: 5000000, priceEnv: 'STRIPE_PRICE_PRO_MONTHLY', paddlePriceEnv: 'PADDLE_PRICE_PRO_MONTHLY',
+    features: ['basic_site','visual_builder','basic_seo','advanced_animation','ai_video','advanced_seo','deployment','private_projects','custom_domain','team_collaboration','audit_export','scaleout'],
     videoTrialSeconds: 0,
     videoSeconds: Number(process.env.CODINGVIBES_PRO_VIDEO_SECONDS || 120),
   },
   team: {
     id: 'team', label: 'Team', priceUsd: 15, monthlyRuns: 1000, monthlyTokens: 25000000, priceEnv: 'STRIPE_PRICE_TEAM_MONTHLY',
-    features: ['basic_site','visual_builder','basic_seo','advanced_animation','ai_video','advanced_seo','deployment','private_projects','custom_domain'],
+    features: ['basic_site','visual_builder','basic_seo','advanced_animation','ai_video','advanced_seo','deployment','private_projects','custom_domain','team_collaboration','audit_export','scaleout'],
     videoTrialSeconds: 0,
     videoSeconds: Number(process.env.CODINGVIBES_TEAM_VIDEO_SECONDS || 600),
   }
@@ -27,6 +27,7 @@ export function planCatalog(env = process.env) {
   return Object.values(PLANS).map(p => ({
     ...p,
     stripePriceConfigured: Boolean(p.priceEnv && env[p.priceEnv]),
+    paddlePriceConfigured: Boolean(p.paddlePriceEnv && env[p.paddlePriceEnv]),
     featureCatalog: featureCatalog(),
   }));
 }
