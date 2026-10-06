@@ -92,3 +92,20 @@ test('Runway request validation and provider calls handle success and API failur
     await assert.rejects(getVideoTask('task_123'),/bad/);
   }finally{globalThis.fetch=originalFetch;if(previous===undefined)delete process.env.RUNWAYML_API_SECRET;else process.env.RUNWAYML_API_SECRET=previous;}
 });
+
+
+test('Android device smoke fails safely before touching adb for bad artifacts and validates hashes',async()=>{
+  const {androidDeviceSmoke}=await import('../src/runners/device.js?coverage-device');
+  assert.deepEqual(await androidDeviceSmoke({artifactPath:'/no/such.apk',packageId:'com.example.app'}),{installed:false,verified:false,status:'blocked',reason:'APK path missing'});
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bv-device-'));
+  const apk=path.join(dir,'app.apk');fs.writeFileSync(apk,Buffer.from('apk-test'));
+  try{
+    const invalidPackage=await androidDeviceSmoke({artifactPath:apk,packageId:'invalid package'});
+    assert.equal(invalidPackage.status,'blocked');
+    const invalidActivity=await androidDeviceSmoke({artifactPath:apk,packageId:'com.example.app',activity:'bad activity'});
+    assert.equal(invalidActivity.status,'blocked');
+    const wrongHash=await androidDeviceSmoke({artifactPath:apk,packageId:'com.example.app',expectedSha256:'deadbeef'});
+    assert.equal(wrongHash.status,'failed');
+    assert.equal(wrongHash.reason,'artifact sha256 mismatch');
+  }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
