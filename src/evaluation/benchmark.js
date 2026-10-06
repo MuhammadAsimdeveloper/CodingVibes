@@ -8,8 +8,8 @@ export function scoreBenchmarkScenario(scenario,spec){
     target:targetId===scenario.targetId,
     pages:Array.isArray(spec?.pages)&&spec.pages.length>0,
     acceptance:Array.isArray(spec?.acceptance)&&spec.acceptance.length>=2,
-    seo:web?SEO_KEYS.every(k=>Boolean(spec?.seo?.[k])):true,
-    shape:Number(spec?.version||0)===3
+    seo:web?SEO_KEYS.every(k=>Boolean(spec?.seo?.[k] ?? (k==='jsonLd'&&spec?.seo?.structuredData))):true,
+    shape:Number(spec?.version||0)===3||String(spec?.version||'')==='spec.v3'
   };
   const score=Math.round(Object.values(checks).filter(Boolean).length/Object.keys(checks).length*100);
   return{scenarioId:scenario.id,category:scenario.category||null,score,passed:score>=80,checks,expectedCapabilities:scenario.expectedCapabilities||[]};
