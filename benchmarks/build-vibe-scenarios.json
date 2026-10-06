@@ -1,0 +1,302 @@
+[
+  {
+    "id": "001",
+    "targetId": "web-node",
+    "request": "Build a conversion-focused agency website with services, case studies, contact and SEO; include responsive accessibility, clear navigation and structured content. Scenario 1 should be implementable and verification-gated."
+  },
+  {
+    "id": "002",
+    "targetId": "web-pwa",
+    "request": "Build an installable offline-first student planner with notes and reminders; include responsive accessibility, clear navigation and structured content. Scenario 2 should be implementable and verification-gated."
+  },
+  {
+    "id": "003",
+    "targetId": "desktop-electron",
+    "request": "Build a desktop inventory manager for a small retail shop; include responsive accessibility, clear navigation and structured content. Scenario 3 should be implementable and verification-gated."
+  },
+  {
+    "id": "004",
+    "targetId": "desktop-tauri",
+    "request": "Build a privacy-focused local markdown knowledge base; include responsive accessibility, clear navigation and structured content. Scenario 4 should be implementable and verification-gated."
+  },
+  {
+    "id": "005",
+    "targetId": "mobile-expo",
+    "request": "Build a cross-platform fitness class booking mobile app for Android and iOS; include responsive accessibility, clear navigation and structured content. Scenario 5 should be implementable and verification-gated."
+  },
+  {
+    "id": "006",
+    "targetId": "mobile-flutter",
+    "request": "Build a field service reporting app with forms, photos and offline sync; include responsive accessibility, clear navigation and structured content. Scenario 6 should be implementable and verification-gated."
+  },
+  {
+    "id": "007",
+    "targetId": "android-kotlin",
+    "request": "Build a native Android expense tracker with biometric unlock; include responsive accessibility, clear navigation and structured content. Scenario 7 should be implementable and verification-gated."
+  },
+  {
+    "id": "008",
+    "targetId": "android-twa",
+    "request": "Build an Android web APK wrapper for a responsive local marketplace; include responsive accessibility, clear navigation and structured content. Scenario 8 should be implementable and verification-gated."
+  },
+  {
+    "id": "009",
+    "targetId": "ios-swiftui",
+    "request": "Build an iPhone meal planning app with grocery lists; include responsive accessibility, clear navigation and structured content. Scenario 9 should be implementable and verification-gated."
+  },
+  {
+    "id": "010",
+    "targetId": "multiplatform-kmp",
+    "request": "Build a Kotlin multiplatform family task app with shared business logic; include responsive accessibility, clear navigation and structured content. Scenario 10 should be implementable and verification-gated."
+  },
+  {
+    "id": "011",
+    "targetId": "web-node",
+    "request": "Build a conversion-focused agency website with services, case studies, contact and SEO; include role-aware admin controls and audit history. Scenario 11 should be implementable and verification-gated."
+  },
+  {
+    "id": "012",
+    "targetId": "web-pwa",
+    "request": "Build an installable offline-first student planner with notes and reminders; include role-aware admin controls and audit history. Scenario 12 should be implementable and verification-gated."
+  },
+  {
+    "id": "013",
+    "targetId": "desktop-electron",
+    "request": "Build a desktop inventory manager for a small retail shop; include role-aware admin controls and audit history. Scenario 13 should be implementable and verification-gated."
+  },
+  {
+    "id": "014",
+    "targetId": "desktop-tauri",
+    "request": "Build a privacy-focused local markdown knowledge base; include role-aware admin controls and audit history. Scenario 14 should be implementable and verification-gated."
+  },
+  {
+    "id": "015",
+    "targetId": "mobile-expo",
+    "request": "Build a cross-platform fitness class booking mobile app for Android and iOS; include role-aware admin controls and audit history. Scenario 15 should be implementable and verification-gated."
+  },
+  {
+    "id": "016",
+    "targetId": "mobile-flutter",
+    "request": "Build a field service reporting app with forms, photos and offline sync; include role-aware admin controls and audit history. Scenario 16 should be implementable and verification-gated."
+  },
+  {
+    "id": "017",
+    "targetId": "android-kotlin",
+    "request": "Build a native Android expense tracker with biometric unlock; include role-aware admin controls and audit history. Scenario 17 should be implementable and verification-gated."
+  },
+  {
+    "id": "018",
+    "targetId": "android-twa",
+    "request": "Build an Android web APK wrapper for a responsive local marketplace; include role-aware admin controls and audit history. Scenario 18 should be implementable and verification-gated."
+  },
+  {
+    "id": "019",
+    "targetId": "ios-swiftui",
+    "request": "Build an iPhone meal planning app with grocery lists; include role-aware admin controls and audit history. Scenario 19 should be implementable and verification-gated."
+  },
+  {
+    "id": "020",
+    "targetId": "multiplatform-kmp",
+    "request": "Build a Kotlin multiplatform family task app with shared business logic; include role-aware admin controls and audit history. Scenario 20 should be implementable and verification-gated."
+  },
+  {
+    "id": "021",
+    "targetId": "web-node",
+    "request": "Build a conversion-focused agency website with services, case studies, contact and SEO; include authentication, CRUD data flows and error states. Scenario 21 should be implementable and verification-gated."
+  },
+  {
+    "id": "022",
+    "targetId": "web-pwa",
+    "request": "Build an installable offline-first student planner with notes and reminders; include authentication, CRUD data flows and error states. Scenario 22 should be implementable and verification-gated."
+  },
+  {
+    "id": "023",
+    "targetId": "desktop-electron",
+    "request": "Build a desktop inventory manager for a small retail shop; include authentication, CRUD data flows and error states. Scenario 23 should be implementable and verification-gated."
+  },
+  {
+    "id": "024",
+    "targetId": "desktop-tauri",
+    "request": "Build a privacy-focused local markdown knowledge base; include authentication, CRUD data flows and error states. Scenario 24 should be implementable and verification-gated."
+  },
+  {
+    "id": "025",
+    "targetId": "mobile-expo",
+    "request": "Build a cross-platform fitness class booking mobile app for Android and iOS; include authentication, CRUD data flows and error states. Scenario 25 should be implementable and verification-gated."
+  },
+  {
+    "id": "026",
+    "targetId": "mobile-flutter",
+    "request": "Build a field service reporting app with forms, photos and offline sync; include authentication, CRUD data flows and error states. Scenario 26 should be implementable and verification-gated."
+  },
+  {
+    "id": "027",
+    "targetId": "android-kotlin",
+    "request": "Build a native Android expense tracker with biometric unlock; include authentication, CRUD data flows and error states. Scenario 27 should be implementable and verification-gated."
+  },
+  {
+    "id": "028",
+    "targetId": "android-twa",
+    "request": "Build an Android web APK wrapper for a responsive local marketplace; include authentication, CRUD data flows and error states. Scenario 28 should be implementable and verification-gated."
+  },
+  {
+    "id": "029",
+    "targetId": "ios-swiftui",
+    "request": "Build an iPhone meal planning app with grocery lists; include authentication, CRUD data flows and error states. Scenario 29 should be implementable and verification-gated."
+  },
+  {
+    "id": "030",
+    "targetId": "multiplatform-kmp",
+    "request": "Build a Kotlin multiplatform family task app with shared business logic; include authentication, CRUD data flows and error states. Scenario 30 should be implementable and verification-gated."
+  },
+  {
+    "id": "031",
+    "targetId": "web-node",
+    "request": "Build a conversion-focused agency website with services, case studies, contact and SEO; include analytics-ready events and a clear pricing surface. Scenario 31 should be implementable and verification-gated."
+  },
+  {
+    "id": "032",
+    "targetId": "web-pwa",
+    "request": "Build an installable offline-first student planner with notes and reminders; include analytics-ready events and a clear pricing surface. Scenario 32 should be implementable and verification-gated."
+  },
+  {
+    "id": "033",
+    "targetId": "desktop-electron",
+    "request": "Build a desktop inventory manager for a small retail shop; include analytics-ready events and a clear pricing surface. Scenario 33 should be implementable and verification-gated."
+  },
+  {
+    "id": "034",
+    "targetId": "desktop-tauri",
+    "request": "Build a privacy-focused local markdown knowledge base; include analytics-ready events and a clear pricing surface. Scenario 34 should be implementable and verification-gated."
+  },
+  {
+    "id": "035",
+    "targetId": "mobile-expo",
+    "request": "Build a cross-platform fitness class booking mobile app for Android and iOS; include analytics-ready events and a clear pricing surface. Scenario 35 should be implementable and verification-gated."
+  },
+  {
+    "id": "036",
+    "targetId": "mobile-flutter",
+    "request": "Build a field service reporting app with forms, photos and offline sync; include analytics-ready events and a clear pricing surface. Scenario 36 should be implementable and verification-gated."
+  },
+  {
+    "id": "037",
+    "targetId": "android-kotlin",
+    "request": "Build a native Android expense tracker with biometric unlock; include analytics-ready events and a clear pricing surface. Scenario 37 should be implementable and verification-gated."
+  },
+  {
+    "id": "038",
+    "targetId": "android-twa",
+    "request": "Build an Android web APK wrapper for a responsive local marketplace; include analytics-ready events and a clear pricing surface. Scenario 38 should be implementable and verification-gated."
+  },
+  {
+    "id": "039",
+    "targetId": "ios-swiftui",
+    "request": "Build an iPhone meal planning app with grocery lists; include analytics-ready events and a clear pricing surface. Scenario 39 should be implementable and verification-gated."
+  },
+  {
+    "id": "040",
+    "targetId": "multiplatform-kmp",
+    "request": "Build a Kotlin multiplatform family task app with shared business logic; include analytics-ready events and a clear pricing surface. Scenario 40 should be implementable and verification-gated."
+  },
+  {
+    "id": "041",
+    "targetId": "web-node",
+    "request": "Build a conversion-focused agency website with services, case studies, contact and SEO; include graceful loading, empty and offline/error states. Scenario 41 should be implementable and verification-gated."
+  },
+  {
+    "id": "042",
+    "targetId": "web-pwa",
+    "request": "Build an installable offline-first student planner with notes and reminders; include graceful loading, empty and offline/error states. Scenario 42 should be implementable and verification-gated."
+  },
+  {
+    "id": "043",
+    "targetId": "desktop-electron",
+    "request": "Build a desktop inventory manager for a small retail shop; include graceful loading, empty and offline/error states. Scenario 43 should be implementable and verification-gated."
+  },
+  {
+    "id": "044",
+    "targetId": "desktop-tauri",
+    "request": "Build a privacy-focused local markdown knowledge base; include graceful loading, empty and offline/error states. Scenario 44 should be implementable and verification-gated."
+  },
+  {
+    "id": "045",
+    "targetId": "mobile-expo",
+    "request": "Build a cross-platform fitness class booking mobile app for Android and iOS; include graceful loading, empty and offline/error states. Scenario 45 should be implementable and verification-gated."
+  },
+  {
+    "id": "046",
+    "targetId": "mobile-flutter",
+    "request": "Build a field service reporting app with forms, photos and offline sync; include graceful loading, empty and offline/error states. Scenario 46 should be implementable and verification-gated."
+  },
+  {
+    "id": "047",
+    "targetId": "android-kotlin",
+    "request": "Build a native Android expense tracker with biometric unlock; include graceful loading, empty and offline/error states. Scenario 47 should be implementable and verification-gated."
+  },
+  {
+    "id": "048",
+    "targetId": "android-twa",
+    "request": "Build an Android web APK wrapper for a responsive local marketplace; include graceful loading, empty and offline/error states. Scenario 48 should be implementable and verification-gated."
+  },
+  {
+    "id": "049",
+    "targetId": "ios-swiftui",
+    "request": "Build an iPhone meal planning app with grocery lists; include graceful loading, empty and offline/error states. Scenario 49 should be implementable and verification-gated."
+  },
+  {
+    "id": "050",
+    "targetId": "multiplatform-kmp",
+    "request": "Build a Kotlin multiplatform family task app with shared business logic; include graceful loading, empty and offline/error states. Scenario 50 should be implementable and verification-gated."
+  },
+  {
+    "id": "051",
+    "targetId": "web-node",
+    "request": "Build a conversion-focused agency website with services, case studies, contact and SEO; include a polished visual system with reduced-motion behavior. Scenario 51 should be implementable and verification-gated."
+  },
+  {
+    "id": "052",
+    "targetId": "web-pwa",
+    "request": "Build an installable offline-first student planner with notes and reminders; include a polished visual system with reduced-motion behavior. Scenario 52 should be implementable and verification-gated."
+  },
+  {
+    "id": "053",
+    "targetId": "desktop-electron",
+    "request": "Build a desktop inventory manager for a small retail shop; include a polished visual system with reduced-motion behavior. Scenario 53 should be implementable and verification-gated."
+  },
+  {
+    "id": "054",
+    "targetId": "desktop-tauri",
+    "request": "Build a privacy-focused local markdown knowledge base; include a polished visual system with reduced-motion behavior. Scenario 54 should be implementable and verification-gated."
+  },
+  {
+    "id": "055",
+    "targetId": "mobile-expo",
+    "request": "Build a cross-platform fitness class booking mobile app for Android and iOS; include a polished visual system with reduced-motion behavior. Scenario 55 should be implementable and verification-gated."
+  },
+  {
+    "id": "056",
+    "targetId": "mobile-flutter",
+    "request": "Build a field service reporting app with forms, photos and offline sync; include a polished visual system with reduced-motion behavior. Scenario 56 should be implementable and verification-gated."
+  },
+  {
+    "id": "057",
+    "targetId": "android-kotlin",
+    "request": "Build a native Android expense tracker with biometric unlock; include a polished visual system with reduced-motion behavior. Scenario 57 should be implementable and verification-gated."
+  },
+  {
+    "id": "058",
+    "targetId": "android-twa",
+    "request": "Build an Android web APK wrapper for a responsive local marketplace; include a polished visual system with reduced-motion behavior. Scenario 58 should be implementable and verification-gated."
+  },
+  {
+    "id": "059",
+    "targetId": "ios-swiftui",
+    "request": "Build an iPhone meal planning app with grocery lists; include a polished visual system with reduced-motion behavior. Scenario 59 should be implementable and verification-gated."
+  },
+  {
+    "id": "060",
+    "targetId": "multiplatform-kmp",
+    "request": "Build a Kotlin multiplatform family task app with shared business logic; include a polished visual system with reduced-motion behavior. Scenario 60 should be implementable and verification-gated."
+  }
+]
