@@ -87,7 +87,7 @@ test('server public and authenticated route smoke covers launch control plane',a
   const revision=await req('/api/projects/'+pid+'/content/revisions',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({status:'draft'})});
   assert.equal(revision.response.status,201);
   const domain=await req('/api/projects/'+pid+'/domains',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({domain:'example.com',provider:'cloudflare'})});
-  assert.equal(domain.response.status,400);
+  assert.equal(domain.response.status,201);
   const service=await req('/api/projects/'+pid+'/cloud-services',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({type:'database'})});
   assert.ok(service.response.status<500);
 
