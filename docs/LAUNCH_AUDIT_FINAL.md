@@ -155,3 +155,85 @@ SQLite backup/restore is covered by executable smoke code and CI wiring. Postgre
 | CodeQL | LAST_KNOWN_PASS_ON_PRE-FIX_SNAPSHOT |
 | Dependency Review | BLOCKED |
 | Overall launch decision | **BLOCKED** |
+
+## Changed-file inventory
+
+The implementation PR changes 69 files. The inventory below is the exact GitHub PR file list for auditability.
+
+```text
+.github/workflows/ci.yml
+.github/workflows/codeql.yml
+.github/workflows/dependency-review.yml
+.nvmrc
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+LICENSE
+SECURITY.md
+artifacts/release-readiness.json
+benchmarks/build-vibe-scenarios.json
+benchmarks/competitive-matrix.json
+docs/BENCHMARKS.md
+docs/FEATURE_FLAGS.md
+docs/IMPLEMENTATION_BASELINE.md
+docs/LAUNCH_AUDIT_FINAL.md
+docs/MIROFISH.md
+docs/MULTI_AGENT.md
+docs/OPERATIONS.md
+docs/PRODUCT_ANALYTICS.md
+docs/ROLLBACK.md
+docs/SCALEOUT.md
+docs/SECURITY_THREAT_MODEL.md
+docs/SEO.md
+docs/TARGETS.md
+docs/VERSIONING.md
+docs/universal-deployment.md
+openapi.yaml
+package-lock.json
+package.json
+scripts/deployment-preflight.mjs
+scripts/e2e.mjs
+scripts/final-audit.mjs
+scripts/launch-check.mjs
+scripts/load-smoke.mjs
+scripts/recovery-smoke.mjs
+scripts/release-check.mjs
+scripts/retention.mjs
+src/agent/execution-policy.js
+src/agent/model-generator.js
+src/agent/orchestrator.js
+src/agent/planner.js
+src/agent/task-graph.js
+src/db/store.js
+src/deployment/attestation.js
+src/deployment/index.js
+src/deployment/preflight.js
+src/evaluation/benchmark.js
+src/evaluation/run-benchmark.mjs
+src/integrations/mirofish.js
+src/jobs/queue.js
+src/ops/feature-flags.js
+src/ops/product-analytics.js
+src/ops/retention.js
+src/ops/telemetry.js
+src/platform/feature-suite.js
+src/platform/mirofish.js
+src/server.js
+src/targets/verify.js
+src/verification/playwright.js
+src/version.js
+test/agent-execution-policy.test.js
+test/deployment-preflight.test.js
+test/evaluation.test.js
+test/mirofish-adapter.test.js
+test/product-ops.test.js
+test/release-identity.test.js
+test/retention.test.js
+test/scaleout-ops.test.js
+test/security-hardening.test.js
+```
+
+## Audit metadata
+
+- Implementation tree audited: 8aa58a93dd955a2c5239491691bb0916a9c75280
+- Audit metadata commit: 010424d57db0e0a100d8553be65104872ccccf7e
+- Current branch head after audit metadata: see codex/launch-complete-13
