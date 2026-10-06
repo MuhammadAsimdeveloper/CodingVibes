@@ -200,6 +200,70 @@ paths:
       summary: Report target execution availability
       responses:
         '200': {description: Capability and verification status}
+  /api/analytics/events:
+    post:
+      tags: [Operations]
+      summary: Record a privacy-bounded product event
+      security: [{sessionCookie: []}]
+      responses:
+        '201': {description: Event recorded}
+        '403': {description: Authentication required}
+  /api/ops/analytics:
+    get:
+      tags: [Operations]
+      summary: Read bounded product analytics summary
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Analytics summary}
+        '403': {description: Operator access denied}
+  /api/ops/feature-flags:
+    get:
+      tags: [Operations]
+      summary: List feature flags
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Feature flags}
+        '403': {description: Operator access denied}
+    put:
+      tags: [Operations]
+      summary: Create or update a feature flag
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Feature flag saved}
+        '403': {description: Operator access denied}
+  /api/feature-flags/evaluate:
+    get:
+      tags: [Operations]
+      summary: Evaluate a feature flag for the authenticated user/project
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Deterministic flag evaluation}
+        '404': {description: Flag or project not found}
+  /api/projects/{projectId}/memory:
+    get:
+      tags: [Projects]
+      summary: Read durable project memory
+      security: [{sessionCookie: []}]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Project memory}
+        '403': {description: Access denied}
+    put:
+      tags: [Projects]
+      summary: Update durable project memory
+      security: [{sessionCookie: []}]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Project memory saved}
+        '403': {description: Access denied}
   /api/launch/status:
     get:
       tags: [Operations]
