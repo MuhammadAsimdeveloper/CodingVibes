@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Build Vibe — Secure Checkout</title>
+  <meta name="robots" content="noindex,nofollow">
+  <style>body{font-family:system-ui,sans-serif;min-height:100vh;margin:0;display:grid;place-items:center;background:#0b1020;color:#eef2ff}main{max-width:560px;padding:32px;text-align:center}p{color:#aab4d0}#status{margin-top:18px}</style>
+</head>
+<body>
+<main>
+  <h1>Secure checkout</h1>
+  <p>Your Paddle transaction is opening in a secure hosted checkout.</p>
+  <div id="status">Preparing checkout…</div>
+</main>
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+<script>
+(() => {
+  const status=document.getElementById('status');
+  const params=new URLSearchParams(location.search);
+  const transactionId=String(params.get('_ptxn')||'').trim();
+  const token='__PADDLE_CLIENT_TOKEN__';
+  const successUrl='__SITE_URL__/app?billing=success';
+  if(!transactionId){status.textContent='Checkout transaction is missing.';return;}
+  if(!token||token==='__PADDLE_CLIENT_TOKEN__'){status.textContent='Paddle checkout is not configured.';return;}
+  try{
+    Paddle.Initialize({token,eventCallback:data=>{
+      if(data?.name==='checkout.completed')status.textContent='Payment complete. Returning to Build Vibe…';
+    }});
+    Paddle.Checkout.open({transactionId,settings:{displayMode:'overlay',successUrl}});
+  }catch(error){status.textContent='Checkout could not start. Please return to the app and try again.';}
+})();
+</script>
+</body>
+</html>
