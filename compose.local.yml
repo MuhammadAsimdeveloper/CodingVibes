@@ -1,0 +1,20 @@
+services:
+  build-vibe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 4400
+      CODINGVIBES_RUNTIME: local
+    ports:
+      - "4400:4400"
+    volumes:
+      - buildvibe_local_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  buildvibe_local_data:
