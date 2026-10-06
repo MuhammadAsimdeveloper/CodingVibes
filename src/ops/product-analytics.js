@@ -4,7 +4,7 @@ export function sanitizeProductEvent({userId=null,projectId=null,sessionId=null,
   const name=String(event||'').trim().toLowerCase();
   if(!SAFE_EVENT_RE.test(name))throw new Error('invalid_event_name');
   const input=properties&&typeof properties==='object'&&!Array.isArray(properties)?properties:{};
-  const clean={};
+  const clean=Object.create(null);
   for(const [key,value] of Object.entries(input).slice(0,30)){
     const safeKey=String(key).replace(/[^a-zA-Z0-9_.:-]/g,'_').slice(0,80);
     if(!safeKey||SECRET_KEY_RE.test(safeKey))continue;
