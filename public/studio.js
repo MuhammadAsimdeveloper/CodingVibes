@@ -128,7 +128,6 @@ $('#signupBtn').onclick=async()=>{try{await api('/api/auth/signup',{method:'POST
 $('#googleBtn')?.addEventListener('click',()=>{location.href='/api/auth/google?redirect=%2Fapp';});
 auth();
 
-async function loadLaunchStatus(){try{const j=await api('/api/launch/status'),r=j.ready,s=$('#launchSummary'),b=$('#billingSummary'),t=$('#launchTargets');if(s){s.textContent=r.ready?'Production contract: READY':'Production contract: '+r.blockers.length+' blocker(s)';s.className=r.ready?'status ok':'status err'}if(b&&j.billing)b.textContent='Plan: '+j.billing.plan+' · '+(j.billing.usage?.runs||0)+' builds · '+(j.billing.usage?.tokens||0)+' tokens';if(t)t.replaceChildren(...(j.targets||[]).map(x=>{const d=document.createElement('div');d.className='cv-event';const e=x.execution,mode=e?.host?.available?'local toolchain':e?.remote?.linux?'remote Linux':e?.remote?.macos?'remote macOS':e?.canBuild?'web runtime':'runner required';d.textContent=x.label+' · '+mode;return d}));if(!r.ready&&r.blockers?.length)feed('Launch blockers: '+r.blockers.join(', '),'err')}catch(e){feed('Launch status: '+e.message,'err')}}
 async function loadProviders(){
   try{
     const j=await api('/api/deployment/providers');
