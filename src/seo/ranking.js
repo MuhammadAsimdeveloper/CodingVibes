@@ -149,7 +149,7 @@ export function auditSeoSite({baseUrl='',pages=[],sitemapUrls=[]}={}){
   for(const [title,paths] of titles)if(paths.length>1)issues.push({code:'duplicate_title',value:title,paths});
   for(const [description,paths] of descriptions)if(paths.length>1)issues.push({code:'duplicate_description',value:description,paths});
   for(const [canonical,paths] of canonicals)if(paths.length>1)issues.push({code:'canonical_conflict',value:canonical,paths});
-  const sitemap=new Set((Array.isArray(sitemapUrls)?sitemapUrls:[]).map(String).map(u=>{try{return new URL(u,baseUrl||undefined).pathname}catch{return normalizePath(u)}}));
+  const sitemap=new Set((Array.isArray(sitemapUrls)?sitemapUrls:[]).map(String).map(u=>{if(u.startsWith('__SITE_URL__'))return normalizePath(u.slice('__SITE_URL__'.length));try{return new URL(u,baseUrl||undefined).pathname}catch{return normalizePath(u)}}));
   for(const page of publicPages){
     if(!sitemap.has(page.path))issues.push({code:'sitemap_missing',path:page.path});
     if(page.path!=='/'&&(inbound.get(page.path)||0)===0)issues.push({code:'orphan_page',path:page.path});
