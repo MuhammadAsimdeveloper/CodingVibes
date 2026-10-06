@@ -20,7 +20,7 @@ export function assessDeploymentPreflight({provider='',targetId='web-node',env=p
   if(!adapter)return{status:'BLOCKED',provider:requested,targetId:target.id,blockers:['unsupported_deployment_provider'],warnings:[]};
   const blockers=[],warnings=[];
   for(const [key,error] of (PROVIDER_REQUIREMENTS[requested]||[]))if(!env[key])blockers.push(error);
-  const availability=targetExecutionAvailability(target);
+  const availability=targetExecutionAvailability(target,env);
   if(target.native&&!availability.canBuild)blockers.push('target_execution_unavailable:'+target.id+(availability.host.missing?.length?':'+availability.host.missing.join(','):'')); 
   const artifact={deploymentMetadata:{serverRequired:!['web-node','web-pwa','desktop-electron'].includes(target.id),missingFiles:[]}};
   const cap=compatibility(requested,artifact);
