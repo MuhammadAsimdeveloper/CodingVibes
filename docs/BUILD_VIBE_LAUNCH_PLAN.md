@@ -1,0 +1,728 @@
+# Build Vibe — Complete Launch & Future Development Plan
+
+> Master implementation contract for Codex / GitHub Copilot.
+> Baseline: Build Vibe 12.2.0 audit, October 2026.
+> Goal: complete the product into a verified, secure, portable, production-launch-ready AI product builder without destroying working architecture.
+
+## 1. Non-negotiable engineering rules
+
+1. Do NOT rewrite Build Vibe from scratch.
+2. Inspect the repository, current branch, git status, package.json, source, tests, workflows, and docs before modifying anything.
+3. Work incrementally on a dedicated branch such as `codex/launch-complete-13`.
+4. Preserve working architecture, public APIs, security boundaries, verification contracts, target registry, provider adapters, deployment adapters, and tests.
+5. Never delete functionality merely to make tests pass.
+6. Never weaken, skip, disable, bypass, or mock away security or verification gates.
+7. Never claim a platform is production-ready unless its artifact and runner verification actually exists.
+8. When an external service is unavailable, expose a clean adapter boundary and explicit NOT_CONFIGURED/BLOCKED state rather than fake success.
+9. Use small checkpoints and run tests after every major phase.
+10. Keep changes backward compatible or provide migrations.
+11. Never overwrite user work without an explicit safe operation.
+
+## 2. Immediate baseline and known failures
+
+Before coding, run:
+
+```bash
+git status --short
+git branch --show-current
+git log -5 --oneline
+node --version
+npm --version
+npm install
+npm test
+npm run check
+npm run security:check
+npm run scaleout:doctor
+npm run launch:check
+npm run final:check
+```
+
+The previous audit identified two concrete PR regressions that must be fixed correctly:
+- syntax error in `test/launch-readiness.test.js`;
+- release identity mismatch between 12.2.0 and 12.3.0.
+
+Do not remove assertions or downgrade checks to make them pass.
+
+## 3. Release hygiene and reproducibility
+
+Implement:
+- canonical version source, preferably `src/version.js`;
+- one consistent release identity across package.json, README, checks, API metadata and release artifacts;
+- committed `package-lock.json`;
+- `.nvmrc` or `.node-version`;
+- `LICENSE`;
+- `CHANGELOG.md`;
+- `CODE_OF_CONDUCT.md`;
+- `openapi.yaml`;
+- migration/versioning documentation;
+- coverage configuration with an enforced meaningful minimum.
+
+CI must use `npm ci` after the lockfile is created.
+
+## 4. CI and supply-chain security
+
+Add:
+- GitHub CodeQL workflow;
+- dependency-review workflow;
+- dependency update automation;
+- secret-scanning guidance;
+- secure environment handling;
+- release provenance containing version, commit SHA, timestamp, target and verification results.
+
+Security-critical failures must fail closed.
+
+## 5. Real multi-agent build pipeline
+
+Upgrade the current partial parallel-agent design into a bounded real pipeline with these roles:
+
+1. Research Agent — sources, requirements evidence, competition, risks.
+2. Requirements/Product Agent — acceptance criteria and AppSpec.
+3. UX/Design Agent — information architecture, responsive design, accessibility and visual targets.
+4. Architecture Agent — stack, modules, APIs, data/security boundaries.
+5. Implementation Agent — bounded source generation/editing.
+6. Security Agent — threat model and generated-code security.
+7. Test Agent — unit/integration/API/E2E/regression tests.
+8. Browser QA Agent — Playwright, screenshots, console/network/runtime checks.
+9. Code Review Agent — requirements/security/diff review.
+10. Release Agent — versioning, migrations, artifacts, docs, rollback.
+11. Deployment Agent — target-aware deployment preparation/execution.
+
+Requirements:
+- bounded concurrency;
+- timeouts;
+- cancellation;
+- retry limits;
+- token/cost budgets;
+- provenance;
+- explicit agent handoffs;
+- no infinite loops;
+- deterministic fallback when an agent/provider is unavailable.
+
+## 6. Research and grounding
+
+Create a first-class research provider interface.
+
+Support:
+- configured web research through the existing API boundary;
+- source URL/title/publisher;
+- retrieval timestamp;
+- freshness;
+- relevance/confidence;
+- caching and deduplication;
+- domain allow/deny lists;
+- prompt-injection defenses for untrusted web content;
+- visible research provenance.
+
+Never pretend research succeeded when the provider failed.
+
+## 7. AI routing and cost controls
+
+Preserve:
+- OpenAI-compatible providers;
+- Anthropic;
+- OpenRouter;
+- Ollama;
+- LM Studio.
+
+Improve:
+- task-aware routing;
+- provider health;
+- latency/cost/context-size routing;
+- fallback chains;
+- cooldowns;
+- token/cost tracking;
+- per-project/run/agent budgets;
+- hard limits;
+- model provenance;
+- runaway-loop protection.
+
+## 8. Generation and repair contract
+
+Preserve the existing AppSpec/spec.v3, bounded operations, safe paths, checkpoints and worktrees.
+
+Add:
+- stronger AppSpec coverage for SEO, accessibility, analytics, content, integrations, auth, billing, deployment and observability;
+- dependency allow/deny policies;
+- generated-file validation;
+- dangerous command/credential/path traversal detection;
+- provenance and changed-file summaries.
+
+Keep the repair loop bounded. Do not weaken tests or verification during repair.
+
+## 9. Verification and browser QA
+
+Verification must cover where applicable:
+- syntax/static checks;
+- unit tests;
+- integration tests;
+- API tests;
+- browser E2E;
+- visual regression;
+- accessibility;
+- SEO;
+- performance;
+- target-specific verification;
+- deployment smoke tests.
+
+Playwright must detect:
+- console errors;
+- failed requests;
+- 4xx/5xx responses;
+- runtime exceptions;
+- broken routes;
+- screenshots;
+- DOM snapshots;
+- visual diffs.
+
+Add responsive viewport coverage and accessibility checks.
+
+## 10. Visual editor / design mode
+
+Close the visual-editing gap without replacing the generator.
+
+Implement:
+- visual canvas/page mode;
+- element selection;
+- text/typography/spacing/color/radius/layout editing;
+- component tree/layers;
+- design tokens/themes;
+- responsive breakpoint previews;
+- comments/annotations;
+- undo/redo;
+- version history;
+- source synchronization;
+- safe screenshot-to-structure workflow where reliable.
+
+Visual edits must not silently break source contracts.
+
+## 11. Complete SEO engine
+
+Create a centralized route-level SEO model.
+
+Every public route should support:
+- title;
+- meta description;
+- canonical;
+- robots directives;
+- Open Graph;
+- Twitter/X cards;
+- favicon/app icons;
+- web manifest;
+- language/hreflang where applicable;
+- author/publisher/date;
+- indexability controls;
+- XML sitemap;
+- robots.txt;
+- sitemap partitioning;
+- duplicate title/meta detection;
+- canonical conflict detection;
+- redirect checks;
+- orphan-page detection;
+- broken internal-link detection;
+- heading hierarchy;
+- image alt/dimensions/lazy loading;
+- social preview generation;
+- SEO health score.
+
+Private, duplicate, staging, utility and thin routes must be able to opt out of indexing.
+
+## 12. Structured data / JSON-LD
+
+Generate schema only when the visible page genuinely qualifies.
+
+Support appropriate schemas including:
+- Organization;
+- WebSite;
+- WebPage;
+- BreadcrumbList;
+- Article/BlogPosting;
+- Product/Offer/AggregateOffer;
+- Review;
+- Event;
+- LocalBusiness;
+- SoftwareApplication;
+- JobPosting;
+- Course;
+- VideoObject;
+- ProfilePage;
+- Q&A where qualifying;
+- Recipe where qualifying;
+- Dataset where qualifying;
+- DiscussionForumPosting where qualifying.
+
+Validate syntax, required fields, consistency with visible content and route context.
+
+Never imply that structured data guarantees rich results.
+
+## 13. Search / AEO / GEO / AI discoverability
+
+Implement useful, non-spam discoverability:
+- answer-ready summaries;
+- clear headings;
+- entity-consistent Organization/Product/Author information;
+- useful FAQ content where appropriate;
+- topic clusters;
+- contextual internal links;
+- author/source attribution;
+- freshness signals;
+- public documentation/knowledge pages;
+- discoverability audit covering search, answer engines, AI search and multimodal search.
+
+Do NOT build around unsupported ranking claims or mass thin pages.
+
+## 14. Search engine integrations
+
+Add adapter boundaries for:
+- Google Search Console;
+- Bing Webmaster;
+- IndexNow.
+
+Record submission status, timestamps, response codes and errors.
+
+Never claim indexing occurred merely because a URL was submitted.
+
+## 15. Performance
+
+Add automated performance checks covering:
+- loading;
+- responsiveness;
+- layout stability;
+- transfer size;
+- image weight;
+- JavaScript weight;
+- critical resources;
+- mobile performance;
+- asset budgets;
+- blocking resources;
+- intrusive UI detection where practical.
+
+Produce a performance report per build.
+
+## 16. CMS/content/publishing
+
+Implement or complete:
+- content types;
+- draft/review/publish workflow;
+- scheduled publishing;
+- authors;
+- categories/tags where appropriate;
+- revisions;
+- SEO fields;
+- media metadata and alt text;
+- canonical URLs;
+- redirects;
+- previews;
+- safe bulk operations.
+
+## 17. First-party cloud services
+
+Complete the existing service boundary for:
+- Postgres;
+- Redis/cache/queue;
+- S3/object storage;
+- authentication/session;
+- email;
+- payments;
+- search;
+- analytics;
+- workers/outbox;
+- health/readiness;
+- graceful shutdown;
+- backups/restore;
+- migrations;
+- tenant isolation;
+- quotas.
+
+Every adapter needs validation, timeouts, retries and explicit NOT_CONFIGURED behavior.
+
+## 18. Scaleout and operations
+
+Implement:
+- worker health;
+- queue depth;
+- job latency;
+- concurrency limits;
+- idempotency;
+- dead-letter handling;
+- retry with jitter;
+- structured logs;
+- metrics;
+- alerts;
+- backup verification;
+- restore drills;
+- controlled load tests at 10/25/50 concurrent jobs.
+
+Document what is actually tested versus only architecturally supported.
+
+## 19. Auth, tenancy and collaboration
+
+Preserve tenant isolation and add/complete:
+- RBAC;
+- audit logs;
+- comments/review threads;
+- branch-aware collaboration;
+- activity timeline;
+- organization settings;
+- SSO/SAML/OIDC adapter boundary;
+- model/deployment/integration/domain policies.
+
+Prevent cross-tenant leakage through caches, workers, logs, indexes or artifacts.
+
+## 20. Project memory and Git
+
+Persist project-scoped:
+- architecture decisions;
+- accepted requirements;
+- design tokens;
+- integration references;
+- verification history.
+
+Keep memory isolated by project/workspace.
+
+Preserve:
+- GitHub integration;
+- branch state;
+- checkpoints;
+- rollback;
+- release tags;
+- changed-file review.
+
+## 21. Deployment
+
+Preserve existing deployment paths:
+- GitHub;
+- Vercel;
+- Netlify;
+- Cloudflare Pages;
+- Hostinger handoff;
+- Build Vibe Cloud;
+- manual ZIP.
+
+Add:
+- deployment preflight;
+- env/secret validation;
+- domain/canonical validation;
+- HTTPS/proxy validation;
+- artifact integrity;
+- post-deployment smoke tests;
+- rollback;
+- provenance.
+
+Never call a handoff package a successful deployment.
+
+## 22. Billing and quotas
+
+Track and limit:
+- builds;
+- agent runs;
+- model usage;
+- storage;
+- deployments;
+- other billable resources.
+
+Add tenant quotas, usage reporting, hard safety limits and payment adapter boundaries.
+
+## 23. Integrations/connectors
+
+Use a consistent adapter contract.
+
+Every connector should have:
+- credential validation;
+- least-privilege scopes;
+- health check;
+- disconnect/revoke;
+- webhook signature validation;
+- retries;
+- idempotency;
+- SSRF protection;
+- fixtures/mocks.
+
+## 24. Native/mobile targets
+
+Keep the target registry authoritative.
+
+Do not claim Android/iOS/Flutter/React Native/Electron/Tauri/KMP production-ready without actual target-specific artifacts and verification.
+
+Add:
+- runner capability detection;
+- native runner certification matrix;
+- artifact checksums/provenance;
+- install/build/smoke verification;
+- explicit BLOCKED/NOT_CONFIGURED states.
+
+## 25. Benchmark/evaluation system
+
+Create a benchmark corpus of at least 50 scenarios covering:
+- landing pages;
+- SaaS;
+- CRUD;
+- commerce;
+- CMS/blog;
+- booking;
+- AI apps;
+- dashboards;
+- PWA;
+- Android/iOS;
+- desktop;
+- 3D;
+- existing-repository migration;
+- malicious repository;
+- broken generated app;
+- provider outage;
+- research-heavy builds;
+- large repositories;
+- concurrent jobs;
+- security-sensitive applications;
+- SEO-heavy sites.
+
+For each scenario record:
+- prompt;
+- expected capabilities;
+- build duration;
+- verification;
+- repair cycles;
+- token/cost;
+- defects;
+- security findings;
+- target artifact status;
+- final score.
+
+## 26. Competitive benchmark
+
+Benchmark Build Vibe against Lovable, Bolt, Replit Agent, v0, Figma Make and Cursor Agent across:
+- prompt-to-full-stack;
+- verification/repair;
+- browser/visual QA;
+- native/mobile breadth;
+- deployment portability;
+- model freedom;
+- visual editing;
+- collaboration;
+- research/grounding;
+- browser IDE/cloud development;
+- production-service ecosystem.
+
+Use this for product prioritization, not for copying code or branding.
+
+## 27. MiroFish adapter
+
+Add:
+- `src/integrations/mirofish.js`;
+- `docs/MIROFISH.md`;
+- `test/mirofish-adapter.test.js`.
+
+Define an adapter for:
+- scenario generation;
+- simulation/evaluation;
+- result ingestion;
+- score normalization.
+
+MiroFish must be optional and non-blocking when not configured. Never claim a real simulation ran when unavailable. A local deterministic fallback may exist only for contract tests and must be labeled non-MiroFish.
+
+## 28. Security hardening
+
+Threat-model:
+- generated apps;
+- control plane;
+- imported repositories;
+- plugins/connectors;
+- web research.
+
+Harden:
+- path traversal;
+- command injection;
+- SSRF;
+- XSS;
+- CSRF;
+- prototype pollution;
+- unsafe deserialization;
+- secret leakage;
+- dependency attacks;
+- prompt injection;
+- tenant isolation.
+
+Use sandboxing, resource limits, network restrictions, timeouts, cleanup, secure cookies, OAuth validation, webhook verification, rate limits and privacy-safe security logs.
+
+## 29. Observability and analytics
+
+Add:
+- structured logs;
+- request/build/job IDs;
+- build duration metrics;
+- queue metrics;
+- agent latency;
+- model usage;
+- repair cycles;
+- verification failures;
+- deployment outcomes;
+- provider health;
+- health/readiness/liveness;
+- error aggregation boundary;
+- retention controls.
+
+Product analytics should track useful funnel events without collecting secrets or raw private source code.
+
+Add feature flags with safe defaults.
+
+## 30. Public product / SEO website
+
+Create or improve:
+- landing page;
+- capability pages;
+- use-case pages with unique useful content;
+- documentation;
+- security/trust page;
+- deployment/provider pages;
+- platform/target pages;
+- changelog;
+- pricing if billing is enabled.
+
+All public routes need correct metadata, canonical, social preview, structured data where appropriate, sitemap inclusion and indexability.
+
+## 31. Accessibility
+
+Target WCAG 2.2 AA where practical:
+- keyboard navigation;
+- focus states;
+- accessible labels;
+- semantic landmarks;
+- form errors;
+- contrast;
+- reduced motion;
+- screen-reader status;
+- touch target sizes.
+
+Use automated plus manual critical-flow checks.
+
+## 32. Documentation to add/update
+
+Required:
+- `docs/BUILD_VIBE_LAUNCH_PLAN.md` (this file);
+- `docs/IMPLEMENTATION_BASELINE.md`;
+- `docs/LAUNCH_AUDIT_FINAL.md`;
+- `docs/OPERATIONS.md`;
+- `docs/ROLLBACK.md`;
+- `docs/MULTI_AGENT.md`;
+- `docs/BENCHMARKS.md`;
+- `docs/MIROFISH.md`;
+- existing `docs/SEO.md` must be updated rather than duplicated;
+- target/deployment/security/scaleout docs must reflect actual implementation.
+
+Create:
+`artifacts/release-readiness.json`
+
+## 33. Recommended implementation order
+
+### Phase 0 — Protect and baseline
+Branch, inspect, baseline tests, preserve user changes.
+
+### Phase 1 — Release hygiene
+Version source, lockfile, Node pin, license/docs, CI fixes, CodeQL/dependency review.
+
+### Phase 2 — Agent completion
+Real multi-agent execution, research, provenance, budgets.
+
+### Phase 3 — Verification
+Browser QA, accessibility, visual regression, repair evidence, launch gates.
+
+### Phase 4 — SEO/AEO/GEO
+Central SEO model, metadata, JSON-LD, sitemap/robots, internal linking, discoverability, Search Console/Bing/IndexNow adapters.
+
+### Phase 5 — Product depth
+Visual editor, CMS/content, project memory, collaboration, analytics, feature flags.
+
+### Phase 6 — Cloud/operations
+DB/storage/queue, workers, observability, backups, restore, quotas, load testing.
+
+### Phase 7 — Native/deployment
+Runners, artifact attestation, deployment preflight, smoke tests, rollback.
+
+### Phase 8 — Evaluation
+50+ benchmark scenarios, competitor benchmark, MiroFish adapter, resilience/security scenarios.
+
+### Phase 9 — Final release
+Full test matrix, documentation, release artifact, launch decision, tag/release.
+
+## 34. Checkpoint policy
+
+Use small meaningful commits such as:
+- baseline;
+- release-hygiene;
+- CI-security;
+- multi-agent;
+- verification;
+- SEO;
+- visual-editor;
+- cloud-ops;
+- native-deployment;
+- benchmark;
+- final-release.
+
+Never force-push over user work. Never merge unverified changes.
+
+## 35. Final launch gates
+
+Before declaring launch-ready:
+- `npm ci` succeeds;
+- `npm test` passes;
+- `npm run check` passes;
+- `npm run security:check` passes;
+- `npm run scaleout:doctor` passes or clearly documents optional infrastructure;
+- `npm run launch:check` passes;
+- `npm run final:check` passes;
+- no release mismatch;
+- no syntax errors;
+- no missing required imports;
+- security CI is configured;
+- lockfile is committed;
+- SEO audit passes;
+- accessibility audit passes;
+- browser smoke tests pass;
+- visual verification passes where applicable;
+- deployment preflight passes for configured targets;
+- backup/restore is documented/tested where production infrastructure exists;
+- rollback is documented;
+- benchmark suite runs;
+- MiroFish is either actually configured/tested or explicitly NOT_CONFIGURED.
+
+## 36. Final audit artifacts
+
+Create `docs/LAUNCH_AUDIT_FINAL.md` with:
+- exact release/version/SHA;
+- implemented features;
+- files added/changed;
+- test results;
+- security results;
+- SEO results;
+- accessibility results;
+- browser/visual results;
+- benchmark results;
+- native results;
+- deployment results;
+- load-test results;
+- MiroFish status;
+- known limitations;
+- environment requirements;
+- rollback plan;
+- final PASS/BLOCKED/NOT_CONFIGURED matrix.
+
+Create `artifacts/release-readiness.json` with machine-readable:
+- version;
+- commit SHA;
+- timestamp;
+- gate status;
+- test counts;
+- target status;
+- security status;
+- SEO status;
+- benchmark score;
+- deployment status;
+- blockers.
+
+## 37. Final principle
+
+The objective is NOT to make the repository look complete.
+
+The objective is to make Build Vibe a genuinely verified, secure, portable AI product builder that can be launched honestly.
+
+Do not rewrite Build Vibe. Complete Build Vibe.
