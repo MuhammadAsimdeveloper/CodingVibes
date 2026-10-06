@@ -7,6 +7,7 @@ import {InMemoryJobQueue} from '../src/jobs/queue.js';
 import {Store} from '../src/db/store.js';
 import {backupStore} from '../src/ops/backup.js';
 import {scaleOutConfig} from '../src/platform/scaleout.js';
+import {RequestTelemetry} from '../src/ops/telemetry.js';
 
 test('in-memory queue provides idempotency and dead-letter capture without weakening retries',async()=>{
   const queue=new InMemoryJobQueue();
@@ -56,4 +57,18 @@ test('database backup is restorable and content survives the copy boundary',()=>
       assert.equal(restored.healthcheck(),true);
     }finally{restored.close();}
   }finally{store.close();fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+
+test('request telemetry exposes bounded error rate and p95 latency',()=>{
+  const t=new RequestTelemetry({maxRoutes:4});
+  t.record({method:'GET',path:'/health',status:200,durationMs:10});
+  t.record({method:'GET',path:'/health',status:200,durationMs:20});
+  t.record({method:'POST',path:'/api/build',status:503,durationMs:100});
+  const s=t.snapshot();
+  assert.equal(s.requests.total,3);
+  assert.equal(s.requests.errors,1);
+  assert.equal(s.requests.errorRate,0.3333);
+  assert.equal(s.latency.p95Ms,100);
+  assert.equal(s.routes[0].p95DurationMs,100);
 });
