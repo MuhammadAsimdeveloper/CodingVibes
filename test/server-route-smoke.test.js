@@ -45,7 +45,9 @@ test('server public and authenticated route smoke covers launch control plane',a
 
   const authPaths=[
     '/api/auth/me','/api/billing','/api/features','/api/workspaces','/api/cloud/catalog','/api/connectors',
-    '/api/ai/providers','/api/model/status','/api/projects','/api/builder/research'
+    '/api/ai/providers','/api/model/status','/api/projects','/api/builder/research','/api/launch/status',
+    '/api/deployment/providers','/api/targets/availability','/api/targets','/api/integrations','/api/ai/settings',
+    '/api/ai/tokens','/api/fleet'
   ];
   for(const p of authPaths){
     const r=await req(p,{headers:{cookie:sessionCookie}});
@@ -70,6 +72,16 @@ test('server public and authenticated route smoke covers launch control plane',a
     assert.ok(r.response.status<500,p+' status '+r.response.status);
   }
 
+  const blueprint=await req('/api/builder/blueprint',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({request:'Build a responsive landing page for a small SaaS product with SEO metadata.'})});
+  assert.equal(blueprint.response.status,200);
+  const analytics=await req('/api/analytics/events',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({event:'route-smoke',properties:{source:'ci'}})});
+  assert.equal(analytics.response.status,201);
+  const featureEval=await req('/api/feature-flags/evaluate',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({key:'route-smoke'})});
+  assert.ok(featureEval.response.status<500);
+  const connectorTest=await req('/api/connectors/test',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({id:'missing'})});
+  assert.ok(connectorTest.response.status<500);
+  const integrationTest=await req('/api/integrations/test',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({id:'missing'})});
+  assert.ok(integrationTest.response.status<500);
   const setMemory=await req('/api/projects/'+pid+'/memory',{method:'PUT',headers:{cookie:sessionCookie},body:JSON.stringify({memory:{brand:'Smoke',preferences:['safe','fast']}})});
   assert.equal(setMemory.response.status,200);
   const revision=await req('/api/projects/'+pid+'/content/revisions',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({status:'draft'})});
