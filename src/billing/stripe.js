@@ -10,7 +10,7 @@ export function verifyStripeSignature(rawBody, signature, secret, toleranceSec=3
 }
 export async function createCheckoutSession({apiKey,priceId,customerEmail,successUrl,cancelUrl,clientReferenceId,plan}) {
   if(!apiKey||!priceId) throw new Error('stripe_billing_not_configured');
-  const fields={mode:'subscription',success_url:successUrl,cancel_url:cancelUrl,'line_items[0][price]':priceId,'line_items[0][quantity]':'1'};if(customerEmail)fields.customer_email=customerEmail;if(clientReferenceId)fields.client_reference_id=clientReferenceId;if(plan)fields['metadata[plan]']=plan;const body=new URLSearchParams(fields);
+  const fields={mode:'subscription',success_url:successUrl,cancel_url:cancelUrl,'line_items[0][price]':priceId,'line_items[0][quantity]':'1'};if(customerEmail)fields.customer_email=customerEmail;if(clientReferenceId)fields.client_reference_id=clientReferenceId;if(plan){fields['metadata[plan]']=plan;fields['metadata[price_id]']=String(priceId);fields['subscription_data[metadata][plan]']=plan;fields['subscription_data[metadata][price_id]']=String(priceId);}const body=new URLSearchParams(fields);
   const r=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/x-www-form-urlencoded'},body});
   const text=await r.text(); let data={}; try{data=JSON.parse(text)}catch{}
   if(!r.ok) throw new Error(data?.error?.message||`stripe_checkout_${r.status}`);
