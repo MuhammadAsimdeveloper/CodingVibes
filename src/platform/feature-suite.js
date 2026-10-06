@@ -103,9 +103,16 @@ export function designModeContract(system){
   };
 }
 
-function normalizeResearchResult(x){
-  const title=String(x?.title||x?.name||'').slice(0,300),url=String(x?.url||x?.link||'').slice(0,1000),text=String(x?.text||x?.content||x?.snippet||'').slice(0,5000);
-  return title||url||text?{title,url,text,publishedAt:x?.publishedDate||x?.published_at||null,source:x?.author||x?.domain||null}:null;
+export function normalizeResearchResult(x){
+  const title=String(x?.title||x?.name||'').replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,300);
+  const rawUrl=String(x?.url||x?.link||'').trim();
+  let url='';
+  try{const candidate=new URL(rawUrl);if(candidate.protocol==='http:'||candidate.protocol==='https:')url=candidate.toString().slice(0,1000);}catch{}
+  const text=String(x?.text||x?.content||x?.snippet||'').replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,5000);
+  if(!(title||url||text))return null;
+  const normalized={title,url,text,publishedAt:x?.publishedDate||x?.published_at||null,source:x?.author||x?.domain||null};
+  const provenanceHash=crypto.createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
+  return {...normalized,provenanceHash,trustBoundary:'external-evidence-untrusted',instructionPolicy:'evidence_only',groundingStatus:url?'cited-source':'uncited-source'};
 }
 
 export async function researchWeb(query,{limit=8,signal,apiUrl=process.env.CODINGVIBES_RESEARCH_API_URL,apiKey=process.env.CODINGVIBES_RESEARCH_API_KEY}={}){
@@ -126,7 +133,7 @@ export async function researchWeb(query,{limit=8,signal,apiUrl=process.env.CODIN
     if(!response.ok)throw new Error('research_http_'+response.status);
     let json={};try{json=JSON.parse(raw)}catch{json={}};
     const rows=Array.isArray(json.results)?json.results:Array.isArray(json.data)?json.data:Array.isArray(json.items)?json.items:[];
-    return{configured:true,provider:String(json.provider||process.env.CODINGVIBES_RESEARCH_PROVIDER||'http-search'),results:rows.map(normalizeResearchResult).filter(Boolean).slice(0,12)};
+    return{configured:true,provider:String(json.provider||process.env.CODINGVIBES_RESEARCH_PROVIDER||'http-search'),retrievedAt:new Date().toISOString(),results:rows.map(normalizeResearchResult).filter(Boolean).slice(0,12)};
   }catch(error){
     if(error?.name==='AbortError')return{configured:true,provider:'http-search',results:[],status:'timeout',message:'Research request timed out.'};
     return{configured:true,provider:'http-search',results:[],status:'failed',message:String(error.message||error).slice(0,240)};
