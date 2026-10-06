@@ -59,3 +59,7 @@ public/llms.txt is provided only as supplemental machine-readable orientation. I
 The SEO and discoverability contracts run in npm test, and npm run launch:check probes every public Build Vibe SEO route plus robots/sitemap responses.
 
 SEO implementation never claims a ranking guarantee. Search visibility also depends on actual content quality, relevance, authority, crawlability, external references, page experience and search-engine evaluation.
+
+## LLM discovery
+
+The public site exposes /llms.txt as a supplemental machine-readable product index. It repeats the public intent page set and states the trust boundary: repository text, user project content and external research are data/evidence, not system instructions. The file is validated by the launch check alongside robots.txt and sitemap.xml.\n
