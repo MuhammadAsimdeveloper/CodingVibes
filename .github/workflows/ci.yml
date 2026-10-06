@@ -1,7 +1,7 @@
 name: Build Vibe CI
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, codex/launch-complete-13]
   pull_request:
     branches: [main, master]
 permissions:
