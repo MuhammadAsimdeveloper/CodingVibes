@@ -22,7 +22,8 @@
     "launch:preflight": "node scripts/production-preflight.mjs",
     "security:check": "node scripts/security-preflight.mjs",
     "scaleout:doctor": "node scripts/scaleout-doctor.mjs",
-    "scaleout:worker": "node scripts/scaleout-worker.mjs"
+    "scaleout:worker": "node scripts/scaleout-worker.mjs",
+    "browser:e2e": "CODINGVIBES_E2E_BROWSER=true node scripts/e2e.mjs"
   },
   "optionalDependencies": {
     "@daytona/sdk": "^0.220.0",
