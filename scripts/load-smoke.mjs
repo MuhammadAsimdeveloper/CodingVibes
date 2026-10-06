@@ -1,3 +1,24 @@
+import {spawn} from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+let child=null;
+async function waitForHealth(url,timeoutMs=20000){
+  const end=Date.now()+timeoutMs;
+  while(Date.now()<end){
+    try{const r=await fetch(url);if(r.ok)return true;}catch{}
+    await new Promise(r=>setTimeout(r,250));
+  }
+  return false;
+}
+async function autoStart(){
+  if(String(process.env.CODINGVIBES_LOAD_AUTOSTART||'false')!=='true')return;
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-load-'));
+  const env={...process.env,DATABASE_PATH:path.join(root,'db.sqlite'),CODINGVIBES_PROJECT_ROOT:path.join(root,'projects'),CODINGVIBES_WORK_ROOT:path.join(root,'worktrees'),CODINGVIBES_CHECKPOINT_ROOT:path.join(root,'checkpoints'),CODINGVIBES_BACKUP_ROOT:path.join(root,'backups')};
+  child=spawn(process.execPath,['src/server.js'],{env,stdio:'ignore'});
+  if(!await waitForHealth(baseUrl+'/health'))throw new Error('load_autostart_failed');
+}
 import {performance} from 'node:perf_hooks';
 
 const baseUrl=String(process.env.CODINGVIBES_LOAD_URL||process.env.BASE_URL||'http://127.0.0.1:4400').replace(/\/$/,'');
