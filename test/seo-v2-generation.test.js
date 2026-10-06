@@ -36,7 +36,7 @@ test('content normalization rejects unsafe SEO URL schemes and robots directives
   },'business');
   assert.equal(normalized.seo.canonical,'');
   assert.equal(normalized.seo.image,'');
-  assert.equal(normalized.seo.robots,'index');
+  assert.equal(normalized.seo.robots,'index,nofollow');
 });
 test('generated HTML includes SEO v2 signals and qualifying content schemas',()=>{
   const spec={
