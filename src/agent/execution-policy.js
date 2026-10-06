@@ -87,7 +87,7 @@ export async function runBoundedAgents(tasks,{budget=new AgentExecutionBudget(),
 export function makeAgentHandoff({runId,from,to,summary,evidence=[],artifacts=[],constraints=[]}={}){
   const normalizedEvidence=(Array.isArray(evidence)?evidence:[]).map((x,i)=>({
     index:i,
-    sourceUrl:typeof x?.url==='string'&&/^https?:\\/\\//i.test(x.url)?x.url.slice(0,1000):null,
+    sourceUrl:(()=>{try{const u=new URL(String(x?.url||''));return u.protocol==='http:'||u.protocol==='https:'?u.toString().slice(0,1000):null;}catch{return null;}})(),
     excerpt:String(x?.text||x?.content||x?.summary||'').replace(/[\u0000-\u001f\u007f]/g,' ').slice(0,1200)
   }));
   const normalized={runId:String(runId||''),from:String(from||'agent'),to:String(to||'agent'),summary:String(summary||'').slice(0,4000),evidence:normalizedEvidence,artifacts:Array.isArray(artifacts)?artifacts.slice(0,20):[],constraints:Array.isArray(constraints)?constraints.slice(0,20):[]};
