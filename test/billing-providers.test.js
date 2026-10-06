@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {getPaddleStatus,verifyPaddleSignature,paddlePlanFromPrice} from '../src/billing/paddle.js';
+import {getPaddleStatus,verifyPaddleSignature,paddlePlanFromPrice,paddlePlanFromSubscription,createPaddleCustomer,createPaddleCheckoutTransaction,createPaddlePortalSession} from '../src/billing/paddle.js';
 import {planCatalog} from '../src/billing/plans.js';
 import {Store} from '../src/db/store.js';
 
@@ -48,4 +48,31 @@ test('billing store migrates provider fields without exposing secrets',()=>{
   assert.equal(store.getBillingByProviderSubscription('paddle','sub_test').user_id,user.id);
   store.close();
   fs.rmSync(dir,{recursive:true,force:true});
+});
+
+
+test('Paddle API helpers create customer, transaction and portal links through the provider contract',async()=>{
+  const originalFetch=globalThis.fetch;
+  const calls=[];
+  try{
+    globalThis.fetch=async(url,options={})=>{
+      calls.push({url,options});
+      if(String(url).endsWith('/customers'))return new Response(JSON.stringify({data:{id:'ctm_test',email:'billing@example.com'}}),{status:201,headers:{'content-type':'application/json'}});
+      if(String(url).endsWith('/transactions'))return new Response(JSON.stringify({data:{id:'txn_test',status:'ready',customer_id:'ctm_test',subscription_id:null,checkout:{url:'https://pay.example.test/?_ptxn=txn_test'}}}),{status:201,headers:{'content-type':'application/json'}});
+      if(String(url).includes('/portal-sessions'))return new Response(JSON.stringify({data:{id:'cpls_test',urls:{general:{overview:'https://portal.example.test/overview'},subscriptions:[{id:'sub_test',view_subscription:'https://portal.example.test/subscription'}]}}}),{status:201,headers:{'content-type':'application/json'}});
+      return new Response('{}',{status:404});
+    };
+    const env={PADDLE_API_KEY:'api-key',PADDLE_WEBHOOK_SECRET:'secret',PADDLE_CHECKOUT_URL:'https://app.example.test/pay',PADDLE_PRICE_PRO_MONTHLY:'pri_pro',PADDLE_PRICE_TEAM_MONTHLY:'pri_team'};
+    const customer=await createPaddleCustomer({email:'Billing@Example.com',userId:'user-1',env});
+    assert.equal(customer.id,'ctm_test');
+    const tx=await createPaddleCheckoutTransaction({priceId:'pri_pro',email:'billing@example.com',userId:'user-1',plan:'pro',successUrl:'https://app.example.test/?billing=success',cancelUrl:'https://app.example.test/?billing=cancel',customerId:customer.id,env});
+    assert.equal(tx.id,'txn_test');
+    assert.equal(tx.url,'https://pay.example.test/?_ptxn=txn_test');
+    const portal=await createPaddlePortalSession({customerId:'ctm_test',subscriptionId:'sub_test',env});
+    assert.equal(portal.url,'https://portal.example.test/overview');
+    assert.equal(portal.subscriptionUrl,'https://portal.example.test/subscription');
+    assert.equal(paddlePlanFromSubscription({items:[{price:{id:'pri_team'}}] },env),'team');
+    assert.equal(calls.length,3);
+    assert.match(String(calls[1].options.body),/pri_pro/);
+  }finally{globalThis.fetch=originalFetch;}
 });
