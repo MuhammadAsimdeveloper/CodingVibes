@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {scoreBenchmarkScenario,benchmarkSummary,runBenchmarkSuite} from '../src/evaluation/benchmark.js';
 
 test('benchmark scoring rewards target, pages, acceptance and SEO completeness',()=>{
-  const good=scoreBenchmarkScenario({id:'good',request:'x',targetId:'web-node'},{version:3,target:'web-node',pages:['/','/pricing'],acceptance:['responsive','accessible'],seo:{titles:true,canonicals:true,jsonLd:true,robots:true,sitemap:true}});
+  const good=scoreBenchmarkScenario({id:'good',request:'x',targetId:'web-node'},{version:3,target:'web-node',pages:['/','/pricing'],acceptance:['responsive','accessible'],seo:{titles:true,canonicals:true,jsonLd:true,robots:true,sitemap:true,descriptions:true}});
   assert.equal(good.passed,true);
   assert.equal(good.score,100);
   const weak=scoreBenchmarkScenario({id:'weak',request:'x',targetId:'web-node'},{version:3,target:'web-node',pages:[],acceptance:[],seo:{}});
