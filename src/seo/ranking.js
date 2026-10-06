@@ -52,7 +52,7 @@ export function normalizeSeoRoute(input={},baseUrl=''){
   };
 }
 
-const score=(points,max,reasons,id,checks)=>({id,points,max,reasons,checks});
+const score=(points,max,id)=>({id,points,max});
 function clampScore(n){return Math.max(0,Math.min(100,Math.round(n)));}
 
 export function scoreSeoRoute(input={}){
@@ -60,7 +60,7 @@ export function scoreSeoRoute(input={}){
   const reasons=[];
   const checks=[];
   let total=0;
-  const add=(section)=>{total+=section.points;checks.push({...section,id:section.id});if(section.reasons.length)reasons.push(...section.reasons);};
+  const add=(section)=>{total+=section.points;checks.push({...section});if(section.reasons.length)reasons.push(...section.reasons);};
 
   let metadata=0;
   if(page.title.length>=30&&page.title.length<=60)metadata+=6;
@@ -69,14 +69,14 @@ export function scoreSeoRoute(input={}){
   else if(page.description.length>=50)metadata+=3; else reasons.push('Write a specific meta description that accurately summarizes the page.');
   if(validHttp(page.canonical))metadata+=4; else reasons.push('Use an absolute canonical URL.');
   if(page.ogImage)metadata+=3; else reasons.push('Add a social preview image for stronger share presentation.');
-  add(score(metadata,20,'metadata',[],[]));
+  add(score(metadata,20,'metadata'));
 
   let indexability=0;
   if(!page.noindex)indexability+=7;
   else reasons.push('This route is noindex; keep that intentional for private, duplicate or utility pages.');
   if(page.robots.includes('follow')&&!page.robots.includes('nofollow'))indexability+=3;
   if(input.inSitemap===true)indexability+=5; else reasons.push('Add the canonical public route to the XML sitemap.');
-  add(score(indexability,15,'indexability',[],[]));
+  add(score(indexability,15,'indexability'));
 
   let content=0;
   if(input.h1Count===1)content+=5; else reasons.push('Use exactly one clear primary H1.');
@@ -89,7 +89,7 @@ export function scoreSeoRoute(input={}){
   if(input.content?.hasAnswerSummary)content+=2; else reasons.push('Add a concise answer-oriented summary near the top when appropriate.');
   if(input.content?.hasAuthor)content+=2;
   if(input.content?.hasUpdatedAt)content+=1;
-  add(score(content,20,'content',[],[]));
+  add(score(content,20,'content'));
 
   let links=0;
   if(Number(input.internalLinks)>=4)links+=7;
@@ -99,21 +99,21 @@ export function scoreSeoRoute(input={}){
   else if(Number(input.inboundLinks)>=1)links+=2;
   else reasons.push('Grow legitimate inbound references; this is an off-site authority signal, not a page-template feature.');
   if(input.orphan===false)links+=5; else reasons.push('Connect this page from the site information architecture; orphan pages are harder to discover.');
-  add(score(links,15,'links',[],[]));
+  add(score(links,15,'links'));
 
   let structured=0;
   if(input.structuredData?.valid)structured+=10; else reasons.push('Use valid structured data only when it accurately describes visible content.');
   const schemaTypes=Array.isArray(input.structuredData?.types)?input.structuredData.types:[];
   if(schemaTypes.includes('WebPage')||schemaTypes.includes('WebSite'))structured+=3;
   if(schemaTypes.length>=2)structured+=2;
-  add(score(structured,15,'structured-data',[],[]));
+  add(score(structured,15,'structured-data'));
 
   let media=0;
   const images=input.images||{};
   if(Number(images.missingAlt||0)===0)media+=3; else reasons.push('Provide descriptive alt text for meaningful images and empty alt for decorative images.');
   if(Number(images.count||0)===0||Number(images.missingDimensions||0)===0)media+=2;
   else reasons.push('Declare image dimensions to reduce layout instability.');
-  add(score(media,5,'media',[],[]));
+  add(score(media,5,'media'));
 
   let performance=0;
   const perf=input.performance||{};
@@ -122,7 +122,7 @@ export function scoreSeoRoute(input={}){
   if(!perf.lcpMs||Number(perf.lcpMs)<=2500)performance+=2; else reasons.push('Improve Largest Contentful Paint on mobile and constrained connections.');
   if(!perf.cls||Number(perf.cls)<=0.1)performance+=1; else reasons.push('Reduce layout shifts.');
   if(!perf.inpMs||Number(perf.inpMs)<=200)performance+=2; else reasons.push('Reduce interaction latency.');
-  add(score(performance,10,'performance',[],[]));
+  add(score(performance,10,'performance'));
 
   const result={score:clampScore(total),grade:GRADE(clampScore(total)),rankingClaim:false,route:page.path,breakdown:checks,recommendations:unique(reasons).slice(0,20)};
   return result;
