@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {auditSeoSite,scoreSeoRoute} from '../seo/ranking.js';
 
 function htmlFiles(root){
   const out=[];const walk=dir=>{if(!fs.existsSync(dir))return;for(const e of fs.readdirSync(dir,{withFileTypes:true})){if(['node_modules','.git','.codingvibes','.data'].includes(e.name))continue;const full=path.join(dir,e.name);if(e.isDirectory())walk(full);else if(e.isFile()&&e.name.endsWith('.html'))out.push(full);}};walk(root);return out;
@@ -29,10 +30,10 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
     const twitter={card:first(html,/name=["']twitter:card["'][^>]+content=["']([^"']+)["']/i),title:first(html,/name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i),description:first(html,/name=["']twitter:description["'][^>]+content=["']([^"']+)["']/i),image:first(html,/name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)};
     const jsonLd=parseJsonLd(html,name),types=[...new Set(jsonLd.flatMap(schemaTypes))];
     const internalLinks=all(html,/<a\b[^>]+href=["']([^"'#][^"']*)["']/gi).filter(h=>h.startsWith('/')&&!h.startsWith('//'));
-    const images=all(html,/<img\b[^>]+>/gi),missingAlt=images.filter(tag=>!/\balt=["'][^"']*["']/i.test(tag)).length;
+    const images=all(html,/<img\\b[^>]+>/gi),missingAlt=images.filter(tag=>!\\balt=[\"'][^\"']*[\"']/i.test(tag)).length;
+    const visibleText=html.replace(/<script[\\s\\S]*?<\\/script>/gi,' ').replace(/<style[\\s\\S]*?<\\/style>/gi,' ').replace(/<[^>]+>/g,' ');const wordCount=visibleText.trim().split(/\\s+/).filter(Boolean).length;
     const h1s=count(html,/<h1\b/gi),lang=/<html[^>]+lang=["'][^"']+["']/i.test(html),viewport=/<meta[^>]+name=["']viewport["']/i.test(html),main=/<main\b/i.test(html),keywords=/<meta[^>]+name=["']keywords["']/i.test(html);
-    const page={file:name,route,private:isPrivate,title:!!title,description:!!description,canonical:!!canonical,robots:!!robots,og:Object.values(og).every(Boolean),twitter:Object.values(twitter).every(Boolean),jsonLd:jsonLd.length>0&&jsonLd.every(x=>!x.__invalidJsonLd),schemaTypes:types,h1Count:h1s,internalLinks:internalLinks.length,images:images.length,missingAlt,lang,viewport,main};
-    pages.push(page);
+    const rankingScore=scoreSeoRoute({path:route,title,description,canonical,robots,ogImage:og.image,inSitemap:false,h1Count:h1s,wordCount,internalLinks:internalLinks.length,structuredData:{valid:jsonLd.length>0&&jsonLd.every(x=>!x.__invalidJsonLd),types:types},images:{count:images.length,missingAlt,missingDimensions:images.filter(tag=>!/\\b(?:width|height)=/i.test(tag)).length},content:{hasAnswerSummary:!!first(html,/<p[^>]*class=[\"'][^\"']*lead[^\"']*[\"'][^>]*>([^<]+)/i),hasAuthor:!!first(html,/<meta[^>]+name=[\"']author[\"'][^>]+content=[\"']([^\"']+)/i),hasUpdatedAt:!!first(html,/<time[^>]+datetime=[\"']([^\"']+)/i)},performance:{}});\n    const page={file:name,route,private:isPrivate,title:!!title,description:!!description,canonical:!!canonical,robots:!!robots,og:Object.values(og).every(Boolean),ogImage:og.image,twitter:Object.values(twitter).every(Boolean),jsonLd:jsonLd.length>0&&jsonLd.every(x=>!x.__invalidJsonLd),schemaTypes:types,h1Count:h1s,internalLinks:internalLinks.length,internalLinkHrefs:internalLinks,wordCount,missingAlt,lang,viewport,main,rankingScore};    pages.push(page);
 
     if(isPrivate){
       if(!/noindex/i.test(robots))issues.push(name+': private page is not noindex');
@@ -77,16 +78,18 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
     for(const page of publicPages){if(!sitemap.urls.some(u=>u===base+page.route||u===base+'/'+page.route.replace(/^\//,'')))warnings.push('sitemap.xml missing '+page.route);}
   }
 
+  const sitemapForRanking=sitemap.exists?sitemap.urls:[];
+  const searchReadiness=auditSeoSite({baseUrl:baseUrl||'__SITE_URL__',pages:pages.map(p=>({...p,internalLinks:p.internalLinkHrefs||[]})),sitemapUrls:sitemapForRanking});
   const llmsPath=path.join(root,'llms.txt');
   if(!fs.existsSync(llmsPath))warnings.push('llms.txt is not present (optional supplemental AI discovery file)');
   else if(!/^#\s/m.test(fs.readFileSync(llmsPath,'utf8')))warnings.push('llms.txt is missing a title');
   const score=Math.max(0,100-Math.min(70,issues.length*8)-Math.min(30,warnings.length*2));
   const ok=issues.length===0;
-  return {ok,score,grade:score>=95?'A+':score>=90?'A':score>=80?'B':score>=70?'C':score>=60?'D':'F',baseUrl:base,pages,issues,warnings,checkedAt:new Date().toISOString(),signals:{publicPages:publicPages.length,sitemapUrls:sitemap.urls.length}};
+  return {ok,score,grade:score>=95?'A+':score>=90?'A':score>=80?'B':score>=70?'C':score>=60?'D':'F',baseUrl:base,pages,issues,warnings,checkedAt:new Date().toISOString(),signals:{publicPages:publicPages.length,sitemapUrls:sitemap.urls.length,searchReadinessScore:searchReadiness.score}};
 }
 export function aeoSummary(audit){
   const publicPages=audit.pages.filter(p=>!p.private);
   const schemaReady=publicPages.every(p=>p.jsonLd&&p.schemaTypes.some(t=>['WebPage','WebSite','Organization','SoftwareApplication'].includes(t)));
   const contentReady=publicPages.every(p=>p.description&&p.h1Count===1&&p.internalLinks>=2&&p.main&&p.lang);
-  return {score:audit.score,grade:audit.grade,ready:audit.ok,answerEngineReady:audit.ok&&schemaReady&&contentReady,issues:audit.issues.slice(0,30),warnings:audit.warnings.slice(0,30)};
+  return {score:audit.score,grade:audit.grade,ready:audit.ok,answerEngineReady:audit.ok&&schemaReady&&contentReady,searchReadiness:audit.searchReadiness||null,issues:audit.issues.slice(0,30),warnings:audit.warnings.slice(0,30)};
 }
