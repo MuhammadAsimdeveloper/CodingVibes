@@ -117,11 +117,11 @@ export function scoreSeoRoute(input={}){
 
   let performance=0;
   const perf=input.performance||{};
-  if(!perf.transferBytes||Number(perf.transferBytes)<=800000)performance+=3; else reasons.push('Reduce initial transfer size.');
-  if(!perf.jsBytes||Number(perf.jsBytes)<=200000)performance+=2; else reasons.push('Reduce JavaScript shipped on the critical path.');
-  if(!perf.lcpMs||Number(perf.lcpMs)<=2500)performance+=2; else reasons.push('Improve Largest Contentful Paint on mobile and constrained connections.');
-  if(!perf.cls||Number(perf.cls)<=0.1)performance+=1; else reasons.push('Reduce layout shifts.');
-  if(!perf.inpMs||Number(perf.inpMs)<=200)performance+=2; else reasons.push('Reduce interaction latency.');
+  if(Number.isFinite(Number(perf.transferBytes))&&Number(perf.transferBytes)<=800000)performance+=3; else reasons.push('Measure and reduce initial transfer size.');
+  if(Number.isFinite(Number(perf.jsBytes))&&Number(perf.jsBytes)<=200000)performance+=2; else reasons.push('Measure and reduce JavaScript shipped on the critical path.');
+  if(Number.isFinite(Number(perf.lcpMs))&&Number(perf.lcpMs)<=2500)performance+=2; else reasons.push('Measure and improve Largest Contentful Paint.');
+  if(Number.isFinite(Number(perf.cls))&&Number(perf.cls)<=0.1)performance+=1; else reasons.push('Measure and reduce layout shifts.');
+  if(Number.isFinite(Number(perf.inpMs))&&Number(perf.inpMs)<=200)performance+=2; else reasons.push('Measure and reduce interaction latency.');
   add(score(performance,10,'performance'));
 
   const result={score:clampScore(total),grade:GRADE(clampScore(total)),rankingClaim:false,route:page.path,breakdown:checks,recommendations:unique(reasons).slice(0,20)};
