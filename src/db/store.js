@@ -190,6 +190,14 @@ export class Store{
   recordArtifact(runId,{type='binary',path,size=0,sha256,storedPath=null,url=null}){const id=randomUUID();this.db.prepare('INSERT INTO artifacts(id,run_id,type,path,size,sha256,stored_path,url,created_at) VALUES (?,?,?,?,?,?,?,?,?)').run(id,runId,String(type),String(path),Number(size)||0,String(sha256||''),storedPath,url,this.now());return this.getArtifact(id);}
   getArtifact(id){return this.db.prepare('SELECT * FROM artifacts WHERE id=?').get(id)||null;}
   listArtifacts(runId){return this.db.prepare('SELECT * FROM artifacts WHERE run_id=? ORDER BY created_at').all(runId);}
+  purgeOldProductEvents(days=90){
+    const cutoff=new Date(Date.now()-Math.max(1,Number(days)||90)*864e5).toISOString();
+    return this.db.prepare('DELETE FROM product_events WHERE created_at < ?').run(cutoff).changes;
+  }
+  purgeOldAuditLogs(days=3650){
+    const cutoff=new Date(Date.now()-Math.max(1,Number(days)||3650)*864e5).toISOString();
+    return this.db.prepare('DELETE FROM audit_logs WHERE created_at < ?').run(cutoff).changes;
+  }
   recordProductEvent({userId=null,projectId=null,sessionId=null,event,properties={}}={}){
     const id=randomUUID(),now=this.now();
     const text=JSON.stringify(properties&&typeof properties==='object'&&!Array.isArray(properties)?properties:{});
