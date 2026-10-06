@@ -21,7 +21,7 @@ test('benchmark summary aggregates deterministic suite results',()=>{
 
 test('benchmark runner executes all scenarios with bounded concurrency',async()=>{
   const scenarios=Array.from({length:5},(_,i)=>({id:'s'+i,request:'Build a portfolio website',targetId:'web-node'}));
-  const summary=await runBenchmarkSuite(scenarios,async()=>({version:3,target:'web-node',pages:['/'],acceptance:['responsive'],seo:{titles:true,canonicals:true,jsonLd:true,robots:true,sitemap:true}}),{concurrency:2});
+  const summary=await runBenchmarkSuite(scenarios,async()=>({version:3,target:'web-node',pages:['/'],acceptance:['responsive','accessible'],seo:{titles:true,descriptions:true,canonicals:true,jsonLd:true,robots:true,sitemap:true}}),{concurrency:2});
   assert.equal(summary.count,5);
   assert.equal(summary.passRate,100);
 });
