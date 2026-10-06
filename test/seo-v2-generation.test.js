@@ -25,6 +25,19 @@ test('site content stores bounded search-intent SEO fields',()=>{
   assert.equal(normalized.seo.author,'Build Vibe Editorial');
 });
 
+test('content normalization rejects unsafe SEO URL schemes and robots directives',()=>{
+  const normalized=normalizeSiteContent({
+    seo:{
+      canonical:'javascript:alert(1)',
+      image:'data:text/html,<script>alert(1)</script>',
+      robots:'index,<script>,nofollow',
+      searchIntent:'commercial'
+    }
+  },'business');
+  assert.equal(normalized.seo.canonical,'');
+  assert.equal(normalized.seo.image,'');
+  assert.equal(normalized.seo.robots,'index');
+});
 test('generated HTML includes SEO v2 signals and qualifying content schemas',()=>{
   const spec={
     request:'Create a content website with a blog, author profiles and SEO-ready articles',
