@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 
-function commandExists(command){try{execFileSync(process.platform==='win32'?'where':'which',[command],{stdio:'ignore'});return true;}catch{return false;}}
+function commandExists(command,env=process.env){try{execFileSync(process.platform==='win32'?'where':'which',[command],{stdio:'ignore',env});return true;}catch{return false;}}
 function firstExisting(root,required){return required.every(rel=>fs.existsSync(path.join(root,rel)));}
 function safeJson(root,rel){try{return JSON.parse(fs.readFileSync(path.join(root,rel),'utf8'));}catch{return null;}}
 
@@ -14,14 +14,14 @@ export function inspectTargetStructure(workspace,target){
   return {passed:missing.length===0&&details.rootExists,details};
 }
 
-export function targetExecutionAvailability(target){const host=inspectToolchain(target);const remoteLinux=Boolean(process.env.CODINGVIBES_LINUX_RUNNER_URL&&process.env.CODINGVIBES_LINUX_RUNNER_TOKEN&&['android-kotlin','android-twa','mobile-flutter','desktop-tauri'].includes(target.id));const remoteMac=Boolean(process.env.CODINGVIBES_MACOS_RUNNER_URL&&process.env.CODINGVIBES_MACOS_RUNNER_TOKEN&&target.id==='ios-swiftui');return{host,remote:{linux:remoteLinux,macos:remoteMac},canBuild:Boolean(host.available||remoteLinux||remoteMac||['web-node','web-pwa','desktop-electron'].includes(target.id))};}
-export function inspectToolchain(target,workspace=null){
-  const checks={node:commandExists('node'),npm:commandExists('npm')};
-  if(target.id==='mobile-expo')Object.assign(checks,{expo:commandExists('expo')});
-  if(target.id==='mobile-flutter')Object.assign(checks,{flutter:commandExists('flutter'),dart:commandExists('dart')});
-  if(['android-kotlin','android-twa'].includes(target.id))Object.assign(checks,{java:commandExists('java'),gradle:commandExists('gradle')||Boolean(workspace&&fs.existsSync(path.join(workspace,'gradlew'))),adb:commandExists('adb')});
-  if(target.id==='ios-swiftui')Object.assign(checks,{swift:commandExists('swift'),xcodebuild:commandExists('xcodebuild')});
-  if(target.id==='desktop-tauri')Object.assign(checks,{rustc:commandExists('rustc'),cargo:commandExists('cargo'),node:commandExists('node')});
+export function targetExecutionAvailability(target,env=process.env){const host=inspectToolchain(target,null,env);const remoteLinux=Boolean(process.env.CODINGVIBES_LINUX_RUNNER_URL&&process.env.CODINGVIBES_LINUX_RUNNER_TOKEN&&['android-kotlin','android-twa','mobile-flutter','desktop-tauri'].includes(target.id));const remoteMac=Boolean(process.env.CODINGVIBES_MACOS_RUNNER_URL&&process.env.CODINGVIBES_MACOS_RUNNER_TOKEN&&target.id==='ios-swiftui');return{host,remote:{linux:remoteLinux,macos:remoteMac},canBuild:Boolean(host.available||remoteLinux||remoteMac||['web-node','web-pwa','desktop-electron'].includes(target.id))};}
+export function inspectToolchain(target,workspace=null,env=process.env){
+  const checks={node:commandExists('node',env),npm:commandExists('npm',env)};
+  if(target.id==='mobile-expo')Object.assign(checks,{expo:commandExists('expo',env)});
+  if(target.id==='mobile-flutter')Object.assign(checks,{flutter:commandExists('flutter',env),dart:commandExists('dart',env)});
+  if(['android-kotlin','android-twa'].includes(target.id))Object.assign(checks,{java:commandExists('java',env),gradle:commandExists('gradle',env)||Boolean(workspace&&fs.existsSync(path.join(workspace,'gradlew'))),adb:commandExists('adb',env)});
+  if(target.id==='ios-swiftui')Object.assign(checks,{swift:commandExists('swift',env),xcodebuild:commandExists('xcodebuild',env)});
+  if(target.id==='desktop-tauri')Object.assign(checks,{rustc:commandExists('rustc',env),cargo:commandExists('cargo',env),node:commandExists('node')});
   if(target.id==='multiplatform-kmp')Object.assign(checks,{java:commandExists('java'),gradle:commandExists('gradle')});
   const required=target.id==='mobile-flutter'?['flutter','dart']:
     ['android-kotlin','android-twa'].includes(target.id)?['java','gradle']:

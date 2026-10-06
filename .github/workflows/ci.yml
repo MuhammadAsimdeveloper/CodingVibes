@@ -14,17 +14,27 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           package-manager-cache: false
-      - run: npm install --no-audit --no-fund
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          test -f package-lock.json
+          npm ci --no-audit --no-fund
       - run: npm test
+      - run: npm run test:coverage
       - run: npm run check
       - run: npm run e2e
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run browser:e2e
+      - run: npm run ops:load
+      - run: npm run recovery:smoke
       - run: npm run security:check
       - run: npm run scaleout:doctor
       - name: Run launch readiness
@@ -32,6 +42,7 @@ jobs:
           NODE_ENV: development
           CODINGVIBES_ENABLE_BROWSER: false
         run: |
+          set -euo pipefail
           npm start > /tmp/build-vibe.log 2>&1 &
           pid=$!
           trap 'kill $pid 2>/dev/null || true' EXIT

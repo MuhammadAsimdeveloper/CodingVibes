@@ -1,5 +1,21 @@
 import {randomUUID} from 'node:crypto';
 
+export const AGENT_ROLE_CATALOG=[
+  {id:'researcher',label:'Research',taskKey:'research',mode:'bounded-external-evidence'},
+  {id:'product-requirements',label:'Product Requirements',taskKey:'requirements',mode:'deterministic+model'},
+  {id:'ux-designer',label:'UX / Visual Design',taskKey:'design',mode:'deterministic-design-contract'},
+  {id:'architect',label:'Architecture',taskKey:'architecture',mode:'contract-reconciliation'},
+  {id:'implementer',label:'Implementation',taskKey:'generation',mode:'model+deterministic-fallback'},
+  {id:'test-engineer',label:'Testing',taskKey:'verification',mode:'multi-layer-verification'},
+  {id:'security-reviewer',label:'Security Review',taskKey:'review',mode:'fail-closed-review'},
+  {id:'browser-qa',label:'Browser QA',taskKey:'verification',mode:'browser-runtime-verification'},
+  {id:'code-reviewer',label:'Code Review',taskKey:'review',mode:'changeset-review'},
+  {id:'release-manager',label:'Release',taskKey:'ready',mode:'release-gate'},
+  {id:'deployment-verifier',label:'Deployment Verification',taskKey:'ready',mode:'deployment-gate'}
+];
+
+const ROLE_BY_TASK=Object.fromEntries(AGENT_ROLE_CATALOG.map(x=>[x.taskKey,x.id]));
+
 export const TASK_DEFINITIONS = [
   ['requirements','Understand requirements',[], 'planning'],
   ['context','Index repository context',['requirements'],'context'],
@@ -14,46 +30,45 @@ export const TASK_DEFINITIONS = [
 ];
 
 export function createTaskGraph(store, runId, targetId='web-node') {
-  const tasks = TASK_DEFINITIONS.map(([key,title,deps,phase], i) => store.createTask({
-    id: randomUUID(), runId, key, title, phase, dependencies: deps,
-    status: i === 0 ? 'running' : 'pending', metadata: {targetId}
+  const tasks=TASK_DEFINITIONS.map(([key,title,deps,phase],i)=>store.createTask({
+    id:randomUUID(),runId,key,title,phase,dependencies:deps,
+    status:i===0?'running':'pending',
+    metadata:{targetId,agentRole:ROLE_BY_TASK[key]||'agent'}
   }));
   return tasks;
 }
 
-export function transitionTask(store, runId, key, status, metadata={}) {
-  const task = store.getTaskByKey(runId,key);
-  if (!task) return null;
-  const patch = {status, metadata:{...(task.metadata||{}),...metadata}};
-  if (status === 'running' && !task.started_at) patch.started_at = new Date().toISOString();
-  if (['succeeded','failed','blocked','cancelled'].includes(status)) patch.finished_at = new Date().toISOString();
-  return store.updateTask(task.id, patch);
+export function transitionTask(store,runId,key,status,metadata={}){
+  const task=store.getTaskByKey(runId,key);
+  if(!task)return null;
+  const patch={status,metadata:{...(task.metadata||{}),...metadata}};
+  if(status==='running'&&!task.started_at)patch.started_at=new Date().toISOString();
+  if(['succeeded','failed','blocked','cancelled'].includes(status))patch.finished_at=new Date().toISOString();
+  return store.updateTask(task.id,patch);
 }
 
 export function cancelTaskGraph(store,runId,reason='run_cancelled'){
-  for(const task of store.listTasks(runId)){
-    if(['pending','running'].includes(task.status)) transitionTask(store,runId,task.key,'cancelled',{reason});
-  }
+  for(const task of store.listTasks(runId))if(['pending','running'].includes(task.status))transitionTask(store,runId,task.key,'cancelled',{reason});
 }
 
-export function syncTaskForEvent(store, runId, event, payload={}) {
-  const map = {
-    context_loaded:['context','succeeded'], research_completed:['research','succeeded'], design_completed:['design','succeeded'], planned:['architecture','succeeded'], changeset_proposed:['generation','running'],
-    changes_applied:['generation','succeeded'], verification:['verification',payload.passed?'succeeded':'failed'],
-    target_verification:['verification',payload.passed?'succeeded':'failed'], repair_requested:['repair','running'],
-    repair_applied:['repair','succeeded'], repair_error:['repair','failed'], completed:['ready',payload.status==='verified'?'succeeded':'blocked']
+export function syncTaskForEvent(store,runId,event,payload={}){
+  const map={
+    context_loaded:['context','succeeded'],research_completed:['research','succeeded'],design_completed:['design','succeeded'],planned:['architecture','succeeded'],changeset_proposed:['generation','running'],
+    changes_applied:['generation','succeeded'],verification:['verification',payload.passed?'succeeded':'failed'],
+    target_verification:['verification',payload.passed?'succeeded':'failed'],repair_requested:['repair','running'],
+    repair_applied:['repair','succeeded'],repair_error:['repair','failed'],completed:['ready',payload.status==='verified'?'succeeded':'blocked']
   };
-  const hit=map[event]; if(!hit) return;
-  if(event==='planned') transitionTask(store,runId,'requirements','succeeded',payload);
+  const hit=map[event];if(!hit)return;
+  if(event==='planned')transitionTask(store,runId,'requirements','succeeded',payload);
   transitionTask(store,runId,hit[0],hit[1],payload);
-  if(event==='verification' || event==='target_verification'){
-    if(payload.passed) transitionTask(store,runId,'repair','succeeded',{skipped:true,reason:'verification_passed'});
+  if(event==='verification'||event==='target_verification'){
+    if(payload.passed)transitionTask(store,runId,'repair','succeeded',{skipped:true,reason:'verification_passed'});
     else transitionTask(store,runId,'repair','running',{reason:'verification_failed'});
   }
   const current=store.getTaskByKey(runId,hit[0]);
-  if(event==='review_completed' && payload.passed) transitionTask(store,runId,'ready','running',{reason:'review_passed'});
-  if(current?.status==='succeeded') {
-    const next=store.listTasks(runId).find(t=>t.status==='pending' && t.dependencies?.every(d=>['succeeded'].includes(store.getTaskByKey(runId,d)?.status)));
-    if(next) transitionTask(store,runId,next.key,'running');
+  if(event==='review_completed'&&payload.passed)transitionTask(store,runId,'ready','running',{reason:'review_passed'});
+  if(current?.status==='succeeded'){
+    const next=store.listTasks(runId).find(t=>t.status==='pending'&&t.dependencies?.every(d=>store.getTaskByKey(runId,d)?.status==='succeeded'));
+    if(next)transitionTask(store,runId,next.key,'running');
   }
 }

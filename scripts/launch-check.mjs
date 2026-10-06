@@ -9,6 +9,7 @@ const checks=[
   ['/privacy','text/html'],
   ['/robots.txt','text/plain'],
   ['/sitemap.xml','application/xml'],
+  ['/llms.txt','text/plain'],
   ...listPublicSeoPages().map(page=>[page.path,'text/html'])
 ];
 const failures=[];
@@ -23,6 +24,7 @@ for(const [path,type] of checks){
   if(path.startsWith('/ai-')||path.endsWith('-builder')||['/features','/templates','/pricing','/how-it-works','/faq'].includes(path)){if(!/<meta[^>]+name=["']description["'][^>]+content=["'][^"']{70,160}["']/i.test(body)) failures.push(path+':missing_description');if(!/<link[^>]+rel=["']canonical["'][^>]+href=["']https?:\/\//i.test(body)) failures.push(path+':missing_absolute_canonical');if(!/<h1\b/i.test(body)) failures.push(path+':missing_h1');}
   if(path==='/robots.txt' && !body.includes('Sitemap:')) failures.push('/robots_missing_sitemap');
   if(path==='/sitemap.xml' && !body.includes('<urlset')) failures.push('/sitemap_invalid');
+  if(path==='/llms.txt' && !body.startsWith('# Build Vibe')) failures.push('/llms_invalid');
   if(path==='/sitemap.xml'){for(const page of listPublicSeoPages())if(!body.includes('<loc>'+base+page.path+'</loc>'))failures.push('/sitemap_missing_'+page.path.replaceAll('/','_'));}
 }
 if(failures.length){console.error('Build Vibe launch check failed:');for(const x of failures)console.error('- '+x);process.exit(2);}

@@ -1,0 +1,154 @@
+{
+  "generatedAt": "2026-10-06",
+  "competitors": [
+    "Lovable",
+    "Bolt",
+    "Replit Agent",
+    "v0",
+    "Figma Make",
+    "Cursor Agent"
+  ],
+  "dimensions": [
+    "prompt_to_working_product",
+    "browser_code_editing",
+    "backend_data_auth",
+    "web_search_grounding",
+    "deployment",
+    "collaboration",
+    "git_github",
+    "browser_qa",
+    "native_mobile",
+    "isolated_long_running_agents",
+    "verification_first_release_gates"
+  ],
+  "observations": {
+    "Lovable": {
+      "prompt_to_working_product": true,
+      "browser_code_editing": true,
+      "backend_data_auth": true,
+      "web_search_grounding": true,
+      "deployment": true,
+      "collaboration": true,
+      "git_github": true,
+      "browser_qa": "security scanning advertised; product-specific browser QA contract not assumed",
+      "native_mobile": "web/PWA; not native app-store packages per public mobile page",
+      "isolated_long_running_agents": "not used for scoring",
+      "verification_first_release_gates": "not assumed"
+    },
+    "Bolt": {
+      "prompt_to_working_product": true,
+      "browser_code_editing": true,
+      "backend_data_auth": true,
+      "web_search_grounding": "not scored without official detail",
+      "deployment": true,
+      "collaboration": "browser workspace",
+      "git_github": "not scored without official detail",
+      "browser_qa": "not scored without official detail",
+      "native_mobile": "not scored",
+      "isolated_long_running_agents": "not scored",
+      "verification_first_release_gates": "not assumed"
+    },
+    "Replit Agent": {
+      "prompt_to_working_product": true,
+      "browser_code_editing": true,
+      "backend_data_auth": true,
+      "web_search_grounding": true,
+      "deployment": true,
+      "collaboration": true,
+      "git_github": true,
+      "browser_qa": "agent can work with project/runtime; exact gate semantics not scored",
+      "native_mobile": "builder catalog includes Android app use case",
+      "isolated_long_running_agents": true,
+      "verification_first_release_gates": "not assumed"
+    },
+    "v0": {
+      "prompt_to_working_product": true,
+      "browser_code_editing": "code/UI generation; exact editor semantics vary",
+      "backend_data_auth": true,
+      "web_search_grounding": "keyword research and data workflows documented",
+      "deployment": true,
+      "collaboration": "Vercel project workflow",
+      "git_github": true,
+      "browser_qa": "not scored",
+      "native_mobile": "not scored",
+      "isolated_long_running_agents": "not scored",
+      "verification_first_release_gates": "not assumed"
+    },
+    "Figma Make": {
+      "prompt_to_working_product": true,
+      "browser_code_editing": true,
+      "backend_data_auth": "web-app prototyping; backend scope not scored",
+      "web_search_grounding": true,
+      "deployment": true,
+      "collaboration": true,
+      "git_github": true,
+      "browser_qa": "interactive preview; exact automated gate semantics not scored",
+      "native_mobile": "not scored",
+      "isolated_long_running_agents": "not scored",
+      "verification_first_release_gates": "not assumed"
+    },
+    "Cursor Agent": {
+      "prompt_to_working_product": "full coding agent rather than dedicated app-builder workflow",
+      "browser_code_editing": true,
+      "backend_data_auth": "codebase-dependent",
+      "web_search_grounding": true,
+      "deployment": "environment-dependent",
+      "collaboration": true,
+      "git_github": true,
+      "browser_qa": true,
+      "native_mobile": "codebase-dependent",
+      "isolated_long_running_agents": true,
+      "verification_first_release_gates": "agent verifies work; exact release gates not scored"
+    }
+  },
+  "sources": [
+    {
+      "name": "Lovable AI App Builder",
+      "url": "https://lovable.dev/build/app-builder"
+    },
+    {
+      "name": "Lovable Mobile App Builder",
+      "url": "https://lovable.dev/build/mobile-app-builder"
+    },
+    {
+      "name": "Bolt AI App Builder",
+      "url": "https://bolt.new/use-cases/ai-app-builder"
+    },
+    {
+      "name": "Replit Agent",
+      "url": "https://replit.com/products/agent"
+    },
+    {
+      "name": "Replit Agent any framework",
+      "url": "https://replit.com/blog/agent-on-any-framework"
+    },
+    {
+      "name": "v0 documentation",
+      "url": "https://vercel.com/docs/v0"
+    },
+    {
+      "name": "Figma Make",
+      "url": "https://help.figma.com/hc/en-us/articles/31304412302231-Explore-Figma-Make"
+    },
+    {
+      "name": "Figma Make GitHub",
+      "url": "https://help.figma.com/hc/en-us/articles/35710574222487-Beyond-the-basics-Using-Figma-Make"
+    },
+    {
+      "name": "Cursor Agent overview",
+      "url": "https://prod.cursor.com/docs/agent/overview"
+    },
+    {
+      "name": "Cursor browser tool",
+      "url": "https://prod.cursor.com/docs/agent/tools/browser"
+    },
+    {
+      "name": "Cursor Cloud Agents",
+      "url": "https://prod.cursor.com/help/ai-features/background-agents"
+    }
+  ],
+  "scoring": {
+    "rule": "No competitor receives a score from an undocumented capability. Build Vibe is scored by its own executable 60-scenario benchmark, not by subjective feature counting.",
+    "buildVibeStrengths": "verification-first release gates, explicit external-infrastructure truth states, target-specific verification, browser/visual/accessibility gates, bounded agent orchestration and deploy attestation are first-class repository contracts."
+  }
+}
