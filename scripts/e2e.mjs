@@ -10,7 +10,7 @@ import {cleanupWorkspace} from '../src/git/workspace.js';
 
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'codingvibes-e2e-'));
 const prev={};for(const k of ['DATABASE_PATH','CODINGVIBES_PROJECT_ROOT','CODINGVIBES_WORK_ROOT','CODINGVIBES_RUNTIME','CODINGVIBES_ENABLE_BROWSER'])prev[k]=process.env[k];
-Object.assign(process.env,{DATABASE_PATH:path.join(root,'db','test.db'),CODINGVIBES_PROJECT_ROOT:path.join(root,'projects'),CODINGVIBES_WORK_ROOT:path.join(root,'worktrees'),CODINGVIBES_RUNTIME:'local',CODINGVIBES_ENABLE_BROWSER:'false'});
+Object.assign(process.env,{DATABASE_PATH:path.join(root,'db','test.db'),CODINGVIBES_PROJECT_ROOT:path.join(root,'projects'),CODINGVIBES_WORK_ROOT:path.join(root,'worktrees'),CODINGVIBES_RUNTIME:'local',CODINGVIBES_ENABLE_BROWSER:process.env.CODINGVIBES_E2E_BROWSER==='true'?'true':'false'});
 const store=new Store(process.env.DATABASE_PATH);
 let workspaceRoot,workspace;
 try{
