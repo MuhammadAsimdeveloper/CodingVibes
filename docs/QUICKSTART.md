@@ -17,7 +17,7 @@ Open `.env.local` and add one AI provider key. Then:
 npm start
 ```
 
-Open `http://127.0.0.1:4400`.
+Open `http://127.0.0.1:4400`. For Paddle sandbox checkout testing, set `PADDLE_CLIENT_TOKEN` and use `/pay` as the approved/default payment-link page.
 
 ## Verify before shipping
 
