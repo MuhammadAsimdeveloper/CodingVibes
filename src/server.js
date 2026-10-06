@@ -26,7 +26,8 @@ import {listIntegrationDefinitions,testIntegration} from './integrations/connect
 import {importGitHubRepository} from './integrations/github.js';
 import {buildDiagnostics} from './agent/diagnostics.js';
 import {planCatalog,currentPeriodKey,canStartRun,getPlan} from './billing/plans.js';
-import {createCheckoutSession,verifyStripeSignature,planFromStripePrice,subscriptionPlanFromEvent} from './billing/stripe.js';
+import {createCheckoutSession,createCustomerPortalSession,verifyStripeSignature,planFromStripePrice,subscriptionPlanFromEvent} from './billing/stripe.js';
+import {getPaddleStatus,createPaddleCustomer,createPaddleCheckoutTransaction,createPaddlePortalSession,verifyPaddleSignature,paddlePlanFromPrice,paddlePlanFromSubscription} from './billing/paddle.js';
 import {readiness} from './ops/readiness.js';
 import {requireSuperAdmin,opsOverview} from './ops/admin.js';
 import {backupStore} from './ops/backup.js';
@@ -117,7 +118,7 @@ export function createAppServer(){return http.createServer(async(req,res)=>{
   if(method==='GET'&&u.pathname==='/sitemap.xml'){const base=publicOrigin(req),routes=['/',...PUBLIC_SEO_ROUTES,'/terms','/privacy'],unique=[...new Set(routes)];const xml=unique.map(route=>`<url><loc>${base}${route}</loc></url>`).join('');return sendText(res,200,`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${xml}</urlset>`,'application/xml; charset=utf-8');}
 if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPublicSeoPage(u.pathname,{baseUrl:publicOrigin(req)});if(html)return sendText(res,200,html,'text/html; charset=utf-8');}
   if(method==='GET'&&u.pathname==='/ready'){const r=readiness({router,store});if(process.env.NODE_ENV==='production'&&!r.ready)return sendJson(res,503,{ok:false,ready:false,service:'build-vibe',status:'not_ready'});if(process.env.NODE_ENV==='production')return sendJson(res,200,{ok:true,ready:true,service:'build-vibe',status:'ready'});return sendJson(res,r.ready?200:503,{ok:r.ready,...r});}
-  if(['POST','PUT','PATCH','DELETE'].includes(method)&&u.pathname!=='/api/billing/webhook'&&!sameOrigin(req))return sendJson(res,403,{ok:false,error:'cross_origin_request_blocked'});
+  if(['POST','PUT','PATCH','DELETE'].includes(method)&&u.pathname!=='/api/billing/webhook'&&u.pathname!=='/api/billing/paddle/webhook'&&!sameOrigin(req))return sendJson(res,403,{ok:false,error:'cross_origin_request_blocked'});
   if(method==='GET'&&u.pathname==='/api/auth/google/config'){return sendJson(res,200,{ok:true,configured:googleOAuthConfigured()});}
   if(method==='GET'&&u.pathname==='/api/auth/google'){
     if(!googleOAuthConfigured())return sendJson(res,503,{ok:false,error:'google_oauth_not_configured'});
@@ -159,6 +160,27 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(method==='PUT'&&u.pathname==='/api/ops/feature-flags'){try{const adminId=requireSuperAdmin(req,store),b=await readJson(req,MAX_BODY),flag=normalizeFeatureFlag(b),saved=store.upsertFeatureFlag(adminId,flag);store.addAuditLog({actorUserId:adminId,action:'ops.feature_flag.updated',resourceType:'feature_flag',resourceId:flag.key,metadata:{enabled:flag.enabled,rolloutPercentage:flag.rolloutPercentage,killSwitch:flag.killSwitch}});return sendJson(res,200,{ok:true,featureFlag:saved});}catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message});}}
   if(method==='GET'&&u.pathname==='/api/ops/audit'){try{const adminId=requireSuperAdmin(req,store);const limit=Math.min(Math.max(Number(u.searchParams.get('limit')||100),1),500);return sendJson(res,200,{ok:true,audit:store.listAuditLogs({limit})});}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message});}}
   if(method==='POST'&&u.pathname==='/api/ops/backup'){try{const adminId=requireSuperAdmin(req,store);const result=backupStore(store);store.addAuditLog({actorUserId:adminId,action:'ops.backup.created',resourceType:'database',metadata:{size:result.size,sha256:result.sha256}});return sendJson(res,201,{ok:true,backup:{...result,path:undefined}});}catch(e){return sendJson(res,e.status||500,{ok:false,error:e.message});}}
+  if(method==='POST'&&u.pathname==='/api/billing/paddle/webhook'){
+    const raw=await readRawBody(req,MAX_BODY),signature=String(req.headers['paddle-signature']||'');
+    if(!verifyPaddleSignature(raw,signature,process.env.PADDLE_WEBHOOK_SECRET))return sendJson(res,400,{ok:false,error:'invalid_paddle_signature'});
+    let event;try{event=JSON.parse(raw)}catch{return sendJson(res,400,{ok:false,error:'invalid_paddle_event'})}
+    const eventId=String(event?.event_id||event?.id||''),eventType=String(event?.event_type||event?.type||'');if(!eventId||!eventType)return sendJson(res,400,{ok:false,error:'invalid_paddle_event'});
+    if(store.hasBillingEvent('paddle:'+eventId))return sendJson(res,200,{ok:true,duplicate:true,eventId});
+    const obj=event.data||{},custom=obj.custom_data||{},userId=String(custom.build_vibe_user_id||custom.user_id||'');
+    let account=userId?store.getBilling(userId):null;
+    if(!account&&obj.subscription_id)account=store.getBillingByProviderSubscription('paddle',obj.subscription_id);
+    if(!account&&obj.id&&eventType.startsWith('subscription.'))account=store.getBillingByProviderSubscription('paddle',obj.id);
+    if(!account&&obj.customer_id)account=store.getBillingByProviderCustomer('paddle',obj.customer_id);
+    const prices=Array.isArray(obj.items)?obj.items:[],pricePlan=prices.reduce((found,item)=>found||paddlePlanFromPrice(item?.price?.id||item?.price_id),null);
+    if(eventType==='transaction.completed' || eventType==='subscription.created' || eventType==='subscription.updated' || eventType==='subscription.resumed'){
+      const plan=pricePlan||paddlePlanFromSubscription(obj),statusRaw=String(obj.status||'active'),status=['active','trialing'].includes(statusRaw)?'active':statusRaw||'past_due';
+      if(account)store.updateBilling(account.user_id,{billing_provider:'paddle',plan:plan||account.plan,status,provider_customer_id:String(obj.customer_id||account.provider_customer_id||''),provider_subscription_id:String(obj.subscription_id||obj.id&&eventType.startsWith('subscription.')?obj.subscription_id||obj.id:account.provider_subscription_id||''),provider_transaction_id:eventType==='transaction.completed'?String(obj.id||''):account.provider_transaction_id||''});
+    }else if(eventType==='subscription.canceled' || eventType==='subscription.paused'){
+      if(account)store.updateBilling(account.user_id,{billing_provider:'paddle',plan:eventType==='subscription.canceled'?'free':account.plan,status:eventType==='subscription.canceled'?'canceled':'paused',provider_customer_id:String(obj.customer_id||account.provider_customer_id||''),provider_subscription_id:String(obj.id||account.provider_subscription_id||''),current_period_end:obj.scheduled_change?.effective_at||obj.canceled_at||account.current_period_end});
+    }
+    store.recordBillingEvent('paddle:'+eventId,eventType,createHash('sha256').update(raw).digest('hex'));
+    return sendJson(res,200,{ok:true,eventId,type:eventType,handled:Boolean(account)});
+  }
   if(method==='POST'&&u.pathname==='/api/billing/webhook'){
     const raw=await readRawBody(req,MAX_BODY),signature=String(req.headers['stripe-signature']||'');
     if(!verifyStripeSignature(raw,signature,process.env.STRIPE_WEBHOOK_SECRET))return sendJson(res,400,{ok:false,error:'invalid_stripe_signature'});
@@ -172,12 +194,12 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     if(!account&&obj.customer)account=store.getBillingByCustomer(String(obj.customer));
     if(event.type==='checkout.session.completed'){
       const metadataPlan=['pro','team'].includes(String(obj.metadata?.plan||''))?String(obj.metadata.plan):null,pricePlan=planFromStripePrice(obj.metadata?.price_id);
-      const patch={status:'active'};if(obj.customer)patch.stripe_customer_id=String(obj.customer);if(obj.subscription)patch.stripe_subscription_id=String(obj.subscription);
+      const patch={status:'active',billing_provider:'stripe'};if(obj.customer){patch.stripe_customer_id=String(obj.customer);patch.provider_customer_id=String(obj.customer);}if(obj.subscription){patch.stripe_subscription_id=String(obj.subscription);patch.provider_subscription_id=String(obj.subscription);}patch.provider_transaction_id=String(obj.id||'');
       if(pricePlan)patch.plan=pricePlan;else if(metadataPlan)patch.plan=metadataPlan;if(account)store.updateBilling(account.user_id,patch);
     }else if(event.type==='customer.subscription.created'||event.type==='customer.subscription.updated'){
       const plan=subscriptionPlanFromEvent(obj),rawStatus=String(obj.status||''),status=['active','trialing'].includes(rawStatus)?'active':rawStatus||'past_due';
-      if(account)store.updateBilling(account.user_id,{plan:plan||account.plan,status,stripe_customer_id:String(obj.customer||account.stripe_customer_id||''),stripe_subscription_id:String(obj.id||account.stripe_subscription_id||''),current_period_end:obj.current_period_end?new Date(Number(obj.current_period_end)*1000).toISOString():account.current_period_end,cancel_at_period_end:Boolean(obj.cancel_at_period_end)});
-    }else if(event.type==='customer.subscription.deleted'){if(account)store.updateBilling(account.user_id,{plan:'free',status:'canceled',cancel_at_period_end:false,current_period_end:obj.ended_at?new Date(Number(obj.ended_at)*1000).toISOString():account.current_period_end});}
+      if(account)store.updateBilling(account.user_id,{plan:plan||account.plan,status,billing_provider:'stripe',stripe_customer_id:String(obj.customer||account.stripe_customer_id||''),stripe_subscription_id:String(obj.id||account.stripe_subscription_id||''),provider_customer_id:String(obj.customer||account.provider_customer_id||''),provider_subscription_id:String(obj.id||account.provider_subscription_id||''),current_period_end:obj.current_period_end?new Date(Number(obj.current_period_end)*1000).toISOString():account.current_period_end,cancel_at_period_end:Boolean(obj.cancel_at_period_end)});
+    }else if(event.type==='customer.subscription.deleted'){if(account)store.updateBilling(account.user_id,{plan:'free',status:'canceled',billing_provider:'stripe',cancel_at_period_end:false,current_period_end:obj.ended_at?new Date(Number(obj.ended_at)*1000).toISOString():account.current_period_end});}
     else if(event.type==='invoice.payment_failed'){if(account)store.updateBilling(account.user_id,{status:'past_due'});}
     else if(event.type==='invoice.paid'){if(account)store.updateBilling(account.user_id,{status:'active'});}
     store.recordBillingEvent(event.id,event.type,digest);
@@ -255,9 +277,43 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(/^\/api\/projects\/[^/]+\/research$/.test(u.pathname)&&method==='POST'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/research$/,'');try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const b=await readJson(req,MAX_BODY),query=String(b.query||'').trim();if(!query)return sendJson(res,400,{ok:false,error:'query_required'});const result=await researchWeb(query,{limit:Math.min(12,Math.max(1,Number(b.limit)||8))});const saved=store.createResearchRun(pid,userId,{query,provider:result.provider,status:result.status||'completed',results:result.results});if(b.runId&&store.getRun(String(b.runId),userId))store.addEvidence(String(b.runId),'web_research',{query,provider:result.provider,results:result.results});return sendJson(res,200,{ok:true,research:result,run:saved});}
 
   if(method==='POST'&&u.pathname==='/api/builder/blueprint'){const b=await readJson(req,MAX_BODY);const request=String(b.request||'').trim();if(!request)return sendJson(res,400,{ok:false,error:'request_required'});return sendJson(res,200,{ok:true,blueprint:buildBlueprint(request,{targetId:String(b.target||'auto')})});}
-  if(method==='GET'&&u.pathname==='/api/billing'){const billing=store.getBilling(userId),usage=store.monthlyUsage(userId,currentPeriodKey());const plan=getPlan(billing.plan);return sendJson(res,200,{ok:true,billing:{...billing,stripe_customer_id:undefined,stripe_subscription_id:undefined},plan,usage,plans:planCatalog(),features:plan.features});}
+  if(method==='GET'&&u.pathname==='/api/billing'){const billing=store.getBilling(userId),usage=store.monthlyUsage(userId,currentPeriodKey());const plan=getPlan(billing.plan);return sendJson(res,200,{ok:true,billing:{...billing,stripe_customer_id:undefined,stripe_subscription_id:undefined,provider_customer_id:undefined,provider_subscription_id:undefined,provider_transaction_id:undefined,customerConfigured:Boolean(billing.stripe_customer_id||billing.provider_customer_id)},plan,usage,plans:planCatalog(),features:plan.features,billingProvider:String(billing.billing_provider||process.env.CODINGVIBES_BILLING_PROVIDER||'stripe')});}
   if(method==='GET'&&u.pathname==='/api/features'){const billing=store.getBilling(userId),plan=getPlan(billing.plan);return sendJson(res,200,{ok:true,plan:plan.id,features:plan.features,all:planCatalog().flatMap(x=>x.featureCatalog||[]).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).map(x=>({...x,enabled:hasFeature(plan.id,x.id)}))});}
-  if(method==='POST'&&u.pathname==='/api/billing/checkout'){const b=await readJson(req,MAX_BODY),plan=getPlan(String(b.plan||'pro'));if(!plan.priceEnv)return sendJson(res,400,{ok:false,error:'plan_not_billable'});const priceId=process.env[plan.priceEnv];const base=publicOrigin(req);const successUrl=normalizeReturnUrl(b.successUrl,`${base}/?billing=success`),cancelUrl=normalizeReturnUrl(b.cancelUrl,`${base}/?billing=cancel`);try{const checkout=await createCheckoutSession({apiKey:process.env.STRIPE_SECRET_KEY,priceId,customerEmail:store.getUser(userId)?.email,clientReferenceId:userId,plan:plan.id,successUrl,cancelUrl});return sendJson(res,200,{ok:true,checkout});}catch(e){return sendJson(res,503,{ok:false,error:e.message});}}
+  if(method==='POST'&&u.pathname==='/api/billing/checkout'){
+    const b=await readJson(req,MAX_BODY),plan=getPlan(String(b.plan||'pro')),provider=String(process.env.CODINGVIBES_BILLING_PROVIDER||'stripe').trim().toLowerCase(),base=publicOrigin(req),successUrl=normalizeReturnUrl(b.successUrl,`${base}/?billing=success`),cancelUrl=normalizeReturnUrl(b.cancelUrl,`${base}/?billing=cancel`),email=store.getUser(userId)?.email;
+    if(plan.id==='free'||!plan.priceEnv)return sendJson(res,400,{ok:false,error:'plan_not_billable'});
+    try{
+      if(provider==='stripe'){
+        const priceId=process.env[plan.priceEnv];if(!priceId)return sendJson(res,400,{ok:false,error:'stripe_price_not_configured'});
+        const checkout=await createCheckoutSession({apiKey:process.env.STRIPE_SECRET_KEY,priceId,customerEmail:email,clientReferenceId:userId,plan:plan.id,successUrl,cancelUrl});
+        store.updateBilling(userId,{billing_provider:'stripe'});
+        return sendJson(res,200,{ok:true,provider,checkout});
+      }
+      if(provider==='paddle'){
+        const priceEnv=plan.paddlePriceEnv,priceId=priceEnv?process.env[priceEnv]:'';if(!priceId)return sendJson(res,400,{ok:false,error:'paddle_price_not_configured'});
+        const billing=store.getBilling(userId);let customerId=billing.provider_customer_id;
+        if(!customerId){const customer=await createPaddleCustomer({email,userId});customerId=customer.id;store.updateBilling(userId,{billing_provider:'paddle',provider_customer_id:customerId});}
+        const checkout=await createPaddleCheckoutTransaction({priceId,email,userId,plan:plan.id,successUrl,cancelUrl,customerId});
+        store.updateBilling(userId,{billing_provider:'paddle',provider_customer_id:checkout.customerId||customerId,provider_transaction_id:checkout.id});
+        return sendJson(res,200,{ok:true,provider,checkout});
+      }
+      return sendJson(res,503,{ok:false,error:'unsupported_billing_provider'});
+    }catch(e){return sendJson(res,503,{ok:false,error:e.message});}
+  }
+  if(method==='POST'&&u.pathname==='/api/billing/portal'){
+    const billing=store.getBilling(userId),provider=String(billing.billing_provider||process.env.CODINGVIBES_BILLING_PROVIDER||'stripe').trim().toLowerCase(),base=publicOrigin(req);
+    try{
+      if(provider==='stripe'){
+        const id=String(billing.stripe_customer_id||'').trim();if(!id)return sendJson(res,409,{ok:false,error:'stripe_customer_missing'});
+        const portal=await createCustomerPortalSession({apiKey:process.env.STRIPE_SECRET_KEY,customerId:id,returnUrl:normalizeReturnUrl('',`${base}/app`)});return sendJson(res,200,{ok:true,provider,portal});
+      }
+      if(provider==='paddle'){
+        const id=String(billing.provider_customer_id||'').trim();if(!id)return sendJson(res,409,{ok:false,error:'paddle_customer_missing'});
+        const portal=await createPaddlePortalSession({customerId:id,subscriptionId:billing.provider_subscription_id||null});return sendJson(res,200,{ok:true,provider,portal});
+      }
+      return sendJson(res,503,{ok:false,error:'unsupported_billing_provider'});
+    }catch(e){return sendJson(res,503,{ok:false,error:e.message});}
+  }
   if(method==='GET'&&u.pathname==='/api/model/status'){const r=userRouter(userId);return sendJson(res,200,{ok:true,...r.getStatus()});}
   if(method==='GET'&&u.pathname==='/api/connectors'){const r=userRouter(userId);return sendJson(res,200,{ok:true,connectors:r.listConnectors(),chain:r.getStatus().chain});}
   if(method==='POST'&&u.pathname==='/api/connectors/test'){const b=await readJson(req,MAX_BODY),r=userRouter(userId);return sendJson(res,200,await r.testConnection(String(b.provider||'')));}
