@@ -26,13 +26,28 @@ export function readiness({router,store}={}) {
       try{fs.mkdirSync(dir,{recursive:true});fs.accessSync(dir,fs.constants.R_OK|fs.constants.W_OK);}catch{blockers.push(dirKey.toLowerCase()+'_not_writable')}
     }
     const billingRequired=String(process.env.CODINGVIBES_BILLING_REQUIRED??'true')==='true';
-    if(billingRequired){
-      if(!process.env.STRIPE_SECRET_KEY)blockers.push('stripe_secret_missing');
-      if(!process.env.STRIPE_WEBHOOK_SECRET)blockers.push('stripe_webhook_secret_missing');
-      if(!process.env.STRIPE_PRICE_PRO_MONTHLY)blockers.push('stripe_pro_price_missing');
-      if(!process.env.STRIPE_PRICE_TEAM_MONTHLY)blockers.push('stripe_team_price_missing');
+    const billingProvider=String(process.env.CODINGVIBES_BILLING_PROVIDER||'stripe').trim().toLowerCase();
+    if(!['stripe','paddle'].includes(billingProvider)){
+      if(billingRequired)blockers.push('unsupported_billing_provider');
+      else warnings.push('unsupported_billing_provider');
+    }else if(billingRequired){
+      if(billingProvider==='stripe'){
+        if(!process.env.STRIPE_SECRET_KEY)blockers.push('stripe_secret_missing');
+        if(!process.env.STRIPE_WEBHOOK_SECRET)blockers.push('stripe_webhook_secret_missing');
+        if(!process.env.STRIPE_PRICE_PRO_MONTHLY)blockers.push('stripe_pro_price_missing');
+        if(!process.env.STRIPE_PRICE_TEAM_MONTHLY)blockers.push('stripe_team_price_missing');
+      }else{
+        if(!process.env.PADDLE_API_KEY)blockers.push('paddle_api_key_missing');
+        if(!process.env.PADDLE_WEBHOOK_SECRET)blockers.push('paddle_webhook_secret_missing');
+        if(!process.env.PADDLE_PRICE_PRO_MONTHLY)blockers.push('paddle_pro_price_missing');
+        if(!process.env.PADDLE_PRICE_TEAM_MONTHLY)blockers.push('paddle_team_price_missing');
+      }
     }
-  } else if(!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET)warnings.push('stripe_billing_not_configured');
+  } else {
+    const billingProvider=String(process.env.CODINGVIBES_BILLING_PROVIDER||'stripe').trim().toLowerCase();
+    if(billingProvider==='paddle' && (!process.env.PADDLE_API_KEY||!process.env.PADDLE_WEBHOOK_SECRET))warnings.push('paddle_billing_not_configured');
+    else if(billingProvider==='stripe' && (!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET))warnings.push('stripe_billing_not_configured');
+  }
   if(!process.env.CODINGVIBES_DEPENDENCY_NETWORK)warnings.push('dependency_network_not_configured');
   const admins=String(process.env.CODINGVIBES_SUPERADMIN_EMAILS||'').split(',').map(x=>x.trim()).filter(Boolean);
   if(production&&admins.length===0)blockers.push('superadmin_allowlist_missing');
