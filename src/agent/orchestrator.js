@@ -124,7 +124,7 @@ export async function executeBuild({request,userId,sessionId,project,store,route
  store.addMessage(sessionId,'user',request,{runId:run.id,targetId:initialTarget.id});emit({type:'run_created',runId:run.id,target:initialTarget.id});
  const ws=await createAgentWorkspace(project.repo_path,run.id);store.updateRun(run.id,userId,{workspace:ws.worktree});
  const baseCheckpoint=createCheckpoint(ws.worktree,checkpointRoot(),'workspace-created');store.createCheckpoint(run.id,baseCheckpoint.name,baseCheckpoint.path,{baseSha:ws.baseSha,branch:ws.branch});
- const repoIndex=buildRepositoryIndex(ws.worktree); store.saveRepositoryIndex(run.id,repoIndex);
+ const repoIndex=buildRepositoryIndex(ws.worktree); store.saveRepositoryIndex(run.id,repoIndex); const projectMemory=store.getProjectMemory(project.id,userId)||{};
  emit({type:'workspace_created',runId:run.id,workspace:ws.worktree,branch:ws.branch,baseSha:ws.baseSha});
  let preview=null,finalEvidence=null,changeset=null,spec=null,target=initialTarget,intelligence=null,reflection=null;
  const agentBudget=new AgentExecutionBudget();
