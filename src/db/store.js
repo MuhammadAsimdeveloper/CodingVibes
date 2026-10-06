@@ -237,7 +237,7 @@ export class Store{
     const sanitize=(value,depth=0)=>{
       if(depth>5)return '[depth-limited]';
       if(Array.isArray(value))return value.slice(0,100).map(x=>sanitize(x,depth+1));
-      if(value&&typeof value==='object'){const out={};for(const [k,v] of Object.entries(value).slice(0,100)){if(/token|secret|password|api[-_]?key|authorization|cookie|credential|private[-_]?key/i.test(k))continue;out[String(k).slice(0,100)]=sanitize(v,depth+1);}return out;}
+      if(value&&typeof value==='object'){const out=Object.create(null);for(const [k,v] of Object.entries(value).slice(0,100)){if(k==='__proto__'||k==='constructor'||k==='prototype'||/token|secret|password|api[-_]?key|authorization|cookie|credential|private[-_]?key/i.test(k))continue;out[String(k).slice(0,100)]=sanitize(v,depth+1);}return out;}
       return typeof value==='string'?value.slice(0,4000):value;
     };
     const clean=sanitize(memory),encoded=JSON.stringify(clean);if(Buffer.byteLength(encoded,'utf8')>65536)throw new Error('project_memory_too_large');
