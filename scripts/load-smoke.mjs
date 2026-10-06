@@ -45,6 +45,7 @@ async function runLevel(concurrency){
 }
 
 try{
+  await autoStart();
   const probe=await fetch(baseUrl+'/health');
   if(!probe.ok)throw new Error('health_probe_http_'+probe.status);
 }catch(error){
@@ -55,3 +56,4 @@ const results=[];for(const level of levels)results.push(await runLevel(level));
 const ok=results.every(x=>x.passed);
 console.log(JSON.stringify({status:ok?'PASS':'FAIL',baseUrl,p95LimitMs:p95Limit,results},null,2));
 if(!ok)process.exit(1);
+}finally{if(child)child.kill('SIGTERM');}
