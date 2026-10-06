@@ -33,3 +33,10 @@ The production compose file is a reference service stack. Before public exposure
 ## Current integration boundary
 
 The adapters are intentionally not wired into the legacy Store API or synchronous build path yet. A future migration can move selected tables and workloads behind these contracts in measured stages without changing the launch-critical SQLite behavior.
+## Resilience gates
+
+The Redis queue contract now supports idempotency keys, bounded retries, stale-message reclaim and a dead-letter stream after the retry budget is exhausted. Local tests also cover the same semantics through the in-memory queue.
+
+Request telemetry includes overall error rate, p95 latency and bounded per-route p95 samples. Product analytics has explicit retention controls, and SQLite backup/restore is executable in tests and CI.
+
+The load smoke can exercise 10, 25 and 50 concurrent health requests. It returns BLOCKED when a target server is not reachable rather than claiming a load result.

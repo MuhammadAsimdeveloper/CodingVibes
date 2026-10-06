@@ -29,7 +29,9 @@ export function signSession(id) {
 }
 
 export function verifySessionToken(token) {
-  const [id, sig] = String(token ?? '').split('.');
+  const parts = String(token ?? '').split('.');
+  if (parts.length !== 2) return null;
+  const [id, sig] = parts;
   if (!id || !sig) return null;
   const expected = createHmac('sha256', secret()).update(id).digest('hex');
   if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;

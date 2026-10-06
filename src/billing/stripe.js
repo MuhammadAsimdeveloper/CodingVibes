@@ -10,7 +10,7 @@ export function verifyStripeSignature(rawBody, signature, secret, toleranceSec=3
 }
 export async function createCheckoutSession({apiKey,priceId,customerEmail,successUrl,cancelUrl,clientReferenceId,plan}) {
   if(!apiKey||!priceId) throw new Error('stripe_billing_not_configured');
-  const fields={mode:'subscription',success_url:successUrl,cancel_url:cancelUrl,'line_items[0][price]':priceId,'line_items[0][quantity]':'1'};if(customerEmail)fields.customer_email=customerEmail;if(clientReferenceId)fields.client_reference_id=clientReferenceId;if(plan)fields['metadata[plan]']=plan;const body=new URLSearchParams(fields);
+  const fields={mode:'subscription',success_url:successUrl,cancel_url:cancelUrl,'line_items[0][price]':priceId,'line_items[0][quantity]':'1'};if(customerEmail)fields.customer_email=customerEmail;if(clientReferenceId)fields.client_reference_id=clientReferenceId;if(plan){fields['metadata[plan]']=plan;fields['metadata[price_id]']=String(priceId);fields['subscription_data[metadata][plan]']=plan;fields['subscription_data[metadata][price_id]']=String(priceId);}const body=new URLSearchParams(fields);
   const r=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/x-www-form-urlencoded'},body});
   const text=await r.text(); let data={}; try{data=JSON.parse(text)}catch{}
   if(!r.ok) throw new Error(data?.error?.message||`stripe_checkout_${r.status}`);
@@ -19,3 +19,12 @@ export async function createCheckoutSession({apiKey,priceId,customerEmail,succes
 
 export function planFromStripePrice(priceId, env=process.env){const id=String(priceId||'');if(id&&env.STRIPE_PRICE_TEAM_MONTHLY===id)return'team';if(id&&env.STRIPE_PRICE_PRO_MONTHLY===id)return'pro';return null;}
 export function subscriptionPlanFromEvent(subscription,env=process.env){for(const item of(Array.isArray(subscription?.items?.data)?subscription.items.data:[])){const plan=planFromStripePrice(item?.price?.id,env);if(plan)return plan;}const p=String(subscription?.metadata?.plan||'');return['pro','team'].includes(p)?p:null;}
+
+export async function createCustomerPortalSession({apiKey,customerId,returnUrl}) {
+  if(!apiKey||!customerId) throw new Error('stripe_customer_missing');
+  const body=new URLSearchParams({customer:String(customerId),...(returnUrl?{return_url:String(returnUrl)}:{})});
+  const r=await fetch('https://api.stripe.com/v1/billing_portal/sessions',{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/x-www-form-urlencoded'},body});
+  const text=await r.text(); let data={}; try{data=JSON.parse(text)}catch{}
+  if(!r.ok) throw new Error(data?.error?.message||`stripe_portal_${r.status}`);
+  return {id:data.id,url:data.url};
+}

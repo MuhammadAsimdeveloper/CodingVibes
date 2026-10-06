@@ -1,0 +1,166 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+import {runnerControlConfigured,validRunnerToken,requireRunnerToken,normalizeRunner} from '../src/runners/registry.js';
+import {oauthConfigured,beginOAuth,completeOAuth} from '../src/deployment/oauth.js';
+import {getProvider,listProviders,PROVIDERS} from '../src/deployment/providers.js';
+import {normalizeVideoRequest,createVideoTask,getVideoTask,downloadVideo} from '../src/media/runway.js';
+
+test('runner registry validates control credentials and payloads',()=>{
+  const previous=process.env.CODINGVIBES_RUNNER_CONTROL_TOKEN;
+  try{
+    process.env.CODINGVIBES_RUNNER_CONTROL_TOKEN='runner-secret';
+    assert.equal(runnerControlConfigured(),true);
+    assert.equal(validRunnerToken('runner-secret'),true);
+    assert.equal(validRunnerToken('wrong'),false);
+    assert.equal(requireRunnerToken('runner-secret'),true);
+    assert.throws(()=>requireRunnerToken('wrong'),/runner control token required/);
+    const runner=normalizeRunner({id:'runner-1',name:'Runner One',capability:'web',labels:['linux','x:y'],metadata:{region:'test'},status:'draining'});
+    assert.equal(runner.status,'draining');
+    assert.deepEqual(runner.labels,['linux','x:y']);
+    assert.throws(()=>normalizeRunner({id:'bad id',name:'Runner',capability:'web'}),/invalid runner id/);
+    assert.throws(()=>normalizeRunner({id:'ok',name:'Runner',capability:'BAD'}),/invalid runner capability/);
+  }finally{if(previous===undefined)delete process.env.CODINGVIBES_RUNNER_CONTROL_TOKEN;else process.env.CODINGVIBES_RUNNER_CONTROL_TOKEN=previous;}
+});
+
+test('deployment OAuth helpers build PKCE state and complete a mocked token exchange',async()=>{
+  const previous={GITHUB_CLIENT_ID:process.env.GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET:process.env.GITHUB_CLIENT_SECRET,GITHUB_REDIRECT_URI:process.env.GITHUB_REDIRECT_URI};
+  try{
+    process.env.GITHUB_CLIENT_ID='client';
+    process.env.GITHUB_CLIENT_SECRET='secret';
+    process.env.GITHUB_REDIRECT_URI='https://app.example.test/oauth/github';
+    assert.equal(oauthConfigured('github'),true);
+    assert.equal(oauthConfigured('unknown'),false);
+    const states=[];
+    const store={
+      createOAuthState(userId,provider,state,expiresAt,metadata){states.push({userId,provider,state,expiresAt,metadata});},
+      consumeOAuthState(provider,state){const row=states.find(x=>x.provider===provider&&x.state===state);return row?{provider,user_id:row.userId,metadata:row.metadata}:null;}
+    };
+    const url=beginOAuth(store,'github',{userId:'user-1',redirectAfter:'/app'});
+    assert.match(url,/code_challenge=/);
+    assert.match(url,/client_id=client/);
+    const originalFetch=globalThis.fetch;
+    try{
+      globalThis.fetch=async()=>new Response(JSON.stringify({access_token:'gh-token',refresh_token:'refresh'}),{status:200});
+      const done=await completeOAuth(store,'github',{code:'abc',state:states[0].state});
+      assert.equal(done.secret.includes('gh-token'),true);
+      assert.equal(done.metadata.refreshTokenPresent,true);
+      assert.equal(done.redirectAfter,'/app');
+    }finally{globalThis.fetch=originalFetch;}
+    await assert.rejects(completeOAuth(store,'github',{code:'abc',state:'missing'}),/oauth_state_invalid/);
+  }finally{
+    for(const [k,v] of Object.entries(previous)){if(v===undefined)delete process.env[k];else process.env[k]=v;}
+  }
+});
+
+test('deployment registry exposes adapters and each external adapter fails closed without credentials',async()=>{
+  const ids=listProviders().map(x=>x.id);
+  assert.ok(ids.includes('github')&&ids.includes('vercel')&&ids.includes('netlify')&&ids.includes('cloudflare')&&ids.includes('hostinger')&&ids.includes('manual'));
+  assert.equal(getProvider('VERCEL').id,'vercel');
+  const artifact={root:fs.mkdtempSync(path.join(os.tmpdir(),'bv-artifact-')),files:[],projectMetadata:{name:'Coverage Test'},framework:'static-html',deploymentMetadata:{serverRequired:false}};
+  try{
+    for(const id of ['github','vercel','netlify','cloudflare','hostinger']){
+      await assert.rejects(PROVIDERS[id].deploy({artifact,credentials:{},options:{}}),/not_connected/);
+    }
+    const r=await PROVIDERS.manual.status({deploymentId:'/tmp/test.zip'});
+    assert.equal(r.status,'ready');
+  }finally{fs.rmSync(artifact.root,{recursive:true,force:true});}
+});
+
+test('Runway request validation and provider calls handle success and API failures',async()=>{
+  assert.deepEqual(normalizeVideoRequest({prompt:'A clean product animation',duration:5,ratio:'1280:720',model:'gen4_turbo'}),{prompt:'A clean product animation',duration:5,ratio:'1280:720',model:'gen4_turbo'});
+  assert.throws(()=>normalizeVideoRequest({prompt:''}),/video_prompt_required/);
+  assert.throws(()=>normalizeVideoRequest({prompt:'x'.repeat(5001)}),/video_prompt_too_long/);
+  assert.throws(()=>normalizeVideoRequest({prompt:'x',duration:1}),/video_duration_must_be_5_or_10/);
+  const previous=process.env.RUNWAYML_API_SECRET;process.env.RUNWAYML_API_SECRET='test-runway-key';
+  const originalFetch=globalThis.fetch;
+  try{
+    globalThis.fetch=async(url,options={})=>{
+      if(String(url).includes('/text_to_video'))return new Response(JSON.stringify({id:'task_123'}),{status:200});
+      if(String(url).includes('/tasks/'))return new Response(JSON.stringify({status:'succeeded',output:['https://cdn.example.test/video.mp4']}),{status:200});
+      return new Response(new Uint8Array([1,2,3]),{status:200,headers:{'content-length':'3'}});
+    };
+    const task=await createVideoTask({prompt:'test',duration:5,ratio:'1280:720',model:'gen4_turbo'});assert.equal(task.taskId,'task_123');
+    const state=await getVideoTask('task_123');assert.equal(state.status,'SUCCEEDED');
+    const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bv-video-'));const out=path.join(dir,'video.mp4');const result=await downloadVideo('https://cdn.example.test/video.mp4',out);assert.equal(result.size,3);assert.equal(fs.readFileSync(out).length,3);fs.rmSync(dir,{recursive:true,force:true});
+    globalThis.fetch=async()=>new Response(JSON.stringify({error:'bad'}),{status:400});
+    await assert.rejects(createVideoTask({prompt:'test'}),/bad/);
+    globalThis.fetch=async()=>new Response(JSON.stringify({error:'bad'}),{status:500});
+    await assert.rejects(getVideoTask('task_123'),/bad/);
+  }finally{globalThis.fetch=originalFetch;if(previous===undefined)delete process.env.RUNWAYML_API_SECRET;else process.env.RUNWAYML_API_SECRET=previous;}
+});
+
+
+test('Android device smoke fails safely before touching adb for bad artifacts and validates hashes',async()=>{
+  const {androidDeviceSmoke}=await import('../src/runners/device.js?coverage-device');
+  assert.deepEqual(await androidDeviceSmoke({artifactPath:'/no/such.apk',packageId:'com.example.app'}),{installed:false,verified:false,status:'blocked',reason:'APK path missing'});
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bv-device-'));
+  const apk=path.join(dir,'app.apk');fs.writeFileSync(apk,Buffer.from('apk-test'));
+  try{
+    const invalidPackage=await androidDeviceSmoke({artifactPath:apk,packageId:'invalid package'});
+    assert.equal(invalidPackage.status,'blocked');
+    const invalidActivity=await androidDeviceSmoke({artifactPath:apk,packageId:'com.example.app',activity:'bad activity'});
+    assert.equal(invalidActivity.status,'blocked');
+    const wrongHash=await androidDeviceSmoke({artifactPath:apk,packageId:'com.example.app',expectedSha256:'deadbeef'});
+    assert.equal(wrongHash.status,'failed');
+    assert.equal(wrongHash.reason,'artifact sha256 mismatch');
+  }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+
+test('session authentication helpers round-trip signed cookies and passwords safely',async()=>{
+  const auth=await import('../src/security/auth.js?coverage-auth');
+  const previous={NODE_ENV:process.env.NODE_ENV,CODINGVIBES_SESSION_SECRET:process.env.CODINGVIBES_SESSION_SECRET};
+  try{
+    process.env.NODE_ENV='test';
+    process.env.CODINGVIBES_SESSION_SECRET='coverage-session-secret';
+    const encoded=await auth.hashPassword('correct-password');
+    assert.equal(await auth.verifyPassword('correct-password',encoded),true);
+    assert.equal(await auth.verifyPassword('wrong-password',encoded),false);
+    assert.equal(await auth.verifyPassword('malformed','bad'),false);
+    const token=auth.signSession('user-coverage');
+    assert.equal(auth.verifySessionToken(token),'user-coverage');
+    assert.equal(auth.verifySessionToken(token+'.tampered'),null);
+    const cookie=auth.sessionCookieHeader(token);
+    assert.match(cookie,/HttpOnly/);assert.match(cookie,/SameSite=Lax/);
+    let header='';const res={setHeader:(k,v)=>{header=String(v)}};
+    auth.setSessionCookie(res,token);assert.match(header,/cv_session=/);
+    auth.clearSessionCookie(res);assert.match(header,/Max-Age=0/);
+    assert.equal(auth.readSessionCookie({headers:{cookie:cookie}}),token);
+    assert.equal(auth.readSessionCookie({headers:{cookie:'other=x'}}),null);
+  }finally{
+    process.env.NODE_ENV=previous.NODE_ENV;process.env.CODINGVIBES_SESSION_SECRET=previous.CODINGVIBES_SESSION_SECRET;
+  }
+});
+
+
+test('SEO helpers normalize public URLs and IndexNow submits validated URLs',async()=>{
+  const meta=await import('../src/seo/metadata.js?coverage-meta');
+  assert.equal(meta.normalizeBaseUrl('https://example.com/path'),'https://example.com');
+  assert.equal(meta.normalizeBaseUrl('not-a-url'),'');
+  assert.equal(meta.absoluteUrl('https://example.com','/pricing'),'https://example.com/pricing');
+  assert.equal(meta.cleanTitle('  A   title  '),'A title');
+  assert.equal(meta.cleanDescription('  A   description  '),'A description');
+  assert.deepEqual(meta.keywordSet('Build Vibe, AI builder, Build Vibe'),['build','vibe','ai','builder']);
+  assert.equal(meta.organizationSchema('https://example.com').url,'https://example.com/');
+  assert.equal(meta.websiteSchema('https://example.com','Build Vibe').publisher['@id'],'https://example.com/#organization');
+  assert.equal(meta.softwareApplicationSchema('https://example.com').applicationCategory,'DeveloperApplication');
+  assert.equal(meta.breadcrumbSchema('https://example.com',[{name:'Home',path:'/'}]).itemListElement[0].position,1);
+  assert.match(meta.jsonLdGraph([{ '@type':'Thing',name:'x'}]),/schema\.org/);
+  assert.match(meta.publicSeoGraph('https://example.com',{title:'Home',description:'Site'}),/WebPage/);
+  const indexnow=await import('../src/seo/indexnow.js?coverage-indexnow');
+  const originalFetch=globalThis.fetch;
+  try{
+    globalThis.fetch=async()=>new Response('ok',{status:200});
+    const one=await indexnow.submitIndexNow({url:'https://example.com/home',key:'indexnow-key'});
+    assert.equal(one.submitted,1);
+    const many=await indexnow.submitIndexNow({urls:['https://example.com/a','https://example.com/b','https://example.com/a'],key:'indexnow-key'});
+    assert.equal(many.submitted,2);
+    await assert.rejects(indexnow.submitIndexNow({urls:['https://a.example.com/x','https://b.example.com/y'],key:'indexnow-key'}),/one_host/);
+    const skipped=await indexnow.submitIndexNow({url:'https://example.com/home',key:''});
+    assert.equal(skipped.skipped,true);
+  }finally{globalThis.fetch=originalFetch;}
+});

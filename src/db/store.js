@@ -52,10 +52,10 @@ export class Store{
       CREATE TABLE IF NOT EXISTS google_auth_states(id TEXT PRIMARY KEY,state TEXT NOT NULL UNIQUE,expires_at TEXT NOT NULL,metadata_json TEXT,created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS project_assets(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,user_id TEXT NOT NULL,name TEXT NOT NULL,mime TEXT NOT NULL,kind TEXT NOT NULL,role TEXT NOT NULL,size INTEGER NOT NULL,sha256 TEXT NOT NULL,public_path TEXT NOT NULL,metadata_json TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS visual_baselines(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,user_id TEXT NOT NULL,route TEXT NOT NULL,stored_path TEXT NOT NULL,size INTEGER NOT NULL,sha256 TEXT NOT NULL,width INTEGER,height INTEGER,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(project_id,route),FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
-      CREATE TABLE IF NOT EXISTS audit_logs(id TEXT PRIMARY KEY,actor_user_id TEXT,action TEXT NOT NULL,resource_type TEXT NOT NULL,resource_id TEXT,metadata_json TEXT,created_at TEXT NOT NULL,FOREIGN KEY(actor_user_id) REFERENCES users(id) ON DELETE SET NULL);
+      CREATE TABLE IF NOT EXISTS audit_logs(id TEXT PRIMARY KEY,actor_user_id TEXT,action TEXT NOT NULL,resource_type TEXT NOT NULL,resource_id TEXT,metadata_json TEXT,created_at TEXT NOT NULL,FOREIGN KEY(actor_user_id) REFERENCES users(id) ON DELETE SET NULL);\n      CREATE TABLE IF NOT EXISTS product_events(id TEXT PRIMARY KEY,user_id TEXT,project_id TEXT,session_id TEXT,event TEXT NOT NULL,properties_json TEXT NOT NULL,created_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE SET NULL,FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE SET NULL);\n      CREATE TABLE IF NOT EXISTS feature_flags(key TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1,rollout_percentage REAL NOT NULL DEFAULT 100,environments_json TEXT NOT NULL,kill_switch INTEGER NOT NULL DEFAULT 0,config_json TEXT NOT NULL,updated_by TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(updated_by) REFERENCES users(id) ON DELETE SET NULL);\n      CREATE TABLE IF NOT EXISTS project_memory(project_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,memory_json TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS ai_preferences(user_id TEXT PRIMARY KEY,primary_provider TEXT NOT NULL,chain_json TEXT NOT NULL,default_models_json TEXT,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS api_tokens(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,name TEXT NOT NULL,token_hash TEXT NOT NULL UNIQUE,token_prefix TEXT NOT NULL,created_at TEXT NOT NULL,last_used_at TEXT,revoked_at TEXT,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
-      CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id); CREATE INDEX IF NOT EXISTS idx_workspace_members_user ON workspace_members(user_id,status); CREATE INDEX IF NOT EXISTS idx_workspace_invites_email ON workspace_invites(email,status,expires_at); CREATE INDEX IF NOT EXISTS idx_workspace_approvals_project ON workspace_approvals(project_id,status); CREATE INDEX IF NOT EXISTS idx_project_domains_project ON project_domains(project_id,status); CREATE INDEX IF NOT EXISTS idx_content_revisions_project ON content_revisions(project_id,version); CREATE INDEX IF NOT EXISTS idx_cloud_services_project ON cloud_services(project_id); CREATE INDEX IF NOT EXISTS idx_research_runs_project ON research_runs(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_provider_connections_user ON provider_connections(user_id,provider); CREATE INDEX IF NOT EXISTS idx_deployments_project ON deployments(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_oauth_states_state ON oauth_states(provider,state,expires_at); CREATE INDEX IF NOT EXISTS idx_sessions_project ON sessions(project_id); CREATE INDEX IF NOT EXISTS idx_run_goals_run ON run_goals(run_id);
+      CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id); CREATE INDEX IF NOT EXISTS idx_product_events_user ON product_events(user_id,created_at); CREATE INDEX IF NOT EXISTS idx_product_events_project ON product_events(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_product_events_event ON product_events(event,created_at); CREATE INDEX IF NOT EXISTS idx_workspace_members_user ON workspace_members(user_id,status); CREATE INDEX IF NOT EXISTS idx_workspace_invites_email ON workspace_invites(email,status,expires_at); CREATE INDEX IF NOT EXISTS idx_workspace_approvals_project ON workspace_approvals(project_id,status); CREATE INDEX IF NOT EXISTS idx_project_domains_project ON project_domains(project_id,status); CREATE INDEX IF NOT EXISTS idx_content_revisions_project ON content_revisions(project_id,version); CREATE INDEX IF NOT EXISTS idx_cloud_services_project ON cloud_services(project_id); CREATE INDEX IF NOT EXISTS idx_research_runs_project ON research_runs(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_provider_connections_user ON provider_connections(user_id,provider); CREATE INDEX IF NOT EXISTS idx_deployments_project ON deployments(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_oauth_states_state ON oauth_states(provider,state,expires_at); CREATE INDEX IF NOT EXISTS idx_sessions_project ON sessions(project_id); CREATE INDEX IF NOT EXISTS idx_run_goals_run ON run_goals(run_id);
       CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id); CREATE INDEX IF NOT EXISTS idx_project_content_user ON project_content(user_id); CREATE INDEX IF NOT EXISTS idx_project_assets_project ON project_assets(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_visual_baselines_project ON visual_baselines(project_id,route); CREATE INDEX IF NOT EXISTS idx_agent_tasks_run ON agent_tasks(run_id,status); CREATE INDEX IF NOT EXISTS idx_evidence_run ON evidence(run_id); CREATE INDEX IF NOT EXISTS idx_events_run ON run_events(run_id); CREATE INDEX IF NOT EXISTS idx_runner_nodes_capability ON runner_nodes(capability); CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id); CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id,created_at); CREATE INDEX IF NOT EXISTS idx_ai_preferences_user ON ai_preferences(user_id);
     `);
     const projectCols=this.db.prepare('PRAGMA table_info(projects)').all().map(x=>x.name);
@@ -66,17 +66,19 @@ export class Store{
     const runCols=this.db.prepare('PRAGMA table_info(runs)').all().map(x=>x.name);
     if(!runCols.includes('target_id'))this.db.exec('ALTER TABLE runs ADD COLUMN target_id TEXT');
     const billingCols=this.db.prepare('PRAGMA table_info(billing_accounts)').all().map(x=>x.name);
-    if(!billingCols.includes('video_trial_used'))this.db.exec('ALTER TABLE billing_accounts ADD COLUMN video_trial_used INTEGER DEFAULT 0');
+    if(!billingCols.includes('video_trial_used'))this.db.exec('ALTER TABLE billing_accounts ADD COLUMN video_trial_used INTEGER DEFAULT 0'); if(!billingCols.includes('billing_provider'))this.db.exec("ALTER TABLE billing_accounts ADD COLUMN billing_provider TEXT NOT NULL DEFAULT 'stripe'"); if(!billingCols.includes('provider_customer_id'))this.db.exec('ALTER TABLE billing_accounts ADD COLUMN provider_customer_id TEXT'); if(!billingCols.includes('provider_subscription_id'))this.db.exec('ALTER TABLE billing_accounts ADD COLUMN provider_subscription_id TEXT'); if(!billingCols.includes('provider_transaction_id'))this.db.exec('ALTER TABLE billing_accounts ADD COLUMN provider_transaction_id TEXT');
     const usageCols=this.db.prepare('PRAGMA table_info(usage_events)').all().map(x=>x.name);
     if(!usageCols.includes('estimated_cost_usd'))this.db.exec('ALTER TABLE usage_events ADD COLUMN estimated_cost_usd REAL');
   }
-  createUser(email,passwordHash){const id=randomUUID(),now=this.now();this.db.prepare('INSERT INTO users VALUES (?,?,?,?)').run(id,String(email).toLowerCase(),passwordHash,now);this.db.prepare('INSERT INTO billing_accounts(user_id,plan,status,created_at,updated_at) VALUES (?,?,?,?,?)').run(id,'free','active',now,now);this.ensurePersonalWorkspace(id);return this.getUser(id);}
+  createUser(email,passwordHash){const id=randomUUID(),now=this.now(),billingProvider=String(process.env.CODINGVIBES_BILLING_PROVIDER||'stripe').trim().toLowerCase();this.db.prepare('INSERT INTO users VALUES (?,?,?,?)').run(id,String(email).toLowerCase(),passwordHash,now);this.db.prepare('INSERT INTO billing_accounts(user_id,plan,status,billing_provider,created_at,updated_at) VALUES (?,?,?,?,?,?)').run(id,'free','active',['stripe','paddle'].includes(billingProvider)?billingProvider:'stripe',now,now);this.ensurePersonalWorkspace(id);return this.getUser(id);}
   getUser(id){return this.db.prepare('SELECT id,email,created_at FROM users WHERE id=?').get(id)||null;}
   getUserByEmail(email){return this.db.prepare('SELECT * FROM users WHERE lower(email)=lower(?)').get(email)||null;}
-  getBilling(userId){const x=this.db.prepare('SELECT * FROM billing_accounts WHERE user_id=?').get(userId);if(x)return x;const now=this.now();this.db.prepare('INSERT INTO billing_accounts(user_id,plan,status,created_at,updated_at) VALUES (?,?,?,?,?)').run(userId,'free','active',now,now);return this.db.prepare('SELECT * FROM billing_accounts WHERE user_id=?').get(userId);}
-  updateBilling(userId,patch={}){const current=this.getBilling(userId),fields=[],vals=[];for(const k of ['plan','status','stripe_customer_id','stripe_subscription_id','current_period_end','cancel_at_period_end'])if(k in patch){fields.push(`${k}=?`);vals.push(patch[k]);}if(!fields.length)return current;fields.push('updated_at=?');vals.push(this.now(),userId);this.db.prepare(`UPDATE billing_accounts SET ${fields.join(',')} WHERE user_id=?`).run(...vals);return this.getBilling(userId);}
+  getBilling(userId){const x=this.db.prepare('SELECT * FROM billing_accounts WHERE user_id=?').get(userId);if(x)return x;const now=this.now(),billingProvider=String(process.env.CODINGVIBES_BILLING_PROVIDER||'stripe').trim().toLowerCase();this.db.prepare('INSERT INTO billing_accounts(user_id,plan,status,billing_provider,created_at,updated_at) VALUES (?,?,?,?,?,?)').run(userId,'free','active',['stripe','paddle'].includes(billingProvider)?billingProvider:'stripe',now,now);return this.db.prepare('SELECT * FROM billing_accounts WHERE user_id=?').get(userId);}
+  updateBilling(userId,patch={}){const current=this.getBilling(userId),fields=[],vals=[];for(const k of ['plan','status','billing_provider','stripe_customer_id','stripe_subscription_id','provider_customer_id','provider_subscription_id','provider_transaction_id','current_period_end','cancel_at_period_end'])if(k in patch){fields.push(`${k}=?`);vals.push(patch[k]);}if(!fields.length)return current;fields.push('updated_at=?');vals.push(this.now(),userId);this.db.prepare(`UPDATE billing_accounts SET ${fields.join(',')} WHERE user_id=?`).run(...vals);return this.getBilling(userId);}
   getBillingBySubscription(subscriptionId){return this.db.prepare('SELECT * FROM billing_accounts WHERE stripe_subscription_id=?').get(subscriptionId)||null;}
   getBillingByCustomer(customerId){return this.db.prepare('SELECT * FROM billing_accounts WHERE stripe_customer_id=?').get(customerId)||null;}
+  getBillingByProviderSubscription(provider,subscriptionId){return this.db.prepare('SELECT * FROM billing_accounts WHERE billing_provider=? AND provider_subscription_id=?').get(String(provider),String(subscriptionId))||null;}
+  getBillingByProviderCustomer(provider,customerId){return this.db.prepare('SELECT * FROM billing_accounts WHERE billing_provider=? AND provider_customer_id=?').get(String(provider),String(customerId))||null;}
   hasBillingEvent(id){return Boolean(this.db.prepare('SELECT id FROM billing_events WHERE id=?').get(id));}
   recordBillingEvent(id,eventType,payloadHash){this.db.prepare('INSERT OR IGNORE INTO billing_events(id,event_type,payload_hash,received_at) VALUES (?,?,?,?)').run(String(id),String(eventType),String(payloadHash),this.now());return true;}
   consumeVideoTrial(userId){const r=this.db.prepare("UPDATE billing_accounts SET video_trial_used=1,updated_at=? WHERE user_id=? AND plan='free' AND COALESCE(video_trial_used,0)=0").run(this.now(),userId);return Number(r.changes||0)>0;}
@@ -190,6 +192,73 @@ export class Store{
   recordArtifact(runId,{type='binary',path,size=0,sha256,storedPath=null,url=null}){const id=randomUUID();this.db.prepare('INSERT INTO artifacts(id,run_id,type,path,size,sha256,stored_path,url,created_at) VALUES (?,?,?,?,?,?,?,?,?)').run(id,runId,String(type),String(path),Number(size)||0,String(sha256||''),storedPath,url,this.now());return this.getArtifact(id);}
   getArtifact(id){return this.db.prepare('SELECT * FROM artifacts WHERE id=?').get(id)||null;}
   listArtifacts(runId){return this.db.prepare('SELECT * FROM artifacts WHERE run_id=? ORDER BY created_at').all(runId);}
+  purgeOldProductEvents(days=90){
+    const cutoff=new Date(Date.now()-Math.max(1,Number(days)||90)*864e5).toISOString();
+    return this.db.prepare('DELETE FROM product_events WHERE created_at < ?').run(cutoff).changes;
+  }
+  purgeOldAuditLogs(days=3650){
+    const cutoff=new Date(Date.now()-Math.max(1,Number(days)||3650)*864e5).toISOString();
+    return this.db.prepare('DELETE FROM audit_logs WHERE created_at < ?').run(cutoff).changes;
+  }
+  recordProductEvent({userId=null,projectId=null,sessionId=null,event,properties={}}={}){
+    const id=randomUUID(),now=this.now();
+    const text=JSON.stringify(properties&&typeof properties==='object'&&!Array.isArray(properties)?properties:{});
+    if(Buffer.byteLength(text,'utf8')>20000)throw new Error('product_event_too_large');
+    this.db.prepare('INSERT INTO product_events(id,user_id,project_id,session_id,event,properties_json,created_at) VALUES (?,?,?,?,?,?,?)').run(id,userId,projectId,sessionId,String(event),text,now);
+    return this.getProductEvent(id);
+  }
+  getProductEvent(id){
+    const x=this.db.prepare('SELECT * FROM product_events WHERE id=?').get(id);
+    return x?{...x,properties:x.properties_json?JSON.parse(x.properties_json):{}}:null;
+  }
+  listProductEvents({userId=null,projectId=null,event=null,limit=200}={}){
+    const safeLimit=Math.min(Math.max(Number(limit)||200,1),1000),where=[],vals=[];
+    if(userId){where.push('user_id=?');vals.push(userId);} if(projectId){where.push('project_id=?');vals.push(projectId);} if(event){where.push('event=?');vals.push(event);}
+    const sql='SELECT * FROM product_events'+(where.length?' WHERE '+where.join(' AND '):'')+' ORDER BY created_at DESC LIMIT ?';vals.push(safeLimit);
+    return this.db.prepare(sql).all(...vals).map(x=>({...x,properties:x.properties_json?JSON.parse(x.properties_json):{}}));
+  }
+  productAnalyticsSummary({projectId=null,since=null,limit=10000}={}){
+    const rows=this.listProductEvents({projectId,limit});
+    const filtered=since?rows.filter(x=>x.created_at>=since):rows;
+    const events={};for(const row of filtered)events[row.event]=(events[row.event]||0)+1;
+    return{total:filtered.length,events:Object.entries(events).sort((a,b)=>b[1]-a[1]).map(([event,count])=>({event,count})),since:since||null};
+  }
+  getFeatureFlag(key){
+    const x=this.db.prepare('SELECT * FROM feature_flags WHERE key=?').get(String(key||'').toLowerCase());
+    return x?{...x,environments:x.environments_json?JSON.parse(x.environments_json):[],config:x.config_json?JSON.parse(x.config_json):{},enabled:Boolean(x.enabled),kill_switch:Boolean(x.kill_switch)}:null;
+  }
+  listFeatureFlags(){
+    return this.db.prepare('SELECT * FROM feature_flags ORDER BY key').all().map(x=>({...x,environments:x.environments_json?JSON.parse(x.environments_json):[],config:x.config_json?JSON.parse(x.config_json):{},enabled:Boolean(x.enabled),kill_switch:Boolean(x.kill_switch)}));
+  }
+  upsertFeatureFlag(actorUserId,{key,enabled=true,rolloutPercentage=100,environments=['development','staging','production'],killSwitch=false,config={}}={}){
+    const cleanKey=String(key||'').trim().toLowerCase();if(!/^[a-z0-9][a-z0-9_.:-]{1,100}$/.test(cleanKey))throw new Error('invalid_feature_flag_key');
+    const rollout=Math.min(100,Math.max(0,Number(rolloutPercentage)||0)),env=[...new Set((Array.isArray(environments)?environments:[]).map(x=>String(x).toLowerCase()).filter(x=>['development','staging','production','test'].includes(x)))];
+    const safeEnv=env.length?env:['development','staging','production'],safeConfig=config&&typeof config==='object'&&!Array.isArray(config)?config:{},now=this.now();
+    this.db.prepare('INSERT INTO feature_flags(key,enabled,rollout_percentage,environments_json,kill_switch,config_json,updated_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(key) DO UPDATE SET enabled=excluded.enabled,rollout_percentage=excluded.rollout_percentage,environments_json=excluded.environments_json,kill_switch=excluded.kill_switch,config_json=excluded.config_json,updated_by=excluded.updated_by,updated_at=excluded.updated_at').run(cleanKey,enabled?1:0,rollout,JSON.stringify(safeEnv),killSwitch?1:0,JSON.stringify(safeConfig),actorUserId,now,now);
+    return this.getFeatureFlag(cleanKey);
+  }
+  getProjectMemory(projectId,userId){
+    if(!this.getProject(projectId,userId))return null;
+    const row=this.db.prepare('SELECT * FROM project_memory WHERE project_id=?').get(projectId);
+    return row?JSON.parse(row.memory_json||'{}'):{};
+  }
+  setProjectMemory(projectId,userId,memory={}){
+    if(!this.getProject(projectId,userId))throw new Error('project_not_found');
+    const sanitize=(value,depth=0)=>{
+      if(depth>5)return '[depth-limited]';
+      if(Array.isArray(value))return value.slice(0,100).map(x=>sanitize(x,depth+1));
+      if(value&&typeof value==='object'){const out=Object.create(null);for(const [k,v] of Object.entries(value).slice(0,100)){if(k==='__proto__'||k==='constructor'||k==='prototype'||/token|secret|password|api[-_]?key|authorization|cookie|credential|private[-_]?key/i.test(k))continue;out[String(k).slice(0,100)]=sanitize(v,depth+1);}return out;}
+      return typeof value==='string'?value.slice(0,4000):value;
+    };
+    const clean=sanitize(memory),encoded=JSON.stringify(clean);if(Buffer.byteLength(encoded,'utf8')>65536)throw new Error('project_memory_too_large');
+    const existing=this.db.prepare('SELECT version FROM project_memory WHERE project_id=?').get(projectId),version=Number(existing?.version||0)+1,now=this.now();
+    this.db.prepare('INSERT INTO project_memory(project_id,user_id,memory_json,version,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(project_id) DO UPDATE SET user_id=excluded.user_id,memory_json=excluded.memory_json,version=excluded.version,updated_at=excluded.updated_at').run(projectId,userId,encoded,version,now);
+    return this.getProjectMemory(projectId,userId);
+  }
+  appendProjectMemory(projectId,userId,key,value){
+    const current=this.getProjectMemory(projectId,userId)||{},list=Array.isArray(current[key])?current[key].slice():[];
+    list.push(value);current[key]=list.slice(-100);return this.setProjectMemory(projectId,userId,current);
+  }
   addAuditLog({actorUserId=null,action,resourceType,resourceId=null,metadata={}}={}){const id=randomUUID();this.db.prepare('INSERT INTO audit_logs(id,actor_user_id,action,resource_type,resource_id,metadata_json,created_at) VALUES (?,?,?,?,?,?,?)').run(id,actorUserId,String(action),String(resourceType),resourceId,JSON.stringify(metadata&&typeof metadata==='object'?metadata:{}),this.now());return this.getAuditLog(id);}
   getAuditLog(id){const x=this.db.prepare('SELECT * FROM audit_logs WHERE id=?').get(id);return x?{...x,metadata:x.metadata_json?JSON.parse(x.metadata_json):{}}:null;}
   listAuditLogs({actorUserId=null,limit=200}={}){const safeLimit=Math.min(Math.max(Number(limit)||200,1),1000);const rows=actorUserId?this.db.prepare('SELECT * FROM audit_logs WHERE actor_user_id=? ORDER BY created_at DESC LIMIT ?').all(actorUserId,safeLimit):this.db.prepare('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ?').all(safeLimit);return rows.map(x=>({...x,metadata:x.metadata_json?JSON.parse(x.metadata_json):{}}));}

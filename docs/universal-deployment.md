@@ -46,3 +46,9 @@ Editing a project does not require changing the generated application's source a
 
 ## Adding a provider
 Implement a provider inside src/deployment/providers.js and keep provider API, auth, status and error handling there. The builder should continue calling deployProject({ project, provider, options }) rather than provider-specific functions.
+
+## Verification and attestation
+
+Deployment now validates provider/target compatibility before calling the provider adapter and records an artifact attestation containing the release version, source commit when available, target, artifact fingerprint and verification scope. Cryptographic signatures require CODINGVIBES_ATTESTATION_SECRET; unsigned state is explicitly reported as UNSIGNED.
+
+Use npm run deployment:preflight to distinguish PASS, BLOCKED and NOT_CONFIGURED states before a provider call.
