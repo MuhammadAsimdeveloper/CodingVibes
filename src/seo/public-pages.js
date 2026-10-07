@@ -34,16 +34,17 @@ const PAGES={
     extraLinks:[['AI website builder','/ai-website-builder'],['3D website builder','/3d-website-builder'],['SaaS app builder','/saas-app-builder'],['Ecommerce website builder','/ecommerce-website-builder']]
   },
   '/pricing':{
-    title:'Build Vibe Pricing | Free, Pro & Team',
-    description:'See Build Vibe pricing for Free, Pro and Team plans, including generation capacity, advanced motion, deployment and collaborative workflows.',
+    title:'Build Vibe Pricing | Free, Pro, Team & Business',
+    description:'See Build Vibe pricing for Free, Pro, Team and Business plans, including exact free website entitlements, 3D, animation, APK access, deployment and collaboration.',
     eyebrow:'PRICING',
-    intro:'Build Vibe keeps the core product-builder workflow accessible while higher plans add capacity and advanced production features.',
+    intro:'Build Vibe keeps the first product experiences accessible, then scales AI, 3D, native app and collaboration capacity as your needs grow.',
     sections:[
-      ['Free — $0/month','The Free plan is designed for exploring the builder, generating core experiences, previewing work and learning the verified product workflow. Exact usage limits are enforced by the application plan configuration.'],
-      ['Pro — $7/month','Pro adds higher capacity plus advanced motion, media, deployment and SEO-oriented capabilities. Use it when your builds need richer experiences and more production workflows.'],
-      ['Team — $15/month','Team is designed for collaborative product work with more capacity and team-ready workflows. Project permissions, approvals and auditability remain part of the platform model.'],
-      ['Usage and infrastructure','Model inference, third-party services, browser verification and external cloud infrastructure can introduce provider-specific limits or costs. Build Vibe does not promise unlimited third-party usage just because a plan exists.'],
-      ['Verified output','Every plan keeps the same product principle: generated work should be inspectable and verification-gated before an explicit commit or deployment.']
+      ['Free — $0/month','Each Free account can create 3 basic websites, 1 animated website and 1 3D website. Native Android/APK creation is not available on Free. Assistant chat, project history, design mode, preview and verification remain part of the free experience.'],
+      ['Pro — $7/month','Pro adds 25 basic, 25 animated, 10 3D and 10 APK/native-app creations in the configured entitlement window, plus higher AI capacity, advanced SEO, AI video, deployment and custom domains.'],
+      ['Team — $15/month','Team adds 100 basic, 100 animated, 50 3D and 40 APK/native-app creations, plus workspace roles, approvals, audit and higher collaborative capacity.'],
+      ['Business — $39/month','Business is designed for agencies and growing teams with 500 basic, 500 animated, 200 3D and 100 APK/native-app creations plus higher AI capacity and scale-out controls.'],
+      ['Usage and infrastructure','Plans control Build Vibe entitlements and application capacity. Model inference, browser verification, 3D/video providers and external hosting can have their own provider-specific limits and costs.'],
+      ['Verified output','Every plan keeps the same product principle: generated work must remain inspectable and pass the configured verification/review path before an explicit commit or deployment.']
     ],
     extraLinks:[['Features','/features'],['How it works','/how-it-works'],['FAQ','/faq']]
   },
