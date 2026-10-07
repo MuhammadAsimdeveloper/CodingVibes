@@ -46,6 +46,19 @@ Build Vibe now ships a crawlable public content layer, absolute runtime canonica
 
 SEO remains people-first: useful original content and clean site architecture are prioritized over keyword stuffing or mass-generated landing pages. Run `npm run launch:check` to verify the public SEO routes and sitemap contract. See `docs/SEO.md` for the full ranking/discovery system.
 
+## Local PostgreSQL setup
+
+Build Vibe includes a laptop PostgreSQL profile with Adminer for inspection. The safest development path is to keep SQLite as the default synchronous Store and use PostgreSQL through the explicit scale-out adapter until a full schema migration is completed.
+
+```bash
+npm install
+npm run db:postgres:up
+npm run db:postgres:setup
+npm run db:postgres:doctor
+```
+
+Copy `.env.postgres.local.example` to `.env.postgres.local` when you want the PostgreSQL connection to be auto-loaded. PostgreSQL is exposed on `127.0.0.1:5432`; Adminer is available at `http://127.0.0.1:8080`. For a hosted free PostgreSQL option, Supabase or Neon can be used by replacing `DATABASE_URL` and enabling the PostgreSQL profile.
+
 ## Scale-out production foundation
 
 The repository now includes optional PostgreSQL, S3-compatible object storage, and Redis Streams adapters plus a PostgreSQL outbox repository, durable worker, outbox relay, production compose reference stack, and `npm run scaleout:doctor` validation.
