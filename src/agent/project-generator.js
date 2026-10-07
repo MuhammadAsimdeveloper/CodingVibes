@@ -21,15 +21,16 @@ function llmsTxt(spec){const publicPages=spec.pages.filter(p=>!['/admin','/login
 function experienceMarkup(spec){
  if(!spec.experience?.threeD)return '';
  const property=spec.experience.type==='property-tour';
- return '<section class="experience-wrap card" data-reveal aria-label="'+(property?'Interactive 3D property tour':'Interactive 3D experience')+'">'+
- '<div class="experience-toolbar"><strong>'+(property?'Explore the home':'Explore in 3D')+'</strong><div class="experience-actions">'+
- '<button id="tourPlay" type="button">Camera tour</button><button id="tourRecord" type="button">Record tour</button>'+
+ const product=spec.siteKind==='ecommerce'||spec.experience.type==='product-3d';
+ return '<section class="experience-wrap card" data-reveal aria-label="'+(property?'Interactive 3D property tour':product?'Interactive 3D product experience':'Interactive 3D experience')+'">'+
+ '<div class="experience-toolbar"><strong>'+(property?'Explore the home':product?'Explore the product':'Explore in 3D')+'</strong><div class="experience-actions">'+
+ '<button id="tourPlay" type="button">Camera tour</button><button id="tourRecord" type="button">Record tour</button><button id="motionToggle" type="button" aria-pressed="false">Immersive motion</button>'+
  '<label class="file-button">Load 3D model<input id="modelInput" type="file" accept=".glb,.gltf" hidden></label></div></div>'+
- '<div class="experience-stage" data-property-tour="'+(property?'true':'false')+'"><canvas id="experience3d" aria-label="Interactive 3D scene"></canvas>'+
+ '<div class="experience-stage" data-property-tour="'+(property?'true':'false')+'" data-product-experience="'+(product?'true':'false')+'"><canvas id="experience3d" aria-label="Interactive 3D scene"></canvas>'+
  '<div id="experienceFallback" class="experience-fallback">3D is loading. Your content remains available below.</div>'+
  '<div class="hotspots" data-experience-hotspots>'+ (property?'<button type="button" data-room="Living">Living room</button><button type="button" data-room="Kitchen">Kitchen</button><button type="button" data-room="Bedroom">Bedroom</button>':'') +'</div>'+
  '</div>'+
- (property?'<div class="tour-media"><div><h3>Video walkthrough</h3><p class="muted">Add an MP4/WebM tour or use the camera-tour recording.</p><label class="file-button" for="videoInput">Load walkthrough video</label><input id="videoInput" type="file" accept="video/mp4,video/webm" aria-label="Upload walkthrough video"></div><video id="tourVideo" controls playsinline preload="metadata"></video></div>':'')+
+ (product?'<div class="tour-media product-media"><div><h3>Product media</h3><div id="productMediaStrip" class="media-strip"></div></div><video id="productVideo" controls playsinline preload="metadata" aria-label="Product video"></video><div id="data-product-variants" class="variant-controls"><strong>Finish & variants</strong><div id="productVariantSwatches" class="variant-swatches"></div></div></div>':property?'<div class="tour-media"><div><h3>Video walkthrough</h3><p class="muted">Add an MP4/WebM tour or use the camera-tour recording.</p><label class="file-button" for="videoInput">Load walkthrough video</label><input id="videoInput" type="file" accept="video/mp4,video/webm" aria-label="Upload walkthrough video"></div><video id="tourVideo" controls playsinline preload="metadata"></video></div>':'')+
  '</section><script type="module" src="/experience.js"></script>';
 }
 function contentSections(spec){
