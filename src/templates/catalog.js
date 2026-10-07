@@ -70,12 +70,100 @@ const TEMPLATES=[
 
 const MOTION_BY_STYLE={luxury:{mode:'luxury',scroll:'cinematic-reveal',reveal:'soft-clip',hover:'magnetic',transition:'shared-layout'},editorial:{mode:'editorial',scroll:'chapter',reveal:'split-and-clip',hover:'underline-lift',transition:'shared-layout'},futuristic:{mode:'cinematic',scroll:'depth',reveal:'glow-and-scale',hover:'magnetic',transition:'shared-layer'},playful:{mode:'playful',scroll:'story',reveal:'spring',hover:'tilt',transition:'shared-layout'},minimal:{mode:'smooth',scroll:'subtle',reveal:'fade-up',hover:'lift',transition:'shared-layout'},bold:{mode:'snappy',scroll:'snap-story',reveal:'wipe',hover:'magnetic',transition:'shared-layout'},retro:{mode:'playful',scroll:'chapter',reveal:'wipe',hover:'tilt',transition:'shared-layout'},brutalist:{mode:'snappy',scroll:'hard-cut',reveal:'hard-cut',hover:'contrast',transition:'instant'},modern:{mode:'smooth',scroll:'story',reveal:'clip-and-fade',hover:'magnetic',transition:'shared-layout'}};
 function motionProfile(t){const base=MOTION_BY_STYLE[t.style]||MOTION_BY_STYLE.modern;const immersive=t.experience==='3d';return immersive?{...base,mode:'cinematic',scroll:'camera-story',reveal:'depth',hover:'focus',transition:'shared-camera',scene:true,webglFallback:true}:{...base,scene:false,webglFallback:false};}
-function publicTemplate(t){return {...t,motion:motionProfile(t),features:[...t.features],prompt:undefined,tags:[...t.tags]};}
+
+const QUALITY_BY_KIND={
+  ecommerce:['catalog/product states','cart and checkout','inventory/availability','search and filtering'],
+  marketplace:['vendor/listing states','catalog/product states','cart and checkout','search and filtering'],
+  hospitality:['booking/availability states','gallery/media fallbacks','contact/conversion path'],
+  realEstate:['search and filtering','property detail states','lead/contact flow'],
+  education:['course discovery','enrollment flow','accessible reading states'],
+  event:['schedule/registration states','speaker/event content','responsive navigation'],
+  content:['draft/publish content workflow','search and filtering','reading accessibility'],
+  portfolio:['case-study storytelling','media fallbacks','contact/conversion path'],
+  agency:['services/case studies','lead/contact flow','team/content states'],
+  local:['service-area content','quote/booking flow','review/testimonial states'],
+  immersive:['user-controlled immersive interactions','WebGL fallback','media fallbacks'],
+  business:['service/content states','lead/contact flow','owner admin surface']
+};
+
+function templateQuality(t){
+  const surfaces=['/','/about','/contact','/privacy','/terms'];
+  if(['ecommerce','marketplace'].includes(t.kind))surfaces.push('/shop','/collections','/cart','/checkout');
+  if(t.kind==='hospitality')surfaces.push('/booking');
+  if(t.kind==='realEstate')surfaces.push('/properties');
+  if(t.kind==='education')surfaces.push('/courses');
+  if(t.kind==='content')surfaces.push('/blog');
+  if(t.kind==='event')surfaces.push('/schedule');
+  if(['portfolio','agency'].includes(t.kind))surfaces.push('/work');
+  if(t.experience==='3d')surfaces.push('/experience');
+  const requiredFeatures=['responsive UI','accessible navigation and forms','reduced-motion support','SEO metadata and canonical URL','local assets/runtime','local content/data editing',...(QUALITY_BY_KIND[t.kind]||QUALITY_BY_KIND.business)];
+  return {
+    version:'template-quality.v2',
+    providerIndependent:true,
+    qualityTier:t.experience==='3d'?'immersive':'production',
+    requiredStates:['loading','empty','error','success'],
+    requiredSurfaces:[...new Set(surfaces)],
+    requiredFeatures:[...new Set(requiredFeatures)],
+    motion:t.motion?.mode||null,
+    webglFallback:Boolean(t.experience==='3d'),
+    localRuntime:true
+  };
+}
+
+function templateCapabilities(t){
+  const out=['responsive','accessible','seo','local-runtime','content-editing'];
+  if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(t.kind))out.push('admin','contact');
+  if(['ecommerce','marketplace'].includes(t.kind))out.push('catalog','cart','checkout','inventory','filters');
+  if(t.kind==='marketplace')out.push('vendors');
+  if(t.kind==='hospitality')out.push('booking','calendar');
+  if(t.kind==='realEstate')out.push('property-search','3d-ready');
+  if(t.kind==='education')out.push('courses','enrollment');
+  if(t.kind==='content')out.push('authors','search');
+  if(t.kind==='event')out.push('schedule','registration');
+  if(t.experience==='3d')out.push('webgl-fallback','camera-story');
+  if(t.experience==='motion')out.push('scroll-motion','microinteractions');
+  return [...new Set(out)];
+}
+
+function publicTemplate(t){
+  const motion=motionProfile(t);
+  const base={...t,motion,features:[...t.features],tags:[...t.tags]};
+  return {...base,qualityContract:templateQuality({...base,motion}),capabilities:templateCapabilities(t),prompt:undefined};
+}
 
 export function listTemplates(){return TEMPLATES.map(publicTemplate);}
 export function getTemplate(id){const t=TEMPLATES.find(t=>t.id===String(id));return t?publicTemplate(t):null;}
 export function searchTemplates(query='',{category='',kind='',experience='',tier='',featured=false,limit=80}={}){
- const q=String(query).toLowerCase().trim(),c=String(category).toLowerCase().trim(),k=String(kind).toLowerCase().trim(),e=String(experience).toLowerCase().trim(),ti=String(tier).toLowerCase().trim();
- return listTemplates().filter(t=>(!c||t.category.toLowerCase()===c||t.tags.some(x=>x.toLowerCase()===c))&&(!k||t.kind.toLowerCase()===k)&&(!e||t.experience.toLowerCase()===e)&&(!ti||t.tier===ti)&&(!featured||t.featured)&&(!q||[t.label,t.category,t.kind,t.experience,t.style,...t.tags].join(' ').toLowerCase().includes(q))).slice(0,Math.max(1,Math.min(Number(limit)||80,100)));
+  const q=String(query).toLowerCase().trim(),tokens=q.split(/\s+/).filter(Boolean);
+  const c=String(category).toLowerCase().trim(),k=String(kind).toLowerCase().trim(),e=String(experience).toLowerCase().trim(),ti=String(tier).toLowerCase().trim();
+  const filtered=listTemplates().filter(t=>
+    (!c||t.category.toLowerCase()===c||t.tags.some(x=>x.toLowerCase()===c))&&
+    (!k||t.kind.toLowerCase()===k)&&
+    (!e||t.experience.toLowerCase()===e)&&
+    (!ti||t.tier===ti)&&
+    (!featured||t.featured)
+  );
+  const ranked=filtered.map((t,index)=>{
+    const hay=[t.label,t.category,t.kind,t.experience,t.style,...t.tags,...t.capabilities].join(' ').toLowerCase();
+    let score=0;
+    for(const token of tokens){
+      if(t.label.toLowerCase()===token)score+=30;
+      if(t.label.toLowerCase().includes(token))score+=12;
+      if(t.tags.some(x=>x.toLowerCase()===token))score+=10;
+      if(t.kind.toLowerCase()===token)score+=8;
+      if(t.experience.toLowerCase()===token)score+=8;
+      if(t.capabilities.some(x=>x===token))score+=7;
+      if(hay.includes(token))score+=2;
+    }
+    if(tokens.length&&t.featured)score+=1;
+    if(!tokens.length&&t.featured)score+=1;
+    return {t,index,score};
+  }).sort((a,b)=>b.score-a.score||a.index-b.index);
+  return ranked.slice(0,Math.max(1,Math.min(Number(limit)||80,100))).map(x=>x.t);
 }
-export function templatePrompt(id){const t=getTemplate(id);return t?t.prompt:'';}
+export function templatePrompt(id){
+  const t=TEMPLATES.find(t=>t.id===String(id));
+  if(!t)return '';
+  const quality=templateQuality({...t,motion:motionProfile(t)});
+  return t.prompt+'\n\nQuality contract: '+quality.requiredFeatures.join(', ')+'. Core runtime must remain provider-independent and degrade gracefully when optional integrations are unavailable.';
+}

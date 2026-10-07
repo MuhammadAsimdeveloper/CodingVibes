@@ -2,6 +2,7 @@ import {hash} from '../core/hash.js';
 import {inferTarget} from '../targets/registry.js';
 import {inferDesignSystem} from './design-system.js';
 import {kitForKind,SITE_KITS} from '../site/kits.js';
+import {buildQualityContract} from './product-quality.js';
 const clean=s=>String(s??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,' ').trim();
 const has=(s,...xs)=>xs.some(x=>s.includes(x.toLowerCase()));
 const titleize=s=>String(s).split(/[-_\s]+/).filter(Boolean).map(x=>x[0]?.toUpperCase()+x.slice(1)).join('');
@@ -17,13 +18,22 @@ export function completeSpec(raw={}){
  if(kind!=='immersive') addPage('/contact');
  if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind)) addPage('/about');
  if(['ecommerce','marketplace'].includes(kind)){addPage('/shop');addPage('/collections');addPage('/cart');addPage('/checkout');addPage('/account');addApi('GET','/api/products');addApi('POST','/api/orders')};
- if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments')};
- if(/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(String(spec.request||''))){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');behavior.authentication=true;behavior.publicLogin=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup')};
+ if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments');behavior.booking=true;}
+ const requestText=String(spec.request||'');
+ const productKinds=Array.isArray(spec.productKinds)?spec.productKinds:[];
+ const saasLike=/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(requestText)||productKinds.includes('saas');
+ if(saasLike){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');addPage('/settings');behavior.authentication=true;behavior.publicLogin=true;behavior.providerOptional=true;behavior.localFirstAuth=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup');}
+ if(kind==='marketplace'){addPage('/vendors');behavior.catalog=true;behavior.search=true;}
+ if(kind==='content'){addPage('/blog');behavior.cms=true;behavior.search=true;}
+ if(kind==='education'){addPage('/courses');behavior.search=true;}
+ if(kind==='event')addPage('/schedule');
+ if(kind==='realEstate')addPage('/properties');
  if(behavior.payments){addPage('/checkout');addApi('POST','/api/orders')};
  behavior.contactForm=true; addApi('POST','/api/contact');
- behavior.legalPages=true; behavior.launchReadyDefaults=true;
- const autoCompleted=[...new Set([...(Array.isArray(spec.autoCompleted)?spec.autoCompleted:[]),'responsive UI','accessible focus and form states','contact/conversion path','privacy and terms pages','SEO metadata and sitemap','owner admin surface'])];
- return {...spec,pages,apis,behavior,autoCompleted};
+ behavior.legalPages=true; behavior.launchReadyDefaults=true; behavior.localFirstRuntime=true; behavior.externalProvidersOptional=true;
+ const autoCompleted=[...new Set([...(Array.isArray(spec.autoCompleted)?spec.autoCompleted:[]),'responsive UI','accessible focus and form states','loading/empty/error/success states','contact/conversion path','privacy and terms pages','SEO metadata and sitemap','owner admin surface','provider-independent runtime'])];
+ const qualityContract=buildQualityContract({...spec,pages,behavior});
+ return {...spec,pages,apis,behavior,qualityContract,autoCompleted};
 }
 
 export function analyzeRequirements(request,{targetId='auto'}={}){
@@ -33,7 +43,7 @@ export function analyzeRequirements(request,{targetId='auto'}={}){
  const inferredKind=templateMeta?.kind||(['shopify','ecommerce','online store','retail','catalog','products','checkout'].some(x=>lower.includes(x))?'ecommerce':['marketplace','multi-vendor'].some(x=>lower.includes(x))?'marketplace':['portfolio','personal site','photographer'].some(x=>lower.includes(x))?'portfolio':['agency','studio','creative agency'].some(x=>lower.includes(x))?'agency':['real estate','property','property developer','listing'].some(x=>lower.includes(x))?'realEstate':['restaurant','hotel','resort','hospitality','cafe'].some(x=>lower.includes(x))?'hospitality':['course','academy','education','learning'].some(x=>lower.includes(x))?'education':['blog','magazine','article','content'].some(x=>lower.includes(x))?'content':['conference','event','speaker'].some(x=>lower.includes(x))?'event':['immersive','3d site','3d experience','webgl'].some(x=>lower.includes(x))?'immersive':['local service','contractor','plumber','clinic','gym'].some(x=>lower.includes(x))?'local':'business');
  const siteKind=SITE_KITS[inferredKind]?inferredKind:'business';const siteKit=kitForKind(siteKind);
  const type=has(lower,'dashboard','saas','portal','admin')?'dashboard':has(lower,'shop','store','ecommerce','commerce','checkout')?'commerce':has(lower,'blog','article','cms')?'content':'webapp';
- const publicLogin=has(lower,'login','sign in','signin','authentication','google login');
+ const publicLogin=has(lower,'login','sign in','signin','authentication','google login'); const googleLogin=has(lower,'google login','google oauth','continue with google');
  const pages=['/','/admin'];
  if(['ecommerce','marketplace'].includes(siteKind)){pages.push('/shop','/collections','/cart');if(has(lower,'account','login'))pages.push('/account');}
  if(siteKind==='portfolio'||siteKind==='agency')pages.push('/work');
@@ -67,7 +77,7 @@ export function analyzeRequirements(request,{targetId='auto'}={}){
   typography:has(lower,'serif','editorial','display font','monospace','typewriter')?'custom':'system',
   density:has(lower,'dense','compact')?'dense':has(lower,'airy','spacious')?'airy':'comfortable'
  };
- const behavior={authentication:publicLogin,publicLogin,googleLogin:publicLogin,adminPortal:true,ownerOnlyAdmin:true,adminPersistence:'project-file',payments:has(lower,'payment','checkout','purchase'),catalog:['ecommerce','marketplace'].includes(siteKind),cart:['ecommerce','marketplace'].includes(siteKind),inventory:has(lower,'inventory','stock','availability'),wishlist:has(lower,'wishlist','save for later'),cms:has(lower,'cms','content','blog'),paymentProvider,realtime:has(lower,'realtime','live','chat'),search:has(lower,'search','filter'),offline:has(lower,'offline','pwa'),camera:has(lower,'camera','scan','barcode','qr'),location:has(lower,'location','gps','geolocation','map'),notifications:has(lower,'notification','push notification'),files:has(lower,'upload','download','file'),biometrics:has(lower,'biometric','fingerprint','face id')};
+ const behavior={authentication:publicLogin,publicLogin,googleLogin,adminPortal:true,ownerOnlyAdmin:true,adminPersistence:'project-file',payments:has(lower,'payment','checkout','purchase'),catalog:['ecommerce','marketplace'].includes(siteKind),cart:['ecommerce','marketplace'].includes(siteKind),inventory:has(lower,'inventory','stock','availability'),wishlist:has(lower,'wishlist','save for later'),cms:has(lower,'cms','content','blog'),paymentProvider,realtime:has(lower,'realtime','live','chat'),search:has(lower,'search','filter'),offline:has(lower,'offline','pwa'),camera:has(lower,'camera','scan','barcode','qr'),location:has(lower,'location','gps','geolocation','map'),notifications:has(lower,'notification','push notification'),files:has(lower,'upload','download','file'),biometrics:has(lower,'biometric','fingerprint','face id')};
  const transformExisting=/\b(transform|convert|turn|redesign|upgrade|animate|make it animated|make this site 3d)\b/.test(lower) && /\b(existing|current|this site|website)\b/.test(lower);
  const propertyTour=(has(lower,'real estate','property','house','home','villa','apartment')&&has(lower,'3d','three.js','virtual tour','walkthrough','floor plan'));
  const videoPlayback=has(lower,'video playback','video tour','video walkthrough','mp4','webm','trailer');
@@ -78,7 +88,8 @@ export function analyzeRequirements(request,{targetId='auto'}={}){
  const styling={tone:visual.style==='minimal'?'minimal':visual.style==='bold'?'bold':'modern',responsive:true,accessibility:true,reducedMotion:true,darkMode:has(lower,'dark','dark mode'),visual,designSystem:inferDesignSystem(text,visual)};
  const deliverables=[...target.artifactTypes];
  const acceptance=[...pages.map(p=>`Page ${p} loads successfully`),'Owner admin portal is present and owner-only','Admin content can be viewed and edited without rewriting the visual template',...apis.map(a=>`${a.method} ${a.path} responds successfully`),'No uncaught browser console errors','No failed preview requests','Keyboard navigation and visible focus states work','Primary content remains usable when optional visual effects fail',`Target ${target.id} is represented by the expected project structure`];
- if(publicLogin)acceptance.push('Public login uses the Google OAuth flow and keeps Google client secrets server-side');
+ if(publicLogin)acceptance.push('Public login works with the built-in provider-neutral session/auth boundary and keeps optional identity-provider secrets server-side');
+ if(googleLogin)acceptance.push('Optional Google OAuth keeps Google client secrets server-side and fails closed when not configured');
  if(behavior.payments)acceptance.push('Payment flow never accepts raw card data on the application server','Checkout/payment provider credentials remain server-side','Payment completion is verified through provider webhook or server confirmation');
  if(visual.animation)acceptance.push('Motion respects prefers-reduced-motion and avoids blocking page content');
  if(visual.threeD)acceptance.push('3D/immersive visual layer loads without uncaught runtime errors and degrades when WebGL is unavailable');

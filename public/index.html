@@ -13,7 +13,7 @@
 </head>
 <body>
 <div id="authView" class="cv-login hidden">
-  <div class="cv-logo">Build <span>Vibe</span></div><h2>Build anything.</h2><p class="cv-muted">AI product builder for websites, web apps and Android/iOS products.</p>
+  <div class="cv-logo">Build <span>Vibe</span></div><h2>Build anything.</h2><p class="cv-muted">AI product builder for websites, web apps and Android/iOS products. No coding or provider setup is required for the core builder.</p>
   <input id="email" type="email" placeholder="you@example.com" autocomplete="email"><input id="password" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
   <div class="cv-auth-actions"><button id="loginBtn" class="cv-primary" type="button">Sign in</button><button id="signupBtn" class="cv-secondary" type="button">Create account</button></div><div class="cv-auth-divider" aria-hidden="true"><span>or</span></div><button id="googleBtn" class="cv-secondary cv-google-btn hidden" type="button">Continue with Google</button><p id="authProviderHint" class="cv-muted small">Use your Google account for one-click sign in or account creation.</p><p class="cv-legal">By continuing, you agree to the <a href="/terms">Terms of Use</a> and acknowledge the <a href="/privacy">Privacy</a> notice.</p><p id="authError" class="cv-muted"></p>
 </div>
@@ -28,15 +28,15 @@
     <button data-tab="app">⌘ <span>Web & mobile</span></button>
     <button data-tab="publish">↗ <span>Publish</span></button>
   </div>
-  <div class="cv-window-head"><span class="cv-muted">Open windows</span><button id="newWindow" class="cv-mini">+</button></div><div id="workspaceWindows" class="cv-workspace-windows"></div><div class="cv-muted">Products</div><div id="projects" class="cv-projects"></div>
+  <div class="cv-window-head"><span class="cv-muted">Projects · build in parallel</span><button id="newWindow" class="cv-mini">+</button></div><div id="workspaceWindows" class="cv-workspace-windows"></div><div class="cv-muted">Products</div><div id="projects" class="cv-projects"></div>
   <div class="cv-sidebar-foot cv-muted">Universal builder · portable output</div>
 </aside>
 <header class="cv-top"><div><strong id="projectTitle">New product</strong><div id="projectMeta" class="cv-muted">Describe what you want to build</div></div><div><span id="runStatus" class="status idle">ready</span> <button id="logout" class="cv-secondary">Log out</button></div></header>
 <main class="cv-main">
 <section class="cv-builder">
-  <div class="cv-hero"><div class="cv-kicker">AI PRODUCT BUILDER</div><h1>Describe it. We build it.</h1><p>Websites, SaaS, stores, marketplaces, dashboards, CMSs, PWAs and Android/iOS apps from one product model.</p>
+  <div class="cv-hero"><div class="cv-kicker">AI PRODUCT BUILDER</div><h1>Describe it. We build it.</h1><p>Websites, SaaS, stores, marketplaces, dashboards, portals, CMSs, PWAs and mobile/desktop products from one product model — with automatic quality completion and verification.</p>
   <div class="cv-chips"><button class="cv-chip" data-prompt="Build a premium ecommerce store with products, cart, checkout, customer accounts and owner admin portal.">Store</button><button class="cv-chip" data-prompt="Build a multi-tenant SaaS dashboard with teams, subscriptions, billing, roles and an owner admin portal.">SaaS</button><button class="cv-chip" data-prompt="Build a property marketplace with listings, search, booking, 3D property tours and owner admin portal.">Marketplace</button><button class="cv-chip" data-prompt="Turn this product into an Android and iOS app with native navigation, authentication and push-ready architecture.">Mobile app</button></div></div>
-  <div class="cv-composer"><textarea id="request" placeholder="Build a complete product… Include pages, users, data, workflows, payments, integrations or mobile requirements."></textarea><div class="cv-composer-row"><span class="cv-local-badge">LOCAL CORE · NO PROVIDER REQUIRED</span><select id="targetSelect" class="cv-select"><option value="auto">Auto platform</option></select><span id="blueprintHint" class="cv-muted">AI will choose the architecture.</span><button id="buildBtn" class="cv-primary">Build product</button></div></div>
+  <div class="cv-composer"><textarea id="request" placeholder="Describe the outcome, not the code. Add pages, users, data, workflows or mobile needs."></textarea><div class="cv-composer-row"><span class="cv-local-badge">LOCAL CORE · NO PROVIDER REQUIRED</span><select id="targetSelect" class="cv-select"><option value="auto">Auto platform</option></select><span id="blueprintHint" class="cv-muted">AI will choose the architecture.</span><button id="buildBtn" class="cv-primary">Build product</button></div></div>
   <div id="blueprint" class="cv-card"><h3>Product plan</h3><div class="cv-muted">Your product architecture will appear here before generation.</div></div>
   <div id="feed" class="cv-feed"></div>
   <div class="cv-canvas"><div class="cv-canvas-head"><strong>Live product</strong><div><a id="previewLink" class="cv-muted" target="_blank" rel="noreferrer">Open preview</a></div></div><iframe id="previewFrame" title="Live product preview" sandbox="allow-scripts allow-forms"></iframe></div>
