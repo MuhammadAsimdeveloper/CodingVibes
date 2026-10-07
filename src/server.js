@@ -276,7 +276,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(method==='GET'&&!u.pathname.startsWith('/api/')&&await serveStatic(req,res))return;
   if(method==='POST'&&u.pathname==='/api/analytics/events'){try{const b=await readJson(req,MAX_BODY),event=sanitizeProductEvent({userId,projectId:b.projectId||null,sessionId:b.sessionId||null,event:b.event,properties:b.properties});if(event.projectId&&!store.getProject(event.projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const saved=recordProductEvent(store,event);return sendJson(res,201,{ok:true,event:{id:saved.id,event:saved.event,created_at:saved.created_at}});}catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message});}}
   const a=requireAuth(req,res);if(!a)return;const userId=a.user_id;
-  if(method==='GET'&&u.pathname==='/api/assistant/knowledge')return sendJson(res,200,{ok:true,knowledge:ASSISTANT_KNOWLEDGE});
+  if(method==='GET'&&u.pathname==='/api/assistant/knowledge')return sendJson(res,200,{ok:true,knowledge:{...ASSISTANT_KNOWLEDGE,sections:['Build','Templates','Content & data','Design','Web & mobile','Publish','Assistant'],targets:listTargets().map(x=>({id:x.id,label:x.label,type:x.type})),templateGenres:listTemplateGenres()}});
   if(method==='GET'&&u.pathname==='/api/assistant/conversations'){
     const projectId=u.searchParams.get('projectId')||null;
     return sendJson(res,200,{ok:true,conversations:store.listAssistantConversations(userId,{projectId,limit:Math.min(100,Math.max(1,Number(u.searchParams.get('limit')||50)))})});
@@ -312,13 +312,13 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     store.addAssistantMessage(conversation.id,userId,'user',message,{projectId,source:'in_product'});
     const templateId=String(b.templateId||store.getProjectMemory?.(projectId,userId)?.templateId||'');
     const template=templateId?getTemplate(templateId)||{}:{};
-    const assistant=new BuildVibeAssistant(userRouter(userId));
+    const projectMemory=projectId?store.getProjectMemory(projectId,userId):null;const projectContent=projectId?store.getProjectContent(projectId,userId):null;const assistant=new BuildVibeAssistant(userRouter(userId));
     const runSummary=null;
     if(String(b.stream||'true')!=='false'){
       const emit=streamSse(res);
       emit({type:'assistant_started',conversationId:conversation.id,intent:'pending'});
       try{
-        const result=await assistant.stream({message,history,project:{name:project?.name,target:b.target||'auto',memory:projectId?store.getProjectMemory(projectId,userId):null},template,runSummary,tier:String(b.tier||'standard'),onToken:token=>emit({type:'assistant_token',conversationId:conversation.id,token})});
+        const result=await assistant.stream({message,history,project:{name:project?.name,target:b.target||'auto',memory:projectMemory?{...projectMemory,contentSummary:contentSummary(projectContent||{})}:null},template,runSummary,tier:String(b.tier||'standard'),onToken:token=>emit({type:'assistant_token',conversationId:conversation.id,token})});
         store.addAssistantMessage(conversation.id,userId,'assistant',result.text||JSON.stringify(result),{kind:result.kind,intent:result.intent,provider:result.provider,model:result.model,error:result.error||null});
         emit({type:'assistant_completed',conversationId:conversation.id,result});
       }catch(e){
