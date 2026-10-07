@@ -12,6 +12,7 @@ const DEFINITIONS = [
   {id:'anthropic',label:'Anthropic',kind:'model-provider',protocol:'anthropic-messages',baseUrl:'https://api.anthropic.com/v1',apiKeyEnv:'ANTHROPIC_API_KEY'},
   {id:'ollama',label:'Ollama',kind:'local',protocol:'openai-compatible',baseUrl:'http://127.0.0.1:11434/v1',apiKeyEnv:null,aliases:['local']},
   {id:'lmstudio',label:'LM Studio',kind:'local',protocol:'openai-compatible',baseUrl:'http://127.0.0.1:1234/v1',apiKeyEnv:null,aliases:['lm-studio']},
+  {id:'llama-cpp',label:'llama.cpp / GGUF',kind:'local',protocol:'openai-compatible',baseUrl:'http://127.0.0.1:8080/v1',apiKeyEnv:null,aliases:['llama','llamacpp','aira-local']},
   {id:'custom',label:'Custom OpenAI-compatible',kind:'custom',protocol:'openai-compatible',baseUrl:'',apiKeyEnv:'CODINGVIBES_CUSTOM_API_KEY',aliases:['openai-compatible']}
 ];
 
@@ -31,7 +32,7 @@ export function resolveConnector(id,env=process.env){
   const baseUrl=String(profile.baseUrl||env[`CODINGVIBES_${canonical.toUpperCase()}_BASE_URL`]||env.CODINGVIBES_BASE_URL||(canonical==='custom'?'':definition.baseUrl)).replace(/\/$/,'');
   const apiKeyName=profile.apiKeyEnv||definition.apiKeyEnv;
   const apiKey=String(profile.apiKey||((apiKeyName&&env[apiKeyName])||''));
-  const configured=definition.protocol==='openai-compatible' ? Boolean(baseUrl && (!apiKeyName||apiKey||['ollama','lmstudio'].includes(canonical))) : Boolean(baseUrl&&apiKey);
+  const configured=definition.protocol==='openai-compatible' ? Boolean(baseUrl && (!apiKeyName||apiKey||['ollama','lmstudio','llama-cpp'].includes(canonical))) : Boolean(baseUrl&&apiKey);
   return {id:canonical,label:definition.label,kind:definition.kind,protocol:definition.protocol,baseUrl,apiKey,apiKeyEnv:apiKeyName,configured,models:profile.models||{}};
 }
 
