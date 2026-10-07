@@ -18,6 +18,7 @@ const KNOWLEDGE={
 function normalizeMessage(message){return String(message||'').replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,8000);}
 export function answerBuildVibeQuestion(message,context={}){
   const text=normalizeMessage(message),lower=text.toLowerCase(),intent=classifyAssistantRequest(text);
+  if(intent.mode==='modify'&&(intent.target==='design'||intent.target==='3d'))return{mode:'modify',reply:'I can apply that change directly to the current project. You do not need to repeat the original prompt.',actions:[{type:'modify',label:'Apply change',request:text}],intent};
   for(const [key,item] of Object.entries(KNOWLEDGE)){
     if(lower.includes(key.replace('threeD','3d'))){
       return{mode:'help',reply:item.title+': '+item.text,actions:[{type:'modify',label:'Open '+item.title},{type:'prompt',label:'Create a prompt'}],sources:['Build Vibe product knowledge'],intent};
