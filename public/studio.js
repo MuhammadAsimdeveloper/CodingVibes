@@ -210,7 +210,7 @@ async function assistantSend(){
   input.value='';
   try{
     if(state.assistantMode==='build'){
-      const edit=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/assistant/apply',{method:'POST',body:JSON.stringify({sessionId:state.session?.id,message:visualSelectionPrefix()+message})});
+      const edit=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/assistant/apply',{method:'POST',body:JSON.stringify({sessionId:state.session?.id,message:visualSelectionPrefix()+message,selection:state.visualSelection||null})});
       if(edit.applied||edit.needsBuild){
         if(edit.applied){
           feed(edit.reply||'Change applied.','ok');speakAssistant(edit.reply||'Change applied.');
