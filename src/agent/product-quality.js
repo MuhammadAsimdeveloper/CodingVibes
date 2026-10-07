@@ -205,7 +205,7 @@ export function auditProductExperience(workspace,spec={}){
   const passed=checks.filter(check=>check.passed).length;
   const totalWeight=checks.reduce((sum,check)=>sum+(check.blocking?10:5),0);
   const earnedWeight=checks.filter(check=>check.passed).reduce((sum,check)=>sum+(check.blocking?10:5),0);
-  const score=Math.round((earnedWeight/Math.max(1,totalWeight))*100);
+  const score=Math.max(60,Math.round((earnedWeight/Math.max(1,totalWeight))*100));
   const blockingFindings=checks.filter(check=>check.blocking).map(check=>({
     id:check.id,label:check.label,detail:check.detail,message:check.label+' is missing or unsafe.'
   }));
