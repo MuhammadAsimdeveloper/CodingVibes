@@ -23,6 +23,13 @@ function normalizeMessage(message){return String(message||'').replace(/[\u0000-\
 export function answerBuildVibeQuestion(message,context={}){
   const text=normalizeMessage(message),lower=text.toLowerCase(),intent=classifyAssistantRequest(text),specialists=routeSpecialists(text);
   if(intent.mode==='modify'&&(intent.target==='design'||intent.target==='3d'||intent.target==='content'))return{mode:'modify',reply:'I can apply that change directly to the current project. You do not need to repeat the original prompt.',actions:[{type:'modify',label:'Apply change',request:text}],specialists,intent};
+  if(/why.*broken|what.*wrong|error|failed|not working/.test(lower)&&context?.diagnostics?.findings?.length){
+    const first=context.diagnostics.findings.slice(0,3).map(f=>String(f.message||f.title||'Unknown issue')).join(' ');
+    return{mode:'help',reply:'The current project has a '+String(context.diagnostics.status||'attention')+' diagnostic state. '+first,specialists,intent,actions:[{type:'modify',label:'Repair with Build mode',request:'fix the current project issues and verify the result'}]};
+  }
+  if(/current status|status of my project|is my project ready/.test(lower)&&context?.latestRun){
+    return{mode:'help',reply:'The latest run is '+String(context.latestRun.status||'unknown')+'. This project currently has '+String(context.chatCount||0)+' conversation'+(Number(context.chatCount||0)===1?'':'s')+'. I can also explain the latest QA findings.',specialists,intent,actions:[{type:'prompt',label:'Explain latest QA'}]};
+  }
   if(intent.mode==='build'||/\b(prompt|plan)\b/.test(lower)||/i want to (build|create|make)/.test(lower)){
     const genre=/store|ecommerce|shop/.test(lower)?'ecommerce':/portfolio/.test(lower)?'portfolio':/3d|immersive/.test(lower)?'immersive':'business';
     const platform=/apk|android/.test(lower)?'Android APK':/ios|iphone/.test(lower)?'iOS':/desktop/.test(lower)?'desktop':'web';
