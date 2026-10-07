@@ -726,3 +726,164 @@ The objective is NOT to make the repository look complete.
 The objective is to make Build Vibe a genuinely verified, secure, portable AI product builder that can be launched honestly.
 
 Do not rewrite Build Vibe. Complete Build Vibe.
+
+
+## 38. Zee-Inspired Tool Ecosystem Expansion — October 2026
+
+### Purpose
+Build the high-value utility layer inspired by the capabilities observed in Zee AI Tools, without copying its branding, code, content, or unverifiable claims. The goal is to make Build Vibe a focused developer/web-production toolbox and expose the same capabilities through Aira as a governed tool router.
+
+### Canonical Build Vibe tools
+1. SEO Meta Generator
+2. XML Sitemap Generator
+3. robots.txt Generator
+4. Favicon/App Icon Generator
+5. Open Graph/Social Preview Generator
+6. Website SEO Auditor
+7. Website Performance Auditor
+8. Accessibility Auditor
+9. Image Optimizer/Compressor
+10. JSON Formatter/Validator
+11. JSON → TypeScript Generator
+12. API Tester
+13. Regex Tester
+14. JWT Inspector
+15. Base64/Binary Encoder/Decoder
+16. Color Palette Generator
+17. CSS Gradient Generator
+18. QR Code Generator
+
+### Ecosystem ownership
+- **Build Vibe/CodingVibes:** canonical implementation for all 18 shared web/developer tools.
+- **Aira:** universal interaction/orchestration layer; expose all 18 through named, auditable tools and route to canonical implementations instead of duplicating business logic.
+- **Atlas:** consume SEO, metadata, performance, accessibility, QR and API-testing capabilities for business/web workflows; do not fork the canonical implementations.
+- **Auto-Vid/Auto-Vid-App:** consume image optimization and social/asset preparation capabilities.
+- **Muhammad-Asim-Web-Agency:** consume SEO, metadata, sitemap/robots, OG, performance, accessibility, image and QR capabilities for agency-site operations.
+- **Asim-OS:** optional local/offline adapters for developer/image/QR utilities where OS integration is useful.
+- **Pithcraft-Ai/Saudadesk-Ai:** remain product-specific unless a direct product requirement justifies a capability.
+
+### Native-product rule
+These are not Zee clones. Build Vibe tools must understand generated projects: audits inspect actual routes/assets, metadata tools can write artifacts, performance/accessibility tools produce actionable findings, and developer tools integrate with project files/contracts where appropriate.
+
+### Aira contract
+Every tool must declare: canonical ID, aliases, owner, input/output schema, risk class, local/offline status, network requirement, confirmation requirement, auth requirement, timeout/retry policy, audit event and fallback behavior. Aira must never claim an external action succeeded when only a local analysis/artifact was produced.
+
+### Implementation phases
+- **T0 Contracts:** tool IDs, schemas, ownership, Aira routing metadata, tests.
+- **T1 Developer utilities:** JSON, JSON→TypeScript, Regex, JWT, Base64/Binary, Color Palette, CSS Gradient, QR.
+- **T2 Website foundation:** metadata, robots, sitemap, favicon, OG/social preview.
+- **T3 Website audits:** SEO, accessibility, performance.
+- **T4 Asset pipeline:** image optimization/compression and project asset integration.
+- **T5 Cross-product integration:** Aira, Atlas, Auto-Vid, agency and Asim-OS adapters.
+
+### Security and privacy
+Prefer client-side processing for private inputs. Explicitly label server/API boundaries. API testing must protect secrets and block unsafe SSRF targets. JWT tools must not imply that decoding equals signature verification. Website content fetched for audits is untrusted input.
+
+### Quality gates
+Every behavioral change follows test-first development. Browser tools require runtime verification for console errors, failed requests, accessibility and responsive behavior. External services use explicit NOT_CONFIGURED/BLOCKED states instead of fake success.
+
+### Completion criteria
+All 18 tools have contracts, tests, canonical Build Vibe implementations, Aira routing metadata and cross-repository ownership documentation. No duplicate business logic is introduced without a documented reason.
+
+
+## 39. Industry Tool Arsenal Expansion — Teamily-derived capabilities
+
+The 18 Zee-derived utilities remain the immediate utility-suite scope. The next strategic layer is the shared Tool/Agent Fabric derived from capabilities publicly described by Teamily AI: multi-agent orchestration, living/global memory, proactive agents, collaborative studios, scheduled automations, Agent APIs, MCP/REST, OAuth, Slack, agent workspaces, deliverables and human approval workflows. citeturn0search0turn0search4turn0search5
+
+### Build Vibe owns
+- web.app.builder
+- docs.studio
+- slides.studio
+- dashboard.studio
+- research.studio
+- code.reviewer
+- code.explainer
+- code.refactorer
+- test.generator
+- bug.triage
+- pr.assistant
+- api.builder
+- schema.generator
+- deployment.doctor
+- dependency.audit
+- secret.audit
+- sandbox.runner
+- deliverable.bundle
+
+### Shared through Aira
+- agent.task.decomposer
+- agent.parallel.runner
+- agent.supervisor
+- memory.global/project/preference
+- context.policy
+- automation scheduler/trigger/history
+- agent creator/team creator
+- MCP/OAuth/integration gateway
+- permission/risk/confirmation/audit engines
+- provider router, quota manager and health doctor
+
+### Build order
+T6 Tool/Agent Fabric contracts → T7 multi-agent orchestration → T8 memory/context → T9 studios/deliverables → T10 developer intelligence → T11 integrations/API/MCP → T12 proactive automation and approval controls.
+
+### Scope rule
+Tools are strategic weapons, but the platform must remain coherent. Each capability needs a canonical owner, contract, tests, security policy and measurable user value before being shipped. Do not inflate tool count merely for marketing.
+
+
+## 40. AI-First Cross-Repository Execution Protocol — October 2026
+
+This section is the handoff contract for any AI coding agent starting from this repository.
+
+### Read order
+1. `docs/AI_BUILD_START_HERE.md`
+2. This launch plan from beginning to end.
+3. `docs/ZEE_TOOLS_ECOSYSTEM_PLAN.md`
+4. `docs/INDUSTRY_TOOL_ARSENAL.md`
+5. Relevant source/tests/docs discovered during repository inspection.
+
+### Cross-repository product map
+- **Build Vibe/CodingVibes:** canonical creation, web/developer, verification and shared utility implementations.
+- **Aira:** universal personal-agent orchestration, permissions, memory/context, device control and routing.
+- **Atlas:** business operating system and tenant-scoped business actions.
+- **Auto-Vid / Auto-Vid-App:** media production and media application surfaces.
+- **Muhammad-Asim-Web-Agency:** agency delivery, audits and deploy-ready workflows.
+- **Asim-OS:** local/offline workstation adapters.
+- **Saudadesk-Ai:** product-specific capabilities only.
+
+### Build rule
+When a capability already has a canonical owner, consume its contract instead of cloning the implementation. If a repository needs a local adapter, document the runtime reason and keep the contract compatible.
+
+### Autonomous implementation loop
+**READ → INSPECT → PLAN → TEST → IMPLEMENT → VERIFY → DOCUMENT → CHECKPOINT**
+
+Before every behavior change:
+- inspect current implementation and neighboring tests;
+- write the failing test first;
+- implement the smallest correct change;
+- run focused tests;
+- refactor only after green;
+- run the relevant full suite;
+- update the plan/checklist and record blockers honestly.
+
+### Tool/agent priorities
+1. Shared Tool/Agent Fabric and contracts.
+2. 18 Zee-inspired utilities.
+3. Teamily-derived primitives: multi-agent teams, decomposition, supervisor, memory/context, proactive automation, studios, approvals, Agent API and MCP/OAuth.
+4. Developer intelligence and verification.
+5. SEO/AEO/GEO and public distribution.
+6. Cloud/operations/deployment/native targets.
+7. Benchmarks, security and release evidence.
+
+### Truth boundary
+No AI agent may mark a feature COMPLETE merely because code, UI or configuration exists. COMPLETE requires implementation, tests, security checks and appropriate runtime/evidence verification. External dependencies remain **NOT_CONFIGURED**, **BLOCKED**, or **UNVERIFIED** until actually proven.
+
+### No greenfield drift
+Do not rewrite working architecture to fit a new idea. Extend existing registries, contracts, adapters, stores, workers and verification paths. Prefer one canonical implementation plus thin adapters over parallel copies.
+
+### Final handoff
+At the end of each phase update:
+- this plan/checklist;
+- the relevant tool/architecture docs;
+- changelog/release notes when applicable;
+- machine-readable readiness evidence when the repository supports it.
+
+Then leave a concise implementation summary containing changed files, tests run, verification evidence and remaining blockers.
