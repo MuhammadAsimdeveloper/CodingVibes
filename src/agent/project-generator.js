@@ -79,6 +79,28 @@ function styles(){return `:root{--motion-duration-fast:180ms;--motion-duration-b
 [data-style="brutalist"] .muted{color:#4a4a4a}
 [data-style="playful"] .card{border-radius:28px}
 [data-style="glass"] .card{background:#ffffff12;backdrop-filter:blur(18px);border-color:#ffffff24}
+.motion-item{opacity:0;transform:translate3d(0,var(--motion-distance,24px),0) scale(.985);filter:saturate(.96);transition:opacity var(--motion-duration,650ms) var(--motion-ease,cubic-bezier(.16,1,.3,1)),transform var(--motion-duration,650ms) var(--motion-ease,cubic-bezier(.16,1,.3,1)),filter var(--motion-duration,650ms) var(--motion-ease,cubic-bezier(.16,1,.3,1));transition-delay:calc(var(--motion-index,0) * var(--motion-stagger,55ms))}
+.motion-visible{opacity:1;transform:none;filter:none}
+.motion-item.motion-visible:hover{transform:translate3d(var(--mx,0),calc(-3px + var(--my,0)),0)}
+.motion-scene{transform:translateZ(0);will-change:transform;animation:cvSceneFloat 12s ease-in-out infinite}
+.motion-product{opacity:0;transform:translate3d(0,18px,0) scale(.98);transition:opacity 560ms var(--motion-ease),transform 560ms var(--motion-ease);transition-delay:calc(var(--motion-index,0) * 45ms)}
+.motion-product.motion-visible{opacity:1;transform:none}
+.motion-image-reveal,.motion-image-soft{transition:transform 900ms cubic-bezier(.16,1,.3,1),filter 700ms ease;will-change:transform}
+.motion-image-reveal{clip-path:inset(0 0 100% 0);transform:scale(1.04)}
+.motion-visible .motion-image-reveal{clip-path:inset(0);transform:scale(1)}
+.motion-image-soft{transform:scale(1.025);filter:saturate(.9)}
+.motion-visible .motion-image-soft{transform:scale(1);filter:none}
+.hero-grid .card:first-child{position:relative;overflow:hidden}
+.hero-grid .card:first-child:after{content:"";position:absolute;inset:-35% auto auto -12%;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,#8ea8ff24,transparent 68%);animation:cvGlowDrift 9s ease-in-out infinite;pointer-events:none}
+.store-hero-orb{animation:cvOrbFloat 9s ease-in-out infinite}
+[data-motion="cinematic"] .store-hero-orb,[data-motion="luxury"] .store-hero-orb{animation-duration:12s}
+[data-motion="playful"] .card.motion-item.motion-visible{animation:cvSpringIn 560ms cubic-bezier(.34,1.56,.64,1) both}
+[data-motion="snappy"] .motion-item{transition-duration:420ms}
+@keyframes cvSceneFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-6px,0)}}
+@keyframes cvOrbFloat{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,-8px,0) scale(1.015)}}
+@keyframes cvGlowDrift{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(42px,18px,0)}}
+@keyframes cvSpringIn{0%{opacity:0;transform:translateY(18px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.motion-item,.motion-product{opacity:1!important;transform:none!important;filter:none!important;transition:none!important;animation:none!important}.motion-scene,.store-hero-orb,.hero-grid .card:first-child:after{animation:none!important}.motion-image-reveal,.motion-image-soft{clip-path:none!important;transform:none!important;filter:none!important}}
 `;}
 function appJs(spec){return `const result=document.querySelector('[data-result]');document.querySelectorAll('[data-api]').forEach(btn=>btn.addEventListener('click',async()=>{const method=btn.dataset.method||'GET';const init={method,headers:{'content-type':'application/json'}};if(!['GET','HEAD'].includes(method))init.body=JSON.stringify({demo:true});try{const r=await fetch(btn.dataset.api,init);const j=await r.json();if(result)result.textContent=JSON.stringify(j,null,2)}catch(e){if(result)result.textContent=e.message}}));const search=document.querySelector('#search');if(search)search.addEventListener('input',()=>{document.querySelector('#searchResult').textContent=search.value?\`Filtering generated capabilities for “\${search.value}”…\`:'Type to filter the generated feature cards.'});document.querySelector('[data-checkout]')?.addEventListener('click',async()=>{const out=document.querySelector('[data-checkout-result]');try{const r=await fetch('/api/checkout/session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({cart:[{productId:'demo',quantity:1}]})});const j=await r.json();if(out)out.textContent=JSON.stringify(j,null,2)}catch(e){if(out)out.textContent=e.message}});window.addEventListener('error',e=>console.error(e.error||e.message));document.querySelector('#contactForm')?.addEventListener('submit',async e=>{e.preventDefault();const out=document.querySelector('#contactResult');const body=Object.fromEntries(new FormData(e.currentTarget).entries());try{const r=await fetch('/api/contact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(out)out.textContent=r.ok?'Thanks — your message was received.':(j.error||'Unable to send message.');if(r.ok)e.currentTarget.reset()}catch(error){if(out)out.textContent=error.message}});${spec.target?.id==='web-pwa' ? "if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});" : ''}`}
 function routesJs(spec){return `export const routes=${JSON.stringify(spec.pages)};\nexport const apiRoutes=${JSON.stringify(spec.apis)};\nexport const routeMeta=${JSON.stringify(Object.fromEntries(spec.pages.map(p=>[p,{title:pageTitle(p)}])))};\n`;}
