@@ -4,7 +4,7 @@ const DEFAULT_MAX=Number(process.env.CODINGVIBES_PG_POOL_MAX||20);
 const DEFAULT_TIMEOUT=Number(process.env.CODINGVIBES_PG_CONNECTION_TIMEOUT_MS||5000);
 const DEFAULT_IDLE=Number(process.env.CODINGVIBES_PG_IDLE_TIMEOUT_MS||30000);
 
-export function connectionConfigForLocalDev(env=process.env){const source={...env,CODINGVIBES_PG_SSL_MODE:env.CODINGVIBES_PG_SSL_MODE||'disable'};return connectionConfig({connectionString:String(source.DATABASE_URL||'postgresql://buildvibe:buildvibe@127.0.0.1:54329/buildvibe'),sslMode:String(source.CODINGVIBES_PG_SSL_MODE||'disable')});}
+export function connectionConfigForLocalDev(env=process.env){const source={...env,CODINGVIBES_PG_SSL_MODE:env.CODINGVIBES_PG_SSL_MODE||'disable'};return connectionConfig({connectionString:String(source.DATABASE_URL||'postgresql://buildvibe:buildvibe_dev_password@127.0.0.1:5432/buildvibe'),sslMode:String(source.CODINGVIBES_PG_SSL_MODE||'disable')});}
 
 function connectionConfig(overrides={}){
   const url=String(overrides.connectionString||process.env.DATABASE_URL||'').trim();
