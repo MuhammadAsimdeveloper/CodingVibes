@@ -34,7 +34,7 @@ const PAGES={
     extraLinks:[['AI website builder','/ai-website-builder'],['3D website builder','/3d-website-builder'],['SaaS app builder','/saas-app-builder'],['Ecommerce website builder','/ecommerce-website-builder']]
   },
   '/pricing':{
-    title:'Build Vibe Pricing | Free, Pro, Team & Business',
+    title:'Build Vibe Pricing | Free, Pro, Team, Business & Enterprise',
     description:'See Build Vibe pricing for Free, Pro, Team and Business plans, including exact free website entitlements, 3D, animation, APK access, deployment and collaboration.',
     eyebrow:'PRICING',
     intro:'Build Vibe keeps the first product experiences accessible, then scales AI, 3D, native app and collaboration capacity as your needs grow.',
@@ -43,6 +43,7 @@ const PAGES={
       ['Pro — $7/month','Pro adds 25 basic, 25 animated, 10 3D and 10 APK/native-app creations per account, plus higher AI capacity, advanced SEO, AI video, deployment and custom domains.'],
       ['Team — $15/month','Team adds 100 basic, 100 animated, 50 3D and 40 APK/native-app creations per account, plus workspace roles, approvals, audit and higher collaborative capacity.'],
       ['Business — $39/month','Business is designed for agencies and growing teams with 500 basic, 500 animated, 200 3D and 100 APK/native-app creations per account plus higher AI capacity and scale-out controls.'],
+      ['Enterprise — custom','Enterprise is for organizations that need custom capacity, governance, private infrastructure, security controls, dedicated support or specialized deployment requirements.'],
       ['Usage and infrastructure','Plans control Build Vibe entitlements and application capacity. Model inference, browser verification, 3D/video providers and external hosting can have their own provider-specific limits and costs.'],
       ['Verified output','Every plan keeps the same product principle: generated work must remain inspectable and pass the configured verification/review path before an explicit commit or deployment.']
     ],
