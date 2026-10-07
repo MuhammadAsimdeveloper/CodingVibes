@@ -5,6 +5,25 @@ function feed(text,kind=''){const e=document.createElement('div');e.className='c
 function status(text,kind='idle'){$('#runStatus').textContent=text;$('#runStatus').className='status '+kind}
 function showTab(tab){document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));['build','content','templates','design','app','publish'].forEach(x=>$('#tab-'+x)?.classList.toggle('hidden',x!==tab));if(tab==='templates')loadTemplateCatalog();if(state.project&&tab==='content'){loadWorkspaceSuite();loadContentRevisions();load3DJobs();}if(state.project&&tab==='design')loadDesignMode();if(tab==='publish'){loadProviders();loadResearch();loadLaunchStatus();loadCloudServices();loadDomains();}}
 
+const visualEditState={selection:null};
+function initVisualAnnotation(){
+  window.addEventListener('message',event=>{
+    const d=event.data||{};if(d.type!=='buildvibe:visual-select')return;
+    visualEditState.selection=d;const label=$('#visualSelectionLabel');
+    if(label)label.textContent='Selected: '+(d.text||'<'+d.tag+'>')+(d.selector?' · '+d.selector:'');
+  });
+  $('#visualQuickApply')?.addEventListener('click',()=>{
+    const input=$('#visualEditInput'),command=input?.value.trim();if(!command)return;
+    const frame=$('#previewFrame');frame?.contentWindow?.postMessage({type:'buildvibe:visual-command',command},'*');
+    feed('Applied preview edit: '+command,'ok');
+  });
+  $('#visualAskAssistant')?.addEventListener('click',()=>{
+    const command=$('#visualEditInput')?.value.trim()||'';
+    const selection=visualEditState.selection;
+    const context=selection?('Selected '+(selection.tag||'element')+' '+(selection.selector||'')+' with text "'+(selection.text||'')+'". '):'';
+    openAssistantWithPrompt(context+(command||'Modify the selected element while preserving surrounding layout.'),'modify');
+  });
+}
 async function loadTemplateCatalog(){
   const query=encodeURIComponent($('#templateSearch')?.value.trim()||'');
   const genre=state.templateGenre||'';
@@ -347,6 +366,7 @@ $('#assistantOpen')?.addEventListener('click',assistantOpen);$('#assistantInstru
 $('#templateSearchBtn')?.addEventListener('click',loadTemplateCatalog);$('#databaseRefresh')?.addEventListener('click',loadDatabaseStatus);$('#postgresCopy')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText('npm run db:postgres:up\nnpm run db:postgres:setup\nnpm run db:postgres:doctor\n\nAdminer: http://127.0.0.1:8080\nDATABASE_URL=postgresql://buildvibe:buildvibe_dev_password@127.0.0.1:5432/buildvibe\nCODINGVIBES_DB_BACKEND=postgres');feed('Local PostgreSQL setup copied.','ok');}catch{feed('Clipboard permission denied. Use the commands shown in Database status.','err')}});$('#templateSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();loadTemplateCatalog();}});
 $('#generate3d')?.addEventListener('click',generate3DModel);$('#upgradeBusiness')?.addEventListener('click',()=>startCheckout('business'));$('#openAssistant3d')?.addEventListener('click',()=>openAssistantWithPrompt('Help me design the 3D model experience for this product: include 360/orbit, media, hotspots, materials/colors and performance-safe fallbacks.','chat'));$('#upgradePro')?.addEventListener('click',()=>startCheckout('pro'));$('#upgradeTeam')?.addEventListener('click',()=>startCheckout('team'));$('#manageBilling')?.addEventListener('click',manageBilling);$('#inviteMember')?.addEventListener('click',async()=>{try{const j=await api('/api/workspaces/'+state.project.workspace_id+'/invites',{method:'POST',body:JSON.stringify({email:$('#inviteEmail').value,role:$('#inviteRole').value})});feed('Invite created. Share token securely: '+j.token,'ok');await loadWorkspaceSuite();}catch(e){feed('Invite: '+e.message,'err')}});$('#saveDesign')?.addEventListener('click',saveDesignMode);$('#resetDesign')?.addEventListener('click',resetDesignMode);$('#provisionCloud')?.addEventListener('click',provisionCloud);$('#addDomain')?.addEventListener('click',addDomain);$('#newContentRevision')?.addEventListener('click',newContentRevision);$('#runResearch')?.addEventListener('click',runProjectResearch);$('#runDiscoverability')?.addEventListener('click',runDiscoverability);$('#buildBtn').onclick=startBuild;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $('#newWindow')?.addEventListener('click',createProjectWindow);
+initVisualAnnotation();
 startWindowPolling();document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>{$('#request').value=b.dataset.prompt;$('#request').focus();previewBlueprint()});$('#request').addEventListener('input',()=>{if(state.project)state.drafts.set(state.project.id,$('#request').value);clearTimeout(window.cvPlanTimer);window.cvPlanTimer=setTimeout(previewBlueprint,500)});$('#targetSelect').addEventListener('change',()=>{if(state.project)state.targetsByProject.set(state.project.id,$('#targetSelect').value);});$('#newProject').onclick=createProjectWindow;$('#logout').onclick=async()=>{await api('/api/auth/logout',{method:'POST'});location.reload()};
 async function initGoogleAuth(){
   const button=$('#googleBtn');if(!button)return;
