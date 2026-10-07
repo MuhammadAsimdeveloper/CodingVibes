@@ -40,7 +40,7 @@ export function applyExperienceQuality(workspace,{kind='business',mode='smooth'}
     if(/^(admin|login)(?:-|\.)/i.test(relative))continue;
     let next=html;
     next=injectOnce(next,'href="/build-vibe-motion.css"','<link rel="stylesheet" href="/build-vibe-motion.css">');
-    next=injectOnce(next,'src="/build-vibe-motion.js"','<script src="/build-vibe-motion.js" defer></script>');
+    next=injectOnce(next,'src="/build-vibe-motion.js"','<script type="module" src="/build-vibe-motion.js"></script>');
     if(next!==html){fs.writeFileSync(file,next);changes.push('motion baseline linked: '+relative);}
   }
   return{changedFiles:changes,enhancements:['dependency-free motion baseline','reduced-motion fallback','responsive-safe interaction motion'],scanned:files.length,applied:true,kind,mode};
