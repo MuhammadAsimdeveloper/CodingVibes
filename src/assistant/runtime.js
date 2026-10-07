@@ -24,13 +24,13 @@ export function answerBuildVibeQuestion(message,context={}){
     }
   }
   if(/how.*color|change.*color|blue|red|theme/.test(lower))return{mode:'help',reply:'You do not need to repeat your original build request. Tell Studio the change directly, for example: “make the primary color blue and the buttons darker.”',actions:[{type:'modify',label:'Apply a color change',request:'make the primary color blue'}],intent};
-  if(/3d|glb|gltf|model|hotspot|walkthrough|camera/.test(lower))return{mode:'help',reply:'For 3D, upload a GLB/GLTF model or images/video, then use short commands to change hotspots, camera paths, materials, lighting, product colors and scene content. The project keeps the scene configuration in structured content.',actions:[{type:'modify',label:'Open 3D controls',request:'open 3D scene controls'}],intent};
   if(/\b(prompt|plan)\b/.test(lower)||/i want to (build|create|make)/.test(lower)){
     const genre=/store|ecommerce|shop/.test(lower)?'ecommerce':/portfolio/.test(lower)?'portfolio':/3d|immersive/.test(lower)?'immersive':'business';
     const platform=/apk|android/.test(lower)?'Android APK':/ios|iphone/.test(lower)?'iOS':/desktop/.test(lower)?'desktop':'web';
     const p=buildPromptFromPlan({idea:text,genre,platform,style:'professional',features:[]});
     return{mode:'prompt',reply:'Here is a reusable Build Vibe prompt based on your idea.',prompt:p,actions:[{type:'apply-prompt',label:'Use this prompt'}],intent};
   }
+  if(/3d|glb|gltf|model|hotspot|walkthrough|camera/.test(lower))return{mode:'help',reply:'For 3D, upload a GLB/GLTF model or images/video, then use short commands to change hotspots, camera paths, materials, lighting, product colors and scene content. The project keeps the scene configuration in structured content.',actions:[{type:'modify',label:'Open 3D controls',request:'open 3D scene controls'}],intent};
   const clarification=buildClarification(text,context);
   if(clarification.needsInput)return{mode:'clarify',reply:clarification.question,options:clarification.options,intent};
   return{mode:'help',reply:'I can help with Studio, Templates, Design, Content, Assets, 3D, QA, History, Deployments, project planning and Build Vibe workflows. Tell me what you are trying to do and I will guide you.',actions:[{type:'prompt',label:'Turn my idea into a build prompt'},{type:'modify',label:'Modify the current project'}],intent};
