@@ -96,7 +96,7 @@ function linkIntegrity(html,spec,files){
   const declared=new Set(Array.isArray(spec.pages)?spec.pages:['/']);
   const broken=[];
   for(const m of html.matchAll(/(?:href|data-route)=["'](\\/[^"'#?]*)/gi)){
-    const route=m[1].replace(/\\/+$/,'')||'/';
+    const route=m[1].replace(/\/+$/,'')||'/';
     if(route.startsWith('/api/')||route.startsWith('/admin')||route.startsWith('/assets/')||route.startsWith('/_'))continue;
     if(!declared.has(route)&&!routeSet.has(route))broken.push(route);
   }
