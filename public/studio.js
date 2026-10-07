@@ -206,13 +206,29 @@ async function assistantSend(){
   const input=$('#assistantInput'),message=input?.value.trim();if(!message||!state.project)return;
   input.value='';
   try{
-    const contextualMessage=visualSelectionPrefix()+message;const j=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/assistant/chat',{method:'POST',body:JSON.stringify({sessionId:state.session?.id,message:contextualMessage})});
+    const edit=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/assistant/apply',{method:'POST',body:JSON.stringify({sessionId:state.session?.id,message:visualSelectionPrefix()+message})});
+    if(edit.applied||edit.needsBuild){
+      if(edit.applied){
+        feed(edit.reply||'Change applied.','ok');
+        if(edit.reply)speakAssistant?.(edit.reply);
+        if($('#previewFrame').src)$('#previewFrame').src=$('#previewFrame').src.split('?')[0]+'?refresh='+Date.now();
+        state.session=state.session||{id:edit.sessionId,title:'Assistant edits'};
+        await loadHistory();await loadDesignMode();return;
+      }
+      $('#request').value=edit.request||message;$('#request').focus();await startBuild(true);return;
+    }
+    const j=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/assistant/chat',{method:'POST',body:JSON.stringify({sessionId:state.session?.id,message:visualSelectionPrefix()+message})});
     state.session={id:j.session.id,title:j.session.title};try{localStorage.setItem('buildVibe.session.'+state.project.id,state.session.id)}catch{}
     const history=await api('/api/sessions/'+state.session.id+'/messages');renderAssistantMessages(history.messages||[]);
     const actions=$('#assistantOptions');if(actions)actions.replaceChildren();
-    for(const a of j.actions||[]){const b=document.createElement('button');b.className='assistant-action';b.textContent=a.label||a.type;b.onclick=async()=>{if(a.type==='modify')await applyAssistantMessage(a.request||message);else if(a.type==='prompt'||a.type==='apply-prompt'){if(j.prompt)$('#request').value=j.prompt;else if(a.request)$('#request').value=a.request;$('#request').focus();previewBlueprint();}};actions?.append(b);}
+    for(const a of j.actions||[]){
+      const b=document.createElement('button');b.className='assistant-action';b.textContent=a.label||a.type;
+      b.onclick=async()=>{if(a.type==='modify')await applyAssistantMessage(a.request||message);else if(a.type==='prompt'||a.type==='apply-prompt'){if(j.prompt)$('#request').value=j.prompt;else if(a.request)$('#request').value=a.request;$('#request').focus();previewBlueprint();}};
+      actions?.append(b);
+    }
     for(const o of j.options||[]){const b=document.createElement('button');b.className='assistant-option';b.textContent=o.label;b.onclick=()=>{$('#assistantInput').value=o.label;assistantSend()};actions?.append(b);}
-    if(j.prompt&&!actions.querySelector('[data-prompt-action]')){const b=document.createElement('button');b.className='assistant-action';b.dataset.promptAction='1';b.textContent='Use generated prompt';b.onclick=()=>{$('#request').value=j.prompt;previewBlueprint();};actions?.append(b);}
+    if(j.prompt&&actions&&!actions.querySelector('[data-prompt-action]')){const b=document.createElement('button');b.className='assistant-action';b.dataset.promptAction='1';b.textContent='Use generated prompt';b.onclick=()=>{$('#request').value=j.prompt;previewBlueprint();};actions.append(b);}
+    speakAssistant?.(j.reply||'');
     await loadHistory();
   }catch(e){feed('Assistant: '+e.message,'err');}
 }
