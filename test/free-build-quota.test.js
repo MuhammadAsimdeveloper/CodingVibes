@@ -35,6 +35,17 @@ test('free plan rejects native APK/AAB and Android targets, paid plans allow the
   assert.equal(targetPlanGate({plan:'pro',request:'Build an APK for Android',targetId:'android-kotlin'}).ok,true);
 });
 
+test('store reports monthly website quota usage from created runs',async()=>{
+  const fs=(await import('node:fs')).default,os=(await import('node:os')).default,path=(await import('node:path')).default;
+  const {Store} = await import('../src/db/store.js');
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-quota-')),store=new Store(path.join(dir,'db.sqlite'));
+  const user=store.createUser('quota@example.com','hash'),project=store.createProject(user.id,{name:'Quota'}),session=store.createSession(user.id,project.id,'Quota');
+  for(const req of ['basic one','basic two','immersive 3d product','animated landing'])store.createRun(user.id,session.id,req,'web-node');
+  const period=new Date().toISOString().slice(0,7);
+  assert.deepEqual(store.monthlyBuildQuotaUsage(user.id,period),{basic:2,threeD:1,animated:1,native:0});
+  store.close();fs.rmSync(dir,{recursive:true,force:true});
+});
+
 test('plan catalog exposes website quota and native capability policy',()=>{
   const free=planCatalog({}).find(x=>x.id==='free');
   const pro=planCatalog({}).find(x=>x.id==='pro');
