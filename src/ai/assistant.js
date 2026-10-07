@@ -3,8 +3,8 @@ const MAX_CONTEXT_ITEMS=8;
 const MAX_CONTEXT_CHARS=3000;
 
 const EDIT_PATTERNS=[
+  [/\b(?:change|make|set|turn|switch)\b[\s\S]{0,100}\b(?:car|vehicle|product|model|material|paint|color|colour)\b/i,'product_3d_edit'],
   [/\b(?:make|change|set|turn|switch)\b[\s\S]{0,80}\b(?:blue|red|green|black|white|purple|orange|yellow|pink|gray|grey)\b/i,'design_edit'],
-  [/\b(?:change|make|set)\b[\s\S]{0,80}\b(?:car|vehicle|product|model|material|paint|color|colour)\b/i,'product_3d_edit'],
   [/\b(?:add|import|upload|create)\b[\s\S]{0,120}\b(?:product|products|catalog|sku|inventory)\b/i,'catalog_edit'],
   [/\b(?:360|orbit|rotate|turntable|hotspot|camera path|9d|immersive)\b/i,'experience_3d_edit'],
   [/\b(?:layout|spacing|font|typography|radius|theme|style|button|hero|section)\b[\s\S]{0,80}\b(?:change|make|set|update|smaller|larger|bigger|tighter|wider)\b/i,'design_edit'],
