@@ -28,8 +28,9 @@ function experienceMarkup(spec){
  '<div class="experience-stage" data-property-tour="'+(property?'true':'false')+'"><canvas id="experience3d" aria-label="Interactive 3D scene"></canvas>'+
  '<div id="experienceFallback" class="experience-fallback">3D is loading. Your content remains available below.</div>'+
  '<div class="hotspots" data-experience-hotspots>'+ (property?'<button type="button" data-room="Living">Living room</button><button type="button" data-room="Kitchen">Kitchen</button><button type="button" data-room="Bedroom">Bedroom</button>':'') +'</div>'+
+ '<div class="experience-gallery" data-experience-gallery aria-label="3D media gallery"></div>'+
  '</div>'+
- (property?'<div class="tour-media"><div><h3>Video walkthrough</h3><p class="muted">Add an MP4/WebM tour or use the camera-tour recording.</p><label class="file-button" for="videoInput">Load walkthrough video</label><input id="videoInput" type="file" accept="video/mp4,video/webm" aria-label="Upload walkthrough video"></div><video id="tourVideo" controls playsinline preload="metadata"></video></div>':'')+
+ '<div class="tour-media"><div><h3>Media & walkthrough</h3><p class="muted">Add images or MP4/WebM video to the scene/product, then refine them with text commands in Studio.</p><label class="file-button" for="videoInput">Load video</label><input id="videoInput" type="file" accept="video/mp4,video/webm" aria-label="Upload walkthrough video"></div><video id="tourVideo" controls playsinline preload="metadata"></video></div>'+
  '</section><script type="module" src="/experience.js"></script>';
 }
 function contentSections(spec){
