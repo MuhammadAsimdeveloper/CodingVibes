@@ -172,9 +172,9 @@ export function auditProductExperience(workspace,spec={}){
       const wrapped=before.lastIndexOf('<label')>before.lastIndexOf('</label>')&&html.indexOf('</label>',start)>=0;
       return !wrapped&&(!id||!labels.has(id));
     });
-    addCheck('form_labels','form control labels',unlabeled.length===0,true,unlabeled.length?String(unlabeled.length):'');
+    addCheck('form_label_missing','form control labels',unlabeled.length===0,true,unlabeled.length?String(unlabeled.length):'');
     const badImages=[...html.matchAll(/<img\b([^>]*)>/gi)].filter(match=>!(/\balt\s*=\s*["'][^"']*["']/i.test(match[1])||/\brole\s*=\s*["']presentation["']/i.test(match[1])));
-    addCheck('image_alt','image alternative text',badImages.length===0,true,badImages.length?String(badImages.length):'');
+    addCheck('image_alt_missing','image alternative text',badImages.length===0,true,badImages.length?String(badImages.length):'');
     const remoteRuntime=[...source.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']https?:\/\/[^"']+["'][^>]*>/gi)];
     addCheck('remote_runtime_dependency','provider-independent runtime',remoteRuntime.length===0&&remoteImportCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
     addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']));
