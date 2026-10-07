@@ -33,7 +33,11 @@
     "seo:check": "node scripts/seo-check.mjs",
     "mirofish:status": "node --input-type=module -e \"import {getMiroFishStatus} from './src/platform/mirofish.js'; console.log(JSON.stringify(getMiroFishStatus(),null,2))\"",
     "ops:retention": "node scripts/retention.mjs",
-    "mirofish:smoke": "node --test test/mirofish-adapter.test.js"
+    "mirofish:smoke": "node --test test/mirofish-adapter.test.js",
+    "db:postgres:setup": "node scripts/postgres-setup.mjs",
+    "db:postgres:doctor": "node scripts/postgres-doctor.mjs",
+    "db:postgres:up": "docker compose -f compose.postgres.yml up -d",
+    "db:postgres:down": "docker compose -f compose.postgres.yml down"
   },
   "optionalDependencies": {
     "@daytona/sdk": "^0.220.0",
