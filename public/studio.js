@@ -263,7 +263,7 @@ function renderGenreButtons(host,genres,templates,active){
 }
 function renderTemplateGrid(templates,genre=''){
   const grid=$('#templateGrid');if(!grid)return;
-  const map={ecommerce:'web-commerce',marketplace:'web-commerce',portfolio:'web-portfolio',agency:'web-portfolio',realEstate:'web-realestate',hospitality:'web-hospitality',immersive:'web-3d',content:'web-content',education:'web-education',event:'web-event',business:'web-business',local:'web-business'};
+  const map={ecommerce:'web-commerce',marketplace:'web-commerce',portfolio:'web-portfolio',agency:'web-portfolio',realEstate:'web-realestate',hospitality:'web-hospitality',immersive:'web-3d',content:'web-content',education:'web-education',event:'web-event',business:'web-business',local:'web-business',animated:'web-animated'};
   const selected=genre?templates.filter(t=>map[t.kind]===genre||(genre==='web-3d'&&t.experience==='3d')):templates;
   grid.replaceChildren(...selected.slice(0,60).map(t=>{const card=document.createElement('article');card.className='template-card';const title=document.createElement('strong');title.textContent=t.label;const p=document.createElement('p');p.textContent=t.prompt||'';const meta=document.createElement('div');meta.className='template-meta';[t.category,t.experience,t.tier].forEach(v=>{const s=document.createElement('span');s.textContent=v;meta.append(s)});const b=document.createElement('button');b.className='cv-primary';b.textContent='Use template';b.onclick=()=>useTemplate(t);card.append(title,meta,p,b);return card;}));
 }
