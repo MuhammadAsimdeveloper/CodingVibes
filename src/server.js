@@ -33,7 +33,8 @@ import {requireSuperAdmin,opsOverview} from './ops/admin.js';
 import {backupStore} from './ops/backup.js';
 import {featureGate,hasFeature} from './billing/features.js';
 import {normalizeVideoRequest,createVideoTask,getVideoTask,downloadVideo} from './media/runway.js';
-import {getTemplate,searchTemplates} from './templates/catalog.js';
+import {getTemplate,searchTemplates,listTemplateGenres,templatePrompt} from './templates/catalog.js';
+import {BuildVibeAssistant,ASSISTANT_KNOWLEDGE} from './ai/assistant.js';
 import {listCapabilities} from './platform/capabilities.js';
 import {buildBlueprint} from './platform/blueprint.js';
 import {builderResearch} from './platform/research.js';
@@ -242,12 +243,67 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(/^\/api\/fleet\/runners\/[^/]+\/heartbeat$/.test(u.pathname)&&method==='POST'){try{requireRunnerToken(req.headers['x-codingvibes-runner-token']||String(req.headers.authorization||'').replace(/^Bearer\s+/i,''));const id=pathParam(u.pathname,'/api/fleet/runners/').replace(/\/heartbeat$/,'');const b=await readJson(req,MAX_BODY);const runner=store.heartbeatRunner(id,{status:b.status,metadata:b.metadata});if(!runner)return sendJson(res,404,{ok:false,error:'runner_not_found'});return sendJson(res,200,{ok:true,runner})}catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message})}}
   if(method==='GET'&&u.pathname==='/api/fleet/runners'){try{requireRunnerToken(req.headers['x-codingvibes-runner-token']||String(req.headers.authorization||'').replace(/^Bearer\s+/i,''));return sendJson(res,200,{ok:true,runners:store.listRunners({staleMs:Number(process.env.CODINGVIBES_RUNNER_STALE_MS||120000)})})}catch(e){return sendJson(res,e.status||401,{ok:false,error:e.message})}}
   if(method==='GET'&&u.pathname==='/.well-known/codingvibes-ai.json')return sendJson(res,200,{name:'Build Vibe AI Gateway',version:CODINGVIBES_VERSION,protocol:'openai-compatible',basePath:'/v1',endpoints:{models:'/v1/models',chatCompletions:'/v1/chat/completions'},authentication:'Authorization: Bearer cv_live_...',providerOverrideHeader:'X-CodingVibes-Provider'});
-  if(method==='GET'&&u.pathname==='/api/templates'){const q=u.searchParams.get('q')||'',category=u.searchParams.get('category')||'',kind=u.searchParams.get('kind')||'',experience=u.searchParams.get('experience')||'',tier=u.searchParams.get('tier')||'',featured=u.searchParams.get('featured')==='true';return sendJson(res,200,{ok:true,templates:searchTemplates(q,{category,kind,experience,tier,featured})});}
+  if(method==='GET'&&u.pathname==='/api/templates/genres')return sendJson(res,200,{ok:true,genres:listTemplateGenres()});
+  if(method==='GET'&&u.pathname==='/api/templates'){const q=u.searchParams.get('q')||'',category=u.searchParams.get('category')||'',kind=u.searchParams.get('kind')||'',experience=u.searchParams.get('experience')||'',tier=u.searchParams.get('tier')||'',genre=u.searchParams.get('genre')||'',featured=u.searchParams.get('featured')==='true';return sendJson(res,200,{ok:true,templates:searchTemplates(q,{category,kind,experience,tier,genre,featured}),genres:listTemplateGenres()});}
   if(method==='GET'&&u.pathname==='/api/builder/capabilities')return sendJson(res,200,{ok:true,capabilities:listCapabilities()});
   if(method==='GET'&&!u.pathname.startsWith('/api/')&&await serveStatic(req,res))return;
   if(method==='POST'&&u.pathname==='/api/analytics/events'){try{const b=await readJson(req,MAX_BODY),event=sanitizeProductEvent({userId,projectId:b.projectId||null,sessionId:b.sessionId||null,event:b.event,properties:b.properties});if(event.projectId&&!store.getProject(event.projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const saved=recordProductEvent(store,event);return sendJson(res,201,{ok:true,event:{id:saved.id,event:saved.event,created_at:saved.created_at}});}catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message});}}
   const a=requireAuth(req,res);if(!a)return;const userId=a.user_id;
-  if(method==='GET'&&u.pathname==='/api/builder/research')return sendJson(res,200,{ok:true,research:builderResearch()});
+  if(method==='GET'&&u.pathname==='/api/assistant/knowledge')return sendJson(res,200,{ok:true,knowledge:ASSISTANT_KNOWLEDGE});
+  if(method==='GET'&&u.pathname==='/api/assistant/conversations'){
+    const projectId=u.searchParams.get('projectId')||null;
+    return sendJson(res,200,{ok:true,conversations:store.listAssistantConversations(userId,{projectId,limit:Math.min(100,Math.max(1,Number(u.searchParams.get('limit')||50)))})});
+  }
+  if(method==='POST'&&u.pathname==='/api/assistant/conversations'){
+    const b=await readJson(req,MAX_BODY);
+    try{
+      const conversation=store.createAssistantConversation(userId,{projectId:b.projectId?String(b.projectId):null,name:String(b.name||'Build Vibe Assistant'),mode:String(b.mode||'assistant')});
+      return sendJson(res,201,{ok:true,conversation});
+    }catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message});}
+  }
+  if(/^\/api\/assistant\/conversations\/[^/]+\/messages$/.test(u.pathname)&&method==='GET'){
+    const id=pathParam(u.pathname,'/api/assistant/conversations/').replace(/\/messages$/,'');
+    const conversation=store.getAssistantConversation(id,userId);if(!conversation)return sendJson(res,404,{ok:false,error:'assistant_conversation_not_found'});
+    return sendJson(res,200,{ok:true,conversation,messages:store.listAssistantMessages(id,userId,{limit:200})});
+  }
+  if(/^\/api\/assistant\/conversations\/[^/]+$/.test(u.pathname)&&method==='DELETE'){
+    const id=pathParam(u.pathname,'/api/assistant/conversations/');
+    if(!store.deleteAssistantConversation(id,userId))return sendJson(res,404,{ok:false,error:'assistant_conversation_not_found'});
+    return sendJson(res,200,{ok:true,deleted:true});
+  }
+  if(method==='POST'&&u.pathname==='/api/assistant/chat'){
+    const b=await readJson(req,MAX_BODY),message=String(b.message||'').trim();
+    if(!message)return sendJson(res,400,{ok:false,error:'message_required'});
+    if(message.length>12000)return sendJson(res,413,{ok:false,error:'message_too_large'});
+    const projectId=b.projectId?String(b.projectId):null;
+    const project=projectId?store.getProject(projectId,userId):null;
+    if(projectId&&!project)return sendJson(res,404,{ok:false,error:'project_not_found'});
+    let conversation=b.conversationId?store.getAssistantConversation(String(b.conversationId),userId):null;
+    if(b.conversationId&&!conversation)return sendJson(res,404,{ok:false,error:'assistant_conversation_not_found'});
+    if(!conversation)conversation=store.createAssistantConversation(userId,{projectId,name:String(b.name||'Build Vibe Assistant'),mode:String(b.mode||'assistant')});
+    const history=store.listAssistantMessages(conversation.id,userId,{limit:24}).map(x=>({role:x.role,content:x.content}));
+    store.addAssistantMessage(conversation.id,userId,'user',message,{projectId,source:'in_product'});
+    const templateId=String(b.templateId||store.getProjectMemory?.(projectId,userId)?.templateId||'');
+    const template=templateId?getTemplate(templateId)||{}:{};
+    const assistant=new BuildVibeAssistant(userRouter(userId));
+    const runSummary=null;
+    if(String(b.stream||'true')!=='false'){
+      const emit=streamSse(res);
+      emit({type:'assistant_started',conversationId:conversation.id,intent:'pending'});
+      try{
+        const result=await assistant.stream({message,history,project:{name:project?.name,target:b.target||'auto',memory:projectId?store.getProjectMemory(projectId,userId):null},template,runSummary,tier:String(b.tier||'standard'),onToken:token=>emit({type:'assistant_token',conversationId:conversation.id,token})});
+        store.addAssistantMessage(conversation.id,userId,'assistant',result.text||JSON.stringify(result),{kind:result.kind,intent:result.intent,provider:result.provider,model:result.model,error:result.error||null});
+        emit({type:'assistant_completed',conversationId:conversation.id,result});
+      }catch(e){
+        emit({type:'assistant_completed',conversationId:conversation.id,result:{kind:'message',intent:'general',text:'Assistant failed safely. Please retry.',provider:'deterministic',model:'fallback',error:e.message}});
+      }
+      res.end();return;
+    }
+    const result=await assistant.complete({message,history,project:{name:project?.name,target:b.target||'auto',memory:projectId?store.getProjectMemory(projectId,userId):null},template,runSummary,mode:String(b.mode||'chat'),tier:String(b.tier||'standard')});
+    store.addAssistantMessage(conversation.id,userId,'assistant',result.text||JSON.stringify(result),{kind:result.kind,intent:result.intent,provider:result.provider,model:result.model,error:result.error||null});
+    return sendJson(res,200,{ok:true,conversation,result,messages:store.listAssistantMessages(conversation.id,userId,{limit:50})});
+  }
+    if(method==='GET'&&u.pathname==='/api/builder/research')return sendJson(res,200,{ok:true,research:builderResearch()});
   if(method==='GET'&&u.pathname==='/api/cloud/catalog')return sendJson(res,200,{ok:true,services:CLOUD_SERVICE_CATALOG});
   if(/^\/api\/projects\/[^/]+\/discoverability$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/discoverability$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(pid,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});const audit=auditDiscoverability(latest.workspace,{baseUrl:publicOrigin(req)});return sendJson(res,200,{ok:true,audit,aeo:aeoSummary(audit),verifiedRunId:latest.run.id});}
   if(/^\/api\/projects\/[^/]+\/discoverability\/audit$/.test(u.pathname)&&method==='POST'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/discoverability\/audit$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(pid,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});const audit=auditDiscoverability(latest.workspace,{baseUrl:publicOrigin(req)});store.addEvidence(latest.run.id,'discoverability',audit);return sendJson(res,200,{ok:true,audit,aeo:aeoSummary(audit),verifiedRunId:latest.run.id});}
@@ -358,6 +414,19 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(method==='GET'&&u.pathname==='/api/fleet')return sendJson(res,200,{ok:true,version:CODINGVIBES_VERSION,...fleetStatus(store)});
   if(method==='GET'&&u.pathname==='/api/targets/availability')return sendJson(res,200,{ok:true,targets:listTargets().map(t=>({...t,execution:targetExecutionAvailability(getTarget(t.id))}))});
     if(method==='GET'&&u.pathname==='/api/targets')return sendJson(res,200,{ok:true,targets:listTargets()});
+    if(method==='POST'&&/^\/api\/templates\/[^/]+\/start$/.test(u.pathname)){
+    const id=pathParam(u.pathname,'/api/templates/').replace(/\/start$/,'');
+    const template=getTemplate(id);if(!template)return sendJson(res,404,{ok:false,error:'template_not_found'});
+    try{
+      const name=String((await readJson(req,MAX_BODY)).name||template.label).slice(0,100)||template.label;
+      const project=store.createProject(userId,{name});
+      const memory={templateId:template.id,templateLabel:template.label,templateGenres:template.genres||[],experience:template.experience,createdFrom:'template'};
+      store.setProjectMemory(project.id,userId,memory);
+      const session=store.createSession(userId,project.id,'Template: '+template.label);
+      store.addMessage(session.id,'assistant','Template selected. Customize this product in Studio, then build when ready.',{kind:'template_selected',templateId:template.id});
+      return sendJson(res,201,{ok:true,project,session,template,prompt:templatePrompt(id)});
+    }catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message});}
+  }
   if(method==='GET'&&u.pathname==='/api/projects')return sendJson(res,200,{ok:true,projects:store.listProjects(userId)});
   if(/^\/api\/projects\/[^/]+\/capabilities$/.test(u.pathname)&&method==='GET'){
     const pid=pathParam(u.pathname,'/api/projects/').replace(/\/capabilities$/,'');
@@ -500,7 +569,10 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     const stat=fs.statSync(target);res.writeHead(200,{'content-type':'video/mp4','content-length':String(stat.size),'cache-control':'private, max-age=3600'});fs.createReadStream(target).pipe(res);return;
   }
   if(method==='POST'&&u.pathname==='/api/agent/stream'){
-    const b=await readJson(req,MAX_BODY),request=String(b.request||'').trim();if(!request)return sendJson(res,400,{ok:false,error:'request_required'});if(request.length>20000)return sendJson(res,413,{ok:false,error:'request_too_large'});const template=getTemplate(String(b.templateId||''));if(b.templateId&&!template)return sendJson(res,400,{ok:false,error:'template_not_found'});const effectiveRequest=template?`TEMPLATE BLUEPRINT: ${JSON.stringify({id:template.id,label:template.label,kind:template.kind,experience:template.experience,tier:template.tier,style:template.style,tags:template.tags,features:template.features,prompt:template.prompt})}\n\nCUSTOM USER REQUIREMENTS:\n${request}`:request;const billingForFeature=store.getBilling(userId),gate=featureGate(billingForFeature.plan,effectiveRequest);if(!gate.ok)return sendJson(res,402,{ok:false,error:'feature_requires_plan',feature:gate.blocked[0],requiredPlan:gate.requiredPlans[0]?.minPlan||'pro',plan:billingForFeature.plan,blocked:gate.blocked,requiredPlans:gate.requiredPlans});if(process.env.CODINGVIBES_ENFORCE_QUOTAS==='true'||(process.env.CODINGVIBES_ENFORCE_QUOTAS!=='false'&&process.env.NODE_ENV==='production')){const billing=store.getBilling(userId),usage=store.monthlyUsage(userId,currentPeriodKey()),quota=canStartRun({plan:billing.plan,runs:usage.runs,tokens:usage.tokens});if(!quota.ok)return sendJson(res,402,{ok:false,error:'usage_limit_reached',billing:{plan:billing.plan,usage,quota}});}let project;try{project=requireProjectRole(String(b.projectId||''),userId,'editor').project;}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}if(activeBuilds.has(userId))return sendJson(res,409,{ok:false,error:'build_already_running'});const session=b.sessionId?store.getSession(b.sessionId,userId):store.createSession(userId,project.id,String(b.title||'New build').slice(0,120));if(!session)return sendJson(res,404,{ok:false,error:'session_not_found'});const controller=new AbortController();activeBuilds.set(userId,{runId:null,controller});const baseEmit=streamSse(res);const emit=e=>{if(e?.type==='run_created'){const active=activeBuilds.get(userId);if(active)active.runId=e.runId;}baseEmit(e)};try{await executeBuild({request:effectiveRequest,userId,sessionId:session.id,project,store,router:userRouter(userId),onEvent:emit,commit:false,targetId:normalizeTargetId(b.target),signal:controller.signal});res.end();}catch(e){emit({type:'error',error:e.message});res.end();}finally{activeBuilds.delete(userId)}return;
+    const b=await readJson(req,MAX_BODY),request=String(b.request||'').trim();if(!request)return sendJson(res,400,{ok:false,error:'request_required'});if(request.length>20000)return sendJson(res,413,{ok:false,error:'request_too_large'});const template=getTemplate(String(b.templateId||''));if(b.templateId&&!template)return sendJson(res,400,{ok:false,error:'template_not_found'});const effectiveRequest=template?`TEMPLATE BLUEPRINT: ${JSON.stringify({id:template.id,label:template.label,kind:template.kind,experience:template.experience,tier:template.tier,style:template.style,tags:template.tags,features:template.features,prompt:template.prompt})}\n\nCUSTOM USER REQUIREMENTS:\n${request}`:request;const billingForFeature=store.getBilling(userId),gate=featureGate(billingForFeature.plan,effectiveRequest);if(!gate.ok)return sendJson(res,402,{ok:false,error:'feature_requires_plan',feature:gate.blocked[0],requiredPlan:gate.requiredPlans[0]?.minPlan||'pro',plan:billingForFeature.plan,blocked:gate.blocked,requiredPlans:gate.requiredPlans});if(process.env.CODINGVIBES_ENFORCE_QUOTAS==='true'||(process.env.CODINGVIBES_ENFORCE_QUOTAS!=='false'&&process.env.NODE_ENV==='production')){const billing=store.getBilling(userId),usage=store.monthlyUsage(userId,currentPeriodKey()),quota=canStartRun({plan:billing.plan,runs:usage.runs,tokens:usage.tokens});if(!quota.ok)return sendJson(res,402,{ok:false,error:'usage_limit_reached',billing:{plan:billing.plan,usage,quota}});}let project;try{project=requireProjectRole(String(b.projectId||''),userId,'editor').project;}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}if(activeBuilds.has(userId))return sendJson(res,409,{ok:false,error:'build_already_running'});const session=b.sessionId?store.getSession(b.sessionId,userId):store.createSession(userId,project.id,String(b.title||'New build').slice(0,120));if(!session)return sendJson(res,404,{ok:false,error:'session_not_found'});
+    const preflight=new BuildVibeAssistant(userRouter(userId)).clarify(request,{target:String(b.target||'auto'),templateId:String(b.templateId||'')});
+    if(preflight.required){store.addMessage(session.id,'user',request,{source:'builder',kind:'clarification_pending'});const emitClarification=streamSse(res);emitClarification({type:'clarification_required',...preflight});res.end();return;}
+    const controller=new AbortController();activeBuilds.set(userId,{runId:null,controller});const baseEmit=streamSse(res);const emit=e=>{if(e?.type==='run_created'){const active=activeBuilds.get(userId);if(active)active.runId=e.runId;}baseEmit(e)};try{await executeBuild({request:effectiveRequest,userId,sessionId:session.id,project,store,router:userRouter(userId),onEvent:emit,commit:false,targetId:normalizeTargetId(b.target),signal:controller.signal});res.end();}catch(e){emit({type:'error',error:e.message});res.end();}finally{activeBuilds.delete(userId)}return;
   }
   if(method==='POST'&&u.pathname.startsWith('/api/changesets/')&&u.pathname.endsWith('/commit')){const id=pathParam(u.pathname,'/api/changesets/').replace(/\/commit$/,'');const cs=store.getChangeset(id);if(!cs)return sendJson(res,404,{ok:false,error:'not_found'});const run=store.getRun(cs.run_id,userId);if(!run)return sendJson(res,404,{ok:false,error:'not_found'});try{const session=store.getSession(run.session_id,userId);if(!session)throw Object.assign(new Error('session_not_found'),{status:404});requireProjectRole(session.project_id,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}if(!run)return sendJson(res,404,{ok:false,error:'not_found'});if(cs.status!=='verified')return sendJson(res,409,{ok:false,error:'changeset_must_be_verified'});const b=await readJson(req,MAX_BODY);if(!b.confirmed)return sendJson(res,400,{ok:false,error:'explicit_confirmation_required'});const c=await commitWorkspace(run.workspace,cs.summary||'codingVibes changeset');if(!c.ok)return sendJson(res,409,{ok:false,error:c.stderr});const sha=(c.stdout.match(/\[[^ ]+ ([0-9a-f]+)\]/)||[])[1]||null;store.updateChangeset(id,{status:'committed',commit_sha:sha});return sendJson(res,200,{ok:true,commitSha:sha,stdout:c.stdout})}
   if(method==='PUT'&&/^\/api\/runs\/[^/]+\/files$/.test(u.pathname)){const id=pathParam(u.pathname,'/api/runs/').replace(/\/files$/,'');const run=store.getRun(id,userId);if(!run)return sendJson(res,404,{ok:false,error:'not_found'});try{const session=store.getSession(run.session_id,userId);if(!session)throw Object.assign(new Error('session_not_found'),{status:404});requireProjectRole(session.project_id,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}if(!run)return sendJson(res,404,{ok:false,error:'not_found'});const b=await readJson(req,MAX_BODY);if(typeof b.path!=='string')return sendJson(res,400,{ok:false,error:'path_required'});const target=resolveInside(run.workspace,b.path,{forWrite:true});fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,String(b.content??''),'utf8');store.updateRun(id,userId,{status:'edited'});const existing=store.listChangesets(id).filter(x=>x.status!=='committed').at(-1);if(existing)store.updateChangeset(existing.id,{status:'needs_verification'});else store.createChangeset(id,{status:'needs_verification',summary:'User edits',operations:[{type:'write',path:b.path}]});store.addEvidence(id,'user_edit',{path:b.path});return sendJson(res,200,{ok:true,path:b.path})}
