@@ -25,8 +25,9 @@ export function inferDesignSystem(text,visual){
   const palette={...(palettes[style]||palettes.modern)};
   const radius=has(lower,'sharp','square','brutalist')?'4px':has(lower,'pill','rounded','soft')?'24px':'16px';
   const shadow=style==='minimal'||style==='editorial'?'subtle':style==='luxury'||style==='futuristic'?'dramatic':'soft';
-  const requestedMotion=visual?.animation?(has(lower,'slow','cinematic')?'cinematic':has(lower,'snappy','fast')?'snappy':'smooth'):'reduced';
-  const motion={...(MOTION_PRESETS[requestedMotion]||MOTION_PRESETS.reduced),tokens:{
+  const explicitStatic=has(lower,'static','no animation','without animation','reduced motion only');
+  const requestedMotion=explicitStatic?'reduced':visual?.animation?(has(lower,'slow','cinematic')?'cinematic':has(lower,'snappy','fast')?'snappy':'smooth'):(has(lower,'luxury','premium','editorial')?'luxury':has(lower,'playful','fun','friendly')?'playful':'smooth');
+  const motion={...(MOTION_PRESETS[requestedMotion]||MOTION_PRESETS.smooth),tokens:{
     duration:{fast:'180ms',base:'420ms',slow:'760ms',scene:'1200ms'},
     easing:{standard:'cubic-bezier(.22,1,.36,1)',enter:'cubic-bezier(.16,1,.3,1)',exit:'cubic-bezier(.7,0,.84,0)'},
     stagger:'70ms',
@@ -38,5 +39,5 @@ export function inferDesignSystem(text,visual){
     body:has(lower,'serif body')?'serif':'sans',
     scale:has(lower,'huge','oversized','giant hero')?'dramatic':has(lower,'compact','dense')?'compact':'fluid'
   };
-  return {style,palette,radius,shadow,motion,layout,type,accessibility:{semanticHtml:true,keyboardFocus:true,contrastTarget:'AA',reducedMotion:true},responsive:{breakpoints:[480,768,1024,1440],touchTargets:'comfortable'},effects:{gradients:Boolean(visual?.gradients),glass:Boolean(visual?.glass),threeD:Boolean(visual?.threeD),canvas:Boolean(visual?.canvas),parallax:has(lower,'parallax','scroll depth')},content:{tone:style==='editorial'?'editorial':style==='playful'?'friendly':'clear',density:visual?.density||'comfortable'}};
+  return {style,palette,radius,shadow,motion,layout,type,accessibility:{semanticHtml:true,keyboardFocus:true,contrastTarget:'AA',reducedMotion:true},responsive:{breakpoints:[480,768,1024,1440],touchTargets:'comfortable'},effects:{gradients:Boolean(visual?.gradients),glass:Boolean(visual?.glass),threeD:Boolean(visual?.threeD),canvas:Boolean(visual?.canvas),parallax:has(lower,'parallax','scroll depth'),magneticHover:requestedMotion!=='reduced',clipReveal:requestedMotion==='cinematic'||requestedMotion==='editorial',cursorGlow:style==='futuristic'||style==='glass',staggeredGrid:true},content:{tone:style==='editorial'?'editorial':style==='playful'?'friendly':'clear',density:visual?.density||'comfortable'}};
 }
