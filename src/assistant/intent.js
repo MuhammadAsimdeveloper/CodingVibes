@@ -26,6 +26,7 @@ function parseDesignOperations(text){
   if(/round|rounded|radius/.test(lower)){const value=/\b(\d{1,2})px\b/.exec(lower);ops.push({type:'design',patch:{radius:{md:value?Number(value[1]):16}}})}
   if(/more compact|smaller spacing|tight spacing/.test(lower))ops.push({type:'design',patch:{spacing:{section:48,card:16}}});
   if(/more spacious|larger spacing|airy/.test(lower))ops.push({type:'design',patch:{spacing:{section:88,card:24}}});
+  const css={};if(color)css.color=color;if(/background/.test(lower)&&color)css.backgroundColor=color;if(/bigger|larger|increase (?:the )?(?:text|font|size)/.test(lower))css.fontSize='1.15em';if(/smaller|decrease (?:the )?(?:text|font|size)/.test(lower))css.fontSize='.9em';if(/bold|strong/.test(lower))css.fontWeight='700';if(/center(?:ed)?/.test(lower))css.textAlign='center';if(/round|rounded/.test(lower))css.borderRadius='16px';if(/square|sharp corners/.test(lower))css.borderRadius='0';if(/hide|remove from view|invisible/.test(lower))css.display='none';if(/show|visible/.test(lower)&&/hide|invisible/.test(lower))css.display='';if(Object.keys(css).length)ops.push({type:'design',css});
   if(/minimal/.test(lower))ops.push({type:'design',patch:{style:'minimal'}});
   if(/bold|vibrant/.test(lower))ops.push({type:'design',patch:{style:'bold'}});
   if(/luxury|premium/.test(lower))ops.push({type:'design',patch:{style:'luxury'}});
