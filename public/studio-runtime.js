@@ -37,7 +37,8 @@ export function routeBuildEvent(state,projectId,event={}){
   else if(type==='completed'||type==='target_verification'){
     runId=String(event.result?.runId||event.runId||runId||'')||null;
     status=String(event.result?.status||event.status||(event.passed?'verified':'failed'));
-  }else if(type==='error')status='error';
+    state.builds.delete(key);
+  }else if(type==='error'){status='error';state.builds.delete(key);}
   state.windows.set(key,{...window,status,runId});
   return {window:state.windows.get(key),terminal:TERMINAL_STATUSES.has(status),busy:BUSY_STATUSES.has(status)};
 }
