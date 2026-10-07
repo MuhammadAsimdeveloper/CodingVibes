@@ -9,7 +9,7 @@ function all(html,re){return [...html.matchAll(re)].map(x=>x[1]||'')}
 function count(html,re){return (html.match(re)||[]).length}
 function validMetaContent(value,min=1,max=500){const n=String(value||'').trim().length;return n>=min&&n<=max}
 function absoluteOrToken(value){return /^https?:\/\/[^\s]+$/i.test(value)||/^__SITE_URL__/.test(value)}
-function routeFromFile(file,root){const rel=path.relative(root,file).replaceAll(path.sep,'/');return rel==='index.html'?'/':'/'+rel.replace(/\.html$/,'');}
+function routeFromFile(file,root){const rel=path.relative(root,file).replaceAll(path.sep,'/');if(rel==='index.html')return '/app';if(rel==='landing.html')return '/';return '/'+rel.replace(/\.html$/,'');}
 function parseJsonLd(html,file){const blocks=all(html,/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi),parsed=[];for(const block of blocks){try{parsed.push(JSON.parse(block))}catch{parsed.push({__invalidJsonLd:true,file})}}return parsed}
 function schemaTypes(value){const out=[];const walk=x=>{if(!x||typeof x!=='object')return;if(Array.isArray(x)){x.forEach(walk);return}if(typeof x['@type']==='string')out.push(x['@type']);if(Array.isArray(x['@type']))out.push(...x['@type']);if(x['@graph'])walk(x['@graph']);};walk(value);return [...new Set(out)]}
 function sitemapUrls(root){const file=path.join(root,'sitemap.xml');if(!fs.existsSync(file))return {exists:false,urls:[],raw:''};const raw=fs.readFileSync(file,'utf8');return {exists:true,urls:all(raw,/<loc>([\s\S]*?)<\/loc>/gi).map(x=>x.trim()),raw};}
@@ -20,7 +20,7 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
   if(!files.length)issues.push('No HTML pages found');
 
   for(const file of files){
-    const html=fs.readFileSync(file,'utf8'),name=path.basename(file),route=routeFromFile(file,root),isPrivate=/\/(admin|login)(?:$|[/?#])/.test(route)||/admin\.html$|login\.html$/i.test(name);
+    const html=fs.readFileSync(file,'utf8'),name=path.basename(file),route=routeFromFile(file,root);
     const title=first(html,/<title[^>]*>([^<]{3,120})<\/title>/i);
     const description=first(html,/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
     const canonical=first(html,/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
