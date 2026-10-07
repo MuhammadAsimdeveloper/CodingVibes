@@ -54,9 +54,11 @@ export class Store{
       CREATE TABLE IF NOT EXISTS visual_baselines(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,user_id TEXT NOT NULL,route TEXT NOT NULL,stored_path TEXT NOT NULL,size INTEGER NOT NULL,sha256 TEXT NOT NULL,width INTEGER,height INTEGER,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(project_id,route),FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS audit_logs(id TEXT PRIMARY KEY,actor_user_id TEXT,action TEXT NOT NULL,resource_type TEXT NOT NULL,resource_id TEXT,metadata_json TEXT,created_at TEXT NOT NULL,FOREIGN KEY(actor_user_id) REFERENCES users(id) ON DELETE SET NULL);\n      CREATE TABLE IF NOT EXISTS product_events(id TEXT PRIMARY KEY,user_id TEXT,project_id TEXT,session_id TEXT,event TEXT NOT NULL,properties_json TEXT NOT NULL,created_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE SET NULL,FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE SET NULL);\n      CREATE TABLE IF NOT EXISTS feature_flags(key TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1,rollout_percentage REAL NOT NULL DEFAULT 100,environments_json TEXT NOT NULL,kill_switch INTEGER NOT NULL DEFAULT 0,config_json TEXT NOT NULL,updated_by TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(updated_by) REFERENCES users(id) ON DELETE SET NULL);\n      CREATE TABLE IF NOT EXISTS project_memory(project_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,memory_json TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS ai_preferences(user_id TEXT PRIMARY KEY,primary_provider TEXT NOT NULL,chain_json TEXT NOT NULL,default_models_json TEXT,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+      CREATE TABLE IF NOT EXISTS assistant_conversations(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,project_id TEXT,name TEXT NOT NULL,mode TEXT NOT NULL DEFAULT 'assistant',created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE);
+      CREATE TABLE IF NOT EXISTS assistant_messages(id TEXT PRIMARY KEY,conversation_id TEXT NOT NULL,role TEXT NOT NULL,content TEXT NOT NULL,metadata_json TEXT,created_at TEXT NOT NULL,FOREIGN KEY(conversation_id) REFERENCES assistant_conversations(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS api_tokens(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,name TEXT NOT NULL,token_hash TEXT NOT NULL UNIQUE,token_prefix TEXT NOT NULL,created_at TEXT NOT NULL,last_used_at TEXT,revoked_at TEXT,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id); CREATE INDEX IF NOT EXISTS idx_product_events_user ON product_events(user_id,created_at); CREATE INDEX IF NOT EXISTS idx_product_events_project ON product_events(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_product_events_event ON product_events(event,created_at); CREATE INDEX IF NOT EXISTS idx_workspace_members_user ON workspace_members(user_id,status); CREATE INDEX IF NOT EXISTS idx_workspace_invites_email ON workspace_invites(email,status,expires_at); CREATE INDEX IF NOT EXISTS idx_workspace_approvals_project ON workspace_approvals(project_id,status); CREATE INDEX IF NOT EXISTS idx_project_domains_project ON project_domains(project_id,status); CREATE INDEX IF NOT EXISTS idx_content_revisions_project ON content_revisions(project_id,version); CREATE INDEX IF NOT EXISTS idx_cloud_services_project ON cloud_services(project_id); CREATE INDEX IF NOT EXISTS idx_research_runs_project ON research_runs(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_provider_connections_user ON provider_connections(user_id,provider); CREATE INDEX IF NOT EXISTS idx_deployments_project ON deployments(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_oauth_states_state ON oauth_states(provider,state,expires_at); CREATE INDEX IF NOT EXISTS idx_sessions_project ON sessions(project_id); CREATE INDEX IF NOT EXISTS idx_run_goals_run ON run_goals(run_id);
-      CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id); CREATE INDEX IF NOT EXISTS idx_project_content_user ON project_content(user_id); CREATE INDEX IF NOT EXISTS idx_project_assets_project ON project_assets(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_visual_baselines_project ON visual_baselines(project_id,route); CREATE INDEX IF NOT EXISTS idx_agent_tasks_run ON agent_tasks(run_id,status); CREATE INDEX IF NOT EXISTS idx_evidence_run ON evidence(run_id); CREATE INDEX IF NOT EXISTS idx_events_run ON run_events(run_id); CREATE INDEX IF NOT EXISTS idx_runner_nodes_capability ON runner_nodes(capability); CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id); CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id,created_at); CREATE INDEX IF NOT EXISTS idx_ai_preferences_user ON ai_preferences(user_id);
+      CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id); CREATE INDEX IF NOT EXISTS idx_project_content_user ON project_content(user_id); CREATE INDEX IF NOT EXISTS idx_project_assets_project ON project_assets(project_id,created_at); CREATE INDEX IF NOT EXISTS idx_visual_baselines_project ON visual_baselines(project_id,route); CREATE INDEX IF NOT EXISTS idx_agent_tasks_run ON agent_tasks(run_id,status); CREATE INDEX IF NOT EXISTS idx_evidence_run ON evidence(run_id); CREATE INDEX IF NOT EXISTS idx_events_run ON run_events(run_id); CREATE INDEX IF NOT EXISTS idx_runner_nodes_capability ON runner_nodes(capability); CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id); CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id,created_at); CREATE INDEX IF NOT EXISTS idx_ai_preferences_user ON ai_preferences(user_id); CREATE INDEX IF NOT EXISTS idx_assistant_conversations_user ON assistant_conversations(user_id,updated_at); CREATE INDEX IF NOT EXISTS idx_assistant_conversations_project ON assistant_conversations(project_id,updated_at); CREATE INDEX IF NOT EXISTS idx_assistant_messages_conversation ON assistant_messages(conversation_id,created_at);
     `);
     const projectCols=this.db.prepare('PRAGMA table_info(projects)').all().map(x=>x.name);
     if(!projectCols.includes('repo_path'))this.db.exec('ALTER TABLE projects ADD COLUMN repo_path TEXT');
@@ -302,6 +304,46 @@ export class Store{
   listCloudServices(projectId,userId){if(!this.getProject(projectId,userId))return [];return this.db.prepare('SELECT * FROM cloud_services WHERE project_id=? ORDER BY type').all(projectId).map(x=>({...x,config:x.config_json?JSON.parse(x.config_json):{}}));}
   createResearchRun(projectId,userId,{query,provider='none',status='completed',results=[]}={}){if(!this.getProject(projectId,userId))throw new Error('Project not found');const id=randomUUID();this.db.prepare('INSERT INTO research_runs(id,project_id,user_id,query,status,provider,results_json,created_at) VALUES (?,?,?,?,?,?,?,?)').run(id,projectId,userId,String(query).slice(0,5000),String(status),String(provider),JSON.stringify(results||[]),this.now());return this.db.prepare('SELECT * FROM research_runs WHERE id=?').get(id);}
   listResearchRuns(projectId,userId){if(!this.getProject(projectId,userId))return [];return this.db.prepare('SELECT * FROM research_runs WHERE project_id=? ORDER BY created_at DESC').all(projectId).map(x=>({...x,results:x.results_json?JSON.parse(x.results_json):[]}));}
+  createAssistantConversation(userId,{projectId=null,name='Build Vibe Assistant',mode='assistant'}={}){
+    if(projectId&&!this.getProject(projectId,userId))throw new Error('project_not_found');
+    const id=randomUUID(),now=this.now();
+    this.db.prepare('INSERT INTO assistant_conversations(id,user_id,project_id,name,mode,created_at,updated_at) VALUES (?,?,?,?,?,?,?)').run(id,userId,projectId,String(name).slice(0,120),String(mode||'assistant').slice(0,40),now,now);
+    return this.getAssistantConversation(id,userId);
+  }
+  getAssistantConversation(id,userId){
+    const row=this.db.prepare('SELECT * FROM assistant_conversations WHERE id=? AND user_id=?').get(id,userId);
+    if(!row)return null;
+    return row;
+  }
+  listAssistantConversations(userId,{projectId=null,limit=50}={}){
+    const n=Math.min(Math.max(Number(limit)||50,1),100);
+    if(projectId&& !this.getProject(projectId,userId))return [];
+    const rows=projectId
+      ? this.db.prepare('SELECT * FROM assistant_conversations WHERE user_id=? AND project_id=? ORDER BY updated_at DESC LIMIT ?').all(userId,projectId,n)
+      : this.db.prepare('SELECT * FROM assistant_conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT ?').all(userId,n);
+    return rows;
+  }
+  addAssistantMessage(conversationId,userId,role,content,metadata={}){
+    const conv=this.getAssistantConversation(conversationId,userId);if(!conv)throw new Error('assistant_conversation_not_found');
+    const id=randomUUID(),now=this.now(),text=String(content||'').slice(0,30000);
+    if(!text)throw new Error('assistant_message_required');
+    this.db.prepare('INSERT INTO assistant_messages(id,conversation_id,role,content,metadata_json,created_at) VALUES (?,?,?,?,?,?)').run(id,conversationId,String(role||'assistant'),text,JSON.stringify(metadata&&typeof metadata==='object'?metadata:{}),now);
+    this.db.prepare('UPDATE assistant_conversations SET updated_at=? WHERE id=?').run(now,conversationId);
+    return this.getAssistantMessage(id,userId);
+  }
+  getAssistantMessage(id,userId){
+    const row=this.db.prepare('SELECT m.* FROM assistant_messages m JOIN assistant_conversations c ON c.id=m.conversation_id WHERE m.id=? AND c.user_id=?').get(id,userId);
+    return row?{...row,metadata:row.metadata_json?JSON.parse(row.metadata_json):{}}:null;
+  }
+  listAssistantMessages(conversationId,userId,{limit=100}={}){
+    if(!this.getAssistantConversation(conversationId,userId))return [];
+    const n=Math.min(Math.max(Number(limit)||100,1),300);
+    return this.db.prepare('SELECT * FROM assistant_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT ?').all(conversationId,n).reverse().map(x=>({...x,metadata:x.metadata_json?JSON.parse(x.metadata_json):{}}));
+  }
+  deleteAssistantConversation(id,userId){
+    const row=this.getAssistantConversation(id,userId);if(!row)return false;
+    this.db.prepare('DELETE FROM assistant_conversations WHERE id=? AND user_id=?').run(id,userId);return true;
+  }
   healthcheck(){try{return Boolean(this.db.prepare('SELECT 1 AS ok').get()?.ok===1);}catch{return false;}}
   close(){this.db.close();}
 }
