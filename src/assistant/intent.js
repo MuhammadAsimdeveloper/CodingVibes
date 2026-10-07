@@ -55,6 +55,10 @@ function parseThreeOperations(text){
   if(/floors*(?:plan|map)/.test(lower))ops.push({type:'content',collection:'properties',action:'ensure-floorplan'});
   if(/material|marble|wood|metal|glass/.test(lower)){const material=text.match(/\b(marble|wood|metal|glass|concrete|stone)\b/i)?.[1];if(material)ops.push({type:'content',collection:'scenes',action:'environment-material',value:material.toLowerCase()})}
   if(/lighting|brighter|darker/.test(lower))ops.push({type:'content',collection:'scenes',action:'lighting',value:/darker/.test(lower)?'low':'bright'});
+  const scale=text.match(/scale(?:\s+the)?\s+model\s+to\s+(\d+(?:\.\d+)?)/i);if(scale)ops.push({type:'content',collection:'scenes',action:'transform',patch:{scale:Number(scale[1])}});
+  const rotate=text.match(/rotate(?:\s+the)?\s+model(?:\s+by)?\s+(-?\d+(?:\.\d+)?)\s*degrees?/i);if(rotate)ops.push({type:'content',collection:'scenes',action:'transform',patch:{rotationY:Number(rotate[1])}});
+  const moveUp=text.match(/move(?:\s+the)?\s+model\s+up\s+(-?\d+(?:\.\d+)?)/i);if(moveUp)ops.push({type:'content',collection:'scenes',action:'transform',patch:{positionY:Number(moveUp[1])}});
+  const backgroundColor=colorFromText(text);if(/background/.test(lower)&&backgroundColor)ops.push({type:'content',collection:'scenes',action:'background',value:backgroundColor});
   const asset=text.match(/(?:use|attach|set)\s+(?:the\s+)?asset\s+["']?([^"']+?)["']?\s+(?:as|for)\s+(model|image|video|poster|floorplan)/i)||text.match(/(?:use|attach|set)\s+["']?([^"']+?)["']?\s+(model|image|video|poster|floorplan)/i);
   if(asset)ops.push({type:'content',collection:'assets',action:'attach-first-match',name:clean(asset[1],180),mode:asset[2].toLowerCase()});
   return ops;
@@ -86,6 +90,8 @@ export function applyThreeCommand(content={},command=''){
     if(op.collection==='scenes'&&op.action==='camera-profile'){targetScene.cameraPath=op.profile==='slow-cinematic'?[{x:12,y:6,z:14,duration:4},{x:-10,y:5,z:10,duration:4},{x:-8,y:4,z:-10,duration:4}]:[{x:12,y:6,z:14,duration:1.2},{x:-8,y:4,z:10,duration:1.2}];}
     if(op.collection==='scenes'&&op.action==='environment-material'){targetScene.environment={...(targetScene.environment||{}),material:op.value};}
     if(op.collection==='scenes'&&op.action==='lighting'){targetScene.environment={...(targetScene.environment||{}),lighting:op.value};}
+    if(op.collection==='scenes'&&op.action==='transform'){targetScene.transform={...(targetScene.transform||{}),...(op.patch||{})};}
+    if(op.collection==='scenes'&&op.action==='background'){targetScene.environment={...(targetScene.environment||{}),background:op.value};}
     if(op.collection==='products'&&op.action==='patch-first'){if(!out.products.length)out.products.push({id:'product-1',title:'Product',customFields:{}});const p=out.products[0];p.customFields={...(p.customFields||{}),...(op.patch.customFields||{})};}
   }
   return{content:out,classification};
