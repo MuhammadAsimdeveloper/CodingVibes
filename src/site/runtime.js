@@ -13,7 +13,9 @@ function applyTheme(c){
  if(brand.font&&brand.font!=='system')root.style.setProperty('font-family',String(brand.font).slice(0,120));
  let style=document.querySelector('#cv-theme-overrides');if(!style){style=document.createElement('style');style.id='cv-theme-overrides';document.head.append(style);}
  const bg=background&&/^#[0-9a-f]{3,8}$/i.test(background)?background:'#0b1020',fg=brand.textColor&&/^#[0-9a-f]{3,8}$/i.test(brand.textColor)?brand.textColor:'';
- style.textContent='body{background:'+bg+'!important}'+(fg?'body{color:'+fg+'!important}':'')+(primary?' .primary-link,.conversion-panel button,[data-add-to-cart],button.primary{background:'+primary+'!important}':'')+(accent?' .eyebrow,.verified{color:'+accent+'!important}':'');
+ const allowedProps=new Set(['color','backgroundColor','fontSize','fontWeight','textAlign','borderRadius','display','padding','margin']);
+ const targeted=Array.isArray(brand.visualOverrides)?brand.visualOverrides.slice(0,40).map(item=>{const selector=String(item?.selector||'');if(!/^(#[A-Za-z0-9_-]+|\.[A-Za-z_-][A-Za-z0-9_-]*(?:\.[A-Za-z_-][A-Za-z0-9_-]*)*|[a-z][a-z0-9-]*)$/.test(selector))return '';const css=Object.entries(item?.css||{}).filter(([k,v])=>allowedProps.has(k)&&String(v).length<=80).map(([k,v])=>k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())+':'+String(v).replace(/[{};]/g,'')+'!important').join(';');return css?selector+'{'+css+'}':'';}).filter(Boolean).join('');
+ style.textContent='body{background:'+bg+'!important}'+(fg?'body{color:'+fg+'!important}':'')+(primary?' .primary-link,.conversion-panel button,[data-add-to-cart],button.primary{background:'+primary+'!important}':'')+(accent?' .eyebrow,.verified{color:'+accent+'!important}':'')+targeted;
 }
 function render(){const c=state.content;if(!c)return;applyTheme(c);
 document.querySelectorAll('[data-brand-name]').forEach(e=>e.textContent=c.brand?.name||'Your brand');
