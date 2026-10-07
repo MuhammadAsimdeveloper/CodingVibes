@@ -75,7 +75,16 @@ export function buildBlueprint(request,{targetId='auto'}={}){
     },
     generatedSurfaces:['visual canvas','AI builder','content manager','data manager','admin portal','preview','publish'],
     nextActions:['Generate product','Customize design','Add data','Connect integrations','Verify','Publish'],
-    completion:{autoFillMissing:true,defaults:['responsive','accessible','reduced-motion','SEO metadata','legal surfaces','contact/conversion path','owner admin','error/loading/empty states'],qualityGate:'experience-quality',providerIndependentCore:true},
+    completion:{autoFillMissing:true,defaults:['responsive','accessible','reduced-motion','SEO metadata','legal surfaces','contact/conversion path','owner admin','error/loading/empty/success states','local assets/runtime'],qualityGate:'product-quality.v2',providerIndependentCore:true},
+    setup:{
+      mode:'beginner-first',
+      coreMode:'local-first',
+      canStartWithoutProvider:true,
+      steps:['Describe the product in plain language','Review the automatically completed plan','Build and preview','Fix verified issues automatically when possible','Publish or export the verified result'],
+      defaults:['responsive','accessible','reduced-motion','SEO','legal pages','content editing','error/loading/empty/success states'],
+      optionalProviders:['AI model provider','research provider','hosting','database','email','payments','analytics'],
+      toolchainRequired:Boolean(target.native)
+    },
     catalog:listCapabilities().filter(x=>capabilities.includes(x.id)),
   };
 }
