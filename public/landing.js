@@ -72,10 +72,7 @@ if(!prefersReduced){
       observer.unobserve(e.target);
     }
   }),{threshold:.10});
-  document.querySelectorAll('[data-reveal]').forEach((el,i)=>{
-    el.style.setProperty('--reveal-delay',String(Math.min(i,8)*70)+'ms');
-    observer.observe(el);
-  });
+  document.querySelectorAll('[data-reveal]').forEach(el=>observer.observe(el));
 }else{
   document.querySelectorAll('[data-reveal]').forEach(el=>el.classList.add('is-visible'));
 }
