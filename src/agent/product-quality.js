@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {auditImmersiveSource} from '../verification/immersive.js';
 
 const BASE_STATES=['loading','empty','error','success'];
 const BASE_FEATURES=[
@@ -186,6 +187,8 @@ export function auditProductExperience(workspace,spec={}){
     }
     if(spec.experience?.threeD){
       addCheck('3d_fallback','3D fallback',hasAny(source,['webgl','canvas','fallback','no 3d']),true);
+      const immersive=auditImmersiveSource(source,spec.experience||{});
+      for(const check of immersive.checks)addCheck('immersive_'+check.id,check.label,check.passed,check.critical);
     }
   }else{
     const target=String(spec.target?.id||'web-node');
