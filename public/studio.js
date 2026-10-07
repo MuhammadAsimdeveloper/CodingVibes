@@ -1,6 +1,8 @@
 import {createStudioState,registerProjectWindow,beginProjectBuild,routeBuildEvent,finishProjectBuild,isProjectBuilding,visibleProjectWindows} from './studio-runtime.js';
-const $=s=>document.querySelector(s);const studio=createStudioState();const state={user:null,projects:[],project:null,session:null,run:null,targets:[],providers:[],windows:studio.windows,builds:studio.builds,drafts:new Map(),targetsByProject:new Map(),templatesByProject:new Map(),chatBySession:new Map(),poll:null};
+const $=s=>document.querySelector(s);const studio=createStudioState();const state={user:null,projects:[],project:null,session:null,run:null,targets:[],providers:[],windows:studio.windows,builds:studio.builds,drafts:new Map(),targetsByProject:new Map(),templatesByProject:new Map(),chatBySession:new Map(),visualSelection:null,poll:null};
 async function api(path,options={}){const r=await fetch(path,{headers:{'content-type':'application/json',...(options.headers||{})},...options});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'HTTP '+r.status);e.status=r.status;throw e;}return j}
+function setVisualSelection(selection){state.visualSelection=selection||null;const el=$('#assistantSelection');if(el)el.textContent='Preview selection: '+(selection?([selection.tag,selection.id?'#'+selection.id:'',selection.text?' — '+selection.text:''].join('')||'selected element'):'none');}
+function visualSelectionPrefix(){const s=state.visualSelection;if(!s)return'';const bits=[s.tag,s.id?'id='+s.id:'',s.text?'text="'+s.text+'"':''].filter(Boolean);return bits.length?'Target the selected preview element ('+bits.join(', ')+'): ':''}
 function feed(text,kind=''){const e=document.createElement('div');e.className='cv-event '+kind;e.textContent=text;$('#feed').prepend(e);return e}
 function status(text,kind='idle'){$('#runStatus').textContent=text;$('#runStatus').className='status '+kind}
 function showTab(tab){document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));['build','content','design','app','publish'].forEach(x=>$('#tab-'+x).classList.toggle('hidden',x!==tab));if(state.project&&tab==='content'){loadWorkspaceSuite();loadContentRevisions();}if(state.project&&tab==='design')loadDesignMode();if(tab==='publish'){loadProviders();loadResearch();loadLaunchStatus();loadCloudServices();loadDomains();}}
@@ -204,7 +206,7 @@ async function assistantSend(){
   const input=$('#assistantInput'),message=input?.value.trim();if(!message||!state.project)return;
   input.value='';
   try{
-    const j=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/assistant/chat',{method:'POST',body:JSON.stringify({sessionId:state.session?.id,message})});
+    const contextualMessage=visualSelectionPrefix()+message;const j=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/assistant/chat',{method:'POST',body:JSON.stringify({sessionId:state.session?.id,message:contextualMessage})});
     state.session={id:j.session.id,title:j.session.title};try{localStorage.setItem('buildVibe.session.'+state.project.id,state.session.id)}catch{}
     const history=await api('/api/sessions/'+state.session.id+'/messages');renderAssistantMessages(history.messages||[]);
     const actions=$('#assistantOptions');if(actions)actions.replaceChildren();
