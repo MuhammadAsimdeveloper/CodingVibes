@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { inferDesignSystem } from '../src/agent/design-system.js';
+import { listTemplates } from '../src/templates/catalog.js';
+import { analyzeRequirements } from '../src/agent/requirements.js';
+import { generateProject } from '../src/agent/project-generator.js';
+import { applyExperienceQuality } from '../src/agent/experience-quality.js';
+
+test('polished motion is available by default but reduced motion remains explicit',()=>{
+  const system=inferDesignSystem('Build a modern business website',{style:'modern',animation:false,gradients:false,glass:false,threeD:false,canvas:false,density:'comfortable'});
+  assert.equal(system.motion.mode,'smooth');
+  assert.equal(system.accessibility.reducedMotion,true);
+  const staticSystem=inferDesignSystem('Build a static site with no animation',{style:'minimal',animation:false});
+  assert.equal(staticSystem.motion.mode,'reduced');
+});
+
+test('template catalog exposes distinct motion directions for non-3D and 3D experiences',()=>{
+  const templates=listTemplates();
+  assert.ok(templates.length>=60);
+  const threeD=templates.find(t=>t.experience==='3d');
+  const twoD=templates.find(t=>t.experience==='motion');
+  assert.ok(threeD?.motion?.scene);
+  assert.ok(threeD?.motion?.webglFallback);
+  assert.ok(twoD?.motion?.transition);
+  assert.notEqual(threeD.motion.mode,twoD.motion.mode);
+});
+
+test('deterministic generated websites ship a local dependency-free motion runtime',()=>{
+  const spec=analyzeRequirements('Create a premium hotel website with rooms, booking, gallery, testimonials and contact');
+  const plan=generateProject(spec);
+  const files=new Map(plan.files.map(f=>[f.path,f.content]));
+  assert.ok(files.has('public/motion.js'));
+  assert.match(files.get('public/motion.js'),/IntersectionObserver/);
+  assert.match(files.get('public/index.html'),/data-motion=/);
+  assert.match(files.get('public/styles.css'),/prefers-reduced-motion/);
+  assert.match(files.get('public/styles.css'),/motion-item/);
+});
+
+test('experience quality pass upgrades model-generated HTML without replacing its design',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-quality-'));
+  fs.mkdirSync(path.join(root,'public'),{recursive:true});
+  fs.writeFileSync(path.join(root,'public','index.html'),'<!doctype html><html><head><meta name="viewport" content="width=device-width"></head><body><main><section><h1>Custom site</h1></section></main></body></html>','utf8');
+  const report=applyExperienceQuality(root,{kind:'business',mode:'smooth'});
+  assert.equal(report.applied,true);
+  const html=fs.readFileSync(path.join(root,'public','index.html'),'utf8');
+  assert.match(html,/build-vibe-motion\.css/);
+  assert.match(html,/build-vibe-motion\.js/);
+  assert.equal(fs.existsSync(path.join(root,'public','build-vibe-motion.css')),true);
+  assert.equal(fs.existsSync(path.join(root,'public','build-vibe-motion.js')),true);
+});
