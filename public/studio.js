@@ -150,7 +150,35 @@ function handle(e,projectId){
 async function loadRun(id){try{const j=await api('/api/runs/'+id);state.run={id,status:j.run?.status};const p=j.run?.preview_url;if(p){$('#previewFrame').src=p;$('#previewLink').href=p}status(j.run?.status||'ready',j.run?.status==='verified'?'ok':'');const zip=$('#zipLink');if(zip&&j.run?.status==='verified'&&state.project){zip.href='/api/projects/'+encodeURIComponent(state.project.id)+'/export';zip.download='';}}catch{}}
 async function loadLaunchStatus(){loadDatabaseStatus();try{const j=await api('/api/launch/status'),r=j.ready,s=$('#launchSummary'),b=$('#billingSummary'),t=$('#launchTargets');if(s){s.textContent=r.ready?'Production contract: READY':'Production contract: '+r.blockers.length+' blocker(s)';s.className=r.ready?'status ok':'status err'}if(b&&j.billing)b.textContent='Plan: '+j.billing.plan+' · '+(j.billing.usage?.runs||0)+' builds · '+(j.billing.usage?.tokens||0)+' tokens';if(t)t.replaceChildren(...(j.targets||[]).map(x=>{const d=document.createElement('div');d.className='cv-event';const e=x.execution,mode=e?.host?.available?'local toolchain':e?.remote?.linux?'remote Linux':e?.remote?.macos?'remote macOS':e?.canBuild?'web runtime':'runner required';d.textContent=x.label+' · '+mode;return d}));if(!r.ready&&r.blockers?.length)feed('Launch blockers: '+r.blockers.join(', '),'err')}catch(e){feed('Launch status: '+e.message,'err')}}
   await loadBilling();
-async function loadBilling(){try{const j=await api('/api/billing'),b=j.billing||{},plans=j.plans||[],el=$('#billingPlans');if(!el)return;const current=b.plan||'free',creation=j.creationUsage||{basic:0,'3d':0,animated:0,apk:0};const provider=j.billingProvider||'stripe';const rows=plans.filter(p=>p.id!=='free').map(p=>{const d=document.createElement('div');d.className='cv-list-row';const left=document.createElement('span');left.textContent=p.label+' · 
+async function loadBilling(){
+  try{
+    const j=await api('/api/billing');
+    const b=j.billing||{},plans=j.plans||[],el=$('#billingPlans');
+    if(!el)return;
+    const current=b.plan||'free';
+    const creation=j.creationUsage||{basic:0,'3d':0,animated:0,apk:0};
+    const provider=j.billingProvider||'stripe';
+    const rows=plans.filter(p=>p.id!=='free').map(p=>{
+      const d=document.createElement('div');d.className='cv-list-row';
+      const left=document.createElement('span');left.textContent=p.label+' · $'+Number(p.priceUsd||0)+'/month';
+      const right=document.createElement('strong');right.textContent=p.id===current?'Current':'Available';
+      const limits=p.creationLimits||{};
+      const meta=document.createElement('small');meta.className='cv-muted';
+      meta.textContent='Sites: '+['basic','animated','3d','apk'].map(k=>k+': '+Number(creation[k]||0)+'/'+(limits[k]??'∞')).join(' · ');
+      d.append(left,right,meta);return d;
+    });
+    el.replaceChildren(...rows);
+    const free=document.createElement('div');free.className='cv-event';
+    free.textContent='Your usage: '+creation.basic+'/3 basic · '+creation.animated+'/1 animated · '+creation['3d']+'/1 3D · '+creation.apk+'/0 APK on Free policy';
+    el.prepend(free);
+    const pro=$('#upgradePro'),team=$('#upgradeTeam'),business=$('#upgradeBusiness'),manage=$('#manageBilling');
+    if(pro)pro.classList.toggle('hidden',current!=='free');
+    if(team)team.classList.toggle('hidden',current==='team'||current==='business');
+    if(business)business.classList.toggle('hidden',current==='business');
+    if(manage)manage.classList.toggle('hidden',!b.customerConfigured);
+    if($('#billingSummary'))$('#billingSummary').textContent='Plan: '+current+' · '+(b.usage?.runs||0)+' builds · '+(b.usage?.tokens||0)+' tokens · '+provider;
+  }catch(e){feed('Billing: '+e.message,'err')}
+}
 async function startCheckout(plan){try{const j=await api('/api/billing/checkout',{method:'POST',body:JSON.stringify({plan})});if(j.checkout?.url)location.href=j.checkout.url;else feed('Checkout created but no payment URL was returned.','err');}catch(e){feed('Checkout: '+e.message,'err')}}
 async function manageBilling(){try{const j=await api('/api/billing/portal',{method:'POST',body:'{}'});const url=j.portal?.url||j.portal?.subscriptionUrl;if(url)window.location.href=url;else feed('Billing portal did not return a URL.','err');}catch(e){feed('Billing portal: '+e.message,'err')}}
 async function loadDatabaseStatus(){
