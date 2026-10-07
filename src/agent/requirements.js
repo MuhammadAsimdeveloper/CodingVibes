@@ -5,6 +5,27 @@ import {kitForKind,SITE_KITS} from '../site/kits.js';
 const clean=s=>String(s??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,' ').trim();
 const has=(s,...xs)=>xs.some(x=>s.includes(x.toLowerCase()));
 const titleize=s=>String(s).split(/[-_\s]+/).filter(Boolean).map(x=>x[0]?.toUpperCase()+x.slice(1)).join('');
+export function completeSpec(raw={}){
+ const spec=raw&&typeof raw==='object'?raw:{};
+ const pages=Array.isArray(spec.pages)?[...new Set(spec.pages)]:['/','/admin'];
+ const apis=Array.isArray(spec.apis)?[...spec.apis]:[];
+ const kind=String(spec.siteKind||'business');
+ const behavior={...(spec.behavior||{})};
+ const addPage=p=>{if(!pages.includes(p))pages.push(p)};
+ const addApi=(method,path)=>{if(!apis.some(a=>String(a.method||'GET').toUpperCase()===method&&a.path===path))apis.push({method,path})};
+ addPage('/privacy'); addPage('/terms');
+ if(kind!=='immersive') addPage('/contact');
+ if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind)) addPage('/about');
+ if(['ecommerce','marketplace'].includes(kind)){addPage('/shop');addPage('/collections');addPage('/cart');addPage('/checkout');addPage('/account');addApi('GET','/api/products');addApi('POST','/api/orders')};
+ if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments')};
+ if(/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(String(spec.request||''))){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');behavior.authentication=true;behavior.publicLogin=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup')};
+ if(behavior.payments){addPage('/checkout');addApi('POST','/api/orders')};
+ behavior.contactForm=true; addApi('POST','/api/contact');
+ behavior.legalPages=true; behavior.launchReadyDefaults=true;
+ const autoCompleted=[...new Set([...(Array.isArray(spec.autoCompleted)?spec.autoCompleted:[]),'responsive UI','accessible focus and form states','contact/conversion path','privacy and terms pages','SEO metadata and sitemap','owner admin surface'])];
+ return {...spec,pages,apis,behavior,autoCompleted};
+}
+
 export function analyzeRequirements(request,{targetId='auto'}={}){
  const text=clean(request), lower=text.toLowerCase(), target=inferTarget(text,targetId);
  const templateMatch=text.match(/TEMPLATE BLUEPRINT:\s*(\{[\s\S]*?\})\s*\n\s*CUSTOM USER REQUIREMENTS:/i);
@@ -55,7 +76,7 @@ export function analyzeRequirements(request,{targetId='auto'}={}){
  const seo={title: '',description:'',canonical:true,robots:true,sitemap:true,structuredData:true,semanticHtml:true,openGraph:true};
  const styling={tone:visual.style==='minimal'?'minimal':visual.style==='bold'?'bold':'modern',responsive:true,accessibility:true,reducedMotion:true,darkMode:has(lower,'dark','dark mode'),visual,designSystem:inferDesignSystem(text,visual)};
  const deliverables=[...target.artifactTypes];
- const acceptance=[...pages.map(p=>`Page ${p} loads successfully`),'Owner admin portal is present and owner-only','Admin content can be viewed and edited without rewriting the visual template',...apis.map(a=>`${a.method} ${a.path} responds successfully`),'No uncaught browser console errors','No failed preview requests',`Target ${target.id} is represented by the expected project structure`];
+ const acceptance=[...pages.map(p=>`Page ${p} loads successfully`),'Owner admin portal is present and owner-only','Admin content can be viewed and edited without rewriting the visual template',...apis.map(a=>`${a.method} ${a.path} responds successfully`),'No uncaught browser console errors','No failed preview requests','Keyboard navigation and visible focus states work','Primary content remains usable when optional visual effects fail',`Target ${target.id} is represented by the expected project structure`];
  if(publicLogin)acceptance.push('Public login uses the Google OAuth flow and keeps Google client secrets server-side');
  if(behavior.payments)acceptance.push('Payment flow never accepts raw card data on the application server','Checkout/payment provider credentials remain server-side','Payment completion is verified through provider webhook or server confirmation');
  if(visual.animation)acceptance.push('Motion respects prefers-reduced-motion and avoids blocking page content');
@@ -64,7 +85,7 @@ export function analyzeRequirements(request,{targetId='auto'}={}){
  if(experience.propertyTour)acceptance.push('3D property experience supports model input, procedural fallback, camera tour, room hotspots, floor plan and video playback');
  if(experience.videoPlayback)acceptance.push('Video uses accessible controls, responsive loading, poster/fallback messaging and does not block the primary page');
  if(experience.recording)acceptance.push('Tour recording remains optional, bounded and user-initiated');
- acceptance.push('Core SEO metadata, canonical URL, semantic HTML, Open Graph metadata, robots and sitemap are present');
+ acceptance.push('Core SEO metadata, canonical URL, semantic HTML, Open Graph metadata, robots and sitemap are present','Legal/privacy routes are present for launch readiness','A contact/conversion path is present for customer-facing sites','Generated UI uses responsive layouts and accessible form labels');
  if(target.native)acceptance.push(`Target toolchain verification is required before the build can be marked verified`);
- return {version:'spec.v3',id:hash({text,target:target.id,siteKind}),request:text,appType:type,siteKind,siteTemplateId:templateMeta?.id||'',siteTemplateLabel:templateMeta?.label||'',contentModel:{kit:siteKind,collections:[...siteKit.collections],features:[...siteKit.features]},target,deliverables,stack:{runtime:target.runtime,language:target.language,frontend:target.framework,server:target.family==='web'?'node-http':target.framework,packageManager:target.packageManager},pages,components,apis,dataModel,behavior,styling,seo,experience,acceptance:acceptance.slice(0,60),scope:{words:text.split(/\s+/).filter(Boolean).length}};
+ return completeSpec({version:'spec.v3',id:hash({text,target:target.id,siteKind}),request:text,appType:type,siteKind,siteTemplateId:templateMeta?.id||'',siteTemplateLabel:templateMeta?.label||'',contentModel:{kit:siteKind,collections:[...siteKit.collections],features:[...siteKit.features]},target,deliverables,stack:{runtime:target.runtime,language:target.language,frontend:target.framework,server:target.family==='web'?'node-http':target.framework,packageManager:target.packageManager},pages,components,apis,dataModel,behavior,styling,seo,experience,acceptance:acceptance.slice(0,60),scope:{words:text.split(/\s+/).filter(Boolean).length}});
 }
