@@ -80,11 +80,5 @@ if(!prefersReduced){
   document.querySelectorAll('[data-reveal]').forEach(el=>el.classList.add('is-visible'));
 }
 
-document.querySelectorAll('.category-card,.feature-card,.support-grid article,.capability-grid article,.resource-card,.pricing-grid article,.faq-list details,.final-cta').forEach(el=>{
-  if(!prefersReduced)el.addEventListener('pointerenter',()=>el.style.transform='translateY(-3px)');
-  if(!prefersReduced)el.addEventListener('pointerleave',()=>el.style.transform='');
-});
-
-// Keep a prompt shared from the landing page when the user comes back from a failed/unfinished attempt.
 const savedPrompt=sessionStorage.getItem('buildVibeLandingPrompt');
 if(savedPrompt&&heroPrompt&&!heroPrompt.value){heroPrompt.value=savedPrompt;sessionStorage.removeItem('buildVibeLandingPrompt');}
