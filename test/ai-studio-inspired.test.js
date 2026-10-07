@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {AI_STUDIO_INSPIRED_FEATURES,normalizeBuildModeInput,buildModePreset,appGalleryEntries,annotationContract} from '../src/platform/ai-studio.js';
+import {AI_STUDIO_INSPIRED_FEATURES,AI_STUDIO_CHIPS,normalizeBuildModeInput,buildModePreset,appGalleryEntries,annotationContract} from '../src/platform/ai-studio.js';
 
 test('AI Studio inspired feature registry captures original product adaptations',()=>{
   const ids=AI_STUDIO_INSPIRED_FEATURES.map(x=>x.id);

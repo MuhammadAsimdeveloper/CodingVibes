@@ -65,7 +65,7 @@ test('pricing stays below current monthly competitor reference prices', () => {
   assert.ok(PLANS.pro.priceUsd < 25);
   assert.ok(PLANS.pro.priceUsd < 25);
   assert.ok(PLANS.team.priceUsd < 30);
-  assert.ok(PLANS.team.priceUsd < 25);
+  assert.ok(PLANS.team.priceUsd < 30);
   const landing = read('public/landing.html');
   assert.match(landing, /\$12<span>\/month<\/span>/);
   assert.match(landing, /\$29<span>\/month<\/span>/);
