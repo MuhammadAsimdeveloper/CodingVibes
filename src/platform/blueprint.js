@@ -75,6 +75,7 @@ export function buildBlueprint(request,{targetId='auto'}={}){
     },
     generatedSurfaces:['visual canvas','AI builder','content manager','data manager','admin portal','preview','publish'],
     nextActions:['Generate product','Customize design','Add data','Connect integrations','Verify','Publish'],
+    completion:{autoFillMissing:true,defaults:['responsive','accessible','reduced-motion','SEO metadata','legal surfaces','contact/conversion path','owner admin','error/loading/empty states'],qualityGate:'experience-quality',providerIndependentCore:true},
     catalog:listCapabilities().filter(x=>capabilities.includes(x.id)),
   };
 }
