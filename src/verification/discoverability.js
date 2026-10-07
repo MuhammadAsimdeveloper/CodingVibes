@@ -25,6 +25,7 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
     const description=first(html,/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
     const canonical=first(html,/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
     const robots=first(html,/<meta[^>]+name=["']robots["'][^>]+content=["']([^"']+)["']/i);
+    const isPrivate=/\/(admin|login|app|ops|pay)(?:$|[/?#])/.test(route)||/admin\.html$|login\.html$|ops\.html$|pay\.html$/i.test(name)||/\bnoindex\b/i.test(robots);
     const og={title:first(html,/property=["']og:title["'][^>]+content=["']([^"']+)["']/i),description:first(html,/property=["']og:description["'][^>]+content=["']([^"']+)["']/i),url:first(html,/property=["']og:url["'][^>]+content=["']([^"']+)["']/i),image:first(html,/property=["']og:image["'][^>]+content=["']([^"']+)["']/i),imageAlt:first(html,/property=["']og:image:alt["'][^>]+content=["']([^"']+)["']/i)};
     const twitter={card:first(html,/name=["']twitter:card["'][^>]+content=["']([^"']+)["']/i),title:first(html,/name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i),description:first(html,/name=["']twitter:description["'][^>]+content=["']([^"']+)["']/i),image:first(html,/name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i),imageAlt:first(html,/name=["']twitter:image:alt["'][^>]+content=["']([^"']+)["']/i)};
     const jsonLd=parseJsonLd(html,name),types=[...new Set(jsonLd.flatMap(schemaTypes))];
