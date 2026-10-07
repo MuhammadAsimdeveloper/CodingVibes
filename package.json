@@ -33,7 +33,9 @@
     "seo:check": "node scripts/seo-check.mjs",
     "mirofish:status": "node --input-type=module -e \"import {getMiroFishStatus} from './src/platform/mirofish.js'; console.log(JSON.stringify(getMiroFishStatus(),null,2))\"",
     "ops:retention": "node scripts/retention.mjs",
-    "mirofish:smoke": "node --test test/mirofish-adapter.test.js"
+    "mirofish:smoke": "node --test test/mirofish-adapter.test.js",
+    "assistant:import-aira-local-model": "node scripts/import-aira-local-model.mjs",
+    "assistant:smoke": "node --test test/assistant-intent.test.js test/assistant-runtime.test.js test/studio-history.test.js test/three-command.test.js test/visual-edit.test.js"
   },
   "optionalDependencies": {
     "@daytona/sdk": "^0.220.0",
