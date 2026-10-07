@@ -12,6 +12,6 @@ export function auditImmersiveSource(source,spec={}){
   if(spec.hotspots) add('hotspots','interactive hotspots',has(source,['hotspot','hotspots']),true);
   if(spec.cameraPath) add('camera_path','camera path / walkthrough',has(source,['camerapath','camera path','tour','walkthrough']),true);
   add('touch_keyboard','touch or keyboard-safe interaction',has(source,['pointer','touch','keydown','keyboard']),false);
-  const missing=checks.filter(x=>!x.passed).map(x=>x.label),critical=checks.filter(x=>x.critical),score=Math.round(critical.filter(x=>x.passed).length/Math.max(1,critical.length)*100);
+  const critical=checks.filter(x=>x.critical),missing=critical.filter(x=>!x.passed).map(x=>x.label),score=Math.round(critical.filter(x=>x.passed).length/Math.max(1,critical.length)*100);
   return {enabled:true,releaseReady:missing.length===0,score,checks,missing,warnings:checks.filter(x=>!x.passed&&!x.critical).map(x=>x.label)};
 }
