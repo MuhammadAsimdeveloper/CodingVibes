@@ -112,7 +112,7 @@ function buildOfflinePromptRequest(message){
     'Outcome: Build '+subject+'.',
     'Users: define primary customer/user roles and their jobs-to-be-done from the brief.',
     'Experience: responsive, accessible, production-quality UI with coherent design tokens and states.',
-    'Data: model the required entities; for commerce support a scalable product catalog, media, variants, inventory, search, filters and admin editing.',
+    'Data: model the required entities; for commerce support a scalable product catalog of products, media, variants, inventory, search, filters and admin editing.',
     '3D: when applicable support GLB/GLTF assets, image-to-3D ingestion, 360/orbit viewing, product/material/color changes, hotspots, camera paths, media and reduced-motion/WebGL fallbacks.',
     'Backend: authentication, secure server-side integrations, validation, storage and auditability as required.',
     'QA: unit/integration/e2e checks, visual checks, accessibility, security, failure states, regression verification and repair loop.',
