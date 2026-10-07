@@ -11,6 +11,10 @@ const FEATURE_RULES = {
   team_collaboration: { label: 'Team collaboration controls', minPlan: 'team' },
   audit_export: { label: 'Audit and release evidence export', minPlan: 'team' },
   scaleout: { label: 'Production scale-out controls', minPlan: 'team' },
+  apk_build: { label: 'Android / APK generation', minPlan: 'pro' },
+  assistant_history: { label: 'Assistant chat history', minPlan: 'free' },
+  local_llm: { label: 'Local LLM connections', minPlan: 'free' },
+  catalog_3d: { label: 'Structured catalog + 3D products', minPlan: 'free' },
   native_apk: { label: 'Native Android / APK generation', minPlan: 'pro' },
 };
 
