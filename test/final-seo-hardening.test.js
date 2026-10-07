@@ -12,7 +12,7 @@ test('public SEO pages emit final social and author metadata',()=>{
   assert.match(html,/property="og:image:height" content="630"/);
   assert.match(html,/name="twitter:image:alt"/);
   assert.match(html,/"@type":"Organization"/);
-  assert.match(html,/"@type":"SoftwareApplication"/);
+  assert.match(html,/"@type":\["SoftwareApplication","WebApplication"\]/);
   assert.match(html,/"@type":"WebPage"/);
 });
 
