@@ -2,7 +2,7 @@ const STYLE_ID='cv-visual-edit-style';
 function ensureStyle(){if(document.getElementById(STYLE_ID))return;const s=document.createElement('style');s.id=STYLE_ID;s.textContent='[data-cv-selected]{outline:2px solid #7d8dff!important;outline-offset:3px!important;cursor:crosshair!important}';document.head.append(s);}
 function describe(el){
  const text=(el.textContent||'').replace(/\s+/g,' ').trim().slice(0,120);
- return {tag:el.tagName.toLowerCase(),id:el.id||null,classes:String(el.className||'').split(/\s+/).filter(Boolean).slice(0,4),text};
+ const id=String(el.id||'').replace(/[^A-Za-z0-9_-]/g,'');const classes=String(el.className||'').split(/\s+/).filter(x=>/^[A-Za-z_-][A-Za-z0-9_-]*$/.test(x)).slice(0,2);const selector=id?'#'+id:classes.length?'.'+classes.join('.'):(el.tagName||'').toLowerCase();return {tag:el.tagName.toLowerCase(),id:el.id||null,classes,text,selector};
 }
 let last=null;
 document.addEventListener('click',e=>{
