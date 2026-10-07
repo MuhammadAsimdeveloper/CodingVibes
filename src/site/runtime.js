@@ -13,7 +13,6 @@ function applyTheme(c){
  if(brand.font&&brand.font!=='system')root.style.setProperty('font-family',String(brand.font).slice(0,120));
  let style=document.querySelector('#cv-theme-overrides');if(!style){style=document.createElement('style');style.id='cv-theme-overrides';document.head.append(style);}
  const bg=background&&/^#[0-9a-f]{3,8}$/i.test(background)?background:'#0b1020',fg=brand.textColor&&/^#[0-9a-f]{3,8}$/i.test(brand.textColor)?brand.textColor:'';
- const allowedProps=new Set(['color','backgroundColor','fontSize','fontWeight','textAlign','borderRadius','display','padding','margin']);
  function safeSelector(value){const s=String(value||'').trim();if(!s||s.length>180)return '';const first=s[0];if(first==='#'||first==='.')return s;if(first>='a'&&first<='z')return s;return '';}
  const allowedProps=new Set(['color','backgroundColor','fontSize','fontWeight','textAlign','borderRadius','display','padding','margin']);
  const safeCss=value=>Object.entries(value&&typeof value==='object'?value:{}).filter(([k,v])=>allowedProps.has(k)&&String(v).length<=80).map(([k,v])=>k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())+':'+String(v).replaceAll('{','').replaceAll('}','').replaceAll(';','')+'!important').join(';');
