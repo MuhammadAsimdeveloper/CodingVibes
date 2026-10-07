@@ -32,3 +32,15 @@ test('quality audit blocks hard dependency on remote runtime assets and missing 
   assert.ok(audit.blockingFindings.some(x=>x.id==='form_label_missing'));
   fs.rmSync(root,{recursive:true,force:true});
 });
+
+test('deterministic native and desktop fallbacks provide real navigation shells instead of a placeholder screen',async()=>{
+  const {generateTargetFallback}=await import('../src/targets/generator.js');
+  const {getTarget}=await import('../src/targets/registry.js');
+  const spec={request:'Build an appointment management app',pages:['/','/calendar','/settings'],apis:[],siteKind:'business',behavior:{},experience:{threeD:false}};
+  for(const id of ['mobile-flutter','android-kotlin','ios-swiftui','desktop-electron']){
+    const plan=generateTargetFallback(spec,getTarget(id));
+    const source=plan.files.map(x=>x.content).join('\n');
+    assert.match(source,/Home|Dashboard|Settings|Calendar/);
+    assert.doesNotMatch(source,/Generated for SwiftUI\\.|\\<p\\>\\$\\{escape/);
+  }
+});
