@@ -14,6 +14,8 @@ if(!fs.existsSync(envPath)){
     'HOST=127.0.0.1',
     'PORT=4400',
     'DATABASE_PATH=./data/codingvibes.db',
+    'CODINGVIBES_DB_BACKEND=sqlite',
+    'DATABASE_URL=',
     `CODINGVIBES_SESSION_SECRET=${secret(48)}`,
     `CODINGVIBES_CREDENTIALS_KEY=${secret(32)}`,
     `CODINGVIBES_ATTESTATION_SECRET=${secret(48)}`,
@@ -47,10 +49,12 @@ if(!fs.existsSync(envPath)){
     'STRIPE_WEBHOOK_SECRET=',
     'STRIPE_PRICE_PRO_MONTHLY=',
     'STRIPE_PRICE_TEAM_MONTHLY=',
+    'STRIPE_PRICE_BUSINESS_MONTHLY=',
     'PADDLE_API_KEY=',
     'PADDLE_WEBHOOK_SECRET=',
     'PADDLE_PRICE_PRO_MONTHLY=',
     'PADDLE_PRICE_TEAM_MONTHLY=',
+    'PADDLE_PRICE_BUSINESS_MONTHLY=',
     'PADDLE_CHECKOUT_URL=http://127.0.0.1:4400/pay',
     'PADDLE_CLIENT_TOKEN=',
     'CODINGVIBES_BILLING_PROVIDER=stripe',
@@ -62,4 +66,4 @@ if(!fs.existsSync(envPath)){
 }else console.log('.env.local already exists; leaving it unchanged.');
 for(const dir of dataDirs)fs.mkdirSync(path.join(root,dir),{recursive:true});
 console.log('Created local data directories.');
-console.log('Next: add a model API key, then run npm start.');
+console.log('Next: add a model API key, then run npm start. For PostgreSQL, copy .env.postgres.example to .env.postgres.local, run npm run db:postgres:up, then npm run db:postgres:setup.');
