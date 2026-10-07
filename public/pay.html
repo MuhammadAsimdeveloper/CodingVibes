@@ -1,17 +1,24 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Build Vibe — Secure Checkout</title>
-  <meta name="robots" content="noindex,nofollow">
-  <style>body{font-family:system-ui,sans-serif;min-height:100vh;margin:0;display:grid;place-items:center;background:#0b1020;color:#eef2ff}main{max-width:560px;padding:32px;text-align:center}p{color:#aab4d0}#status{margin-top:18px}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Build Vibe — Secure Checkout</title>
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#070712">
+<meta name="author" content="Build Vibe">
+<link rel="icon" href="/favicon.svg">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="/page-polish.css">
 </head>
-<body>
-<main>
-  <h1>Secure checkout</h1>
-  <p>Your Paddle transaction is opening in a secure hosted checkout.</p>
+<body class="page-polish checkout-page">
+<main class="checkout-card" aria-live="polite">
+  <div class="checkout-icon" aria-hidden="true">✦</div>
+  <div class="eyebrow">SECURE CHECKOUT</div>
+  <h1>Finish your Build Vibe plan.</h1>
+  <p>Your hosted Paddle checkout is opening in a secure flow. Keep this window open while the payment session is prepared.</p>
   <div id="status">Preparing checkout…</div>
+  <p><a class="back" href="/app">Return to Build Vibe</a></p>
 </main>
 <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 <script>
@@ -22,7 +29,7 @@
   const token='__PADDLE_CLIENT_TOKEN__';
   const successUrl='__SITE_URL__/app?billing=success';
   if(!transactionId){status.textContent='Checkout transaction is missing.';return;}
-  if(!token||token==='__PADDLE_CLIENT_TOKEN__'){status.textContent='Paddle checkout is not configured.';return;}
+  if(!token||token==='__PADDLE_CLIENT_TOKEN__'){status.textContent='Checkout is not configured yet. Return to the app to continue with another setup path.';return;}
   try{
     Paddle.Initialize({token,eventCallback:data=>{
       if(data?.name==='checkout.completed')status.textContent='Payment complete. Returning to Build Vibe…';

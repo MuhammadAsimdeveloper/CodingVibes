@@ -119,9 +119,35 @@ function showAuthError(){
   const el=$('#authError');if(el)el.textContent=messages[code]||'Google sign-in could not be completed. Please try again.';
   history.replaceState(null,'',location.pathname+location.hash);
 }
+async function applyLandingPrompt(){
+  const params=new URLSearchParams(location.search);
+  const request=params.get('prompt');
+  const mode=params.get('target');
+  if(request){
+    const field=$('#request');
+    if(field){field.value=request;field.dispatchEvent(new Event('input',{bubbles:true}));}
+    sessionStorage.removeItem('buildVibeLandingPrompt');
+  }
+  if(mode){
+    const select=$('#targetSelect');
+    if(select){
+      const preferred=mode==='mobile'
+        ? [...select.options].find(o=>/expo|react|mobile/i.test(o.value+' '+o.textContent))
+        : mode==='web-app'
+        ? [...select.options].find(o=>/web[-_ ]?app|saas/i.test(o.value+' '+o.textContent))
+        : null;
+      if(preferred)select.value=preferred.value;
+    }
+  }
+  if(request && location.search){
+    history.replaceState(null,'',location.pathname);
+    try{await previewBlueprint();}catch{}
+  }
+}
+
 async function auth(){
   const j=await api('/api/auth/me');
-  if(j.user){state.user=j.user;$('#appView').classList.remove('hidden');await Promise.all([loadCapabilities(),loadTargets(),loadProjects()]);}
+  if(j.user){state.user=j.user;$('#appView').classList.remove('hidden');await Promise.all([loadCapabilities(),loadTargets(),loadProjects()]);await applyLandingPrompt();}
   else{$('#authView').classList.remove('hidden');showAuthError();await initGoogleAuth();}
 }
 $('#loginBtn').onclick=async()=>{try{await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:$('#email').value,password:$('#password').value})});location.reload()}catch(e){$('#authError').textContent=e.message}};
