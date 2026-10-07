@@ -9,6 +9,7 @@ import {createAgentWorkspace,inspectWorkspace,commitWorkspace} from '../git/work
 import {startPreview} from '../runtime/preview.js';
 import {httpSmoke} from '../verification/http.js';
 import {applyExperienceQuality} from './experience-quality.js';
+import {auditProductExperience} from './product-quality.js';
 import {browserSmoke} from '../verification/playwright.js';
 import {verifyContract} from '../verification/contract.js';
 import {ToolRegistry} from '../tools/registry.js';
@@ -157,6 +158,9 @@ export async function executeBuild({request,userId,sessionId,project,store,route
    const experienceQuality=applyExperienceQuality(ws.worktree,{kind:spec.siteKind||'business',mode:spec.styling?.designSystem?.motion?.mode||'smooth'});
    store.addEvidence(run.id,'experience_quality',experienceQuality);
    emit({type:'experience_quality_completed',runId:run.id,...experienceQuality});
+   const productQuality=auditProductExperience(ws.worktree,spec);
+   store.addEvidence(run.id,'product_quality',productQuality);
+   emit({type:'product_quality_completed',runId:run.id,...productQuality});
    let projectContent=store.getProjectContent(project.id,userId);
    const contentFile=path.join(ws.worktree,'public','content','site.json');
    if(contentOperations.length){
