@@ -29,7 +29,7 @@ test('gallery entries provide remixable starter metadata and build presets',()=>
 
 test('annotation contract is bounded and rejects unsafe oversized payloads',()=>{
   assert.throws(()=>annotationContract({instruction:'x'.repeat(5000)}),/too_large/);
-  const good=annotationContract({x:10,y:20,width:50,height:40,label:'button',instruction:'make it blue'});
+  const good=annotationContract({x:10,y:20,width:50,height:40,label:'button',instruction:'make it blue',selector:'#hero',selectedText:'Hero headline'});
   assert.equal(good.type,'ui-annotation');
-  assert.equal(good.width,50);
+  assert.equal(good.width,50);assert.equal(good.selector,'#hero');assert.equal(good.selectedText,'Hero headline');
 });
