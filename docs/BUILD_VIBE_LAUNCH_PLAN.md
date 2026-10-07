@@ -887,3 +887,27 @@ At the end of each phase update:
 - machine-readable readiness evidence when the repository supports it.
 
 Then leave a concise implementation summary containing changed files, tests run, verification evidence and remaining blockers.
+
+
+## 41. Free Tool + Browser Agent Expansion — October 2026
+
+Read `docs/FREE_TOOL_ECOSYSTEM_RESEARCH.md` before implementing the expanded tool catalog.
+
+The utility strategy is now:
+1. **P0 Tool Fabric:** contracts, metadata, permissions, privacy mode, local/network execution, composition, audit and verification.
+2. **P1 Local utility suite:** PDF/document, image, text, encoding, data conversion, security and calculators.
+3. **P2 Web/SEO suite:** metadata, OG, robots, sitemap, schema, headers, links, Lighthouse-backed audits and web manifest.
+4. **P3 Browser agent suite:** isolated browser sessions and observe → act → verify workflows with authentication handoff, recording/replay and durable state.
+5. **P4 Distribution:** indexable tool pages, search, related tools, favorites/history, tool packs, MCP/API exposure and reliability benchmarks.
+
+### Implementation rule
+
+Do not add hundreds of shallow tools just to match directory counts. Each canonical capability must have a distinct task, contract, tests, privacy/security classification, documentation and verification evidence.
+
+Prefer official APIs over browser automation. Browser automation is a governed fallback for legitimate user-authorized workflows. Never implement arbitrary authentication/CAPTCHA/access-control bypass.
+
+### Competitive lesson
+
+Free-tool directories demonstrate distribution power: individual task pages + category hubs + instant browser execution. Open/client-side tool ecosystems demonstrate privacy and low infrastructure cost. Browser-agent infrastructure demonstrates that the next step is allowing agents to operate these capabilities and external websites, not merely presenting a catalog.
+
+Build Vibe should combine these into a **searchable, composable, agent-callable Tool Fabric** rather than a static collection.
