@@ -1,3 +1,4 @@
+import {routeSpecialists,assistantCapabilityMap,specialistInstructions} from './specialists.js';
 import {spawn} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,24 +18,24 @@ const KNOWLEDGE={
 
 function normalizeMessage(message){return String(message||'').replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,8000);}
 export function answerBuildVibeQuestion(message,context={}){
-  const text=normalizeMessage(message),lower=text.toLowerCase(),intent=classifyAssistantRequest(text);
-  if(intent.mode==='modify'&&(intent.target==='design'||intent.target==='3d'||intent.target==='content'))return{mode:'modify',reply:'I can apply that change directly to the current project. You do not need to repeat the original prompt.',actions:[{type:'modify',label:'Apply change',request:text}],intent};
+  const text=normalizeMessage(message),lower=text.toLowerCase(),intent=classifyAssistantRequest(text),specialists=routeSpecialists(text);
+  if(intent.mode==='modify'&&(intent.target==='design'||intent.target==='3d'||intent.target==='content'))return{mode:'modify',reply:'I can apply that change directly to the current project. You do not need to repeat the original prompt.',actions:[{type:'modify',label:'Apply change',request:text}],specialists,intent};
   if(intent.mode==='build'||/\b(prompt|plan)\b/.test(lower)||/i want to (build|create|make)/.test(lower)){
     const genre=/store|ecommerce|shop/.test(lower)?'ecommerce':/portfolio/.test(lower)?'portfolio':/3d|immersive/.test(lower)?'immersive':'business';
     const platform=/apk|android/.test(lower)?'Android APK':/ios|iphone/.test(lower)?'iOS':/desktop/.test(lower)?'desktop':'web';
     const p=buildPromptFromPlan({idea:text,genre,platform,style:'professional',features:[]});
-    return{mode:'prompt',reply:'Here is a reusable Build Vibe prompt based on your idea.',prompt:p,actions:[{type:'apply-prompt',label:'Use this prompt'}],intent};
+    return{mode:'prompt',reply:'Here is a reusable Build Vibe prompt based on your idea.',prompt:p,actions:[{type:'apply-prompt',label:'Use this prompt'}],specialists,intent};
   }
   for(const [key,item] of Object.entries(KNOWLEDGE)){
     if(lower.includes(key.replace('threeD','3d'))){
-      return{mode:'help',reply:item.title+': '+item.text,actions:[{type:'modify',label:'Open '+item.title},{type:'prompt',label:'Create a prompt'}],sources:['Build Vibe product knowledge'],intent};
+      return{mode:'help',reply:item.title+': '+item.text,actions:[{type:'modify',label:'Open '+item.title},{type:'prompt',label:'Create a prompt'}],sources:['Build Vibe product knowledge'],specialists,intent};
     }
   }
-  if(/how.*color|change.*color|blue|red|theme/.test(lower))return{mode:'help',reply:'You do not need to repeat your original build request. Tell Studio the change directly, for example: “make the primary color blue and the buttons darker.”',actions:[{type:'modify',label:'Apply a color change',request:'make the primary color blue'}],intent};
-  if(/3d|glb|gltf|model|hotspot|walkthrough|camera/.test(lower))return{mode:'help',reply:'For 3D, upload a GLB/GLTF model or images/video, then use short commands to change hotspots, camera paths, materials, lighting, product colors and scene content. The project keeps the scene configuration in structured content.',actions:[{type:'modify',label:'Open 3D controls',request:'open 3D scene controls'}],intent};
+  if(/how.*color|change.*color|blue|red|theme/.test(lower))return{mode:'help',reply:'You do not need to repeat your original build request. Tell Studio the change directly, for example: “make the primary color blue and the buttons darker.”',actions:[{type:'modify',label:'Apply a color change',request:'make the primary color blue'}],specialists,intent};
+  if(/3d|glb|gltf|model|hotspot|walkthrough|camera/.test(lower))return{mode:'help',reply:'For 3D, upload a GLB/GLTF model or images/video, then use short commands to change hotspots, camera paths, materials, lighting, product colors and scene content. The project keeps the scene configuration in structured content.',actions:[{type:'modify',label:'Open 3D controls',request:'open 3D scene controls'}],specialists,intent};
   const clarification=buildClarification(text,context);
-  if(clarification.needsInput)return{mode:'clarify',reply:clarification.question,options:clarification.options,intent};
-  return{mode:'help',reply:'I can help with Studio, Templates, Design, Content, Assets, 3D, QA, History, Deployments, project planning and Build Vibe workflows. Tell me what you are trying to do and I will guide you.',actions:[{type:'prompt',label:'Turn my idea into a build prompt'},{type:'modify',label:'Modify the current project'}],intent};
+  if(clarification.needsInput)return{mode:'clarify',reply:clarification.question,options:clarification.options,specialists,intent};
+  return{mode:'help',reply:'I can help with Studio, Templates, Design, Content, Assets, 3D, QA, History, Deployments, project planning and Build Vibe workflows. Tell me what you are trying to do and I will guide you.',actions:[{type:'prompt',label:'Turn my idea into a build prompt'},{type:'modify',label:'Modify the current project'}],specialists,intent};
 }
 function localConfig(env=process.env){
   const enabled=String(env.CODINGVIBES_ASSISTANT_LOCAL_LLM||'false').toLowerCase()==='true';
@@ -63,3 +64,4 @@ export async function runLocalAssistant(prompt,context=[],env=process.env){
   });
 }
 export {localConfig};
+export {assistantCapabilityMap,specialistInstructions};
