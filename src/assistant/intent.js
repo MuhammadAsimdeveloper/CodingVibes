@@ -53,6 +53,8 @@ function parseThreeOperations(text){
   if(/floors*(?:plan|map)/.test(lower))ops.push({type:'content',collection:'properties',action:'ensure-floorplan'});
   if(/material|marble|wood|metal|glass/.test(lower)){const material=text.match(/\b(marble|wood|metal|glass|concrete|stone)\b/i)?.[1];if(material)ops.push({type:'content',collection:'scenes',action:'environment-material',value:material.toLowerCase()})}
   if(/lighting|brighter|darker/.test(lower))ops.push({type:'content',collection:'scenes',action:'lighting',value:/darker/.test(lower)?'low':'bright'});
+  const asset=text.match(/(?:use|attach|set)\s+(?:the\s+)?asset\s+["']?([^"']+?)["']?\s+(?:as|for)\s+(model|image|video|poster|floorplan)/i)||text.match(/(?:use|attach|set)\s+["']?([^"']+?)["']?\s+(model|image|video|poster|floorplan)/i);
+  if(asset)ops.push({type:'content',collection:'assets',action:'attach-first-match',name:clean(asset[1],180),mode:asset[2].toLowerCase()});
   return ops;
 }
 export function buildClarification(input,context={}){
@@ -82,8 +84,23 @@ export function applyThreeCommand(content={},command=''){
     if(op.collection==='scenes'&&op.action==='camera-profile'){targetScene.cameraPath=op.profile==='slow-cinematic'?[{x:12,y:6,z:14,duration:4},{x:-10,y:5,z:10,duration:4},{x:-8,y:4,z:-10,duration:4}]:[{x:12,y:6,z:14,duration:1.2},{x:-8,y:4,z:10,duration:1.2}];}
     if(op.collection==='scenes'&&op.action==='environment-material'){targetScene.environment={...(targetScene.environment||{}),material:op.value};}
     if(op.collection==='scenes'&&op.action==='lighting'){targetScene.environment={...(targetScene.environment||{}),lighting:op.value};}
-    if(op.collection==='products'&&op.action==='patch-first')targetProduct.customFields={...(targetProduct.customFields||{}),...(op.patch.customFields||{})};
+    if(op.collection==='products'&&op.action==='patch-first'){if(!out.products.length)out.products.push({id:'product-1',title:'Product',customFields:{}});const p=out.products[0];p.customFields={...(p.customFields||{}),...(op.patch.customFields||{})};}
   }
   return{content:out,classification};
+}
+export function applyContentIntent(content={},operations=[]){
+ const out=JSON.parse(JSON.stringify(content||{}));
+ for(const op of operations||[]){
+  const list=Array.isArray(out[op.collection])?out[op.collection]:[];
+  if(op.action==='set-title'&&op.collection==='pages'){if(!list.length)list.push({id:'home',title:'Home',description:''});list[0].title=op.value;}
+  if(op.action==='rename-first'&&list[0])list[0].title=op.value;
+  if(op.action==='set-image-first'&&list[0])list[0].images=[op.value];
+  if(op.action==='bind-hero-video')out.media=[...(out.media||[]),{id:'hero-video',type:'video',url:'',role:'hero'}];
+  if(op.collection==='scenes'&&op.action==='add-hotspot'){if(!list[0])list.push({id:'scene-1',title:'Main scene',hotspots:[]});list[0].hotspots=[...(list[0].hotspots||[]),{id:'hotspot-'+Date.now().toString(36),label:op.value,room:op.value,position:{x:0,y:1.2,z:0}}];}
+  if(op.collection==='scenes'&&op.action==='camera-profile'){if(!list[0])list.push({id:'scene-1',title:'Main scene'});list[0].cameraPath=op.profile==='slow-cinematic'?[{x:12,y:6,z:14,duration:4},{x:-10,y:5,z:10,duration:4},{x:-8,y:4,z:-10,duration:4}]:[{x:12,y:6,z:14,duration:1.2},{x:-8,y:4,z:10,duration:1.2}];}
+  if(op.collection==='scenes'&&op.action==='environment-material'){if(!list[0])list.push({id:'scene-1',title:'Main scene'});list[0].environment={...(list[0].environment||{}),material:op.value};}
+  if(op.collection==='scenes'&&op.action==='lighting'){if(!list[0])list.push({id:'scene-1',title:'Main scene'});list[0].environment={...(list[0].environment||{}),lighting:op.value};}
+ }
+ return out;
 }
 export {parseDesignOperations,parseContentOperations,parseThreeOperations};
