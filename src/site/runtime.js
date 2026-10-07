@@ -8,7 +8,7 @@ function productCard(p){return '<article class="product-card" data-product-id="'
 function simpleCard(item,label='Item'){return '<article class="content-card"><div class="content-media">'+(item.image?'<img loading="lazy" src="'+esc(item.image)+'" alt="'+esc(item.title||label)+'">':'')+'</div><div><span class="content-kicker">'+esc(item.category||item.status||label)+'</span><h3>'+esc(item.title||label)+'</h3><p>'+esc(item.description||'')+'</p></div></article>'}
 function applyTheme(c){
  const root=document.documentElement,brand=c.brand||{},primary=brand.primaryColor,accent=brand.secondaryColor,background=brand.backgroundColor,surface=brand.surfaceColor;
- const set=(name,value)=>{if(/^#[0-9a-f]{3,8}$/i.test(String(value||''))||/^(rgb|hsl)a?\\(/i.test(String(value||'')))root.style.setProperty(name,value);}
+ const set=(name,value)=>{if(/^#[0-9a-f]{3,8}$/i.test(String(value||''))||/^(rgb|hsl)a?\(/i.test(String(value||'')))root.style.setProperty(name,value);}
  set('--cv-color-primary',primary);set('--cv-color-accent',accent);set('--cv-color-background',background);set('--cv-color-surface',surface);
  if(brand.font&&brand.font!=='system')root.style.setProperty('font-family',String(brand.font).slice(0,120));
  let style=document.querySelector('#cv-theme-overrides');if(!style){style=document.createElement('style');style.id='cv-theme-overrides';document.head.append(style);}
