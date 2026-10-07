@@ -10,6 +10,9 @@ function loadLocalEnv(){
     }
     if(process.env.DATABASE_URL)break;
   }
+  if(!process.env.DATABASE_URL)process.env.DATABASE_URL='postgresql://buildvibe:buildvibe_dev_password@127.0.0.1:5432/buildvibe';
+  if(!process.env.CODINGVIBES_DB_BACKEND)process.env.CODINGVIBES_DB_BACKEND='postgres';
+  if(!process.env.CODINGVIBES_PG_SSL_MODE)process.env.CODINGVIBES_PG_SSL_MODE='disable';
 }
 loadLocalEnv();
 import {createPostgresDatabase,ensurePostgresMigrations,postgresConfigStatus} from '../src/db/postgres.js';
