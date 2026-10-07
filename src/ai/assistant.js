@@ -70,6 +70,7 @@ export function buildClarification(message,{target='auto',templateId=''}={}){
 export function buildAssistantSystem({project={},template={},mode='chat'}={}){
   const projectName=cleanText(project?.name||'current project',120);
   const projectMemory=cleanText(JSON.stringify(project?.memory||{}),7000);
+  const persistentInstructions=cleanText(project?.memory?.assistantInstructions||'',4000);
   const templateLabel=cleanText(template?.label||'',120);
   return [
     'You are Build Vibe Assistant, the in-product coding and product-building guide.',
@@ -87,6 +88,7 @@ export function buildAssistantSystem({project={},template={},mode='chat'}={}){
     `Current project: ${projectName}`,
     templateLabel?`Selected template: ${templateLabel}`:'',
     projectMemory?`Relevant project memory: ${projectMemory}`:'',
+    persistentInstructions?`Persistent project instructions (user-authored): ${persistentInstructions}`:'',
     `Mode: ${cleanText(mode,80)}`
   ].filter(Boolean).join('\n\n');
 }
