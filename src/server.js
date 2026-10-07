@@ -53,6 +53,7 @@ import {telemetry} from './ops/telemetry.js';
 import {sanitizeProductEvent,recordProductEvent} from './ops/product-analytics.js';
 import {normalizeFeatureFlag,evaluateFeatureFlag} from './ops/feature-flags.js';
 import {scaleOutConfig as scaleOutConfigSnapshot} from './platform/scaleout.js';
+import {create3DTask,get3DTask,downloadGeneratedModel,normalizeModelRequest,listModelProviders} from './3d/model-generation.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');const PUBLIC_SEO_ROUTES=listPublicSeoPages().map(x=>x.path);
 export const store=new Store();export const router=new ModelRouter();
@@ -73,6 +74,32 @@ function apiTokenAuth(req){
   if(!row)return null;
   store.touchApiToken(row.id);
   return row;
+}
+function resolve3DImageInputs(project,userId,{assetIds=[],imageUrls=[]}={}){
+  const urls=(Array.isArray(imageUrls)?imageUrls:[]).map(x=>String(x||'').trim()).filter(x=>/^https?:\/\//i.test(x)||/^data:image\/(?:png|jpe?g|webp);base64,/i.test(x)).slice(0,4);
+  for(const id of (Array.isArray(assetIds)?assetIds:[]).slice(0,4)){
+    const asset=store.getProjectAsset(String(id),project.id,userId);
+    if(!asset)throw new Error('3d_asset_not_found');
+    if(asset.kind!=='image'&&!String(asset.mime).toLowerCase().startsWith('image/'))throw new Error('3d_asset_must_be_image');
+    const file=path.resolve(project.repo_path||'','public','assets',path.basename(asset.public_path));
+    const root=path.resolve(project.repo_path||'','public','assets');
+    if(!project.repo_path||!(file===root||file.startsWith(root+path.sep))||!fs.existsSync(file))throw new Error('3d_asset_file_not_found');
+    const stat=fs.statSync(file);if(stat.size>15*1024*1024)throw new Error('3d_source_image_too_large');
+    urls.push('data:'+asset.mime.split(';')[0]+';base64,'+fs.readFileSync(file).toString('base64'));
+  }
+  if(!urls.length)throw new Error('3d_image_required');
+  return urls.slice(0,4);
+}
+function attachGeneratedModel(project,userId,attachment,asset){
+  if(!attachment||typeof attachment!=='object')return null;
+  const collection=String(attachment.collection||'').trim(),id=String(attachment.recordId||'').trim();
+  if(!['products','properties','scenes'].includes(collection)||!id)return null;
+  const content=store.getProjectContent(project.id,userId)||createDefaultSiteContent({kind:collection==='products'?'ecommerce':collection==='properties'?'realEstate':'immersive',request:'3D model attach'});
+  const ref={assetId:asset.id,url:asset.publicPath,poster:asset.poster||'',alt:asset.name};
+  const updated=applyContentOperation(content,{type:'update',collection,id,patch:{model:ref}},{kind:content.kit||'business'});
+  store.upsertProjectContent(project.id,userId,updated);
+  try{writeProjectContentFile({...project,repo_path:project.repo_path},updated)}catch{}
+  return {collection,id,field:'model',assetId:asset.id};
 }
 function normalizeGatewayMessages(messages){
   if(!Array.isArray(messages)||messages.length<1||messages.length>40)throw Object.assign(new Error('messages_required'),{status:400});
@@ -332,6 +359,48 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(/^\/api\/projects\/[^/]+\/research$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/research$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});return sendJson(res,200,{ok:true,runs:store.listResearchRuns(pid,userId)});}
   if(/^\/api\/projects\/[^/]+\/research$/.test(u.pathname)&&method==='POST'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/research$/,'');try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const b=await readJson(req,MAX_BODY),query=String(b.query||'').trim();if(!query)return sendJson(res,400,{ok:false,error:'query_required'});const result=await researchWeb(query,{limit:Math.min(12,Math.max(1,Number(b.limit)||8))});const saved=store.createResearchRun(pid,userId,{query,provider:result.provider,status:result.status||'completed',results:result.results});if(b.runId&&store.getRun(String(b.runId),userId))store.addEvidence(String(b.runId),'web_research',{query,provider:result.provider,results:result.results});return sendJson(res,200,{ok:true,research:result,run:saved});}
 
+  if(method==='GET'&&u.pathname==='/api/3d/providers')return sendJson(res,200,{ok:true,providers:listModelProviders(process.env)});
+  if(/^\/api\/projects\/[^/]+\/3d\/jobs$/.test(u.pathname)&&method==='GET'){
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\/3d\/jobs$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});
+    return sendJson(res,200,{ok:true,jobs:store.list3DModelJobs(pid,userId,{limit:100})});
+  }
+  if(/^\/api\/projects\/[^/]+\/3d\/generate$/.test(u.pathname)&&method==='POST'){
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\/3d\/generate$/,'');
+    try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
+    const project=store.getProject(pid,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});
+    if(!project.repo_path)return sendJson(res,409,{ok:false,error:'project_repository_required'});
+    try{
+      const b=await readJson(req,MAX_BODY);
+      const normalized=normalizeModelRequest(b);
+      const imageUrls=resolve3DImageInputs(project,userId,{assetIds:normalized.assetIds,imageUrls:normalized.imageUrls});
+      const created=await create3DTask({...normalized,imageUrls,assetIds:[]});
+      const job=store.create3DModelJob(userId,pid,{provider:created.provider,taskId:created.taskId,taskKind:created.taskKind||'image-to-3d',input:{name:normalized.name,model:normalized.model,targetFormats:normalized.targetFormats,prompt:normalized.prompt,assetIds:normalized.assetIds,attachment:b.attachment&&typeof b.attachment==='object'?{collection:String(b.attachment.collection||''),recordId:String(b.attachment.recordId||'')} : null}});
+      return sendJson(res,202,{ok:true,job,provider:listModelProviders(process.env).find(x=>x.id===created.provider)||null});
+    }catch(e){return sendJson(res,e.status||400,{ok:false,error:String(e.message||e)})}
+  }
+  if(/^\/api\/3d\/jobs\/[^/]+$/.test(u.pathname)&&method==='GET'){
+    const id=pathParam(u.pathname,'/api/3d/jobs/'),job=store.get3DModelJob(id,userId);if(!job)return sendJson(res,404,{ok:false,error:'model_job_not_found'});
+    if(!['queued','running'].includes(job.status))return sendJson(res,200,{ok:true,job});
+    try{
+      const task=await get3DTask({provider:job.provider,taskId:job.task_id,taskKind:job.task_kind});
+      if(task.status==='running'){const next=store.update3DModelJob(id,userId,{status:'running',result:{progress:task.progress,thumbnailUrl:task.thumbnailUrl||null}});return sendJson(res,200,{ok:true,job:next});}
+      if(task.status==='failed'){const next=store.update3DModelJob(id,userId,{status:'failed',error:task.error||'3d_generation_failed',result:task});return sendJson(res,200,{ok:true,job:next});}
+      const url=task.modelUrls?.glb||task.modelUrls?.gltf||task.modelUrls?.obj||Object.values(task.modelUrls||{}).find(v=>typeof v==='string');
+      if(!url)throw new Error('3d_result_model_missing');
+      const bytes=await downloadGeneratedModel(url);
+      const project=store.getProject(job.project_id,userId);if(!project||!project.repo_path)throw new Error('project_repository_required');
+      const filename=job.id+'-model.glb',absolute=resolveInside(project.repo_path,path.join('public','assets',filename),{forWrite:true});fs.mkdirSync(path.dirname(absolute),{recursive:true});fs.writeFileSync(absolute,bytes);
+      const sha256=hashBuffer(bytes),record=store.createProjectAsset(job.project_id,userId,{name:job.input?.name||'Generated 3D model',mime:'model/gltf-binary',kind:'model',role:'product-model',size:bytes.length,sha256,publicPath:'/assets/'+filename,metadata:{generated:true,provider:job.provider,taskId:job.task_id,thumbnailUrl:task.thumbnailUrl||null,sourceImages:job.input?.assetIds||[]}}).id;
+      const asset=store.getProjectAsset(record,job.project_id,userId),attachment=attachGeneratedModel(project,userId,job.input?.attachment,asset);
+      const result={...task,asset:{id:asset.id,name:asset.name,publicPath:asset.public_path,mime:asset.mime,size:asset.size,sha256:asset.sha256},attachment};
+      const next=store.update3DModelJob(id,userId,{status:'succeeded',result});
+      store.addAuditLog({actorUserId:userId,action:'3d_model.generated',resourceType:'model_job',resourceId:id,metadata:{provider:job.provider,projectId:job.project_id,assetId:asset.id,attachment}});
+      return sendJson(res,200,{ok:true,job:next});
+    }catch(e){
+      const next=store.update3DModelJob(id,userId,{status:'failed',error:String(e.message||e),result:{error:String(e.message||e)}});
+      return sendJson(res,200,{ok:true,job:next});
+    }
+  }
   if(method==='POST'&&u.pathname==='/api/builder/blueprint'){const b=await readJson(req,MAX_BODY);const request=String(b.request||'').trim();if(!request)return sendJson(res,400,{ok:false,error:'request_required'});return sendJson(res,200,{ok:true,blueprint:buildBlueprint(request,{targetId:String(b.target||'auto')})});}
   if(method==='GET'&&u.pathname==='/api/billing'){const billing=store.getBilling(userId),usage=store.monthlyUsage(userId,currentPeriodKey());const plan=getPlan(billing.plan);return sendJson(res,200,{ok:true,billing:{...billing,stripe_customer_id:undefined,stripe_subscription_id:undefined,provider_customer_id:undefined,provider_subscription_id:undefined,provider_transaction_id:undefined,customerConfigured:Boolean(billing.stripe_customer_id||billing.provider_customer_id)},plan,usage,plans:planCatalog(),features:plan.features,billingProvider:String(billing.billing_provider||process.env.CODINGVIBES_BILLING_PROVIDER||'stripe')});}
   if(method==='GET'&&u.pathname==='/api/features'){const billing=store.getBilling(userId),plan=getPlan(billing.plan);return sendJson(res,200,{ok:true,plan:plan.id,features:plan.features,all:planCatalog().flatMap(x=>x.featureCatalog||[]).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).map(x=>({...x,enabled:hasFeature(plan.id,x.id)}))});}
