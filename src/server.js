@@ -52,10 +52,17 @@ import {telemetry} from './ops/telemetry.js';
 import {sanitizeProductEvent,recordProductEvent} from './ops/product-analytics.js';
 import {normalizeFeatureFlag,evaluateFeatureFlag} from './ops/feature-flags.js';
 import {scaleOutConfig as scaleOutConfigSnapshot} from './platform/scaleout.js';
+import {answerBuildVibeQuestion,runLocalAssistant,createLocalAssistantConfig} from './assistant/runtime.js';
+import {classifyAssistantRequest,buildClarification,applyContentIntent,applyThreeCommand} from './assistant/intent.js';
+import {buildProjectHistory} from './studio/history.js';
+import {templateGenres,genreForTemplate} from './templates/genres.js';
+import {BuildConcurrency} from './runtime/build-concurrency.js';
+import {buildMiroFishQAScenario,normalizeMiroFishQAResult} from './verification/mirofish-qa.js';
+import {runMiroFishScenario,getMiroFishStatus} from './integrations/mirofish.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');const PUBLIC_SEO_ROUTES=listPublicSeoPages().map(x=>x.path);
 export const store=new Store();export const router=new ModelRouter();
-const HOST=process.env.HOST||'127.0.0.1';const PORT=Number(process.env.PORT||4400);const MAX_BODY=Number(process.env.CODINGVIBES_MAX_BODY_BYTES||2*1024*1024);const activeBuilds=new Map();const buckets=new Map();const authBuckets=new Map();
+const HOST=process.env.HOST||'127.0.0.1';const PORT=Number(process.env.PORT||4400);const MAX_BODY=Number(process.env.CODINGVIBES_MAX_BODY_BYTES||2*1024*1024);const buildConcurrency=new BuildConcurrency(Number(process.env.CODINGVIBES_MAX_CONCURRENT_BUILDS_PER_USER||3));const activeBuilds=new Map();const buckets=new Map();const authBuckets=new Map();
 function clientAddress(req){if(process.env.CODINGVIBES_TRUST_PROXY==='true'){const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();if(forwarded)return forwarded;}return req.socket.remoteAddress||'unknown';}
 function consumeRateLimit(bucketMap,key,limit,windowMs){const now=Date.now();if(bucketMap.size>10000){for(const [k,v] of bucketMap){if(now-v.start>windowMs)bucketMap.delete(k);}}const b=bucketMap.get(key)||{start:now,count:0};if(now-b.start>windowMs){b.start=now;b.count=0}b.count++;bucketMap.set(key,b);return b.count<=limit;}
 function rateLimit(req){return consumeRateLimit(buckets,clientAddress(req),180,60000);}
@@ -64,6 +71,12 @@ function auth(req){const token=readSessionCookie(req);if(!token)return null;cons
 function requireAuth(req,res){const a=auth(req);if(!a){sendJson(res,401,{ok:false,error:'authentication_required'});return null}return a;}
 function requireProjectRole(projectId,userId,minimum='viewer'){return authorizeProjectRole(store,projectId,userId,minimum);}
 function userRouter(userId){return buildUserRouterForUser({store,userId,env:process.env});}
+function buildKey(userId,projectId){return String(userId)+':'+String(projectId)}
+function activeBuildForRun(userId,runId){for(const [key,value] of activeBuilds){if(key.startsWith(String(userId)+':')&&value.runId===String(runId))return value;}return null}
+function mergeObject(base,patch){if(!patch||typeof patch!=='object'||Array.isArray(patch))return base;const out={...(base||{})};for(const [key,value] of Object.entries(patch)){if(value&&typeof value==='object'&&!Array.isArray(value)&&out[key]&&typeof out[key]==='object'&&!Array.isArray(out[key]))out[key]=mergeObject(out[key],value);else out[key]=value;}return out}
+function assistantContext(projectId,userId,sessionId){const project=store.getProject(projectId,userId);const design=project?store.getDesignSystem(projectId,userId):null;const content=project?store.getProjectContent(projectId,userId):null;const messages=sessionId?store.listMessages(sessionId,userId).slice(-8):[];return{project:{id:project?.id,name:project?.name,workspaceId:project?.workspace_id},designSystem:design?.system||null,contentSummary:content?contentSummary(content):null,recentMessages:messages.map(x=>({role:x.role,content:x.content})),section:'studio'}
+}
+function persistAssistantMessage(session,userId,role,content,metadata={}){if(!session)return null;return store.addMessage(session.id,role,String(content||'').slice(0,12000),{...metadata,userId})}
 function apiTokenAuth(req){
   const header=String(req.headers.authorization||'');
   const token=header.replace(/^Bearer\s+/i,'').trim();
