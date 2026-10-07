@@ -2,6 +2,8 @@ const FEATURE_RULES = {
   basic_site: { label: 'Basic website generation', minPlan: 'free' },
   visual_builder: { label: 'Visual product builder', minPlan: 'free' },
   basic_seo: { label: 'Core SEO markup', minPlan: 'free' },
+  three_d_creation: { label: '3D website creation', minPlan: 'free' },
+  animated_creation: { label: 'Animated website creation', minPlan: 'free' },
   advanced_animation: { label: 'Advanced motion / 3D', minPlan: 'pro' },
   ai_video: { label: 'AI video generation', minPlan: 'pro' },
   advanced_seo: { label: 'Advanced SEO automation', minPlan: 'pro' },
@@ -34,7 +36,9 @@ export function classifyRequest(request = '') {
   const features = new Set(['basic_site']);
   if (/(^|\W)(3d|3-d|webgl|three\.js|threejs|babylon|spline|immersive|shader|particle|particles)(\W|$)/.test(text) ||
       /(gsap|scrolltrigger|lottie|rive|parallax|smooth scroll|advanced animation|motion design)/.test(text)) {
-    features.add('advanced_animation');
+    if(/(^|\W)(3d|3-d|webgl|three\.js|threejs|babylon|spline|immersive|virtual tour|360)(\W|$)/.test(text)) features.add('three_d_creation');
+    if(/(gsap|scrolltrigger|lottie|rive|parallax|smooth scroll|advanced animation|motion design)/.test(text)) features.add('animated_creation');
+    if(/(shader|particle|particles|advanced animation|motion design)/.test(text)) features.add('advanced_animation');
   }
   if (/(ai video|generate video|text[- ]to[- ]video|image[- ]to[- ]video|video generator|make a video)/.test(text)) {
     features.add('ai_video');
