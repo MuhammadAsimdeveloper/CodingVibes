@@ -18,7 +18,7 @@ export class ModelRouter{
   }
   resolveModel(tier,provider){
     const c=this.resolveProvider(provider),profile=this.profiles[c.id]||{};
-    if(['ollama','lmstudio','llama-cpp'].includes(c.id))return c.defaultModel||this.settings.defaultModels?.[tier]||profile.models?.[tier]||this.env.CODINGVIBES_MODEL_LOCAL||c.models?.[tier]||(c.id==='ollama'?'qwen2.5:7b':'local-model'); return this.env[`CODINGVIBES_MODEL_${String(tier).toUpperCase()}`]||c.models?.[tier]||this.models[tier]||this.models.standard;
+    if(['ollama','lmstudio','llama-cpp'].includes(c.id))return c.defaultModel||this.settings.defaultModels?.[tier]||profile.models?.[tier]||this.env.CODINGVIBES_MODEL_LOCAL||c.models?.[tier]||(c.id==='ollama'?'qwen2.5:7b':'local-model'); return c.defaultModel||this.settings.defaultModels?.[tier]||profile.models?.[tier]||this.env[`CODINGVIBES_MODEL_${String(tier).toUpperCase()}`]||c.models?.[tier]||this.models[tier]||this.models.standard;
   }
   requiresKey(provider){return !['ollama','lmstudio','llama-cpp'].includes(provider.id)&&Boolean(provider.apiKeyEnv);}
   getStatus(){const primary=this.resolveProvider(this.chain[0]);return{provider:primary.id,chain:this.chain,baseUrl:primary.baseUrl,configured:this.candidates().length>0,protocol:primary.protocol,models:{cheap:this.resolveModel('cheap',primary.id),standard:this.resolveModel('standard',primary.id),premium:this.resolveModel('premium',primary.id)},streaming:true,connectors:this.listConnectors()};}
