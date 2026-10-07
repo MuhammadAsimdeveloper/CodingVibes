@@ -449,7 +449,32 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(/^\/api\/projects\/[^/]+\/assistant\/chat$/.test(u.pathname)&&method==='POST'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/assistant\/chat$/,'');try{requireProjectRole(pid,userId,'viewer');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const b=await readJson(req,MAX_BODY),message=String(b.message||'').trim();if(!message)return sendJson(res,400,{ok:false,error:'message_required'});let session=b.sessionId?store.getSession(String(b.sessionId),userId):null;if(session?.project_id!==pid)session=null;if(!session)session=store.createSession(userId,pid,'Build Vibe Assistant');persistAssistantMessage(session,userId,'user',message,{kind:'assistant'});const ctx=assistantContext(pid,userId,session.id);let result=answerBuildVibeQuestion(message,ctx);const local=createLocalAssistantConfig(process.env);if(local.available&&result.mode==='help'&&result.reply.length<260){const enhanced=await runLocalAssistant(message,ctx.recentMessages,process.env);if(enhanced.success&&enhanced.text)result={...result,reply:enhanced.text,model:enhanced.model};}persistAssistantMessage(session,userId,'assistant',result.reply,{kind:'assistant',mode:result.mode,model:result.model||'deterministic'});return sendJson(res,200,{ok:true,session:{id:session.id,title:session.title},...result});}
   if(/^\/api\/projects\/[^/]+\/assistant\/apply$/.test(u.pathname)&&method==='POST'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/assistant\/apply$/,'');try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const b=await readJson(req,MAX_BODY),message=String(b.message||'').trim();if(!message)return sendJson(res,400,{ok:false,error:'message_required'});const session=b.sessionId?store.getSession(String(b.sessionId),userId)||store.createSession(userId,pid,'Assistant edits'):store.createSession(userId,pid,'Assistant edits');persistAssistantMessage(session,userId,'user',message,{kind:'modification'});const intent=classifyAssistantRequest(message);if(intent.mode!=='modify')return sendJson(res,200,{ok:true,applied:false,needsBuild:true,intent,request:message,sessionId:session.id});let content=store.getProjectContent(pid,userId);if(!content){const memory=store.getProjectMemory(pid,userId)||{},k=SITE_KITS[memory.template?.kind]?memory.template.kind:'business';content=createDefaultSiteContent({kind:k,templateId:memory.template?.id||'',templateLabel:memory.template?.label||'',request:message});}
     try{
-      if(intent.target==='3d'){content=applyThreeCommand(content,message).content;content=normalizeSiteContent(content,content.kit||'immersive');}
+      if(intent.target==='3d'){
+        content=applyThreeCommand(content,message).content;
+        content=normalizeSiteContent(content,content.kit||'immersive');
+        for(const op of intent.operations||[]){
+          if(op.collection==='assets'&&op.action==='attach-first-match'){
+            const asset=store.listProjectAssets(pid,userId).find(a=>String(a.name).toLowerCase().includes(String(op.name||'').toLowerCase()));
+            if(!asset)throw Object.assign(new Error('asset_not_found'),{status:404});
+            const mode=String(op.mode||asset.kind||'other').toLowerCase();
+            const kind=content.kit||'business';
+            if((kind==='ecommerce'||kind==='marketplace')&&content.products?.length){
+              const p=content.products[0];const ref={assetId:asset.id,url:asset.public_path,poster:'',alt:asset.name,scale:1};
+              if(mode==='model')p.model=ref;else if(mode==='video')p.video=ref;else if(mode==='image'||mode==='poster')p.images=[...(p.images||[]),asset.public_path];
+              else throw Object.assign(new Error('unsupported_asset_mode'),{status:400});
+            }else{
+              if(!content.scenes?.length)content.scenes=[{id:'scene-1',title:'Main scene',hotspots:[],cameraPath:[]}];
+              const s=content.scenes[0],ref={assetId:asset.id,url:asset.public_path,poster:'',alt:asset.name,scale:1};
+              if(mode==='model')s.model=ref;else if(mode==='video')s.video=ref;else if(mode==='image'||mode==='poster')s.poster=ref;else throw Object.assign(new Error('unsupported_asset_mode'),{status:400});
+            }
+          }
+        }
+      }
+      else if(intent.target==='content'){
+        const operations=intent.operations||[];
+        content=applyContentIntent(content,operations);
+        content=normalizeSiteContent(content,content.kit||'business');
+      }
       else if(intent.target==='design'){
         const current=store.getDesignSystem(pid,userId)?.system||normalizeDesignSystem({},'');
         for(const op of intent.operations||[]){const p=op.patch||{};if(p.colors)current.colors={...(current.colors||{}),...p.colors};if(p.radius)current.radius={...(current.radius||{}),...p.radius};if(p.spacing)current.spacing={...(current.spacing||{}),...p.spacing};if(p.style)current.visual={...(current.visual||{}),style:p.style};}
