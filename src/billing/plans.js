@@ -5,7 +5,7 @@ export const PLANS = {
     id: 'free', label: 'Free', monthlyRuns: 5, monthlyTokens: 250000, priceUsd: 0, priceEnv: null, paddlePriceEnv: null,
     creationLimits: {basic:3, '3d':1, animated:1, apk:0},
     quotas: {basicProjects:3, threeDProjects:1, animatedProjects:1, apkProjects:0},
-    features: ['basic_site','visual_builder','basic_seo'],
+    features: ['basic_site','visual_builder','basic_seo'],features: ['basic_site','visual_builder','basic_seo','three_d_creation','animated_creation','assistant_history','local_llm','catalog_3d'],
     videoTrialSeconds: Number(process.env.CODINGVIBES_VIDEO_TRIAL_SECONDS || 5),
     videoSeconds: 0,
   },
@@ -13,7 +13,7 @@ export const PLANS = {
     id: 'pro', label: 'Pro', priceUsd: 7, monthlyRuns: 100, monthlyTokens: 5000000, priceEnv: 'STRIPE_PRICE_PRO_MONTHLY', paddlePriceEnv: 'PADDLE_PRICE_PRO_MONTHLY',
     creationLimits: {basic:25, '3d':10, animated:25, apk:10},
     quotas: {basicProjects:25, threeDProjects:10, animatedProjects:25, apkProjects:10},
-    features: ['basic_site','visual_builder','basic_seo','advanced_animation','ai_video','advanced_seo','deployment','private_projects','custom_domain','team_collaboration','audit_export','scaleout'],
+    features: ['basic_site','visual_builder','basic_seo','advanced_animation',features: ['basic_site','visual_builder','basic_seo','three_d_creation','animated_creation','assistant_history','local_llm','catalog_3d','native_apk','advanced_animation','ai_video','advanced_seo','deployment','private_projects','custom_domain','team_collaboration','audit_export','scaleout'],
     videoTrialSeconds: 0,
     videoSeconds: Number(process.env.CODINGVIBES_PRO_VIDEO_SECONDS || 120),
   },
@@ -44,6 +44,12 @@ export const PLANS = {
 export function quotaForRequest(request='',targetId='',template={}){const t=classifyCreationType(request,targetId,template).type;return ({basic:'basicProjects','3d':'threeDProjects',animated:'animatedProjects',apk:'apkProjects'})[t]||'basicProjects';}
 export function buildQuotaSummary(plan='free',usage={}){const p=getPlan(plan),keys=['basicProjects','threeDProjects','animatedProjects','apkProjects'];return Object.fromEntries(keys.map(key=>{const limit=p.quotas?.[key]??0,used=Number(usage?.[key]||0);return [key,{limit,used,remaining:Number.isFinite(limit)?Math.max(0,limit-used):Infinity}]}));}
 export function canCreateWithPlan(plan='free',request='',usage={}){const key=quotaForRequest(request),summary=buildQuotaSummary(plan,usage),x=summary[key];return {ok:x.remaining>0,plan:getPlan(plan).id,quota:key,limit:x.limit,used:x.used,remaining:x.remaining};}
+
+
+export function planCapabilitySummary(plan='free'){
+ const p=getPlan(plan);
+ return {plan:p.id,label:p.label,priceUsd:p.priceUsd,creationLimits:{...(p.creationLimits||{})},features:[...(p.features||[])],apkAvailable:hasFeature(p.id,'native_apk')};
+}
 
 export function getPlan(id = 'free') { return PLANS[id] || PLANS.free; }
 export function currentPeriodKey(date = new Date()) { return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`; }
