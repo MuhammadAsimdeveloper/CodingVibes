@@ -391,8 +391,10 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
       const project=store.getProject(job.project_id,userId);if(!project||!project.repo_path)throw new Error('project_repository_required');
       const filename=job.id+'-model.glb',absolute=resolveInside(project.repo_path,path.join('public','assets',filename),{forWrite:true});fs.mkdirSync(path.dirname(absolute),{recursive:true});fs.writeFileSync(absolute,bytes);
       const sha256=hashBuffer(bytes),record=store.createProjectAsset(job.project_id,userId,{name:job.input?.name||'Generated 3D model',mime:'model/gltf-binary',kind:'model',role:'product-model',size:bytes.length,sha256,publicPath:'/assets/'+filename,metadata:{generated:true,provider:job.provider,taskId:job.task_id,thumbnailUrl:task.thumbnailUrl||null,sourceImages:job.input?.assetIds||[]}}).id;
-      const asset=store.getProjectAsset(record,job.project_id,userId),attachment=attachGeneratedModel(project,userId,job.input?.attachment,asset);
-      const result={...task,asset:{id:asset.id,name:asset.name,publicPath:asset.public_path,mime:asset.mime,size:asset.size,sha256:asset.sha256},attachment};
+      const asset=store.getProjectAsset(record,job.project_id,userId);
+      let attachment=null,attachmentError=null;
+      try{attachment=attachGeneratedModel(project,userId,job.input?.attachment,asset);}catch(e){attachmentError=String(e.message||e);}
+      const result={...task,asset:{id:asset.id,name:asset.name,publicPath:asset.public_path,mime:asset.mime,size:asset.size,sha256:asset.sha256},attachment,attachmentError};
       const next=store.update3DModelJob(id,userId,{status:'succeeded',result});
       store.addAuditLog({actorUserId:userId,action:'3d_model.generated',resourceType:'model_job',resourceId:id,metadata:{provider:job.provider,projectId:job.project_id,assetId:asset.id,attachment}});
       return sendJson(res,200,{ok:true,job:next});
