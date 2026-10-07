@@ -287,7 +287,12 @@ async function newChat(){
 }
 async function runFullQA(){
   if(!state.project)return;
-  try{const j=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/qa');const q=j.qa||{},el=$('#qaSummary');if(el)el.replaceChildren(...[['Status',q.status||'unknown'],['Score',String(q.score??0)],['Findings',String(q.diagnostics?.issues?.length||q.productQuality?.missing?.length||0)]].map(([k,v])=>{const d=document.createElement('div');d.className='cv-list-row';const s=document.createElement('span');s.textContent=k;const b=document.createElement('strong');b.textContent=v;d.append(s,b);return d;}));feed('Full QA report loaded.','ok');}catch(e){feed('QA: '+e.message,'err');}
+  try{
+    let runId=state.run?.id;
+    if(!runId){const h=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/history');runId=h.history?.sessions?.[0]?.runs?.[0]?.id||null;}
+    if(runId){const result=await api('/api/runs/'+runId+'/verify',{method:'POST',body:'{}'});if(result.result?.runId)state.run={id:result.result.runId,status:result.ok?'verified':'failed'};}
+    const j=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/qa');const q=j.qa||{},el=$('#qaSummary');if(el)el.replaceChildren(...[['Status',q.status||'unknown'],['Score',String(q.score??0)],['Findings',String(q.diagnostics?.findings?.length||q.productQuality?.missing?.length||0)]].map(([k,v])=>{const d=document.createElement('div');d.className='cv-list-row';const s=document.createElement('span');s.textContent=k;const b=document.createElement('strong');b.textContent=v;d.append(s,b);return d;}));feed(runId?'Full QA verification completed.':'No build exists yet; QA report is ready after the first build.','ok');
+  }catch(e){feed('QA: '+e.message,'err');}
 }
 async function runMiroFishQA(){
   if(!state.run){feed('Build a project first, then run MiroFish simulation QA.','err');return;}
