@@ -9,6 +9,7 @@ function config(env=process.env){
     checkoutUrl:String(env.PADDLE_CHECKOUT_URL||'').trim(),
     proPriceId:String(env.PADDLE_PRICE_PRO_MONTHLY||'').trim(),
     teamPriceId:String(env.PADDLE_PRICE_TEAM_MONTHLY||'').trim(),
+    businessPriceId:String(env.PADDLE_PRICE_BUSINESS_MONTHLY||'').trim(),
     apiBase:String(env.PADDLE_API_URL||API_BASE).trim().replace(/\/$/,'')
   };
 }
@@ -40,7 +41,7 @@ async function request(path,{env=process.env,method='POST',body,timeoutMs=15000}
 export function getPaddleStatus(env=process.env){
   const c=config(env);
   const configured=Boolean(c.apiKey&&c.webhookSecret&&c.proPriceId&&c.teamPriceId);
-  return {provider:'paddle',status:configured?'CONFIGURED':'NOT_CONFIGURED',available:configured,checkoutConfigured:Boolean(c.checkoutUrl),prices:{pro:Boolean(c.proPriceId),team:Boolean(c.teamPriceId)}};
+  return {provider:'paddle',status:configured?'CONFIGURED':'NOT_CONFIGURED',available:configured,checkoutConfigured:Boolean(c.checkoutUrl),prices:{pro:Boolean(c.proPriceId),team:Boolean(c.teamPriceId),business:Boolean(c.businessPriceId)}};
 }
 
 export async function createPaddleCustomer({email,userId,env=process.env}={}){
@@ -83,7 +84,7 @@ export function verifyPaddleSignature(rawBody,signature,secret,toleranceSec=5){
 export function paddlePlanFromPrice(priceId,env=process.env){
   const id=String(priceId||''),c=config(env);
   if(id&&c.teamPriceId===id)return 'team';
-  if(id&&c.proPriceId===id)return 'pro';
+  if(id&&c.proPriceId===id)return 'pro';if(id&&c.businessPriceId===id)return 'business';
   return null;
 }
 
@@ -96,7 +97,7 @@ export function paddlePlanFromSubscription(subscription,env=process.env){
     if(alt)return alt;
   }
   const p=String(subscription?.custom_data?.plan||subscription?.metadata?.plan||'');
-  return ['pro','team'].includes(p)?p:null;
+  return ['pro','team','business'].includes(p)?p:null;
 }
 
 export {config as paddleConfig};
