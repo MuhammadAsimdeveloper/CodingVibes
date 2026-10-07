@@ -1,7 +1,7 @@
 name: Build Vibe CI
 on:
   push:
-    branches: [main, master, codex/launch-verify-final, codex/final-source-13]
+    branches: [main, master, codex/launch-verify-final, codex/final-source-13, phase-14-ai-studio-postgres]
   pull_request:
     branches: [main, master]
 permissions:

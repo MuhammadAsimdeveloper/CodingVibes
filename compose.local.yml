@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: buildvibe
+      POSTGRES_PASSWORD: buildvibe
+      POSTGRES_DB: buildvibe
+    ports:
+      - "5432:5432"
+    volumes:
+      - buildvibe_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buildvibe -d buildvibe"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
   build-vibe:
     build:
       context: .
@@ -10,6 +27,12 @@ services:
       HOST: 0.0.0.0
       PORT: 4400
       CODINGVIBES_RUNTIME: local
+      CODINGVIBES_DB_BACKEND: postgres
+      DATABASE_URL: postgresql://buildvibe:buildvibe@postgres:5432/buildvibe
+      CODINGVIBES_PG_SSL_MODE: disable
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "4400:4400"
     volumes:
@@ -18,3 +41,4 @@ services:
 
 volumes:
   buildvibe_local_data:
+  buildvibe_postgres:
