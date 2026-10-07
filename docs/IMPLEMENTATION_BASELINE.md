@@ -1,62 +1,55 @@
-# Build Vibe Implementation Baseline — Phase 0
+# Build Vibe Implementation Baseline — Final Source Release
 
-Baseline captured from `MuhammadAsimdeveloper/CodingVibes` on 2026-10-06.
+Baseline refreshed from `MuhammadAsimdeveloper/CodingVibes` on 2026-10-07.
 
-## Repository state
+## Final source branch
 
 - Repository: `MuhammadAsimdeveloper/CodingVibes`
 - Product: Build Vibe
-- Baseline branch: `main`
-- Baseline commit: `09b980928d0f8414577ead1dc087cd946f56feae`
-- Baseline tree: `5ac77114ffa2fa238d71518d9eed910732f9a641`
-- Working branch created for launch work: `codex/launch-complete-13`
+- Source branch: `codex/final-source-13`
+- Release identity: 13.0.0
 - Roadmap: `docs/BUILD_VIBE_LAUNCH_PLAN.md`
-- Roadmap blob: `934ff179e2822d7bf0431c1354ac4dba947c882d`
+- Final source PR: #43
 
-The connected GitHub repository is the authoritative working tree for this session. A local checkout is not mounted and the runtime cannot resolve `github.com`, so a local `git status` cannot be truthfully reported. Remote branch/ref inspection shows `main` at the baseline commit above; no local uncommitted state has been modified.
+## Source-side completion
 
-## Package and architecture
+The repository-side hardening pass is complete for the release branch: reproducible dependency installation, canonical release identity, CI security gates, bounded agent execution, verification/repair, browser and visual QA, dedicated SEO/discoverability verification, public/generated SEO metadata, benchmark evaluation, MiroFish adapter/status contracts, scale-out checks, recovery checks, deployment preflight and release documentation are implemented and covered by automated checks.
 
-- Package: `build-vibe`
-- Release identity at baseline: 12.2.0
-- Node engine: >=22.0.0
-- Test runner: Node built-in test runner, `node --test test/*.test.js`
-- Static gate: `npm run check`
-- E2E gate: `npm run e2e`
-- Security gate: `npm run security:check`
-- Scale-out gate: `npm run scaleout:doctor`
-- Public launch gate: `npm run launch:check`
-- Final aggregate gate: `npm run final:check`
+## CI evidence on final source head
 
-Core architecture is retained: HTTP/session control plane, SQLite store, AI/provider routing, AppSpec planning, project-local Git workspaces/checkpoints, isolated run worktrees, controlled filesystem operations, runtime adapters, verification/evidence, repair loop, deployment/target adapters, SEO/public site, scale-out adapters, and persisted generated-project state.
+The authoritative Build Vibe CI run on the current final-source commit passed all configured gates: locked install, core dependency audit, test suite, coverage, syntax/static checks, SEO check, E2E, browser E2E, load smoke, recovery smoke, deployment preflight, benchmark, MiroFish status, retention dry run, security preflight, scale-out doctor and launch readiness. CodeQL and Dependency Review also passed on the same source line.
 
-## Existing CI baseline
+## Production boundary
 
-The latest main-branch GitHub Actions run before implementation:
+The repository is source-complete for the intended runner/infrastructure handoff. Public production still requires the deployment environment to provide the hardened isolated runner/toolchain, production secrets, persistent production storage/backups, TLS/reverse proxy, monitoring/alerting, domain configuration and live third-party credentials for enabled providers/payments.
 
-- Workflow: Build Vibe CI
-- Run: 37446597286
-- Commit: 09b980928d0f8414577ead1dc087cd946f56feae
-- Conclusion: success
-- Tests: 182 passed, 0 failed, 0 skipped
-- `npm run check`: passed
-- `npm run e2e`: passed; 5 pages, 4 APIs, 12 evidence records
-- `npm run security:check`: passed
-- `npm run scaleout:doctor`: passed using local SQLite/object-store/queue defaults
-- `npm run launch:check`: passed; 19 checks
+## Dependency security boundary
 
-The CI job uses Node 22 and currently runs `npm install --no-audit --no-fund`, not `npm ci`.
+Core CI enforces `npm audit --omit=optional --audit-level=high`. The optional Daytona runner dependency graph retains the currently known upstream `braces` advisory documented in `docs/DEPENDENCY_SECURITY.md`; the runner must remain isolated and patched when an upstream fix becomes available.
 
-## Known roadmap regressions
+## SEO contract
 
-The roadmap records two earlier regressions:
+Public indexable routes require unique title/description, canonical URL, robots directives, social metadata and valid structured data where applicable. Authenticated, operations and payment surfaces are noindex and excluded from the public sitemap. Generated public-site pages use the same metadata family.
 
-1. Syntax error in `test/launch-readiness.test.js`.
-2. Release identity mismatch involving 12.2.0 and 12.3.0.
+## Final verification commands
 
-On the current main snapshot, `test/launch-readiness.test.js` is syntactically valid and the release identity assertions pass against 12.2.0. No assertion or verification gate was removed to achieve that state. Phase 1 will make this consistency canonical rather than relying on scattered literals.
+```bash
+npm ci
+npm test
+npm run test:coverage
+npm run check
+npm run seo:check
+npm run security:check
+npm run scaleout:doctor
+npm run e2e
+npm run browser:e2e
+npm run ops:load
+npm run recovery:smoke
+npm run deployment:preflight
+npm run benchmark
+npm run mirofish:status
+CODINGVIBES_RETENTION_DRY_RUN=true npm run ops:retention
+npm run launch:check
+```
 
-## Phase 0 result
-
-Baseline is reproducible through the remote CI evidence above, architecture inspection is complete, and launch work is isolated on `codex/launch-complete-13`.
-
+Do not convert environment-dependent BLOCKED/NOT_CONFIGURED states into fake PASS results.

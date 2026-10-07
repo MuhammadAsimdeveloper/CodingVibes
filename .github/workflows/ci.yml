@@ -1,7 +1,7 @@
 name: Build Vibe CI
 on:
   push:
-    branches: [main, master, codex/launch-verify-final]
+    branches: [main, master, codex/launch-verify-final, codex/final-source-13]
   pull_request:
     branches: [main, master]
 permissions:
@@ -26,9 +26,12 @@ jobs:
           set -euo pipefail
           test -f package-lock.json
           npm ci --no-audit --no-fund
+      - name: Dependency vulnerability audit
+        run: npm audit --omit=optional --audit-level=high
       - run: npm test
       - run: npm run test:coverage
       - run: npm run check
+      - run: npm run seo:check
       - run: npm run e2e
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
