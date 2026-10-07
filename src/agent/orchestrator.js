@@ -8,6 +8,7 @@ import {makeRepairRequest,shouldRepair,MAX_REPAIR_CYCLES} from './repair.js';
 import {createAgentWorkspace,inspectWorkspace,commitWorkspace} from '../git/workspace.js';
 import {startPreview} from '../runtime/preview.js';
 import {httpSmoke} from '../verification/http.js';
+import {applyExperienceQuality} from './experience-quality.js';
 import {browserSmoke} from '../verification/playwright.js';
 import {verifyContract} from '../verification/contract.js';
 import {ToolRegistry} from '../tools/registry.js';
@@ -153,6 +154,9 @@ export async function executeBuild({request,userId,sessionId,project,store,route
    const tools=new ToolRegistry({workspace:ws.worktree,store,runId:run.id,confirm:async()=>true,signal});
    for(const operation of operations){ensureActiveRun(store,run,userId,signal);await tools.call(operation.type,operation);}
    store.updateChangeset(changeset.id,{status:'applied'});
+   const experienceQuality=applyExperienceQuality(ws.worktree,{kind:spec.siteKind||'business',mode:spec.styling?.designSystem?.motion?.mode||'smooth'});
+   store.addEvidence(run.id,'experience_quality',experienceQuality);
+   emit({type:'experience_quality_completed',runId:run.id,...experienceQuality});
    let projectContent=store.getProjectContent(project.id,userId);
    const contentFile=path.join(ws.worktree,'public','content','site.json');
    if(contentOperations.length){

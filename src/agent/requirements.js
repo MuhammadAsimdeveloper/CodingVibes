@@ -56,10 +56,11 @@ export function analyzeRequirements(request,{targetId='auto'}={}){
  const paymentProvider=has(lower,'stripe')?'stripe':has(lower,'paypal')?'paypal':has(lower,'razorpay')?'razorpay':null;
  const apis=[];if(publicLogin)apis.push({method:'GET',path:'/api/auth/session'});apis.push({method:'GET',path:'/api/admin/overview'});if(pages.includes('/signup'))apis.push({method:'POST',path:'/api/auth/signup'});if(pages.includes('/shop'))apis.push({method:'GET',path:'/api/products'});if(pages.includes('/checkout')){apis.push({method:'POST',path:'/api/orders'});if(paymentProvider==='stripe')apis.push({method:'POST',path:'/api/checkout/session'});if(paymentProvider)apis.push({method:'POST',path:`/api/webhooks/${paymentProvider}`});}apis.push({method:'GET',path:'/api/admin/session'});if(pages.includes('/blog'))apis.push({method:'GET',path:'/api/posts'});if(pages.includes('/calendar'))apis.push({method:'GET',path:'/api/appointments'});if(pages.includes('/analytics'))apis.push({method:'GET',path:'/api/analytics'});
  const components=[...new Set(['AppShell',...pages.flatMap(p=>p==='/'?['Hero','FeatureSection']:p.slice(1).split('-').map(x=>titleize(x)+'Page'))])];
+ const templateStyle=templateMeta?.style;
  const visual={
-  style:has(lower,'minimal','clean')?'minimal':has(lower,'brutalist','brutal')?'brutalist':has(lower,'editorial','magazine')?'editorial':has(lower,'retro','vintage')?'retro':has(lower,'glass','glassmorphism')?'glass':has(lower,'luxury','premium')?'luxury':has(lower,'futuristic','sci-fi','cyberpunk')?'futuristic':has(lower,'playful','friendly')?'playful':has(lower,'bold','vibrant')?'bold':'modern',
-  animation:has(lower,'animated','animation','motion','microinteraction','scroll reveal','parallax','gsap','framer motion'),
-  threeD:has(lower,'3d','3-d','webgl','three.js','threejs','immersive','depth','babylon'),
+  style:templateStyle|| (has(lower,'minimal','clean')?'minimal':has(lower,'brutalist','brutal')?'brutalist':has(lower,'editorial','magazine')?'editorial':has(lower,'retro','vintage')?'retro':has(lower,'glass','glassmorphism')?'glass':has(lower,'luxury','premium')?'luxury':has(lower,'futuristic','sci-fi','cyberpunk')?'futuristic':has(lower,'playful','friendly')?'playful':has(lower,'bold','vibrant')?'bold':'modern'),
+  animation:templateMeta?.experience==='motion'||templateMeta?.experience==='3d'||has(lower,'animated','animation','motion','microinteraction','scroll reveal','parallax','gsap','framer motion'),
+  threeD:templateMeta?.experience==='3d'||has(lower,'3d','3-d','webgl','three.js','threejs','immersive','depth','babylon'),
   canvas:has(lower,'canvas','particle','particles','shader','generative'),
   gradients:has(lower,'gradient','aurora','neon'),
   glass:has(lower,'glass','glassmorphism','frosted'),
