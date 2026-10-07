@@ -164,3 +164,8 @@ The generator preserves a deterministic offline fallback, while configured model
 The 12.2 release line adds real Build Vibe account authentication with email/password and Google OAuth. Google uses a server-side authorization-code flow with PKCE, one-time persisted state and a browser-bound state cookie; verified Google email identities can create a new Build Vibe account or link to an existing account by email. The session remains the same signed, HTTP-only Build Vibe session after OAuth callback.
 
 Google OAuth is optional and activates only when `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` are configured. The deployment environment must register the exact callback URI with Google before enabling the button.
+
+
+## AI build handoff
+
+AI agents should begin with [`docs/AI_BUILD_START_HERE.md`](docs/AI_BUILD_START_HERE.md), then follow [`docs/BUILD_VIBE_LAUNCH_PLAN.md`](docs/BUILD_VIBE_LAUNCH_PLAN.md). The plan is the authoritative implementation roadmap.
