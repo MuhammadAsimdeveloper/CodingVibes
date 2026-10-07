@@ -8,6 +8,8 @@ import { listTemplates } from '../src/templates/catalog.js';
 import { analyzeRequirements } from '../src/agent/requirements.js';
 import { generateProject } from '../src/agent/project-generator.js';
 import { applyExperienceQuality } from '../src/agent/experience-quality.js';
+import { generateTargetFallback } from '../src/targets/generator.js';
+import { getTarget } from '../src/targets/registry.js';
 
 test('polished motion is available by default but reduced motion remains explicit',()=>{
   const system=inferDesignSystem('Build a modern business website',{style:'modern',animation:false,gradients:false,glass:false,threeD:false,canvas:false,density:'comfortable'});
@@ -50,4 +52,15 @@ test('experience quality pass upgrades model-generated HTML without replacing it
   assert.match(html,/build-vibe-motion\.js/);
   assert.equal(fs.existsSync(path.join(root,'public','build-vibe-motion.css')),true);
   assert.equal(fs.existsSync(path.join(root,'public','build-vibe-motion.js')),true);
+});
+
+test('deterministic mobile app fallback has a real product shell, not a placeholder screen',()=>{
+  const spec=analyzeRequirements('Build an Android and iOS appointment booking app with profiles, calendar, notifications and payments',{targetId:'mobile-expo'});
+  const plan=generateTargetFallback(spec,getTarget('mobile-expo'));
+  const app=plan.files.find(f=>f.path==='App.tsx')?.content||'';
+  assert.match(app,/SafeAreaView/);
+  assert.match(app,/Home.*Explore.*Profile/);
+  assert.match(app,/Get started/);
+  assert.match(app,/Core experience/);
+  assert.doesNotMatch(app,/Generated for mobile-expo/);
 });
