@@ -56,8 +56,8 @@ function parseThreeOperations(text){
   if(/material|marble|wood|metal|glass/.test(lower)){const material=text.match(/\b(marble|wood|metal|glass|concrete|stone)\b/i)?.[1];if(material)ops.push({type:'content',collection:'scenes',action:'environment-material',value:material.toLowerCase()})}
   if(/lighting|brighter|darker/.test(lower))ops.push({type:'content',collection:'scenes',action:'lighting',value:/darker/.test(lower)?'low':'bright'});
   const scale=text.match(/scale(?:\s+the)?\s+model\s+to\s+(\d+(?:\.\d+)?)/i);if(scale)ops.push({type:'content',collection:'scenes',action:'transform',patch:{scale:Number(scale[1])}});
-  const rotate=text.match(/rotate(?:\s+the)?\s+model(?:\s+by)?\s+(-?\d+(?:\.\d+)?)\s*degrees?/i);if(rotate)ops.push({type:'content',collection:'scenes',action:'transform',patch:{rotationY:Number(rotate[1])}});
-  const moveUp=text.match(/move(?:\s+the)?\s+model\s+up\s+(-?\d+(?:\.\d+)?)/i);if(moveUp)ops.push({type:'content',collection:'scenes',action:'transform',patch:{positionY:Number(moveUp[1])}});
+  const rotate=text.match(/rotate(?:\s+(?:the\s+)?model|\s+it)(?:\s+by)?\s+(-?\d+(?:\.\d+)?)\s*degrees?/i);if(rotate)ops.push({type:'content',collection:'scenes',action:'transform',patch:{rotationY:Number(rotate[1])}});
+  const moveUp=text.match(/move(?:\s+(?:the\s+)?model|\s+it)\s+up\s+(-?\d+(?:\.\d+)?)/i);if(moveUp)ops.push({type:'content',collection:'scenes',action:'transform',patch:{positionY:Number(moveUp[1])}});
   const backgroundColor=colorFromText(text);if(/background/.test(lower)&&backgroundColor)ops.push({type:'content',collection:'scenes',action:'background',value:backgroundColor});
   const asset=text.match(/(?:use|attach|set)\s+(?:the\s+)?asset\s+["']?([^"']+?)["']?\s+(?:as|for)\s+(model|image|video|poster|floorplan)/i)||text.match(/(?:use|attach|set)\s+["']?([^"']+?)["']?\s+(model|image|video|poster|floorplan)/i);
   if(asset)ops.push({type:'content',collection:'assets',action:'attach-first-match',name:clean(asset[1],180),mode:asset[2].toLowerCase()});
