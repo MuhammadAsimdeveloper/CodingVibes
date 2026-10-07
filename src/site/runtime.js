@@ -14,7 +14,10 @@ function applyTheme(c){
  let style=document.querySelector('#cv-theme-overrides');if(!style){style=document.createElement('style');style.id='cv-theme-overrides';document.head.append(style);}
  const bg=background&&/^#[0-9a-f]{3,8}$/i.test(background)?background:'#0b1020',fg=brand.textColor&&/^#[0-9a-f]{3,8}$/i.test(brand.textColor)?brand.textColor:'';
  const allowedProps=new Set(['color','backgroundColor','fontSize','fontWeight','textAlign','borderRadius','display','padding','margin']);
- const targeted=Array.isArray(brand.visualOverrides)?brand.visualOverrides.slice(0,40).map(item=>{const selector=String(item?.selector||'');if(!/^(#[A-Za-z0-9_-]+|\.[A-Za-z_-][A-Za-z0-9_-]*(?:\.[A-Za-z_-][A-Za-z0-9_-]*)*|[a-z][a-z0-9-]*)$/.test(selector))return '';const css=Object.entries(item?.css||{}).filter(([k,v])=>allowedProps.has(k)&&String(v).length<=80).map(([k,v])=>k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())+':'+String(v).replace(/[{};]/g,'')+'!important').join(';');return css?selector+'{'+css+'}':'';}).filter(Boolean).join('');
+ function safeSelector(value){const s=String(value||'').trim();if(!s||s.length>180)return '';const first=s[0];if(first==='#'||first==='.')return s;if(first>='a'&&first<='z')return s;return '';}
+ const allowedProps=new Set(['color','backgroundColor','fontSize','fontWeight','textAlign','borderRadius','display','padding','margin']);
+ const safeCss=value=>Object.entries(value&&typeof value==='object'?value:{}).filter(([k,v])=>allowedProps.has(k)&&String(v).length<=80).map(([k,v])=>k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())+':'+String(v).replaceAll('{','').replaceAll('}','').replaceAll(';','')+'!important').join(';');
+ const targeted=Array.isArray(brand.visualOverrides)?brand.visualOverrides.slice(0,40).map(item=>{const selector=safeSelector(item?.selector);const css=safeCss(item?.css);return selector&&css?selector+'{'+css+'}':'';}).filter(Boolean).join(''):'';
  style.textContent='body{background:'+bg+'!important}'+(fg?'body{color:'+fg+'!important}':'')+(primary?' .primary-link,.conversion-panel button,[data-add-to-cart],button.primary{background:'+primary+'!important}':'')+(accent?' .eyebrow,.verified{color:'+accent+'!important}':'')+targeted;
 }
 function render(){const c=state.content;if(!c)return;applyTheme(c);
