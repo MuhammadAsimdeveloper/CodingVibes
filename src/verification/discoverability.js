@@ -25,13 +25,13 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
     const description=first(html,/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
     const canonical=first(html,/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
     const robots=first(html,/<meta[^>]+name=["']robots["'][^>]+content=["']([^"']+)["']/i);
-    const og={title:first(html,/property=["']og:title["'][^>]+content=["']([^"']+)["']/i),description:first(html,/property=["']og:description["'][^>]+content=["']([^"']+)["']/i),url:first(html,/property=["']og:url["'][^>]+content=["']([^"']+)["']/i),image:first(html,/property=["']og:image["'][^>]+content=["']([^"']+)["']/i)};
-    const twitter={card:first(html,/name=["']twitter:card["'][^>]+content=["']([^"']+)["']/i),title:first(html,/name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i),description:first(html,/name=["']twitter:description["'][^>]+content=["']([^"']+)["']/i),image:first(html,/name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)};
+    const og={title:first(html,/property=["']og:title["'][^>]+content=["']([^"']+)["']/i),description:first(html,/property=["']og:description["'][^>]+content=["']([^"']+)["']/i),url:first(html,/property=["']og:url["'][^>]+content=["']([^"']+)["']/i),image:first(html,/property=["']og:image["'][^>]+content=["']([^"']+)["']/i),imageAlt:first(html,/property=["']og:image:alt["'][^>]+content=["']([^"']+)["']/i)};
+    const twitter={card:first(html,/name=["']twitter:card["'][^>]+content=["']([^"']+)["']/i),title:first(html,/name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i),description:first(html,/name=["']twitter:description["'][^>]+content=["']([^"']+)["']/i),image:first(html,/name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i),imageAlt:first(html,/name=["']twitter:image:alt["'][^>]+content=["']([^"']+)["']/i)};
     const jsonLd=parseJsonLd(html,name),types=[...new Set(jsonLd.flatMap(schemaTypes))];
     const internalLinks=all(html,/<a\b[^>]+href=["']([^"'#][^"']*)["']/gi).filter(h=>h.startsWith('/')&&!h.startsWith('//'));
     const images=all(html,/<img\b[^>]+>/gi),missingAlt=images.filter(tag=>!/\balt=["'][^"']*["']/i.test(tag)).length;
-    const h1s=count(html,/<h1\b/gi),lang=/<html[^>]+lang=["'][^"']+["']/i.test(html),viewport=/<meta[^>]+name=["']viewport["']/i.test(html),main=/<main\b/i.test(html),keywords=/<meta[^>]+name=["']keywords["']/i.test(html);
-    const page={file:name,route,private:isPrivate,title:!!title,description:!!description,canonical:!!canonical,robots:!!robots,og:Object.values(og).every(Boolean),twitter:Object.values(twitter).every(Boolean),jsonLd:jsonLd.length>0&&jsonLd.every(x=>!x.__invalidJsonLd),schemaTypes:types,h1Count:h1s,internalLinks:internalLinks.length,images:images.length,missingAlt,lang,viewport,main};
+    const h1s=count(html,/<h1\b/gi),lang=/<html[^>]+lang=["'][^"']+["']/i.test(html),viewport=/<meta[^>]+name=["']viewport["']/i.test(html),main=/<main\b/i.test(html),keywords=/<meta[^>]+name=["']keywords["']/i.test(html),themeColor=/<meta[^>]+name=["']theme-color["']/i.test(html),manifest=/<link[^>]+rel=["']manifest["']/i.test(html),author=/<meta[^>]+name=["']author["']/i.test(html);
+    const page={file:name,route,private:isPrivate,title:!!title,description:!!description,canonical:!!canonical,robots:!!robots,og:Object.values(og).every(Boolean),twitter:Object.values(twitter).every(Boolean),jsonLd:jsonLd.length>0&&jsonLd.every(x=>!x.__invalidJsonLd),schemaTypes:types,h1Count:h1s,internalLinks:internalLinks.length,images:images.length,missingAlt,lang,viewport,main,themeColor,manifest,author};
     pages.push(page);
 
     if(isPrivate){
@@ -41,6 +41,9 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
     if(!title||title.length<10||title.length>60)issues.push(name+': title must be 10-60 characters');
     if(!description||!validMetaContent(description,70,160))issues.push(name+': description must be 70-160 characters');
     if(!canonical||!absoluteOrToken(canonical))issues.push(name+': canonical must be absolute');
+    if(!author)warnings.push(name+': missing author metadata');
+    if(!themeColor)warnings.push(name+': missing theme-color metadata');
+    if(!manifest)warnings.push(name+': missing web manifest link');
     if(h1s!==1)issues.push(name+': expected exactly one H1');
     if(!lang)issues.push(name+': missing html lang');
     if(!viewport)warnings.push(name+': missing viewport metadata');
@@ -50,6 +53,8 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
     else if(!types.includes('WebPage')&&!types.includes('WebSite'))warnings.push(name+': JSON-LD lacks WebPage/WebSite');
     if(!page.og)warnings.push(name+': incomplete Open Graph metadata');
     if(!page.twitter)warnings.push(name+': incomplete Twitter metadata');
+    if(og.image&&!og.imageAlt)warnings.push(name+': Open Graph image is missing alt text');
+    if(twitter.image&&!twitter.imageAlt)warnings.push(name+': Twitter image is missing alt text');
     if(internalLinks.length<2)warnings.push(name+': weak crawlable internal linking');
     if(missingAlt)issues.push(name+': '+missingAlt+' image(s) missing alt text');
   }
@@ -78,7 +83,7 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
   }
 
   const llmsPath=path.join(root,'llms.txt');
-  if(!fs.existsSync(llmsPath))warnings.push('llms.txt is not present (optional supplemental AI discovery file)');
+  if(!fs.existsSync(llmsPath))warnings.push('llms.txt is not present (optional supplemental AI discovery file; not required for Google Search)');
   else if(!/^#\s/m.test(fs.readFileSync(llmsPath,'utf8')))warnings.push('llms.txt is missing a title');
   const score=Math.max(0,100-Math.min(70,issues.length*8)-Math.min(30,warnings.length*2));
   const ok=issues.length===0;
