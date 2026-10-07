@@ -65,7 +65,7 @@ export function buildModePreset(kind='standard'){
   const key=String(kind||'standard').toLowerCase();
   const presets={
     standard:{platform:'web',chips:[],prompt:'Build a production-ready responsive web product.'},
-    threeD:{platform:'web',chips:['generate-image','maps'],prompt:'Build an immersive 3D website with graceful non-WebGL fallback.'},
+    threed:{platform:'web',chips:['generate-image','maps'],prompt:'Build an immersive 3D website with graceful non-WebGL fallback.'},
     animated:{platform:'web',chips:['generate-image'],prompt:'Build a polished animated website with reduced-motion support.'},
     research:{platform:'web',chips:['web-search','workspace-data'],prompt:'Research the product context and build a grounded solution.'},
   };
