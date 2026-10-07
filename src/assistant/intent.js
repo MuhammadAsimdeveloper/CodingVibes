@@ -17,8 +17,10 @@ export function classifyAssistantRequest(input=''){
 }
 function parseDesignOperations(text){
   const ops=[],lower=text.toLowerCase(),color=colorFromText(text);
+  const bgToken=lower.match(/(?:background|bg)[^.!?]{0,60}\b(black|white|red|blue|green|purple|violet|indigo|pink|orange|yellow|gray|grey|cyan|teal|lime|gold|brown)\b/);
+  const bgColor=bgToken?COLOR_HEX[bgToken[1]]:null;
   if(color)ops.push({type:'design',patch:{colors:{primary:color,accent:color}}});
-  if(/background|bg/.test(lower)&&color)ops.push({type:'design',patch:{colors:{background:color}}});
+  if(bgColor)ops.push({type:'design',patch:{colors:{background:bgColor}}});
   if(/dark/.test(lower))ops.push({type:'design',patch:{colors:{background:'#0b1020',surface:'#111827',text:'#f8fafc',muted:'#94a3b8'}}});
   if(/light/.test(lower))ops.push({type:'design',patch:{colors:{background:'#f8fafc',surface:'#ffffff',text:'#0f172a',muted:'#64748b'}}});
   if(/round|rounded|radius/.test(lower)){const value=/\b(\d{1,2})px\b/.exec(lower);ops.push({type:'design',patch:{radius:{md:value?Number(value[1]):16}}})}
