@@ -37,19 +37,19 @@ export async function create3DTask(input,{env=process.env,fetchImpl=fetch}={}){
     const response=await fetchImpl(endpoint,{method:'POST',headers:{authorization:'Bearer '+apiKey,'content-type':'application/json'},body:JSON.stringify(payload)});
     const body=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error('3d_provider_failed:'+response.status+':'+clean(body?.message||body?.error||'request_failed',300));
-    return {provider:req.provider,taskId:String(body.result||body.id||''),status:'queued',raw:{id:body.result||body.id||null}};
+    return {provider:req.provider,taskId:String(body.result||body.id||''),taskKind:multi?'multi-image-to-3d':'image-to-3d',status:'queued',raw:{id:body.result||body.id||null}};
   }
   if(!req.imageUrls.length)throw new Error('3d_asset_resolution_required');
   const response=await fetchImpl(provider.baseUrl+'/generation/image-to-model',{method:'POST',headers:{authorization:'Bearer '+apiKey,'content-type':'application/json'},body:JSON.stringify(tripoPayload({imageUrl:req.imageUrls[0],model:req.model,prompt:req.prompt}))});
   const body=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error('3d_provider_failed:'+response.status+':'+clean(body?.message||body?.error||'request_failed',300));
-  return {provider:req.provider,taskId:String(body.task_id||body.id||''),status:'queued',raw:body};
+  return {provider:req.provider,taskId:String(body.task_id||body.id||''),taskKind:'image-to-model',status:'queued',raw:body};
 }
-export async function get3DTask({provider,taskId},{env=process.env,fetchImpl=fetch}={}){
+export async function get3DTask({provider,taskId,taskKind='image-to-3d'},{env=process.env,fetchImpl=fetch}={}){
   const id=clean(taskId,200),key=clean(provider,40).toLowerCase(),p=PROVIDERS[key];
   if(!p||!id)throw new Error('3d_task_invalid');
   const apiKey=String(env[p.envKey]||'');if(!apiKey)throw new Error(key+'_api_key_not_configured');
-  const endpoint=key==='meshy'?p.baseUrl+'/image-to-3d/'+encodeURIComponent(id):p.baseUrl+'/task/'+encodeURIComponent(id);
+  const endpoint=key==='meshy'?p.baseUrl+'/'+(taskKind==='multi-image-to-3d'?'multi-image-to-3d':'image-to-3d')+'/'+encodeURIComponent(id):p.baseUrl+'/task/'+encodeURIComponent(id);
   const response=await fetchImpl(endpoint,{headers:{authorization:'Bearer '+apiKey}});
   const body=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error('3d_task_query_failed:'+response.status);
