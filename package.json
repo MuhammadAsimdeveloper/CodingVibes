@@ -34,7 +34,7 @@
     "mirofish:status": "node --input-type=module -e \"import {getMiroFishStatus} from './src/platform/mirofish.js'; console.log(JSON.stringify(getMiroFishStatus(),null,2))\"",
     "ops:retention": "node scripts/retention.mjs",
     "mirofish:smoke": "node --test test/mirofish-adapter.test.js",
-    "postgres:setup": "node scripts/postgres-setup.mjs"
+    "postgres:setup": "node --env-file-if-exists=.env.local scripts/postgres-setup.mjs"
   },
   "optionalDependencies": {
     "@daytona/sdk": "^0.220.0",
