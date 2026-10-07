@@ -18,7 +18,7 @@ export function completeSpec(raw={}){
  if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind)) addPage('/about');
  if(['ecommerce','marketplace'].includes(kind)){addPage('/shop');addPage('/collections');addPage('/cart');addPage('/checkout');addPage('/account');addApi('GET','/api/products');addApi('POST','/api/orders')};
  if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments')};
- if(spec.appType==='dashboard'||/\b(saas|subscription|dashboard|portal)\b/i.test(String(spec.request||''))){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');behavior.authentication=true;behavior.publicLogin=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup')};
+ if(/\b(saas|subscription|portal)\b/i.test(String(spec.request||''))){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');behavior.authentication=true;behavior.publicLogin=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup')};
  if(behavior.payments){addPage('/checkout');addApi('POST','/api/orders')};
  behavior.contactForm=true; addApi('POST','/api/contact');
  behavior.legalPages=true; behavior.launchReadyDefaults=true;
