@@ -21,7 +21,7 @@ export function completeSpec(raw={}){
  if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments');behavior.booking=true;}
  const requestText=String(spec.request||'');
  const productKinds=Array.isArray(spec.productKinds)?spec.productKinds:[];
- const saasLike=/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(requestText)||['dashboard'].includes(String(spec.appType||''))||productKinds.includes('saas');
+ const saasLike=/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(requestText)||productKinds.includes('saas');
  if(saasLike){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');addPage('/settings');behavior.authentication=true;behavior.publicLogin=true;behavior.providerOptional=true;behavior.localFirstAuth=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup');}
  if(kind==='marketplace'){addPage('/vendors');behavior.catalog=true;behavior.search=true;}
  if(kind==='content'){addPage('/blog');behavior.cms=true;behavior.search=true;}
