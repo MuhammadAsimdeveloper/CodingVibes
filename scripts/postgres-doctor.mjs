@@ -1,4 +1,17 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
+function loadLocalEnv(){
+  for(const file of ['.env.postgres.local','.env.local']){
+    const target=path.resolve(file);if(!fs.existsSync(target))continue;
+    for(const raw of fs.readFileSync(target,'utf8').split(/\r?\n/)){
+      const line=raw.trim();if(!line||line.startsWith('#'))continue;
+      const i=line.indexOf('=');if(i<1)continue;const key=line.slice(0,i).trim();let value=line.slice(i+1).trim();if((value.startsWith('"')&&value.endsWith('"'))||(value.startsWith("'")&&value.endsWith("'")))value=value.slice(1,-1);if(!(key in process.env))process.env[key]=value;
+    }
+    if(process.env.DATABASE_URL)break;
+  }
+}
+loadLocalEnv();
 import {createPostgresDatabase,postgresConfigStatus} from '../src/db/postgres.js';
 const status=postgresConfigStatus(process.env);
 if(!status.configured){console.error(JSON.stringify({ok:false,...status},null,2));process.exit(2);}
