@@ -99,7 +99,30 @@ export function buildAssistantContext({history=[],projectMemory=null,runSummary=
   return trimConversation(history,MAX_HISTORY).slice(-8).map(x=>x.role.toUpperCase()+': '+x.content).concat(items.map(cleanText)).slice(0,MAX_CONTEXT_ITEMS).map(x=>String(x).slice(0,MAX_CONTEXT_CHARS));
 }
 
+export function specialistForIntent(intent='general'){
+  const map={design_edit:'design specialist',product_3d_edit:'3d specialist',catalog_edit:'commerce/data specialist',experience_3d_edit:'immersive experience specialist',qa_fix:'qa/security specialist',deployment:'deployment specialist',research:'research specialist',planning:'product strategist',general:'coding specialist'};
+  return map[String(intent)]||map.general;
+}
+function buildOfflinePromptRequest(message){
+  const original=cleanText(message,3000);
+  if(!/\b(?:prompt|prompt me|write a prompt|give me a prompt)\b/i.test(original))return null;
+  const subject=original.replace(/\b(?:give|write|create|make)\s+(?:me\s+)?(?:a\s+)?prompt\s*(?:for|to|that)?/i,'').trim()||'the requested product';
+  return [
+    'BUILD VIBE READY PROMPT',
+    'Outcome: Build '+subject+'.',
+    'Users: define primary customer/user roles and their jobs-to-be-done from the brief.',
+    'Experience: responsive, accessible, production-quality UI with coherent design tokens and states.',
+    'Data: model the required entities; for commerce support a scalable product catalog, media, variants, inventory, search, filters and admin editing.',
+    '3D: when applicable support GLB/GLTF assets, image-to-3D ingestion, 360/orbit viewing, product/material/color changes, hotspots, camera paths, media and reduced-motion/WebGL fallbacks.',
+    'Backend: authentication, secure server-side integrations, validation, storage and auditability as required.',
+    'QA: unit/integration/e2e checks, visual checks, accessibility, security, failure states, regression verification and repair loop.',
+    'Delivery: GitHub/export plus deployment target chosen by the user; keep secrets server-side.',
+    'Build incrementally, ask focused clarification questions only where requirements are genuinely ambiguous, and preserve project context for later short edit requests.'
+  ].join('\n\n');
+}
+
 export function deterministicAssistantReply(message){
+  const promptFallback=buildOfflinePromptRequest(message);if(promptFallback)return promptFallback;
   const intent=classifyAssistantIntent(message);
   if(intent==='design_edit') return 'I can treat that as a project-aware design edit. I will keep the existing structure and update the design system or affected UI only.';
   if(intent==='catalog_edit') return 'I can treat that as a catalog edit. Use Content & Data to add products, media, variants and inventory; Build Vibe can keep the content separate from presentation.';
