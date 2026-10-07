@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {renderPublicSeoPage} from '../src/seo/public-pages.js';
 import {generateProject} from '../src/agent/project-generator.js';
+import fs from 'node:fs';
 
 test('public SEO pages emit final social and author metadata',()=>{
   const html=renderPublicSeoPage('/ai-website-builder',{baseUrl:'https://example.com'});
@@ -38,7 +39,7 @@ test('generated public pages emit author and Twitter image-alt metadata',()=>{
 });
 
 test('release metadata and host startup are wired',async()=>{
-  const pkg=JSON.parse((await import('node:fs/promises')).readFileSync?.('package.json','utf8') || '');
+  const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
   assert.equal(pkg.scripts['seo:check'],'node scripts/seo-check.mjs');
   assert.equal(pkg.scripts['start:host'],'node scripts/start-host.mjs');
 });
