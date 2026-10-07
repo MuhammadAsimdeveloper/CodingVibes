@@ -125,22 +125,53 @@ function templateCapabilities(t){
   return [...new Set(out)];
 }
 
+const GENRE_ORDER=['landing','web-app','mobile-app','apk','3d','animated','portfolio','ecommerce','real-estate','business','marketplace','saas','education','hospitality','event','content','immersive'];
+export function templateGenreFor(t={}){
+  const hay=[t.category,t.kind,t.experience,t.style,...(Array.isArray(t.tags)?t.tags:[])].filter(Boolean).join(' ').toLowerCase();
+  const out=[];
+  const add=(id)=>{if(!out.includes(id))out.push(id);};
+  if(t.experience==='3d'||/\b3d\b|immersive|ar|webar/.test(hay))add('3d');
+  if(t.experience==='motion'||/animation|animated|motion|cinematic|parallax/.test(hay))add('animated');
+  if(['portfolio','agency'].includes(t.kind)||/portfolio/.test(hay))add('portfolio');
+  if(['ecommerce'].includes(t.kind)||/ecommerce|shop|commerce|store/.test(hay))add('ecommerce');
+  if(t.kind==='realEstate'||/real estate|property|developer/.test(hay))add('real-estate');
+  if(t.kind==='marketplace'||/marketplace|directory/.test(hay))add('marketplace');
+  if(t.kind==='business'||t.kind==='agency'||/saas|business|company|startup/.test(hay))add(t.kind==='business'&&/saas/.test(hay)?'saas':'business');
+  if(t.kind==='education'||/course|academy|education/.test(hay))add('education');
+  if(t.kind==='hospitality'||/restaurant|hotel|resort|hospitality/.test(hay))add('hospitality');
+  if(t.kind==='event'||/conference|event/.test(hay))add('event');
+  if(t.kind==='content'||/blog|magazine|content/.test(hay))add('content');
+  if(t.kind==='immersive'||/immersive/.test(hay))add('immersive');
+  if(/mobile|app|react native|expo/.test(hay))add('mobile-app');
+  if(/apk|android|kotlin|twa/.test(hay))add('apk');
+  if(!out.length)add('landing');
+  if(['business','agency','hospitality','realEstate','education','event','content','portfolio','local'].includes(t.kind)||t.experience==='motion'||t.experience==='3d')add('landing');
+  if(/saas|app|dashboard|platform|portal/.test(hay))add('web-app');
+  return out.sort((a,b)=>GENRE_ORDER.indexOf(a)-GENRE_ORDER.indexOf(b));
+}
+export function listTemplateGenres(){
+  const counts=Object.fromEntries(GENRE_ORDER.map(id=>[id,0]));
+  for(const t of TEMPLATES)for(const g of templateGenreFor(t))counts[g]++;
+  const labels={landing:'Landing pages','web-app':'Web apps','mobile-app':'Mobile apps','apk':'Android / APK','3d':'3D experiences','animated':'Animated / motion','portfolio':'Portfolios','ecommerce':'Ecommerce','real-estate':'Real estate','business':'Business / company','marketplace':'Marketplaces','saas':'SaaS','education':'Education','hospitality':'Hospitality','event':'Events','content':'Content / CMS','immersive':'Immersive'};
+  return GENRE_ORDER.map(id=>({id,label:labels[id]||id,count:counts[id]})).filter(x=>x.count>0);
+}
 function publicTemplate(t){
   const motion=motionProfile(t);
-  const base={...t,motion,features:[...t.features],tags:[...t.tags]};
+  const base={...t,motion,features:[...t.features],tags:[...t.tags],genres:templateGenreFor(t)};
   return {...base,qualityContract:templateQuality({...base,motion}),capabilities:templateCapabilities(t),prompt:undefined};
 }
 
 export function listTemplates(){return TEMPLATES.map(publicTemplate);}
 export function getTemplate(id){const t=TEMPLATES.find(t=>t.id===String(id));return t?publicTemplate(t):null;}
-export function searchTemplates(query='',{category='',kind='',experience='',tier='',featured=false,limit=80}={}){
+export function searchTemplates(query='',{category='',kind='',experience='',tier='',featured=false,genre='',limit=80}={}){
   const q=String(query).toLowerCase().trim(),tokens=q.split(/\s+/).filter(Boolean);
-  const c=String(category).toLowerCase().trim(),k=String(kind).toLowerCase().trim(),e=String(experience).toLowerCase().trim(),ti=String(tier).toLowerCase().trim();
+  const c=String(category).toLowerCase().trim(),k=String(kind).toLowerCase().trim(),e=String(experience).toLowerCase().trim(),ti=String(tier).toLowerCase().trim(),g=String(genre).toLowerCase().trim();
   const filtered=listTemplates().filter(t=>
     (!c||t.category.toLowerCase()===c||t.tags.some(x=>x.toLowerCase()===c))&&
     (!k||t.kind.toLowerCase()===k)&&
     (!e||t.experience.toLowerCase()===e)&&
     (!ti||t.tier===ti)&&
+    (!g||t.genres.includes(g))&&
     (!featured||t.featured)
   );
   const ranked=filtered.map((t,index)=>{
