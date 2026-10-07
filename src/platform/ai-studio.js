@@ -34,6 +34,8 @@ export function annotationContract(input={}){
     height:clamp(input.height,1,10000),
     label:cleanText(input.label||'Selected region',160),
     instruction:cleanText(input.instruction||'',1200),
+    selector:cleanText(input.selector||'',400),
+    selectedText:cleanText(input.selectedText||input.text||'',400),
   };
 }
 
