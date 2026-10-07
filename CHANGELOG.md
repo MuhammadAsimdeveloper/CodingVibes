@@ -1,5 +1,14 @@
 # Changelog
 
+## 13.0.0 — 2026-10-07
+
+- Completed final source-side launch hardening.
+- Added canonical release identity and reproducible package locking.
+- Added SEO/discoverability release verification and seo:check.
+- Expanded public and generated-site social/SEO metadata and structured-data coverage.
+- Added Windows-friendly npm run start:host entrypoint.
+- Preserved explicit runner/infrastructure readiness boundaries.
+
 All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
