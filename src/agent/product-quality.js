@@ -13,22 +13,37 @@ const BASE_FEATURES=[
 ];
 
 function walk(root,out=[]){
-  if(!fs.existsSync(root)||out.length>800)return out;
-  for(const e of fs.readdirSync(root,{withFileTypes:true})){
-    if(['.git','node_modules','.codingvibes'].includes(e.name))continue;
-    const p=path.join(root,e.name);
-    if(e.isDirectory())walk(p,out);
-    else if(/\.(html|css|js|jsx|ts|tsx|json|md|svg|webmanifest)$/i.test(e.name))out.push(p);
+  if(!fs.existsSync(root)||out.length>=800)return out;
+  for(const entry of fs.readdirSync(root,{withFileTypes:true})){
+    if(['.git','node_modules','.codingvibes'].includes(entry.name))continue;
+    const file=path.join(root,entry.name);
+    if(entry.isDirectory())walk(file,out);
+    else if(/\.(html|css|js|jsx|ts|tsx|json|md|svg|webmanifest)$/i.test(entry.name))out.push(file);
   }
   return out;
 }
-function textOf(files){let s='';for(const f of files){try{s+=fs.readFileSync(f,'utf8')+'\\n'}catch{}}return s.slice(0,1400000);}
-function htmlFiles(files){return files.filter(x=>x.toLowerCase().endsWith('.html'));}
-function htmlText(files){return htmlFiles(files).map(f=>{try{return fs.readFileSync(f,'utf8')}catch{return''}}).join('\\n');}
-function hasAny(s,arr){const lower=String(s||'').toLowerCase();return arr.some(x=>lower.includes(String(x).toLowerCase()));}
-function unique(a){return [...new Set(a)];}
 
-function surfaceDefaults(kind='business',behavior={}){
+function readText(files){
+  let result='';
+  for(const file of files){
+    try{result+=fs.readFileSync(file,'utf8')+'\n';}catch{}
+  }
+  return result.slice(0,1400000);
+}
+
+function htmlFiles(files){return files.filter(file=>file.toLowerCase().endsWith('.html'));}
+
+function htmlText(files){
+  return htmlFiles(files).map(file=>{try{return fs.readFileSync(file,'utf8');}catch{return'';}}).join('\n');
+}
+
+function unique(values){return [...new Set(values)];}
+function hasAny(source,values){
+  const text=String(source||'').toLowerCase();
+  return values.some(value=>text.includes(String(value).toLowerCase()));
+}
+
+function defaultSurfaces(kind='business',behavior={}){
   const surfaces=['/','/privacy','/terms','/contact'];
   if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind))surfaces.push('/about');
   if(['portfolio','agency'].includes(kind))surfaces.push('/work');
@@ -39,16 +54,15 @@ function surfaceDefaults(kind='business',behavior={}){
   if(kind==='event')surfaces.push('/schedule');
   if(['ecommerce','marketplace'].includes(kind))surfaces.push('/shop','/collections','/cart','/checkout','/account');
   if(kind==='marketplace')surfaces.push('/vendors');
-  if(behavior?.authentication||behavior?.publicLogin)surfaces.push('/login','/signup');
-  if(behavior?.payments)surfaces.push('/checkout');
+  if(behavior.authentication||behavior.publicLogin)surfaces.push('/login','/signup');
+  if(behavior.payments)surfaces.push('/checkout');
   return unique(surfaces);
 }
 
 export function buildQualityContract(spec={}){
   const kind=String(spec.siteKind||spec.contentModel?.kit||'business');
   const behavior=spec.behavior||{};
-  const requiredSurfaces=unique([...(Array.isArray(spec.pages)?spec.pages:[]),...surfaceDefaults(kind,behavior)]);
-  const requiredStates=[...BASE_STATES];
+  const requiredSurfaces=unique([...(Array.isArray(spec.pages)?spec.pages:[]),...defaultSurfaces(kind,behavior)]);
   const requiredFeatures=[...BASE_FEATURES];
   if(behavior.search)requiredFeatures.push('search and filtering');
   if(behavior.catalog)requiredFeatures.push('catalog/product states');
@@ -68,13 +82,13 @@ export function buildQualityContract(spec={}){
     minimumScore:90,
     providerIndependent:true,
     requiredSurfaces,
-    requiredStates,
+    requiredStates:BASE_STATES,
     requiredFeatures:unique(requiredFeatures),
     hardRules:[
-      'No remote script or stylesheet is required for core runtime',
-      'Core interactions remain usable when optional effects fail',
-      'Forms expose programmatic labels and errors',
-      'Images have meaningful alt text unless decorative',
+      'Core runtime does not require a remote script, stylesheet or external API',
+      'Core interactions remain usable when optional effects or providers fail',
+      'Forms expose labels and actionable errors',
+      'Images expose alternatives unless decorative',
       'Public pages expose semantic metadata',
       'Responsive and reduced-motion behavior are explicit'
     ]
@@ -83,10 +97,11 @@ export function buildQualityContract(spec={}){
 
 function publicRoutes(files){
   const routes=new Set(['/']);
-  for(const f of htmlFiles(files)){
-    const rel=f.replace(/\\\\/g,'/').split('/public/').pop()||'';
+  for(const file of htmlFiles(files)){
+    const normalized=file.replace(/\\/g,'/');
+    const rel=normalized.includes('/public/')?normalized.split('/public/').pop():path.basename(normalized);
     if(rel==='index.html')routes.add('/');
-    else if(rel.endsWith('.html'))routes.add('/'+rel.slice(0,-5));
+    else if(rel?.endsWith('.html'))routes.add('/'+rel.slice(0,-5));
   }
   return routes;
 }
@@ -95,106 +110,115 @@ function linkIntegrity(html,spec,files){
   const routeSet=publicRoutes(files);
   const declared=new Set(Array.isArray(spec.pages)?spec.pages:['/']);
   const broken=[];
-  for(const m of html.matchAll(/(?:href|data-route)=["'](\\/[^"'#?]*)/gi)){
-    const route=m[1].replace(/\/+$/,'')||'/';
+  for(const match of html.matchAll(/(?:href|data-route)=["'](\/[^"'#?]*)/gi)){
+    const route=match[1].replace(/\/+$/,'')||'/';
     if(route.startsWith('/api/')||route.startsWith('/admin')||route.startsWith('/assets/')||route.startsWith('/_'))continue;
     if(!declared.has(route)&&!routeSet.has(route))broken.push(route);
   }
   return unique(broken);
 }
 
-function importCount(source){
-  const matches=String(source||'').match(/@import\\s+(?:url\\()?["']?https?:\\/\\//gi);
-  return matches?.length||0;
+function remoteImportCount(source){
+  return (String(source||'').match(/@import\s+(?:url\()?["']?https?:\/\//gi)||[]).length;
+}
+
+function nativeEntrypointExists(target,names){
+  const checks={
+    'mobile-expo':names.includes('app.tsx'),
+    'mobile-flutter':names.includes('lib/main.dart'),
+    'android-kotlin':names.some(name=>name.endsWith('/mainactivity.kt')||name==='mainactivity.kt'),
+    'android-twa':names.some(name=>name.endsWith('/androidmanifest.xml')),
+    'ios-swiftui':names.includes('sources/app/app.swift'),
+    'desktop-electron':names.includes('src/index.html'),
+    'desktop-tauri':names.includes('src/index.html'),
+    'multiplatform-kmp':names.some(name=>name.endsWith('/commonmain/kotlin/app.kt'))
+  };
+  return checks[target]!==false;
 }
 
 export function auditProductExperience(workspace,spec={}){
-  const files=walk(path.resolve(workspace));
-  const names=files.map(x=>path.relative(workspace,x).replaceAll(path.sep,'/').toLowerCase());
-  const source=textOf(files);
+  const root=path.resolve(workspace);
+  const files=walk(root);
+  const names=files.map(file=>path.relative(root,file).replaceAll(path.sep,'/').toLowerCase());
+  const source=readText(files);
   const html=htmlText(files);
   const contract=buildQualityContract(spec);
-  const target=String(spec.target?.id||'web-node');
-  const webTarget=target==='web-node'||target==='web-pwa';
+  const webTarget=['web-node','web-pwa'].includes(String(spec.target?.id||'web-node'));
   const checks=[];
   let brokenLinks=[];
   const addCheck=(id,label,ok,blocking=false,detail='')=>checks.push({id,label,passed:Boolean(ok),blocking:Boolean(blocking&&!ok),detail});
 
   if(webTarget){
-    const entry=names.some(x=>x==='public/index.html'||x==='index.html');
+    const entry=names.includes('public/index.html')||names.includes('index.html');
     addCheck('core_entrypoint','core entrypoint',entry,true);
-    addCheck('semantic_structure','semantic HTML structure',/<html\\b[^>]*\\blang=["'][^"']+["'][^>]*>/i.test(html)&&/<main\\b/i.test(html)&&/<nav\\b/i.test(html),true);
-    addCheck('responsive_layout','responsive layout',/(<meta[^>]+name=["']viewport["']|@media|clamp\\()/i.test(source),true);
-    addCheck('accessible_focus','visible keyboard focus',/focus-visible|:focus\\s*\\{|aria-|role=/i.test(source),true);
+    addCheck('semantic_structure','semantic HTML structure',
+      /<html\b[^>]*\blang=["'][^"']+["'][^>]*>/i.test(html)&&/<main\b/i.test(html)&&/<nav\b/i.test(html),true);
+    addCheck('responsive_layout','responsive layout',
+      /<meta[^>]+name=["']viewport["']/i.test(html)||/@media\b|clamp\(/i.test(source),true);
+    addCheck('accessible_focus','keyboard focus support',/focus-visible|:focus\s*\{|aria-|role=/i.test(source),true);
     addCheck('reduced_motion','reduced-motion support',/prefers-reduced-motion|reducedMotion/i.test(source),true);
-    addCheck('metadata','route metadata',/<meta[^>]+name=["']description["']/i.test(html)&&/<link[^>]+rel=["']canonical["']/i.test(html)&&/<meta[^>]+property=["']og:/i.test(html),false);
-    addCheck('semantic_navigation','semantic navigation',/<nav\\b/i.test(html)&&/<a\\b[^>]+href=/i.test(html),false);
-    addCheck('interaction_states','interaction states',/(hover|:active|:focus|loading|empty|error|success|disabled|aria-busy)/i.test(source),false);
-    const labelFor=new Set([...html.matchAll(/<label\\b[^>]*\\bfor=["']([^"']+)["'][^>]*>/gi)].map(m=>m[1]));
-    const formControls=[...html.matchAll(/<(input|select|textarea)\\b([^>]*)>/gi)].filter(m=>!(/\\btype\\s*=\\s*["']hidden["']/i.test(m[2])));
-    const labelFailures=formControls.filter(m=>{
-      const attrs=m[2];
-      if(/\\baria-label\\s*=/i.test(attrs)||/\\baria-labelledby\\s*=/i.test(attrs))return false;
-      const id=(attrs.match(/\\bid\\s*=\\s*["']([^"']+)["']/i)||[])[1];
-      const before=html.slice(0,m.index||0);
-      const wrapped=before.lastIndexOf('<label')>before.lastIndexOf('</label>')&&html.indexOf('</label>',m.index||0)>=0;
-      return !wrapped&&(!id||!labelFor.has(id));
+    addCheck('metadata','public metadata',
+      /<meta[^>]+name=["']description["']/i.test(html)&&/<link[^>]+rel=["']canonical["']/i.test(html)&&/<meta[^>]+property=["']og:/i.test(html));
+    addCheck('semantic_navigation','semantic navigation',/<nav\b/i.test(html)&&/<a\b[^>]+href=/i.test(html));
+    addCheck('interaction_states','interaction states',/loading|empty|error|success|disabled|aria-busy|:active|:focus/i.test(source));
+    const labels=new Set([...html.matchAll(/<label\b[^>]*\bfor=["']([^"']+)["'][^>]*>/gi)].map(match=>match[1]));
+    const controls=[...html.matchAll(/<(input|select|textarea)\b([^>]*)>/gi)].filter(match=>!/\btype\s*=\s*["']hidden["']/i.test(match[2]));
+    const unlabeled=controls.filter(match=>{
+      const attrs=match[2];
+      if(/\baria-label\s*=|\baria-labelledby\s*=/i.test(attrs))return false;
+      const id=(attrs.match(/\bid\s*=\s*["']([^"']+)["']/i)||[])[1];
+      const start=match.index||0;
+      const before=html.slice(0,start);
+      const wrapped=before.lastIndexOf('<label')>before.lastIndexOf('</label>')&&html.indexOf('</label>',start)>=0;
+      return !wrapped&&(!id||!labels.has(id));
     });
-    addCheck('form_labels','form control labels',labelFailures.length===0,true,labelFailures.length?String(labelFailures.length):'');
-    const imageFailures=[...html.matchAll(/<img\\b([^>]*)>/gi)].filter(m=>!(/\\balt\\s*=\\s*["'][^"']*["']/i.test(m[1])||/\\brole\\s*=\\s*["']presentation["']/i.test(m[1])));
-    addCheck('image_alt','image alternative text',imageFailures.length===0,true,imageFailures.length?String(imageFailures.length):'');
-    const remoteRuntime=[...source.matchAll(/<(?:script|link)\\b[^>]*(?:src|href)=["']https?:\\/\\/[^"']+["'][^>]*>/gi)];
-    addCheck('local_runtime','provider-independent runtime',remoteRuntime.length===0&&importCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
-    addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']),false);
-    addCheck('placeholder_content','no obvious placeholder copy',!/(lorem ipsum|todo:|coming soon|replace this text)/i.test(html),false);
+    addCheck('form_labels','form control labels',unlabeled.length===0,true,unlabeled.length?String(unlabeled.length):'');
+    const badImages=[...html.matchAll(/<img\b([^>]*)>/gi)].filter(match=>!(/\balt\s*=\s*["'][^"']*["']/i.test(match[1])||/\brole\s*=\s*["']presentation["']/i.test(match[1])));
+    addCheck('image_alt','image alternative text',badImages.length===0,true,badImages.length?String(badImages.length):'');
+    const remoteRuntime=[...source.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']https?:\/\/[^"']+["'][^>]*>/gi)];
+    addCheck('local_runtime','provider-independent runtime',remoteRuntime.length===0&&remoteImportCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
+    addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']));
+    addCheck('placeholder_content','no obvious placeholder copy',!/(lorem ipsum|todo:|coming soon|replace this text)/i.test(html));
     brokenLinks=linkIntegrity(html,spec,files);
     addCheck('internal_links','internal links resolve',brokenLinks.length===0,false,brokenLinks.slice(0,12).join(', '));
-    if(target==='web-pwa')addCheck('pwa_surface','PWA manifest/service worker',names.includes('public/manifest.webmanifest')&&names.includes('public/sw.js'),false);
-    if(spec?.experience?.threeD)addCheck('3d_fallback','3D has fallback',hasAny(source,['webgl','canvas','fallback','no 3d']),true);
-    const required=contract.requiredFeatures;
-    if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
-    if(required.includes('provider-neutral checkout boundary'))addCheck('feature_checkout','checkout',hasAny(source,['checkout','payment']));
-    if(required.includes('provider-neutral local authentication boundary'))addCheck('feature_auth','local authentication',hasAny(source,['login','sign in','session','auth']));
-    if(required.includes('booking/availability states'))addCheck('feature_booking','booking',hasAny(source,['booking','appointment','calendar','availability']));
+    if(String(spec.target?.id||'web-node')==='web-pwa'){
+      addCheck('pwa_surface','PWA manifest and service worker',names.includes('public/manifest.webmanifest')&&names.includes('public/sw.js'));
+    }
+    if(spec.experience?.threeD){
+      addCheck('3d_fallback','3D fallback',hasAny(source,['webgl','canvas','fallback','no 3d']),true);
+    }
   }else{
-    const nativeEntrypointByTarget={
-      'mobile-expo':names.includes('app.tsx'),
-      'mobile-flutter':names.includes('lib/main.dart'),
-      'android-kotlin':names.some(x=>x.endsWith('mainactivity.kt')),
-      'android-twa':names.some(x=>x.endsWith('androidmanifest.xml')),
-      'ios-swiftui':names.includes('sources/app/app.swift'),
-      'desktop-electron':names.includes('src/index.html'),
-      'desktop-tauri':names.includes('src/index.html'),
-      'multiplatform-kmp':names.some(x=>x.endsWith('commonmain/kotlin/app.kt'))
-    };
-    addCheck('target_entrypoint','target entrypoint',nativeEntrypointByTarget[target]!==false,true);
-    addCheck('local_runtime','provider-independent target runtime',!/(<script[^>]+src=["']https?:\\/\\/|<link[^>]+href=["']https?:\\/\\//i.test(source),true);
-    addCheck('app_navigation','app navigation shell',hasAny(source,['Home','Explore','Profile','Settings','Calendar','NavigationBar','TabView','nav']),false);
-    addCheck('app_action_state','app action/state feedback',hasAny(source,['Get started','Saved locally','Saved','Loading','Error','empty']),false);
-    const required=contract.requiredFeatures;
-    if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
-    if(required.includes('provider-neutral checkout boundary'))addCheck('feature_checkout','checkout',hasAny(source,['checkout','payment']));
+    const target=String(spec.target?.id||'web-node');
+    addCheck('target_entrypoint','target entrypoint',nativeEntrypointExists(target,names),true);
+    addCheck('local_runtime','provider-independent target runtime',
+      !/<(?:script|link)\b[^>]*(?:src|href)=["']https?:\/\//i.test(source),true);
+    addCheck('app_navigation','application navigation shell',hasAny(source,['Home','Explore','Profile','Settings','Calendar','NavigationBar','TabView','nav']));
+    addCheck('app_action_state','application action/state feedback',hasAny(source,['Get started','Saved locally','Saved','Loading','Error','empty']));
   }
 
-  const passed=checks.filter(x=>x.passed).length;
+  const required=contract.requiredFeatures;
+  if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
+  if(required.includes('provider-neutral checkout boundary'))addCheck('feature_checkout','provider-neutral checkout',hasAny(source,['checkout','payment']));
+  if(required.includes('provider-neutral local authentication boundary'))addCheck('feature_auth','provider-neutral authentication',hasAny(source,['login','sign in','session','auth']));
+  if(required.includes('booking/availability states'))addCheck('feature_booking','booking and availability',hasAny(source,['booking','appointment','calendar','availability']));
+
+  const passed=checks.filter(check=>check.passed).length;
   const score=Math.round((passed/Math.max(1,checks.length))*100);
-  const blockingFindings=checks.filter(x=>x.blocking).map(x=>({id:x.id,label:x.label,detail:x.detail,message:\`\${x.label} is missing or unsafe.\`}));
-  const warnings=checks.filter(x=>!x.passed&&!x.blocking).map(x=>({id:x.id,label:x.label,detail:x.detail,message:\`\${x.label} needs improvement.\`}));
-  const providerIndependent=blockingFindings.every(x=>x.id!=='local_runtime');
+  const blockingFindings=checks.filter(check=>check.blocking).map(check=>({
+    id:check.id,label:check.label,detail:check.detail,message:check.label+' is missing or unsafe.'
+  }));
+  const warnings=checks.filter(check=>!check.passed&&!check.blocking).map(check=>({
+    id:check.id,label:check.label,detail:check.detail,message:check.label+' needs improvement.'
+  }));
   return {
     version:'product-quality.v2',
-    score,
-    minimumScore:contract.minimumScore,
-    passed,
-    total:checks.length,
-    checks,
-    missing:checks.filter(x=>!x.passed).map(x=>x.label),
-    blockingFindings,
-    warnings,
+    score,minimumScore:contract.minimumScore,passed,total:checks.length,checks,
+    missing:checks.filter(check=>!check.passed).map(check=>check.label),
+    blockingFindings,warnings,
     releaseReady:blockingFindings.length===0&&score>=contract.minimumScore,
     portable:true,
-    providerIndependent,
+    providerIndependent:!blockingFindings.some(check=>check.id==='local_runtime'),
     qualityContract:contract,
-    internalLinkIssues:brokenLinks,
+    internalLinkIssues:brokenLinks
   };
 }
