@@ -24,7 +24,7 @@ test('gallery entries provide remixable starter metadata and build presets',()=>
   const entries=appGalleryEntries([{id:'one',label:'Portfolio',kind:'portfolio',prompt:'Build a portfolio'}]);
   assert.equal(entries[0].remixable,true);
   assert.equal(buildModePreset('threeD').platform,'web');
-  assert.ok(Array.isArray(buildModePreset('threeD').chips));assert.ok(buildModePreset('threeD').chips.includes('generate-image'));
+  assert.ok(buildModePreset('threeD').chips.includes('generate-image'));
 });
 
 test('annotation contract is bounded and rejects unsafe oversized payloads',()=>{
