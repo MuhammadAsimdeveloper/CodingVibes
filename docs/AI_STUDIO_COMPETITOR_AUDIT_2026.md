@@ -88,3 +88,7 @@ Current proposed tiers:
 ## Launch-readiness finding
 
 Build Vibe is approaching launch readiness but should not be labeled fully production-ready until the final full CI pipeline is green on the latest commit and the required external credentials/runners are configured. PostgreSQL support is currently a scale-out/control-plane path; the synchronous core Store remains SQLite.
+
+### Entitlement semantics
+
+Build Vibe's site-type creation limits are account-level entitlements: a new verified basic/animated/3D/APK project consumes one entitlement; later conversational modifications to the same project do not consume another site entitlement. Free therefore grants exactly 3 basic + 1 animated + 1 3D, with 0 native APK creations.
