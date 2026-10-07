@@ -14,8 +14,11 @@ test('free plan keeps basic sites and code editor while gating advanced features
   assert.equal(hasFeature('free','advanced_animation'),false);
   assert.equal(featureGate('free','Build a responsive SaaS landing page').ok,true);
   const gate=featureGate('free','Build an immersive Three.js 3D website');
-  assert.equal(gate.ok,false);
-  assert.equal(gate.blocked.includes('advanced_animation'),true);
+  assert.equal(gate.ok,true);
+  assert.equal(gate.blocked.includes('three_d_site'),false);
+  const advanced=featureGate('free','Build a Three.js website with GSAP ScrollTrigger');
+  assert.equal(advanced.ok,false);
+  assert.equal(advanced.blocked.includes('advanced_animation'),true);
 });
 
 test('paid plans expose advanced motion, video, deployment and SEO',()=>{
