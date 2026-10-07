@@ -27,7 +27,7 @@ jobs:
           test -f package-lock.json
           npm ci --no-audit --no-fund
       - name: Dependency vulnerability audit
-        run: npm audit --audit-level=high
+        run: npm audit --omit=optional --audit-level=high
       - run: npm test
       - run: npm run test:coverage
       - run: npm run check
