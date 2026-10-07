@@ -1,6 +1,6 @@
-# Build Vibe 13.0.0 — final source release contract
+# Build Vibe 14.0.0 — phase 14 source release contract
 
-Build Vibe 13.0.0 is the final repository-side source hardening release before runner/infrastructure setup and public deployment.
+Build Vibe 14.0.0 adds the AI Studio-inspired Build Mode layer, structured Free website quotas, explicit paid native/APK policy, and the local PostgreSQL bootstrap path. Production infrastructure remains environment-dependent.
 
 ## Source-side completion
 
