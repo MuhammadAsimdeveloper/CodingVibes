@@ -14,7 +14,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
 test('public landing page has complete organic-search metadata',()=>{
   const html=read('public/landing.html');
-  assert.match(html,/<title>Build Vibe — AI Product Builder<\/title>/);
+  assert.match(html,/<title>Build Vibe — AI Website &amp; App Builder \| Verified Builds<\/title>/);
   assert.match(html,/<meta name="description" content="[^"]{80,}">/);
   assert.match(html,/<meta name="robots" content="index,follow,max-image-preview:large/);
   assert.match(html,/<link rel="canonical" href="__SITE_URL__\/">/);
