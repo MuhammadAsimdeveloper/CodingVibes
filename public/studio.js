@@ -221,6 +221,7 @@ async function sendAssistantMessage(){
         if(e.type==='assistant_token'){if(assistantState.tokenNode){assistantState.tokenNode.textContent+=(e.token||'');}else{assistantState.messages.at(-1).content+=(e.token||'');renderAssistantMessages();}}
         if(e.type==='assistant_completed'){
           const result=e.result||{};if(result.kind==='clarification')renderAssistantChoices(result);
+          if(result.kind==='message')renderAssistantActions(result,message);
           if(result.text&&!assistantState.messages.at(-1).content)assistantState.messages.at(-1).content=result.text;else if(result.text&&assistantState.messages.at(-1).content!==result.text)assistantState.messages.at(-1).content=result.text;
           renderAssistantMessages();
         }
@@ -229,6 +230,15 @@ async function sendAssistantMessage(){
     await loadAssistantConversations();
   }catch(e){assistantState.messages.at(-1).content='Assistant error: '+e.message;renderAssistantMessages();}
 }
+function renderAssistantActions(result,sourceMessage){
+  const actionable=['design_edit','product_3d_edit','catalog_edit','experience_3d_edit','qa_fix'].includes(result?.intent);
+  if(!actionable)return;
+  const wrap=$('#assistantChoices');if(!wrap)return;
+  const card=document.createElement('div');card.className='cv-choice-group';
+  const label=document.createElement('strong');label.textContent='Apply this to the current project';card.append(label);
+  const b=document.createElement('button');b.className='cv-primary';b.textContent='Apply in Studio';b.onclick=async()=>{wrap.classList.add('hidden');assistantClose();$('#request').value=sourceMessage;state.drafts.set(state.project?.id||'',sourceMessage);showTab('build');if(state.project)await startBuild();};card.append(b);wrap.prepend(card);wrap.classList.remove('hidden');
+}
+
 function renderAssistantChoices(result){
   const wrap=$('#assistantChoices');if(!wrap)return;wrap.classList.remove('hidden');wrap.replaceChildren();
   const selected={};
