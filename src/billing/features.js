@@ -2,7 +2,7 @@ const FEATURE_RULES = {
   basic_site: { label: 'Basic website generation', minPlan: 'free' },
   visual_builder: { label: 'Visual product builder', minPlan: 'free' },
   basic_seo: { label: 'Core SEO markup', minPlan: 'free' },
-  advanced_animation: { label: 'Advanced motion / 3D', minPlan: 'pro' },
+  advanced_animation: { label: 'Advanced motion / 3D', minPlan: 'free' },
   ai_video: { label: 'AI video generation', minPlan: 'pro' },
   advanced_seo: { label: 'Advanced SEO automation', minPlan: 'pro' },
   deployment: { label: 'One-click deployment', minPlan: 'pro' },
@@ -11,9 +11,10 @@ const FEATURE_RULES = {
   team_collaboration: { label: 'Team collaboration controls', minPlan: 'team' },
   audit_export: { label: 'Audit and release evidence export', minPlan: 'team' },
   scaleout: { label: 'Production scale-out controls', minPlan: 'team' },
+  native_apk: { label: 'Native Android / APK generation', minPlan: 'pro' },
 };
 
-const PLAN_ORDER = { free: 0, pro: 1, team: 2 };
+const PLAN_ORDER = { free: 0, pro: 1, team: 2, business: 3 };
 
 export function featureCatalog() {
   return Object.entries(FEATURE_RULES).map(([id, rule]) => ({ id, ...rule }));
@@ -37,6 +38,7 @@ export function classifyRequest(request = '') {
   if (/(seo audit|schema automation|programmatic seo|keyword research|content cluster|search console integration)/.test(text)) {
     features.add('advanced_seo');
   }
+  if (/(apk|android\s+app|native\s+android|kotlin\s+app|gradle\s+assemble|react\s+native|expo|flutter|ios\s+app)/.test(text)) features.add('native_apk');
   if (/(deploy|publish|host it|hosting|custom domain|cloudflare|hostinger|production url)/.test(text)) {
     features.add('deployment');
   }
