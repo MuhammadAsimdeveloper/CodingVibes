@@ -1,6 +1,7 @@
 const GENRES=[
 {id:'web-landing',label:'Landing & Marketing Websites',family:'Websites',kind:'business',experience:['standard','motion'],keywords:['landing','marketing','startup','launch']},
 {id:'web-portfolio',label:'Portfolio & Creative',family:'Websites',kind:'portfolio',experience:['standard','motion','3d'],keywords:['portfolio','creative','photography','agency']},
+{id:'web-animated',label:'Animated & Motion Websites',family:'Websites',kind:'business',experience:['motion'],keywords:['animated','motion','scroll','microinteraction']},
 {id:'web-business',label:'Business & Local Services',family:'Websites',kind:'business',experience:['standard','motion'],keywords:['business','local','services','contractor']},
 {id:'web-commerce',label:'Ecommerce & Marketplace',family:'Websites',kind:'ecommerce',experience:['standard','motion','3d'],keywords:['store','shop','ecommerce','marketplace']},
 {id:'web-app',label:'SaaS, Dashboards & Web Apps',family:'Web Apps',kind:'business',experience:['standard','motion','3d'],keywords:['saas','dashboard','web app','portal']},
