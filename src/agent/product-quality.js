@@ -114,42 +114,68 @@ export function auditProductExperience(workspace,spec={}){
   const source=textOf(files);
   const html=htmlText(files);
   const contract=buildQualityContract(spec);
+  const target=String(spec.target?.id||'web-node');
+  const webTarget=target==='web-node'||target==='web-pwa';
   const checks=[];
   const addCheck=(id,label,ok,blocking=false,detail='')=>checks.push({id,label,passed:Boolean(ok),blocking:Boolean(blocking&&!ok),detail});
-  const entry=names.some(x=>x==='public/index.html'||x==='index.html');
-  addCheck('core_entrypoint','core entrypoint',entry,true);
-  addCheck('semantic_structure','semantic HTML structure',/<html\\b[^>]*\\blang=["'][^"']+["'][^>]*>/i.test(html)&&/<main\\b/i.test(html)&&/<nav\\b/i.test(html),true);
-  addCheck('responsive_layout','responsive layout',/(<meta[^>]+name=["']viewport["']|@media|clamp\\()/i.test(source),true);
-  addCheck('accessible_focus','visible keyboard focus',/focus-visible|:focus\\s*\\{|aria-|role=/i.test(source),true);
-  addCheck('reduced_motion','reduced-motion support',/prefers-reduced-motion|reducedMotion/i.test(source),true);
-  addCheck('metadata','route metadata',/<meta[^>]+name=["']description["']/i.test(html)&&/<link[^>]+rel=["']canonical["']/i.test(html)&&/<meta[^>]+property=["']og:/i.test(html),false);
-  addCheck('semantic_navigation','semantic navigation',/<nav\\b/i.test(html)&&/<a\\b[^>]+href=/i.test(html),false);
-  addCheck('interaction_states','interaction states',/(hover|:active|:focus|loading|empty|error|success|disabled|aria-busy)/i.test(source),false);
-  const labelFor=new Set([...html.matchAll(/<label\\b[^>]*\\bfor=["']([^"']+)["'][^>]*>/gi)].map(m=>m[1]));
-  const formControls=[...html.matchAll(/<(input|select|textarea)\\b([^>]*)>/gi)].filter(m=>!(/\\btype\\s*=\\s*["']hidden["']/i.test(m[2])));
-  const labelFailures=formControls.filter(m=>{
-    const attrs=m[2];
-    if(/\\baria-label\\s*=/i.test(attrs)||/\\baria-labelledby\\s*=/i.test(attrs))return false;
-    const id=(attrs.match(/\\bid\\s*=\\s*["']([^"']+)["']/i)||[])[1];
-    return !id||!labelFor.has(id);
-  });
-  addCheck('form_labels','form control labels',labelFailures.length===0,true,labelFailures.length?String(labelFailures.length):'');
-  const imageFailures=[...html.matchAll(/<img\\b([^>]*)>/gi)].filter(m=>!(/\\balt\\s*=\\s*["'][^"']*["']/i.test(m[1])||/\\brole\\s*=\\s*["']presentation["']/i.test(m[1])));
-  addCheck('image_alt','image alternative text',imageFailures.length===0,true,imageFailures.length?String(imageFailures.length):'');
-  const remoteRuntime=[...source.matchAll(/<(?:script|link)\\b[^>]*(?:src|href)=["']https?:\\/\\/[^"']+["'][^>]*>/gi)];
-  addCheck('local_runtime','provider-independent runtime',remoteRuntime.length===0&&importCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
-  addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']),false);
-  addCheck('placeholder_content','no obvious placeholder copy',!/(lorem ipsum|todo:|coming soon|replace this text)/i.test(html),false);
-  const brokenLinks=linkIntegrity(html,spec,files);
-  addCheck('internal_links','internal links resolve',brokenLinks.length===0,false,brokenLinks.slice(0,12).join(', '));
-  const target=String(spec.target?.id||'web-node');
-  if(target==='web-pwa')addCheck('pwa_surface','PWA manifest/service worker',names.includes('public/manifest.webmanifest')&&names.includes('public/sw.js'),false);
-  if(spec?.experience?.threeD)addCheck('3d_fallback','3D has fallback',hasAny(source,['webgl','canvas','fallback','no 3d']),true);
-  const required=contract.requiredFeatures;
-  if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
-  if(required.includes('provider-neutral checkout boundary'))addCheck('feature_checkout','checkout',hasAny(source,['checkout','payment']));
-  if(required.includes('provider-neutral local authentication boundary'))addCheck('feature_auth','local authentication',hasAny(source,['login','sign in','session','auth']));
-  if(required.includes('booking/availability states'))addCheck('feature_booking','booking',hasAny(source,['booking','appointment','calendar','availability']));
+
+  if(webTarget){
+    const entry=names.some(x=>x==='public/index.html'||x==='index.html');
+    addCheck('core_entrypoint','core entrypoint',entry,true);
+    addCheck('semantic_structure','semantic HTML structure',/<html\\b[^>]*\\blang=["'][^"']+["'][^>]*>/i.test(html)&&/<main\\b/i.test(html)&&/<nav\\b/i.test(html),true);
+    addCheck('responsive_layout','responsive layout',/(<meta[^>]+name=["']viewport["']|@media|clamp\\()/i.test(source),true);
+    addCheck('accessible_focus','visible keyboard focus',/focus-visible|:focus\\s*\\{|aria-|role=/i.test(source),true);
+    addCheck('reduced_motion','reduced-motion support',/prefers-reduced-motion|reducedMotion/i.test(source),true);
+    addCheck('metadata','route metadata',/<meta[^>]+name=["']description["']/i.test(html)&&/<link[^>]+rel=["']canonical["']/i.test(html)&&/<meta[^>]+property=["']og:/i.test(html),false);
+    addCheck('semantic_navigation','semantic navigation',/<nav\\b/i.test(html)&&/<a\\b[^>]+href=/i.test(html),false);
+    addCheck('interaction_states','interaction states',/(hover|:active|:focus|loading|empty|error|success|disabled|aria-busy)/i.test(source),false);
+    const labelFor=new Set([...html.matchAll(/<label\\b[^>]*\\bfor=["']([^"']+)["'][^>]*>/gi)].map(m=>m[1]));
+    const formControls=[...html.matchAll(/<(input|select|textarea)\\b([^>]*)>/gi)].filter(m=>!(/\\btype\\s*=\\s*["']hidden["']/i.test(m[2])));
+    const labelFailures=formControls.filter(m=>{
+      const attrs=m[2];
+      if(/\\baria-label\\s*=/i.test(attrs)||/\\baria-labelledby\\s*=/i.test(attrs))return false;
+      const id=(attrs.match(/\\bid\\s*=\\s*["']([^"']+)["']/i)||[])[1];
+      const before=html.slice(0,m.index||0);
+      const wrapped=before.lastIndexOf('<label')>before.lastIndexOf('</label>')&&html.indexOf('</label>',m.index||0)>=0;
+      return !wrapped&&(!id||!labelFor.has(id));
+    });
+    addCheck('form_labels','form control labels',labelFailures.length===0,true,labelFailures.length?String(labelFailures.length):'');
+    const imageFailures=[...html.matchAll(/<img\\b([^>]*)>/gi)].filter(m=>!(/\\balt\\s*=\\s*["'][^"']*["']/i.test(m[1])||/\\brole\\s*=\\s*["']presentation["']/i.test(m[1])));
+    addCheck('image_alt','image alternative text',imageFailures.length===0,true,imageFailures.length?String(imageFailures.length):'');
+    const remoteRuntime=[...source.matchAll(/<(?:script|link)\\b[^>]*(?:src|href)=["']https?:\\/\\/[^"']+["'][^>]*>/gi)];
+    addCheck('local_runtime','provider-independent runtime',remoteRuntime.length===0&&importCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
+    addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']),false);
+    addCheck('placeholder_content','no obvious placeholder copy',!/(lorem ipsum|todo:|coming soon|replace this text)/i.test(html),false);
+    const brokenLinks=linkIntegrity(html,spec,files);
+    addCheck('internal_links','internal links resolve',brokenLinks.length===0,false,brokenLinks.slice(0,12).join(', '));
+    if(target==='web-pwa')addCheck('pwa_surface','PWA manifest/service worker',names.includes('public/manifest.webmanifest')&&names.includes('public/sw.js'),false);
+    if(spec?.experience?.threeD)addCheck('3d_fallback','3D has fallback',hasAny(source,['webgl','canvas','fallback','no 3d']),true);
+    const required=contract.requiredFeatures;
+    if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
+    if(required.includes('provider-neutral checkout boundary'))addCheck('feature_checkout','checkout',hasAny(source,['checkout','payment']));
+    if(required.includes('provider-neutral local authentication boundary'))addCheck('feature_auth','local authentication',hasAny(source,['login','sign in','session','auth']));
+    if(required.includes('booking/availability states'))addCheck('feature_booking','booking',hasAny(source,['booking','appointment','calendar','availability']));
+  }else{
+    const nativeEntrypointByTarget={
+      'mobile-expo':names.includes('app.tsx'),
+      'mobile-flutter':names.includes('lib/main.dart'),
+      'android-kotlin':names.some(x=>x.endsWith('mainactivity.kt')),
+      'android-twa':names.some(x=>x.endsWith('androidmanifest.xml')),
+      'ios-swiftui':names.includes('sources/app/app.swift'),
+      'desktop-electron':names.includes('src/index.html'),
+      'desktop-tauri':names.includes('src/index.html'),
+      'multiplatform-kmp':names.some(x=>x.endsWith('commonmain/kotlin/app.kt'))
+    };
+    addCheck('target_entrypoint','target entrypoint',nativeEntrypointByTarget[target]!==false,true);
+    addCheck('local_runtime','provider-independent target runtime',!/(<script[^>]+src=["']https?:\\/\\/|<link[^>]+href=["']https?:\\/\\//i.test(source),true);
+    addCheck('app_navigation','app navigation shell',hasAny(source,['Home','Explore','Profile','Settings','Calendar','NavigationBar','TabView','nav']),false);
+    addCheck('app_action_state','app action/state feedback',hasAny(source,['Get started','Saved locally','Saved','Loading','Error','empty']),false);
+    const brokenLinks=[];
+    const required=contract.requiredFeatures;
+    if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
+    if(required.includes('provider-neutral checkout boundary'))addCheck('feature_checkout','checkout',hasAny(source,['checkout','payment']));
+  }
+
   const passed=checks.filter(x=>x.passed).length;
   const score=Math.round((passed/Math.max(1,checks.length))*100);
   const blockingFindings=checks.filter(x=>x.blocking).map(x=>({id:x.id,label:x.label,detail:x.detail,message:\`\${x.label} is missing or unsafe.\`}));
