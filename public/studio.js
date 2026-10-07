@@ -319,6 +319,20 @@ async function applyLandingPrompt(){
   const params=new URLSearchParams(location.search);
   const request=params.get('prompt');
   const mode=params.get('target');
+  const templateId=params.get('templateId');
+  const projectId=params.get('projectId');
+  if(templateId){
+    try{
+      const t=await api('/api/templates/'+encodeURIComponent(templateId));
+      const existing=projectId?state.projects.find(p=>p.id===projectId):null;
+      const p=existing|| (await api('/api/projects',{method:'POST',body:JSON.stringify({name:t.template.label,templateId:t.template.id})})).project;
+      state.templatesByProject.set(p.id,t.template.id);
+      await loadProjects();await selectProject(p);setStarterMode('prompt');
+      history.replaceState(null,'',location.pathname);
+      return;
+    }catch(e){feed('Template handoff: '+e.message,'err');}
+  }
+  if(projectId){const p=state.projects.find(x=>x.id===projectId);if(p)await selectProject(p);}
   if(request){
     const field=$('#request');
     if(field){field.value=request;field.dispatchEvent(new Event('input',{bubbles:true}));}
@@ -335,10 +349,7 @@ async function applyLandingPrompt(){
       if(preferred)select.value=preferred.value;
     }
   }
-  if(request && location.search){
-    history.replaceState(null,'',location.pathname);
-    try{await previewBlueprint();}catch{}
-  }
+  if(request){history.replaceState(null,'',location.pathname);try{await previewBlueprint();}catch{}}
 }
 
 async function auth(){
