@@ -827,3 +827,63 @@ T6 Tool/Agent Fabric contracts → T7 multi-agent orchestration → T8 memory/co
 
 ### Scope rule
 Tools are strategic weapons, but the platform must remain coherent. Each capability needs a canonical owner, contract, tests, security policy and measurable user value before being shipped. Do not inflate tool count merely for marketing.
+
+
+## 40. AI-First Cross-Repository Execution Protocol — October 2026
+
+This section is the handoff contract for any AI coding agent starting from this repository.
+
+### Read order
+1. `docs/AI_BUILD_START_HERE.md`
+2. This launch plan from beginning to end.
+3. `docs/ZEE_TOOLS_ECOSYSTEM_PLAN.md`
+4. `docs/INDUSTRY_TOOL_ARSENAL.md`
+5. Relevant source/tests/docs discovered during repository inspection.
+
+### Cross-repository product map
+- **Build Vibe/CodingVibes:** canonical creation, web/developer, verification and shared utility implementations.
+- **Aira:** universal personal-agent orchestration, permissions, memory/context, device control and routing.
+- **Atlas:** business operating system and tenant-scoped business actions.
+- **Auto-Vid / Auto-Vid-App:** media production and media application surfaces.
+- **Muhammad-Asim-Web-Agency:** agency delivery, audits and deploy-ready workflows.
+- **Asim-OS:** local/offline workstation adapters.
+- **Saudadesk-Ai:** product-specific capabilities only.
+
+### Build rule
+When a capability already has a canonical owner, consume its contract instead of cloning the implementation. If a repository needs a local adapter, document the runtime reason and keep the contract compatible.
+
+### Autonomous implementation loop
+**READ → INSPECT → PLAN → TEST → IMPLEMENT → VERIFY → DOCUMENT → CHECKPOINT**
+
+Before every behavior change:
+- inspect current implementation and neighboring tests;
+- write the failing test first;
+- implement the smallest correct change;
+- run focused tests;
+- refactor only after green;
+- run the relevant full suite;
+- update the plan/checklist and record blockers honestly.
+
+### Tool/agent priorities
+1. Shared Tool/Agent Fabric and contracts.
+2. 18 Zee-inspired utilities.
+3. Teamily-derived primitives: multi-agent teams, decomposition, supervisor, memory/context, proactive automation, studios, approvals, Agent API and MCP/OAuth.
+4. Developer intelligence and verification.
+5. SEO/AEO/GEO and public distribution.
+6. Cloud/operations/deployment/native targets.
+7. Benchmarks, security and release evidence.
+
+### Truth boundary
+No AI agent may mark a feature COMPLETE merely because code, UI or configuration exists. COMPLETE requires implementation, tests, security checks and appropriate runtime/evidence verification. External dependencies remain **NOT_CONFIGURED**, **BLOCKED**, or **UNVERIFIED** until actually proven.
+
+### No greenfield drift
+Do not rewrite working architecture to fit a new idea. Extend existing registries, contracts, adapters, stores, workers and verification paths. Prefer one canonical implementation plus thin adapters over parallel copies.
+
+### Final handoff
+At the end of each phase update:
+- this plan/checklist;
+- the relevant tool/architecture docs;
+- changelog/release notes when applicable;
+- machine-readable readiness evidence when the repository supports it.
+
+Then leave a concise implementation summary containing changed files, tests run, verification evidence and remaining blockers.
