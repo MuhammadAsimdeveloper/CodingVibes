@@ -1,0 +1,63 @@
+{
+  "product": "Build Vibe",
+  "release": "13.0.0",
+  "source_branch": "codex/final-source-13",
+  "verification_commit": "10343892e530e504cf0cc97a79fbab2c53823200",
+  "verification_run": 37575340519,
+  "verification_date": "2026-10-07",
+  "source_side_status": "READY_FOR_RUNNER_HANDOFF",
+  "gates": {
+    "npm_ci": true,
+    "dependency_audit_core": true,
+    "tests": true,
+    "test_coverage": true,
+    "syntax_static": true,
+    "seo": true,
+    "e2e": true,
+    "browser_e2e": true,
+    "load_smoke": true,
+    "recovery_smoke": true,
+    "deployment_preflight": true,
+    "benchmark": true,
+    "mirofish_status": true,
+    "retention_dry_run": true,
+    "security": true,
+    "scaleout_doctor": true,
+    "launch_readiness": true,
+    "codeql": true,
+    "dependency_review": true
+  },
+  "test_summary": {
+    "total": 231,
+    "passed": 231,
+    "failed": 0,
+    "skipped": 0
+  },
+  "seo": {
+    "status": "PASS",
+    "contract": "route-level metadata, canonical/robots, Open Graph/Twitter, structured data, sitemap/robots, discoverability audit"
+  },
+  "security": {
+    "core_dependency_audit": "PASS",
+    "scope": "non-optional dependencies",
+    "optional_runner_advisory": "documented in docs/DEPENDENCY_SECURITY.md"
+  },
+  "runner_status": {
+    "status": "NOT_CONFIGURED",
+    "required": [
+      "isolated build runner",
+      "target SDK/toolchains as needed",
+      "production secrets",
+      "persistent storage and backups",
+      "TLS/reverse proxy",
+      "monitoring/alerting",
+      "domain/DNS configuration",
+      "live third-party provider/payment credentials"
+    ]
+  },
+  "mirofish": {
+    "status": "CONTRACT_READY_NOT_REAL_SIMULATION_EVIDENCE",
+    "configured": false
+  },
+  "launch_decision": "SOURCE_READY_RUNNER_REQUIRED"
+}
