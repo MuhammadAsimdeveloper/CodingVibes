@@ -1,6 +1,6 @@
 # Build Vibe
 
-[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 12.2.0**
+[![Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml/badge.svg)](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/workflows/ci.yml) **Current release: 13.0.0**
 
 **AI product builder that ships verified, portable software — not just code.**
 
@@ -102,9 +102,15 @@ The application code is launch-candidate quality, but a public deployment still 
 
 ## Current build phase
 
-Build Vibe 12.2.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
+Build Vibe 13.0.0 combines model-first application generation, bounded repository context, visual-intent extraction for animation/3D/glass/editorial styles, protected generated-file paths, hashed tool-call snapshots, session restoration, native target contracts, verification-gated publishing, and production scale-out adapters. The deterministic generator remains the offline fallback.
 
 For model-first generation, use a configured OpenAI-compatible provider, OpenRouter, Ollama, LM Studio, or a compatible custom endpoint. Generated projects are still constrained to the supported Node/browser runtime contract and must pass verification before commit.
+
+## 13.0.0 final source release
+
+The 13.0.0 source release completes the repository-side launch hardening pass: reproducible dependency locking, canonical release identity, CI security workflows, benchmark and MiroFish adapter contracts, centralized SEO/discoverability verification, expanded public metadata, Windows-friendly host startup, stronger generated-site social metadata, and final source-side release gates.
+
+The repository is source-ready for the remaining runner/infrastructure setup. Public production still requires the configured model provider, isolated execution runner, persistent production storage, TLS/reverse proxy, monitoring, quotas, domain configuration, and live payment/provider credentials where those features are enabled. These are intentionally exposed as explicit readiness requirements rather than hidden assumptions.
 
 ## 12.0.0 historical release baseline
 
