@@ -26,6 +26,8 @@ jobs:
           set -euo pipefail
           test -f package-lock.json
           npm ci --no-audit --no-fund
+      - name: Dependency vulnerability audit
+        run: npm audit --audit-level=high
       - run: npm test
       - run: npm run test:coverage
       - run: npm run check
