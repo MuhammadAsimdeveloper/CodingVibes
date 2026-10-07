@@ -4,6 +4,8 @@ const DEFAULT_MAX=Number(process.env.CODINGVIBES_PG_POOL_MAX||20);
 const DEFAULT_TIMEOUT=Number(process.env.CODINGVIBES_PG_CONNECTION_TIMEOUT_MS||5000);
 const DEFAULT_IDLE=Number(process.env.CODINGVIBES_PG_IDLE_TIMEOUT_MS||30000);
 
+export function connectionConfigForLocalDev(env=process.env){const source={...env,CODINGVIBES_PG_SSL_MODE:env.CODINGVIBES_PG_SSL_MODE||'disable'};return connectionConfig({connectionString:String(source.DATABASE_URL||'postgresql://buildvibe:buildvibe@127.0.0.1:54329/buildvibe'),sslMode:String(source.CODINGVIBES_PG_SSL_MODE||'disable')});}
+
 function connectionConfig(overrides={}){
   const url=String(overrides.connectionString||process.env.DATABASE_URL||'').trim();
   if(!url)throw new Error('DATABASE_URL is required for the PostgreSQL backend');
@@ -34,7 +36,7 @@ export async function ensurePostgresMigrations(db){
 export function postgresConfigStatus(env=process.env){
   const url=String(env.DATABASE_URL||'').trim();
   const backend=String(env.CODINGVIBES_DB_BACKEND||'sqlite').toLowerCase();
-  return {backend,configured:backend==='postgres'&&Boolean(url),sslMode:String(env.CODINGVIBES_PG_SSL_MODE||'require'),poolMax:Number(env.CODINGVIBES_PG_POOL_MAX||DEFAULT_MAX),missing:backend==='postgres'&&!url?['DATABASE_URL']:[]};
+  return {backend,configured:backend==='postgres'&&Boolean(url),localDev:Boolean(url&&/127\.0\.0\.1|localhost/.test(url)),sslMode:String(env.CODINGVIBES_PG_SSL_MODE||'require'),poolMax:Number(env.CODINGVIBES_PG_POOL_MAX||DEFAULT_MAX),missing:backend==='postgres'&&!url?['DATABASE_URL']:[]};
 }
 
 function migration0001(){
