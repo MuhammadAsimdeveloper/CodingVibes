@@ -27,7 +27,9 @@ test('template catalog exposes distinct motion directions for non-3D and 3D expe
   assert.ok(threeD?.motion?.scene);
   assert.ok(threeD?.motion?.webglFallback);
   assert.ok(twoD?.motion?.transition);
-  assert.notEqual(threeD.motion.mode,twoD.motion.mode);
+  assert.equal(threeD.motion.transition,'shared-camera');
+  assert.equal(twoD.motion.scene,false);
+  assert.notEqual(threeD.motion.transition,twoD.motion.transition);
 });
 
 test('deterministic generated websites ship a local dependency-free motion runtime',()=>{
