@@ -16,6 +16,9 @@ const KNOWLEDGE={
  plans:{title:'Plans',text:'You can describe an idea, ask for a plan, then convert the plan into a reusable build prompt. The assistant can also explain which capabilities or targets fit the idea.'}
 };
 
+export function normalizeAssistantMode(mode='discuss'){return String(mode||'discuss').toLowerCase()==='build'?'build':'discuss';}
+export function shouldApplyAssistantMode(mode,message){return normalizeAssistantMode(mode)==='build'&&classifyAssistantRequest(message).mode==='modify';}
+
 function normalizeMessage(message){return String(message||'').replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,8000);}
 export function answerBuildVibeQuestion(message,context={}){
   const text=normalizeMessage(message),lower=text.toLowerCase(),intent=classifyAssistantRequest(text),specialists=routeSpecialists(text);
