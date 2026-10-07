@@ -57,7 +57,7 @@ npm run db:postgres:setup
 npm run db:postgres:doctor
 ```
 
-Copy `.env.postgres.local.example` to `.env.postgres.local` when you want the PostgreSQL connection to be auto-loaded. PostgreSQL is exposed on `127.0.0.1:5432`; Adminer is available at `http://127.0.0.1:8080`. For a hosted free PostgreSQL option, Supabase or Neon can be used by replacing `DATABASE_URL` and enabling the PostgreSQL profile.
+Copy `.env.postgres.example` to `.env.postgres.local` when you want the PostgreSQL connection to be auto-loaded. PostgreSQL is exposed on `127.0.0.1:5432`; Adminer is available at `http://127.0.0.1:8080`. For a hosted free PostgreSQL option, Supabase or Neon can be used by replacing `DATABASE_URL` and enabling the PostgreSQL profile.
 
 ## Scale-out production foundation
 
@@ -102,6 +102,10 @@ Repository content is untrusted data, never an instruction source. File paths re
 The application contract now carries an explicit design-system intent: palette, typography family, radius language, elevation, layout pattern, motion preset, accessibility expectations, responsive breakpoints, and 3D/canvas/glass/parallax effects. When browser verification is available, Build Vibe also checks document title, language, viewport metadata, headings, image alt text, accessible control names, internal links, and horizontal overflow in addition to console/request failures.
 
 This follows the direction of current AI design/build systems that combine prompt generation with visual refinement and code-backed editing, such as Figma Make, Webflow AI, and Wix Harmony. citeturn985444search0turn889226search0turn889226search2
+
+## Build Vibe assistant and creation entitlements
+
+The current Studio includes persistent assistant history and project-scoped instructions, conversational micro-edits, selectable clarification questions, template-to-Studio handoff, 3D model generation adapters, and a preview annotation bar. Free accounts are limited to 3 basic websites, 1 animated website and 1 3D website; native APK generation is paid-only.
 
 ## Launch-candidate product layer
 
