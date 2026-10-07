@@ -5,7 +5,28 @@ import {kitForKind,SITE_KITS} from '../site/kits.js';
 const clean=s=>String(s??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,' ').trim();
 const has=(s,...xs)=>xs.some(x=>s.includes(x.toLowerCase()));
 const titleize=s=>String(s).split(/[-_\s]+/).filter(Boolean).map(x=>x[0]?.toUpperCase()+x.slice(1)).join('');
-export function completeSpec(raw={}){\n const spec=raw&&typeof raw==='object'?raw:{};\n const pages=Array.isArray(spec.pages)?[...new Set(spec.pages)]:['/','/admin'];\n const apis=Array.isArray(spec.apis)?[...spec.apis]:[];\n const kind=String(spec.siteKind||'business');\n const behavior={...(spec.behavior||{})};\n const addPage=p=>{if(!pages.includes(p))pages.push(p)};\n const addApi=(method,path)=>{if(!apis.some(a=>String(a.method||'GET').toUpperCase()===method&&a.path===path))apis.push({method,path})};\n addPage('/privacy'); addPage('/terms');\n if(kind!=='immersive') addPage('/contact');\n if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind)) addPage('/about');\n if(['ecommerce','marketplace'].includes(kind)){addPage('/shop');addPage('/collections');addPage('/cart');addPage('/checkout');addPage('/account');addApi('GET','/api/products');addApi('POST','/api/orders');}\n if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments')};\n if(spec.appType==='dashboard'||/\\b(saas|subscription|dashboard|portal)\\b/i.test(String(spec.request||''))){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');behavior.authentication=true;behavior.publicLogin=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup')};\n if(behavior.payments){addPage('/checkout');addApi('POST','/api/orders')};\n behavior.contactForm=true; addApi('POST','/api/contact');\n behavior.legalPages=true; behavior.launchReadyDefaults=true;\n const autoCompleted=[...new Set([...(Array.isArray(spec.autoCompleted)?spec.autoCompleted:[]),'responsive UI','accessible focus and form states','contact/conversion path','privacy and terms pages','SEO metadata and sitemap','owner admin surface'])];\n return {...spec,pages,apis,behavior,autoCompleted};\n}\n\nexport function analyzeRequirements(request,{targetId='auto'}={}){
+export function completeSpec(raw={}){
+ const spec=raw&&typeof raw==='object'?raw:{};
+ const pages=Array.isArray(spec.pages)?[...new Set(spec.pages)]:['/','/admin'];
+ const apis=Array.isArray(spec.apis)?[...spec.apis]:[];
+ const kind=String(spec.siteKind||'business');
+ const behavior={...(spec.behavior||{})};
+ const addPage=p=>{if(!pages.includes(p))pages.push(p)};
+ const addApi=(method,path)=>{if(!apis.some(a=>String(a.method||'GET').toUpperCase()===method&&a.path===path))apis.push({method,path})};
+ addPage('/privacy'); addPage('/terms');
+ if(kind!=='immersive') addPage('/contact');
+ if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind)) addPage('/about');
+ if(['ecommerce','marketplace'].includes(kind)){addPage('/shop');addPage('/collections');addPage('/cart');addPage('/checkout');addPage('/account');addApi('GET','/api/products');addApi('POST','/api/orders')};
+ if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments')};
+ if(spec.appType==='dashboard'||/\b(saas|subscription|dashboard|portal)\b/i.test(String(spec.request||''))){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');behavior.authentication=true;behavior.publicLogin=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup')};
+ if(behavior.payments){addPage('/checkout');addApi('POST','/api/orders')};
+ behavior.contactForm=true; addApi('POST','/api/contact');
+ behavior.legalPages=true; behavior.launchReadyDefaults=true;
+ const autoCompleted=[...new Set([...(Array.isArray(spec.autoCompleted)?spec.autoCompleted:[]),'responsive UI','accessible focus and form states','contact/conversion path','privacy and terms pages','SEO metadata and sitemap','owner admin surface'])];
+ return {...spec,pages,apis,behavior,autoCompleted};
+}
+
+export function analyzeRequirements(request,{targetId='auto'}={}){
  const text=clean(request), lower=text.toLowerCase(), target=inferTarget(text,targetId);
  const templateMatch=text.match(/TEMPLATE BLUEPRINT:\s*(\{[\s\S]*?\})\s*\n\s*CUSTOM USER REQUIREMENTS:/i);
  let templateMeta=null;try{templateMeta=templateMatch?JSON.parse(templateMatch[1]):null}catch{}
