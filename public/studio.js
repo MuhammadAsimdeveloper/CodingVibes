@@ -185,9 +185,15 @@ function renderAssistantMessages(){
   }
   el.scrollTop=el.scrollHeight;
 }
+async function saveAssistantInstructions(){
+  if(!state.project)return feed('Select a project before saving assistant instructions.','err');
+  try{const memory=(await api('/api/projects/'+encodeURIComponent(state.project.id)+'/memory')).memory||{};memory.assistantInstructions=$('#assistantInstructions')?.value.trim().slice(0,4000)||'';await api('/api/projects/'+encodeURIComponent(state.project.id)+'/memory',{method:'PUT',body:JSON.stringify({memory})});feed('Project assistant instructions saved.','ok');}catch(e){feed('Assistant instructions: '+e.message,'err')}
+}
+
 async function loadAssistantConversations(){
   try{
     const q=state.project?'?projectId='+encodeURIComponent(state.project.id):'';
+    if(state.project){try{const memory=(await api('/api/projects/'+encodeURIComponent(state.project.id)+'/memory')).memory||{};if($('#assistantInstructions'))$('#assistantInstructions').value=memory.assistantInstructions||'';}catch{}}
     const j=await api('/api/assistant/conversations'+q),el=$('#assistantConversations');if(!el)return;el.replaceChildren();
     for(const x of j.conversations||[]){
       const b=document.createElement('button');b.className='cv-event'+(assistantState.conversationId===x.id?' ok':'');b.textContent=x.name||'Assistant chat';b.onclick=()=>loadAssistantConversation(x.id);el.append(b);
@@ -328,7 +334,7 @@ async function runDiscoverability(){if(!state.project)return;try{const j=await a
 async function loadFeatureSuite(){if(!state.project)return;await Promise.all([loadWorkspaceSuite(),loadDesignMode(),loadCloudServices(),loadDomains(),loadContentRevisions()]);}
 
 $('#launchCheck')?.addEventListener('click',loadLaunchStatus);
-$('#assistantOpen')?.addEventListener('click',assistantOpen);$('#assistantClose')?.addEventListener('click',assistantClose);$('#assistantNew')?.addEventListener('click',newAssistantConversation);$('#assistantSend')?.addEventListener('click',sendAssistantMessage);$('#assistantInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAssistantMessage();}});
+$('#assistantOpen')?.addEventListener('click',assistantOpen);$('#assistantInstructionsSave')?.addEventListener('click',saveAssistantInstructions);$('#assistantClose')?.addEventListener('click',assistantClose);$('#assistantNew')?.addEventListener('click',newAssistantConversation);$('#assistantSend')?.addEventListener('click',sendAssistantMessage);$('#assistantInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAssistantMessage();}});
 $('#templateSearchBtn')?.addEventListener('click',loadTemplateCatalog);$('#templateSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();loadTemplateCatalog();}});
 $('#generate3d')?.addEventListener('click',generate3DModel);$('#upgradeBusiness')?.addEventListener('click',()=>startCheckout('business'));$('#openAssistant3d')?.addEventListener('click',()=>openAssistantWithPrompt('Help me design the 3D model experience for this product: include 360/orbit, media, hotspots, materials/colors and performance-safe fallbacks.','chat'));$('#upgradePro')?.addEventListener('click',()=>startCheckout('pro'));$('#upgradeTeam')?.addEventListener('click',()=>startCheckout('team'));$('#manageBilling')?.addEventListener('click',manageBilling);$('#inviteMember')?.addEventListener('click',async()=>{try{const j=await api('/api/workspaces/'+state.project.workspace_id+'/invites',{method:'POST',body:JSON.stringify({email:$('#inviteEmail').value,role:$('#inviteRole').value})});feed('Invite created. Share token securely: '+j.token,'ok');await loadWorkspaceSuite();}catch(e){feed('Invite: '+e.message,'err')}});$('#saveDesign')?.addEventListener('click',saveDesignMode);$('#resetDesign')?.addEventListener('click',resetDesignMode);$('#provisionCloud')?.addEventListener('click',provisionCloud);$('#addDomain')?.addEventListener('click',addDomain);$('#newContentRevision')?.addEventListener('click',newContentRevision);$('#runResearch')?.addEventListener('click',runProjectResearch);$('#runDiscoverability')?.addEventListener('click',runDiscoverability);$('#buildBtn').onclick=startBuild;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $('#newWindow')?.addEventListener('click',createProjectWindow);
