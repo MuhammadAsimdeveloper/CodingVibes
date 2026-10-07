@@ -1,4 +1,5 @@
 import {hash} from '../core/hash.js';
+import {expoApp} from './app-shells.js';
 
 function json(value){return JSON.stringify(value,null,2)+'\n';}
 function commonReadme(spec,target){return `# Generated codingVibes app\n\nTarget: ${target.label}\nLanguage: ${target.language}\nFramework: ${target.framework}\n\nThis project was generated from a structured application contract. Build artifacts are only marked verified when the target toolchain and verification checks succeed.\n\nPages: ${spec.pages.join(', ') || '/'}\n\nAPIs: ${spec.apis.map(x=>`${x.method} ${x.path}`).join(', ') || 'none'}\n`}
@@ -37,7 +38,7 @@ dependencies { implementation 'com.google.androidbrowserhelper:androidbrowserhel
     {path:'app.json',content:json({expo:{name:'codingVibes App',slug:'codingvibes-app',version:'1.0.0',orientation:'portrait',platforms:['android','ios'],userInterfaceStyle:'automatic',android:{package:'com.codingvibes.app'},ios:{bundleIdentifier:'com.codingvibes.app'}}})},
     {path:'tsconfig.json',content:json({extends:'expo/tsconfig.base',compilerOptions:{strict:true,noEmit:true},include:['**/*.ts','**/*.tsx']})},
     {path:'eas.json',content:json({build:{development:{developmentClient:true,distribution:'internal'},preview:{distribution:'internal',android:{buildType:'apk'}},production:{}}})},
-    {path:'App.tsx',content:`import React from 'react';import{SafeAreaView,Text,StyleSheet,View}from'react-native';export default function App(){return <SafeAreaView style={styles.safe}><View style={styles.card}><Text style={styles.kicker}>codingVibes</Text><Text style={styles.title}>${escapeForCode(spec.request.slice(0,120))}</Text><Text style={styles.body}>Generated for ${target.label}.</Text></View></SafeAreaView>}const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#0b1020'},card:{margin:24,marginTop:80,padding:24,borderRadius:24,backgroundColor:'#121a2d'},kicker:{color:'#8ea8ff',fontWeight:'700'},title:{color:'#fff',fontSize:30,fontWeight:'800',marginTop:12},body:{color:'#aebbd1',marginTop:12}});\n`},
+    {path:'App.tsx',content:expoApp(spec,target)},
     {path:'test/smoke.test.js',content:`import test from'node:test';import assert from'node:assert/strict';test('mobile source exists',()=>assert.ok(true));\n`},
     {path:'README.md',content:commonReadme(spec,target)+'\nUse Expo/EAS or a configured Android/iOS toolchain to produce platform binaries.\n'},
   ],summary:`Generate ${target.label}`,manifestHash:hash(spec),source:'deterministic'};
