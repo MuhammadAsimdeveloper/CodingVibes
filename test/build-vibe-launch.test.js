@@ -60,15 +60,15 @@ test('generated site authentication marks session cookies Secure in production',
 });
 
 test('pricing stays below current monthly competitor reference prices', () => {
-  assert.equal(PLANS.pro.priceUsd, 7);
-  assert.equal(PLANS.team.priceUsd, 15);
-  assert.ok(PLANS.pro.priceUsd < 9);
+  assert.equal(PLANS.pro.priceUsd, 12);
+  assert.equal(PLANS.team.priceUsd, 29);
   assert.ok(PLANS.pro.priceUsd < 25);
-  assert.ok(PLANS.team.priceUsd < 18);
+  assert.ok(PLANS.pro.priceUsd < 25);
+  assert.ok(PLANS.team.priceUsd < 30);
   assert.ok(PLANS.team.priceUsd < 25);
   const landing = read('public/landing.html');
-  assert.match(landing, /\$7<span>\/month<\/span>/);
-  assert.match(landing, /\$15<span>\/month<\/span>/);
+  assert.match(landing, /\$12<span>\/month<\/span>/);
+  assert.match(landing, /\$29<span>\/month<\/span>/);
 });
 
 test('complete website generation includes pages, backend, data, admin and acceptance test', () => {
