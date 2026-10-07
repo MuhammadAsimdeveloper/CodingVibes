@@ -153,7 +153,7 @@ export function listTemplateGenres(){
   const counts=Object.fromEntries(GENRE_ORDER.map(id=>[id,0]));
   for(const t of TEMPLATES)for(const g of templateGenreFor(t))counts[g]++;
   const labels={landing:'Landing pages','web-app':'Web apps','mobile-app':'Mobile apps','apk':'Android / APK','3d':'3D experiences','animated':'Animated / motion','portfolio':'Portfolios','ecommerce':'Ecommerce','real-estate':'Real estate','business':'Business / company','marketplace':'Marketplaces','saas':'SaaS','education':'Education','hospitality':'Hospitality','event':'Events','content':'Content / CMS','immersive':'Immersive'};
-  return GENRE_ORDER.map(id=>({id,label:labels[id]||id,count:counts[id]})).filter(x=>x.count>0);
+  return GENRE_ORDER.map(id=>({id,label:labels[id]||id,count:counts[id]}));
 }
 function publicTemplate(t){
   const motion=motionProfile(t);
