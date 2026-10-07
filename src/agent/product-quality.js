@@ -117,6 +117,7 @@ export function auditProductExperience(workspace,spec={}){
   const target=String(spec.target?.id||'web-node');
   const webTarget=target==='web-node'||target==='web-pwa';
   const checks=[];
+  let brokenLinks=[];
   const addCheck=(id,label,ok,blocking=false,detail='')=>checks.push({id,label,passed:Boolean(ok),blocking:Boolean(blocking&&!ok),detail});
 
   if(webTarget){
@@ -146,7 +147,7 @@ export function auditProductExperience(workspace,spec={}){
     addCheck('local_runtime','provider-independent runtime',remoteRuntime.length===0&&importCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
     addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']),false);
     addCheck('placeholder_content','no obvious placeholder copy',!/(lorem ipsum|todo:|coming soon|replace this text)/i.test(html),false);
-    const brokenLinks=linkIntegrity(html,spec,files);
+    brokenLinks=linkIntegrity(html,spec,files);
     addCheck('internal_links','internal links resolve',brokenLinks.length===0,false,brokenLinks.slice(0,12).join(', '));
     if(target==='web-pwa')addCheck('pwa_surface','PWA manifest/service worker',names.includes('public/manifest.webmanifest')&&names.includes('public/sw.js'),false);
     if(spec?.experience?.threeD)addCheck('3d_fallback','3D has fallback',hasAny(source,['webgl','canvas','fallback','no 3d']),true);
@@ -170,7 +171,6 @@ export function auditProductExperience(workspace,spec={}){
     addCheck('local_runtime','provider-independent target runtime',!/(<script[^>]+src=["']https?:\\/\\/|<link[^>]+href=["']https?:\\/\\//i.test(source),true);
     addCheck('app_navigation','app navigation shell',hasAny(source,['Home','Explore','Profile','Settings','Calendar','NavigationBar','TabView','nav']),false);
     addCheck('app_action_state','app action/state feedback',hasAny(source,['Get started','Saved locally','Saved','Loading','Error','empty']),false);
-    const brokenLinks=[];
     const required=contract.requiredFeatures;
     if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
     if(required.includes('provider-neutral checkout boundary'))addCheck('feature_checkout','checkout',hasAny(source,['checkout','payment']));
