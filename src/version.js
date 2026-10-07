@@ -1,3 +1,3 @@
-export const BUILD_VIBE_VERSION='13.0.0';
+export const BUILD_VIBE_VERSION='14.0.0';
 export const CODINGVIBES_VERSION=BUILD_VIBE_VERSION;
 export const BUILD_VIBE_RELEASE={name:'Build Vibe',version:BUILD_VIBE_VERSION};
