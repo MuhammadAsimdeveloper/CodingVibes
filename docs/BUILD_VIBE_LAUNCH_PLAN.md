@@ -784,3 +784,46 @@ Every behavioral change follows test-first development. Browser tools require ru
 
 ### Completion criteria
 All 18 tools have contracts, tests, canonical Build Vibe implementations, Aira routing metadata and cross-repository ownership documentation. No duplicate business logic is introduced without a documented reason.
+
+
+## 39. Industry Tool Arsenal Expansion — Teamily-derived capabilities
+
+The 18 Zee-derived utilities remain the immediate utility-suite scope. The next strategic layer is the shared Tool/Agent Fabric derived from capabilities publicly described by Teamily AI: multi-agent orchestration, living/global memory, proactive agents, collaborative studios, scheduled automations, Agent APIs, MCP/REST, OAuth, Slack, agent workspaces, deliverables and human approval workflows. citeturn0search0turn0search4turn0search5
+
+### Build Vibe owns
+- web.app.builder
+- docs.studio
+- slides.studio
+- dashboard.studio
+- research.studio
+- code.reviewer
+- code.explainer
+- code.refactorer
+- test.generator
+- bug.triage
+- pr.assistant
+- api.builder
+- schema.generator
+- deployment.doctor
+- dependency.audit
+- secret.audit
+- sandbox.runner
+- deliverable.bundle
+
+### Shared through Aira
+- agent.task.decomposer
+- agent.parallel.runner
+- agent.supervisor
+- memory.global/project/preference
+- context.policy
+- automation scheduler/trigger/history
+- agent creator/team creator
+- MCP/OAuth/integration gateway
+- permission/risk/confirmation/audit engines
+- provider router, quota manager and health doctor
+
+### Build order
+T6 Tool/Agent Fabric contracts → T7 multi-agent orchestration → T8 memory/context → T9 studios/deliverables → T10 developer intelligence → T11 integrations/API/MCP → T12 proactive automation and approval controls.
+
+### Scope rule
+Tools are strategic weapons, but the platform must remain coherent. Each capability needs a canonical owner, contract, tests, security policy and measurable user value before being shipped. Do not inflate tool count merely for marketing.
