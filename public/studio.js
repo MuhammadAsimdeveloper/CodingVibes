@@ -97,14 +97,14 @@ function renderBuildClarification(e,projectId){
 }
 
 function handle(e,projectId){
+  const projectName=state.projects.find(x=>x.id===projectId)?.name||projectId;
+  const active=state.project?.id===projectId;
   const routed=routeBuildEvent(state,projectId,e);
   if(e.type==='clarification_required'){
     finishProjectBuild(state,projectId,'ready');
     if(active){status('ready','');$('#progress').textContent='A few choices are needed before generation.';renderBuildClarification(e,projectId);}
     feed('Build Vibe needs a few choices before building.','ok');
   }
-  const projectName=state.projects.find(x=>x.id===projectId)?.name||projectId;
-  const active=state.project?.id===projectId;
   if(e.type==='run_created')feed('['+projectName+'] Build started.');
   if(e.type==='parallel_agents_completed')feed((active?'':'['+projectName+'] ')+'Parallel agents: research + design + architecture + QA aligned.','ok');
   if(e.type==='research_completed')feed((active?'':'['+projectName+'] ')+'Research lane completed.','ok');
