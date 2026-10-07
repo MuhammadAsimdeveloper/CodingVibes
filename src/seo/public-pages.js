@@ -40,9 +40,9 @@ const PAGES={
     intro:'Build Vibe keeps the first product experiences accessible, then scales AI, 3D, native app and collaboration capacity as your needs grow.',
     sections:[
       ['Free — $0/month','Each Free account can create 3 basic websites, 1 animated website and 1 3D website. Native Android/APK creation is not available on Free. Assistant chat, project history, design mode, preview and verification remain part of the free experience.'],
-      ['Pro — $7/month','Pro adds 25 basic, 25 animated, 10 3D and 10 APK/native-app creations in the configured entitlement window, plus higher AI capacity, advanced SEO, AI video, deployment and custom domains.'],
-      ['Team — $15/month','Team adds 100 basic, 100 animated, 50 3D and 40 APK/native-app creations, plus workspace roles, approvals, audit and higher collaborative capacity.'],
-      ['Business — $39/month','Business is designed for agencies and growing teams with 500 basic, 500 animated, 200 3D and 100 APK/native-app creations plus higher AI capacity and scale-out controls.'],
+      ['Pro — $7/month','Pro adds 25 basic, 25 animated, 10 3D and 10 APK/native-app creations per account, plus higher AI capacity, advanced SEO, AI video, deployment and custom domains.'],
+      ['Team — $15/month','Team adds 100 basic, 100 animated, 50 3D and 40 APK/native-app creations per account, plus workspace roles, approvals, audit and higher collaborative capacity.'],
+      ['Business — $39/month','Business is designed for agencies and growing teams with 500 basic, 500 animated, 200 3D and 100 APK/native-app creations per account plus higher AI capacity and scale-out controls.'],
       ['Usage and infrastructure','Plans control Build Vibe entitlements and application capacity. Model inference, browser verification, 3D/video providers and external hosting can have their own provider-specific limits and costs.'],
       ['Verified output','Every plan keeps the same product principle: generated work must remain inspectable and pass the configured verification/review path before an explicit commit or deployment.']
     ],
