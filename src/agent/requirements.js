@@ -2,6 +2,7 @@ import {hash} from '../core/hash.js';
 import {inferTarget} from '../targets/registry.js';
 import {inferDesignSystem} from './design-system.js';
 import {kitForKind,SITE_KITS} from '../site/kits.js';
+import {buildQualityContract} from './product-quality.js';
 const clean=s=>String(s??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,' ').trim();
 const has=(s,...xs)=>xs.some(x=>s.includes(x.toLowerCase()));
 const titleize=s=>String(s).split(/[-_\s]+/).filter(Boolean).map(x=>x[0]?.toUpperCase()+x.slice(1)).join('');
@@ -17,13 +18,22 @@ export function completeSpec(raw={}){
  if(kind!=='immersive') addPage('/contact');
  if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind)) addPage('/about');
  if(['ecommerce','marketplace'].includes(kind)){addPage('/shop');addPage('/collections');addPage('/cart');addPage('/checkout');addPage('/account');addApi('GET','/api/products');addApi('POST','/api/orders')};
- if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments')};
- if(/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(String(spec.request||''))){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');behavior.authentication=true;behavior.publicLogin=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup')};
+ if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments');behavior.booking=true;}
+ const requestText=String(spec.request||'');
+ const productKinds=Array.isArray(spec.productKinds)?spec.productKinds:[];
+ const saasLike=/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(requestText)||['dashboard'].includes(String(spec.appType||''))||productKinds.includes('saas');
+ if(saasLike){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');addPage('/settings');behavior.authentication=true;behavior.publicLogin=true;behavior.providerOptional=true;behavior.localFirstAuth=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup');}
+ if(kind==='marketplace'){addPage('/vendors');behavior.catalog=true;behavior.search=true;}
+ if(kind==='content'){addPage('/blog');behavior.cms=true;behavior.search=true;}
+ if(kind==='education'){addPage('/courses');behavior.search=true;}
+ if(kind==='event')addPage('/schedule');
+ if(kind==='realEstate')addPage('/properties');
  if(behavior.payments){addPage('/checkout');addApi('POST','/api/orders')};
  behavior.contactForm=true; addApi('POST','/api/contact');
- behavior.legalPages=true; behavior.launchReadyDefaults=true;
- const autoCompleted=[...new Set([...(Array.isArray(spec.autoCompleted)?spec.autoCompleted:[]),'responsive UI','accessible focus and form states','contact/conversion path','privacy and terms pages','SEO metadata and sitemap','owner admin surface'])];
- return {...spec,pages,apis,behavior,autoCompleted};
+ behavior.legalPages=true; behavior.launchReadyDefaults=true; behavior.localFirstRuntime=true; behavior.externalProvidersOptional=true;
+ const autoCompleted=[...new Set([...(Array.isArray(spec.autoCompleted)?spec.autoCompleted:[]),'responsive UI','accessible focus and form states','loading/empty/error/success states','contact/conversion path','privacy and terms pages','SEO metadata and sitemap','owner admin surface','provider-independent runtime'])];
+ const qualityContract=buildQualityContract({...spec,pages,behavior});
+ return {...spec,pages,apis,behavior,qualityContract,autoCompleted};
 }
 
 export function analyzeRequirements(request,{targetId='auto'}={}){
