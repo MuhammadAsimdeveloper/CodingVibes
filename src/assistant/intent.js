@@ -42,7 +42,7 @@ export function classifyAssistantRequest(request) {
   const selector = targetFor(lower);
   const operations = [];
 
-  const hexColor = lower.match(/#[0-9a-f]{3}(?:[0-9a-f]|[0-9a-f]{3}|[0-9a-f]{5})?\\b/i)?.[0];
+  const hexColor = lower.match(/#[0-9a-f]{8}(?![a-z0-9])|#[0-9a-f]{6}(?![a-z0-9])|#[0-9a-f]{4}(?![a-z0-9])|#[0-9a-f]{3}(?![a-z0-9])/i)?.[0];
   const namedColor = COLORS.find(color => hasPhrase(lower, color.names));
   const selectedColor = hexColor ? hexColor.toLowerCase() : namedColor?.value;
   if (selectedColor) {
