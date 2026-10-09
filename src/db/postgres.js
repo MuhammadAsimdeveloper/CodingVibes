@@ -14,7 +14,7 @@ function connectionConfig(overrides={}){
 }
 
 export function createPostgresDatabase(options={}){
-  const pool=new Pool(connectionConfig(options));
+  const pool=options.pool||new Pool(connectionConfig(options));
   let closed=false;
   return {
     pool,
