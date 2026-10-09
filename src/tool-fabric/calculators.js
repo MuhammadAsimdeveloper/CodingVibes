@@ -93,8 +93,10 @@ function breakEven(input) {
   const pricePerUnit = number(input, 'pricePerUnit', {min:0,max:1e9});
   const variableCostPerUnit = number(input, 'variableCostPerUnit', {min:0,max:1e9});
   if (pricePerUnit <= variableCostPerUnit) invalid('Price per unit must be greater than variable cost per unit.');
-  const contributionMargin = money(pricePerUnit - variableCostPerUnit);
-  const rawUnitsToBreakEven = fixedCosts / contributionMargin;
+  const rawContributionMargin = pricePerUnit - variableCostPerUnit;
+  const contributionMargin = money(rawContributionMargin);
+  // Round the displayed money value, but preserve the unrounded denominator for unit thresholds.
+  const rawUnitsToBreakEven = fixedCosts / rawContributionMargin;
   const exactUnitsToBreakEven = rounded(rawUnitsToBreakEven, 6);
   const roundingTolerance = Number.EPSILON * Math.max(1, Math.abs(rawUnitsToBreakEven)) * 8;
   return {fixedCosts,pricePerUnit,variableCostPerUnit,contributionMargin,exactUnitsToBreakEven,unitsToBreakEven:Math.ceil(rawUnitsToBreakEven - roundingTolerance)};
