@@ -1,6 +1,7 @@
 import {TOOL_CONTRACTS, getToolContract, listToolContracts} from './contracts.js';
 import {generateQrSvg} from './qr.js';
 import {runTextTool} from './text.js';
+import {runCalculatorTool} from './calculators.js';
 
 class ToolFailure extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -464,6 +465,20 @@ export async function runTool(id, input = {}) {
       case 'encoding.base64-binary': output=encoding(input);break;
       case 'design.color.palette': output=colorPalette(input);break;
       case 'design.css.gradient': output=cssGradient(input);break;
+      case 'calc.percentage':
+      case 'calc.ratio':
+      case 'calc.discount':
+      case 'calc.profit_margin':
+      case 'calc.roi':
+      case 'calc.break_even':
+      case 'calc.compound_interest':
+      case 'calc.loan':
+      case 'convert.units':
+      case 'time.duration':
+      case 'time.age':
+      case 'time.timezone':
+      case 'data.size.convert':
+        output=runCalculatorTool(contract.id,input);break;
       case 'qr.generate': output={svg:generateQrSvg(String(input.text||'')),format:'svg',errorCorrection:'L'};break;
       default: return fail('NOT_CONFIGURED',contract.id,'No executor is configured for this contract.');
     }
