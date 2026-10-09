@@ -7,7 +7,7 @@ Audit branch: `codex/reconstruction-audit-2026-10-09`
 
 ## Decision
 
-**Automated checks PASS; production launch is not approved by this audit.** Current branch head `b158811c37998bfa3ec51d2db4b47d290f459e05` passed Build Vibe CI run #806, CodeQL, and Dependency Review. The implementation extends the existing architecture rather than replacing it. Live third-party services, native device builds, real user-upload persistence, production deployment, and hardware/GPU experience checks remain unverified or not configured.
+**Automated checks PASS; production launch is not approved by this audit.** Implementation commit `b158811c37998bfa3ec51d2db4b47d290f459e05` passed Build Vibe CI run #806, CodeQL, and Dependency Review. Later changes to the audit and master-plan documents are documentation-only; the implementation source and tests are unchanged. The implementation extends the existing architecture rather than replacing it. Live third-party services, native device builds, real user-upload persistence, production deployment, and hardware/GPU experience checks remain unverified or not configured.
 
 ## Audit scope and evidence
 
@@ -82,7 +82,7 @@ Video upload provides an MP4/WebM preview only. Image/video/model choices are lo
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| Repository code/docs and regression changes | PASS | Draft PR #55, branch `codex/reconstruction-audit-2026-10-09`; current head `b158811c37998bfa3ec51d2db4b47d290f459e05`. Latest CI run #806 (run id `37919566805`) passed; CodeQL run #372 and Dependency Review run #357 passed on this head. |
+| Repository code/docs and regression changes | PASS | Draft PR #55, branch `codex/reconstruction-audit-2026-10-09`; code-tested implementation commit `b158811c37998bfa3ec51d2db4b47d290f459e05`. CI run #806 (run id `37919566805`) passed on this code; CodeQL run #372 and Dependency Review run #357 passed. Subsequent branch commits update only documentation. |
 | Unit/regression test suite and coverage | PASS | CI #806 `npm test`: 255 tests, 255 passed, 0 failed, 0 skipped; coverage command also completed with 255 passed, 0 failed. Includes visual-edit intent/API, safe CSS, generated visual-selection, 3D media/texture, and security-path regression coverage. |
 | Syntax/static and release check | PASS | CI #806 `npm run check` and release check passed; `packageLockPresent: true`. Generated admin server syntax regression discovered during implementation was fixed and the generator syntax test passed. |
 | SEO/discoverability checks | PASS | CI #806 `npm run seo:check`: score 100, grade A+, no issues or warnings. |
