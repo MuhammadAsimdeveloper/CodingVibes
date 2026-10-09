@@ -6,6 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {Store} from './db/store.js';
 import {ModelRouter} from './ai/router.js';
+import {classifyAssistantRequest} from './assistant/intent.js';
 import {buildUserRouterForUser,providerConnectionInput,normalizeAiSettings,canonicalProvider} from './ai/user-router.js';
 import {encryptSecret,decryptSecret} from './security/vault.js';
 import {createApiToken,hashApiToken,verifyApiToken,isApiToken} from './security/api-tokens.js';
@@ -263,6 +264,23 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(/^\/api\/workspaces\/[^/]+\/approvals$/.test(u.pathname)&&method==='GET'){const wid=pathParam(u.pathname,'/api/workspaces/').replace(/\/approvals$/,'');if(!store.getWorkspace(wid,userId))return sendJson(res,404,{ok:false,error:'workspace_not_found'});return sendJson(res,200,{ok:true,approvals:store.listWorkspaceApprovals(wid,userId)});}
   if(/^\/api\/workspaces\/[^/]+\/approvals$/.test(u.pathname)&&method==='POST'){const wid=pathParam(u.pathname,'/api/workspaces/').replace(/\/approvals$/,'');const ws=store.getWorkspace(wid,userId);if(!ws||!canRole(ws.role,'editor'))return sendJson(res,403,{ok:false,error:'workspace_editor_required'});const b=await readJson(req,MAX_BODY);try{const approval=store.createWorkspaceApproval(wid,String(b.projectId||''),{runId:b.runId||null,kind:String(b.kind||'publish'),requestedBy:userId,comment:String(b.comment||'')});store.addAuditLog({actorUserId:userId,action:'workspace.approval.requested',resourceType:'approval',resourceId:approval.id,metadata:{workspaceId:wid,projectId:b.projectId,kind:b.kind||'publish'}});return sendJson(res,201,{ok:true,approval});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}}
   if(/^\/api\/approvals\/[^/]+\/decision$/.test(u.pathname)&&method==='POST'){const id=pathParam(u.pathname,'/api/approvals/').replace(/\/decision$/,'');const b=await readJson(req,MAX_BODY);try{const approval=store.decideWorkspaceApproval(id,userId,String(b.status||''),String(b.comment||''));store.addAuditLog({actorUserId:userId,action:'workspace.approval.decided',resourceType:'approval',resourceId:id,metadata:{status:b.status}});return sendJson(res,200,{ok:true,approval});}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message});}}
+  if(/^\/api\/projects\/[^/]+\/design\/intent$/.test(u.pathname)&&method==='POST'){
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\\/design\\/intent$/,'');
+    try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message});}
+    const body=await readJson(req,MAX_BODY),request=String(body?.request||'').trim().slice(0,2000);
+    if(!request)return sendJson(res,400,{ok:false,error:'visual_edit_request_required'});
+    const classified=classifyAssistantRequest(request);
+    if(!classified.operations.length)return sendJson(res,422,{ok:false,error:'unsupported_visual_edit',message:'Try a focused change such as “make the heading blue and centered” or “make cards more rounded”.'});
+    try{
+      const existing=store.getDesignSystem(pid,userId),baseSystem=existing?.system||normalizeDesignSystem({},request);
+      const additions=classified.operations.map(operation=>({selector:operation.selector,css:operation.css,reason:operation.reason,request:request.slice(0,240)}));
+      const visualEdits=[...(Array.isArray(baseSystem.visualEdits)?baseSystem.visualEdits:[]),...additions].slice(-24);
+      const system=normalizeDesignSystem({...baseSystem,visualEdits},request);
+      const designSystem=store.upsertDesignSystem(pid,userId,{name:existing?.name||'Build Vibe Design System',system});
+      store.addAuditLog({actorUserId:userId,action:'design_system.text_edit_applied',resourceType:'project',resourceId:pid,metadata:{operationCount:additions.length,operationTypes:additions.map(x=>x.reason)}});
+      return sendJson(res,200,{ok:true,applied:additions,designSystem,contract:designModeContract(designSystem.system),message:'Saved to this project. Rebuild to apply the visual changes.'});
+    }catch(e){return sendJson(res,400,{ok:false,error:e.message});}
+  }
   if(/^\/api\/projects\/[^/]+\/design$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/design$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});let ds=store.getDesignSystem(pid,userId);if(!ds){ds=store.upsertDesignSystem(pid,userId,{system:normalizeDesignSystem({},'')});}return sendJson(res,200,{ok:true,designSystem:ds,contract:designModeContract(ds.system)});}
   if(/^\/api\/projects\/[^/]+\/design$/.test(u.pathname)&&method==='PUT'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/design$/,'');try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const b=await readJson(req,MAX_BODY);try{const ds=store.upsertDesignSystem(pid,userId,{name:String(b.name||'Build Vibe Design System'),system:normalizeDesignSystem(b.system||b.tokens||{},String(b.request||''))});store.addAuditLog({actorUserId:userId,action:'design_system.updated',resourceType:'project',resourceId:pid,metadata:{version:ds.version}});return sendJson(res,200,{ok:true,designSystem:ds,contract:designModeContract(ds.system)});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}}
   if(/^\/api\/projects\/[^/]+\/domains$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/domains$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});return sendJson(res,200,{ok:true,domains:store.listDomains(pid,userId)});}
