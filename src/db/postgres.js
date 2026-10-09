@@ -31,8 +31,19 @@ export async function ensurePostgresMigrations(db){
     {version:'0002_core_persistence',sql:migration0002Core()},
     {version:'0003_application_tables',sql:migration0003ApplicationTables()}
   ];
-  for(const migration of migrations){const existing=await db.query('SELECT version FROM codingvibes_schema_migrations WHERE version=$1',[migration.version]);if(existing.rowCount)continue;await db.transaction(async client=>{await client.query(migration.sql);await client.query('INSERT INTO codingvibes_schema_migrations(version) VALUES($1)',[migration.version]);});}
-  return {applied:migrations.map(x=>x.version),schema:'codingvibes'};
+  const applied=[];
+  for(const migration of migrations){
+    const wasApplied=await db.transaction(async client=>{
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',['codingvibes:migration:'+migration.version]);
+      const existing=await client.query('SELECT version FROM codingvibes_schema_migrations WHERE version=$1',[migration.version]);
+      if(existing.rowCount)return false;
+      await client.query(migration.sql);
+      await client.query('INSERT INTO codingvibes_schema_migrations(version) VALUES($1)',[migration.version]);
+      return true;
+    });
+    if(wasApplied)applied.push(migration.version);
+  }
+  return {applied,schema:'codingvibes'};
 }
 
 export function postgresConfigStatus(env=process.env){
