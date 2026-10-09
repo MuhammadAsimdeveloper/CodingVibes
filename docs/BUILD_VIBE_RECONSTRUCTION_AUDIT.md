@@ -83,7 +83,7 @@ Do not mark Build Vibe production-ready on source inspection alone. Production r
 
 ## Follow-up order
 
-1. Wait for no follow-up work; instead use current CI evidence to repair any regressions in this branch.
+1. Use the current branch's CI output to fix any regression before proceeding.
 2. Capture actual browser reports at all supported widths and test a generated 3D website that attaches an image and video, while confirming a graceful WebGL/CDN fallback.
 3. Complete a broader generated website/application acceptance corpus spanning CRUD, commerce, booking, dashboards, content, native targets and malicious repository inputs.
 4. Re-audit authentication, tenancy, dependency egress and deployment secret boundaries when real credentials/infrastructure are present.
