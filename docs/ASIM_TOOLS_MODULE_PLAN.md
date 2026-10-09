@@ -38,3 +38,13 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 ## Current evidence
 - Repository CI on `main` is currently blocked by a missing visual-intent module and missing generated visual-selection runtime. Fixes should land on an isolated branch and rerun the full CI gates.
 - Production runner/toolchain credentials and infrastructure remain environment-dependent and must not be marked configured based only on source code.
+
+ 
+## Current implementation checkpoint — 2026-10-09
+
+- Added the local Tool Fabric registry with 18 stable contracts and typed input/output descriptors.
+- Implemented deterministic local execution for SEO metadata and artifact generation, static SEO/accessibility audits, metrics-based performance assessment, JSON formatting and TypeScript generation, guarded regex testing, decoded-only JWT inspection, Base64/binary conversions, color palettes, CSS gradients and a local QR SVG generator.
+- Implemented a browser-local Canvas/ImageBitmap image optimizer as a separate adapter. The Node runner returns BROWSER_REQUIRED rather than claiming image compression occurred.
+- API testing currently produces a redacted request plan only. The default execution path never sends outbound requests; live network execution remains NOT_CONFIGURED pending a dedicated SSRF-safe runner, timeouts, credential isolation, audit and explicit approval.
+- Website audits analyze supplied HTML only. Performance reports require caller-supplied measurements; the registry does not fabricate browser or Lighthouse metrics.
+- Local contracts and tests are located in src/tool-fabric/ and test/tool-fabric.test.js. Consume these modules directly; never call Asim Tools over HTTP at runtime.

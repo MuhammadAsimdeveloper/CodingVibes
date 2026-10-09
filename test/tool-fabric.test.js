@@ -164,3 +164,9 @@ test('image optimizer advertises its actual browser-only boundary', async () => 
   assert.equal(image.status, 'BROWSER_REQUIRED');
   assert.equal(getToolContract('image.optimize').executionMode, 'browser');
 });
+
+ 
+test('QR generation rejects non-ASCII until explicit UTF-8 ECI support is present', async () => {
+  const result = await runTool('qr.generate', {text: '你好'});
+  assert.equal(result.status, 'INVALID_INPUT');
+});
