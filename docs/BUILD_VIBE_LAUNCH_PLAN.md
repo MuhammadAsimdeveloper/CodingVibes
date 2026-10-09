@@ -1074,3 +1074,12 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Verifies that a rejected stale write does not overwrite the current scene document.
 - Updated the scene inspector helper copy to match the implemented preview and project-save workflow.
 - **Verification gate:** the test has been committed on the reconstruction branch. Run and inspect all CI/security workflows on the new head before treating this integration as verified. This is not browser E2E coverage and does not connect the saved scene document to the generated public-site Three.js runtime. Durable uploaded assets and PostgreSQL-primary-store migration remain open.
+
+## 49. Scene preview media and lighting node support
+
+- Extended the browser Three.js preview adapter to map validated `image` nodes to asynchronously loaded texture maps, `video` nodes to muted inline video textures where browser support permits, and `light` nodes to point-light objects when available.
+- Preserves the renderer-neutral scene document as the source of truth; the renderer does not accept executable code or arbitrary material/shader properties.
+- Adds asset-load status feedback and cleans up video playback/source references and owned textures during rebuild/disposal.
+- Added adapter regression coverage for image, video, and light node documents using a lightweight Three.js test double.
+- **Limits:** this is still the local editor preview. It does not upload assets, make local blob URLs durable, load `model` nodes in this adapter, or inject the saved scene into the published site's `three-experience.js`. Browser-level visual verification and actual media CORS/playback checks remain open.
+- **Verification gate:** the new tests and syntax checks must pass on the latest head; inspect CodeQL and Dependency Review again. PostgreSQL-primary-store migration and deployment readiness remain incomplete.
