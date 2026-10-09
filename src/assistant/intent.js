@@ -44,7 +44,10 @@ export function classifyAssistantRequest(request) {
 
   for (const color of COLORS) {
     if (hasPhrase(lower, color.names)) {
-      addOperation(operations, selector, { color: color.value }, 'Set text color');
+      const css = hasPhrase(lower, ['background', 'page background', 'background color'])
+        ? { backgroundColor: color.value }
+        : { color: color.value };
+      addOperation(operations, selector, css, css.backgroundColor ? 'Set background color' : 'Set text color');
       break;
     }
   }
@@ -85,7 +88,7 @@ export function classifyAssistantRequest(request) {
   if (hasPhrase(lower, ['hide it', 'hide this', 'remove from view'])) {
     addOperation(operations, selector, { display: 'none' }, 'Hide selected content');
   } else if (hasPhrase(lower, ['show it', 'show this', 'make it visible'])) {
-    addOperation(operations, selector, { display: '' }, 'Show selected content');
+    addOperation(operations, selector, { display: 'revert' }, 'Show selected content');
   }
 
   return {
