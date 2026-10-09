@@ -70,7 +70,7 @@ Update the launch audit, implementation baseline and affected docs from actual C
 
 - Baseline inspected: repository tree, package scripts, release identity, launch plan, start-here instructions, core generation/design/verification modules, 3D runtime, CI workflow inventory and OriginKit repository setup.
 - Found: this plan file was absent from baseline `main`.
-- Implemented on the execution branch: accessible 3D scene status and view controls; validated image/video attachments; file-size checks and object-URL cleanup; reduced-motion-aware camera behavior; visibility/off-screen render pause; render-buffer optimization; mobile/tablet/desktop browser layout checks; regression-test additions.
+- Implemented on the execution branch: accessible 3D scene status and view controls; bounded image/video/model inputs; local media previews and explicit image-to-mesh texture application; texture/material/object-URL cleanup; reduced-motion-aware camera behavior; visibility/off-screen render pause; render-buffer optimization; mobile/tablet/desktop browser layout checks; project-persisted design tokens; an editor-authorized allowlisted natural-language design-edit route; an opt-in generated-site visual-selection runtime; safe CSS token injection and regression-test additions.
 - Not yet certified by this document: tests, browser screenshots, real external-provider operations, native binary builds and production deployment. These remain pending until the relevant check reports are recorded.
 
 ## Definition of done
