@@ -125,8 +125,8 @@ function migration0003ApplicationTables(){
     "CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id)",
     "CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id,created_at)",
     "CREATE INDEX IF NOT EXISTS idx_ai_preferences_user ON ai_preferences(user_id)",
-    "CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects(workspace_id)')"
-  ].join(';\\n')+';';
+    "CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects(workspace_id)"
+  ].join(';\n')+';';
 }
 
 function migration0002Core(){
