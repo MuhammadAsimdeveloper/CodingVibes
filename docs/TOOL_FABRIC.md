@@ -39,6 +39,28 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `text.whitespace.clean` | local | Line-ending/trailing-space/blank-line normalization or whitespace collapse |
 | `text.slug.generate` | local | Bounded ASCII slugs with combining-mark removal and empty-result rejection |
 | `text.unicode.inspect` | local | Unicode code points, UTF-16 offsets and UTF-8 bytes, capped at 1000 code points |
+| `calc.percentage` | local | Percentage-of-value calculation with bounded finite numbers |
+| `calc.ratio` | local | Simplifies positive ratios to six decimal places and returns share percentages |
+| `calc.discount` | local | Discount amount, discounted price and optional post-discount tax |
+| `calc.profit_margin` | local | Profit and margin from supplied revenue and cost |
+| `calc.roi` | local | ROI percentage and gain from supplied investment values |
+| `calc.break_even` | local | Contribution margin and exact/rounded-up units at break-even |
+| `calc.compound_interest` | local | Bounded compound-interest estimate from supplied assumptions |
+| `calc.loan` | local | Fixed-payment amortization estimate; excludes fees and variable-rate changes |
+| `convert.units` | local | Length, mass, volume, elapsed-time and temperature conversions; dimensions must match |
+| `time.duration` | local | Converts fixed elapsed-time units; calendar months/years are excluded |
+| `time.age` | local | Calendar age between strict YYYY-MM-DD dates; leap-day policy is explicit |
+| `time.timezone` | local | Converts a supplied ISO-8601 instant with explicit offset between IANA zones |
+| `data.size.convert` | local | Decimal SI and binary IEC byte units with safe-integer limits |
+
+
+## Local calculator, converter and date/time tools
+
+The calculator tranche is deterministic and local-only. It adds eight finance/math helpers (`calc.percentage`, `calc.ratio`, `calc.discount`, `calc.profit_margin`, `calc.roi`, `calc.break_even`, `calc.compound_interest`, `calc.loan`), one unit converter (`convert.units`), two time helpers (`time.duration`, `time.age`), an IANA time-zone conversion helper (`time.timezone`), and decimal/binary data-size conversion (`data.size.convert`). All 13 tools declare contracts before execution is enabled and share `runTool` error envelopes.
+
+Inputs must use finite JSON numbers rather than numeric strings; each operation applies explicit domain bounds. Money-like outputs are rounded to cents. The loan calculator estimates fixed-rate amortization only; it does not include fees, insurance, taxes, changing rates or lender-specific rules. Ratio inputs must be positive and are simplified at six decimal places. Unit conversions reject mismatched dimensions. Duration conversions use fixed seconds and intentionally do not guess the duration of calendar months or years. Age dates require valid `YYYY-MM-DD` values; a February 29 birthday is treated as February 28 in non-leap years. Time-zone conversion requires an ISO-8601 timestamp with `Z` or an explicit offset and validates both zones through the host's IANA/Intl database. Data-size conversion distinguishes decimal SI units (KB=1000 bytes) from binary IEC units (KiB=1024 bytes) and rejects values beyond JavaScript's exact integer range.
+
+No tool reads financial accounts, contacts a lender, performs market lookup, writes user files, or makes network calls. Results are arithmetic estimates from the supplied inputs, not financial, tax or lending advice. Regression tests live in `test/tool-fabric-calculators.test.js`.
 
 ## Output envelope
 
