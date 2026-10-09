@@ -55,7 +55,7 @@ test('server public and authenticated route smoke covers launch control plane',a
   assert.ok(toolCatalog.body.tools.every(tool=>tool.owner==='build-vibe'&&tool.authenticationRequired===true));
   const formatTool=await req('/api/tools/dev.json.format/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({text:'{"title":"Build Vibe"}'})});
   assert.equal(formatTool.response.status,200);
-  assert.equal(formatTool.body.output.formatted,'{\\n  "title": "Build Vibe"\\n}');
+  assert.equal(formatTool.body.output.formatted,JSON.stringify({title:'Build Vibe'},null,2));
   const badToolInput=await req('/api/tools/dev.json.format/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({text:'{"a":'})});
   assert.equal(badToolInput.response.status,422);
   assert.equal(badToolInput.body.error,'invalid_json');
