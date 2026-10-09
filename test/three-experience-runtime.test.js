@@ -32,3 +32,12 @@ test('replacing a local walkthrough video releases the previous object URL',()=>
   assert.match(runtime,/video\.dataset\.objectUrl=objectUrl/);
 });
 
+
+
+test('3D experience renders customer-provided labels as text rather than HTML', () => {
+  assert.match(runtime, /fallback\.textContent='Loaded '\+label/);
+  assert.match(runtime, /b\.textContent=h\.label\|\|h\.room\|\|'View'/);
+  assert.match(runtime, /a\.textContent='Download recorded tour'/);
+  assert.doesNotMatch(runtime, /\b(?:innerHTML|outerHTML)\s*=/);
+  assert.doesNotMatch(runtime, /insertAdjacentHTML/);
+});
