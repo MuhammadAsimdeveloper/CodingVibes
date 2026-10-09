@@ -84,7 +84,7 @@ export function validateSceneDocument(input) {
 export function applySceneOperation(document, operation) {
   const validated = validateSceneDocument(document);
   if (!validated.ok) return { ok: false, errors: validated.errors };
-  if (!plainObject(operation) || operation.op !== 'set' || Object.keys(operation).some(key => !['op', 'nodeId', 'field', 'value'].includes(key))) {
+  if (!plainObject(operation) || !['set', 'unset'].includes(operation.op) || Object.keys(operation).some(key => !['op', 'nodeId', 'field', 'value'].includes(key)) || (operation.op === 'unset' && Object.hasOwn(operation, 'value'))) {
     return { ok: false, errors: ['operation must be a supported set operation'] };
   }
   if (typeof operation.nodeId !== 'string' || typeof operation.field !== 'string' || !Object.hasOwn(EDITABLE_FIELDS, operation.field)) {
@@ -94,14 +94,14 @@ export function applySceneOperation(document, operation) {
   const index = validated.value.nodes.findIndex(node => node.id === operation.nodeId);
   if (index < 0) return { ok: false, errors: [`node not found: ${operation.nodeId}`] };
   const before = structuredClone(validated.value);
-  validated.value.nodes[index][operation.field] = structuredClone(operation.value);
+  if (operation.op === 'unset') delete validated.value.nodes[index][operation.field];\n  else validated.value.nodes[index][operation.field] = structuredClone(operation.value);
   const afterValidation = validateSceneDocument(validated.value);
   if (!afterValidation.ok) return { ok: false, errors: afterValidation.errors };
   return {
     ok: true,
     document: afterValidation.value,
     change: { nodeId: operation.nodeId, field: operation.field, before: before.nodes[index][operation.field] ?? null, after: structuredClone(operation.value) },
-    undo: { op: 'set', nodeId: operation.nodeId, field: operation.field, value: before.nodes[index][operation.field] ?? defaultValue(operation.field) }
+    undo: Object.hasOwn(before.nodes[index], operation.field)\n      ? { op: 'set', nodeId: operation.nodeId, field: operation.field, value: structuredClone(before.nodes[index][operation.field]) }\n      : { op: 'unset', nodeId: operation.nodeId, field: operation.field }
   };
 }
 
