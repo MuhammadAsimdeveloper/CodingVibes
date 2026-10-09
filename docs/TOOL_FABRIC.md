@@ -52,6 +52,10 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `time.age` | local | Calendar age between strict YYYY-MM-DD dates; leap-day policy is explicit |
 | `time.timezone` | local | Converts a supplied ISO-8601 instant with explicit offset between IANA zones |
 | `data.size.convert` | local | Decimal SI and binary IEC byte units with safe-integer limits |
+| `dev.hash.generate` | local | SHA-256/SHA-384/SHA-512 text digests in hex or Base64; not for password storage |
+| `security.checksum.verify` | local | Validates supplied digest encoding and compares fixed-size digests in constant time |
+| `dev.uuid.generate` | local | Cryptographically secure UUID v4 generation using Node crypto |
+| `dev.url.encode` | local | Explicit encode/decode URI and component modes; does not navigate or fetch URLs |
 
 
 ## Local calculator, converter and date/time tools
@@ -63,6 +67,14 @@ Inputs must use finite JSON numbers rather than numeric strings; each operation 
 No tool reads financial accounts, contacts a lender, performs market lookup, writes user files, or makes network calls. Results are arithmetic estimates from the supplied inputs, not financial, tax or lending advice. Regression tests live in `test/tool-fabric-calculators.test.js`.
 
 **Verification record:** implementation revision `4b796eb615ce77d734a66230995c57d353406bb9` passed Build Vibe CI run [37987930669](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930669), 309/309 tests, coverage, syntax/release checks, SEO, server/browser E2E and launch-gate steps. CodeQL [37987930550](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930550) and Dependency Review [37987930570](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930570) passed on the same source revision. Results are arithmetic estimates from the supplied inputs, not financial, tax or lending advice. Regression tests live in `test/tool-fabric-calculators.test.js`.
+
+## Local hash, checksum, UUID and URL tools
+
+The developer-utility tranche adds `dev.hash.generate`, `security.checksum.verify`, `dev.uuid.generate`, and `dev.url.encode`. Hash generation permits only SHA-256, SHA-384 and SHA-512 and supports hex/Base64 output. Checksum verification parses a supplied digest strictly, rejects unsupported encodings and digest lengths before comparison, and uses Node's fixed-size `timingSafeEqual`. UUID v4 uses the cryptographic random generator. URL operations require an explicit mode (`encode-component`, `decode-component`, `encode-uri`, or `decode-uri`) and malformed inputs return `INVALID_INPUT`.
+
+These helpers process only user-supplied strings and make no network calls. Hashes and checksums are for integrity verification; they are **not password storage or password authentication**. No URL is opened or fetched by the encoder.
+
+**Verification record:** implementation revision `b65c87d61dab2abc873f8765084c2255240cdf1c` passed Build Vibe CI [37988776436](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776436): 314/314 tests, 0 failed/skipped, coverage, syntax/release checks, SEO, server/browser E2E and all configured operations gates. CodeQL [37988776447](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776447) and Dependency Review [37988776485](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776485) also passed on that revision. The later documentation-only head receives a fresh CI run before merge.
 
 ## Output envelope
 
