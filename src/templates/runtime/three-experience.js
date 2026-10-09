@@ -57,7 +57,7 @@ async function start(){
     scene.add(group);
     const makeMat=(color,roughness=.72)=>new MeshStandardMaterial({color,roughness});
     const sceneObjects=new Map(),savedSceneTextures=new Set(),savedSceneVideos=new Set();
-    function validAssetUrl(value){try{const u=new URL(value,location.href);return u.protocol==='https:'&&!u.username&&!u.password}catch{return false}}
+    function validAssetUrl(value){if(typeof value!=='string')return false;if(/^\/assets\/[A-Za-z0-9][A-Za-z0-9._-]{0,240}$/.test(value)&&!value.includes('..'))return true;try{const u=new URL(value,location.href);return u.protocol==='https:'&&!u.username&&!u.password}catch{return false}}
     function buildSavedScene(documentData){
       if(!documentData||!Array.isArray(documentData.nodes)||documentData.nodes.length>250)return false;
       const roots=new Group();roots.name='build-vibe-saved-scene';scene.add(roots);
