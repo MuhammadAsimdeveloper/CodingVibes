@@ -51,7 +51,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .design-text-editor textarea:focus-visible{outline:3px solid var(--ui-blue);outline-offset:2px}
 .design-text-editor .suite-actions{margin-top:2px}
 .design-text-editor #designTextStatus{margin:0;line-height:1.5}
-\n
+
+
 /* Phase 45 — safe local scene editor */
 .scene-editor-card{display:flex;flex-direction:column;gap:14px}
 .scene-editor-head,.scene-editor-toolbar,.scene-editor-grid,.scene-prompt .suite-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
