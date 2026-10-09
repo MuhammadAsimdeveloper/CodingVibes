@@ -62,6 +62,8 @@ Inputs must use finite JSON numbers rather than numeric strings; each operation 
 
 No tool reads financial accounts, contacts a lender, performs market lookup, writes user files, or makes network calls. Results are arithmetic estimates from the supplied inputs, not financial, tax or lending advice. Regression tests live in `test/tool-fabric-calculators.test.js`.
 
+**Verification record:** implementation revision `4b796eb615ce77d734a66230995c57d353406bb9` passed Build Vibe CI run [37987930669](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930669), 309/309 tests, coverage, syntax/release checks, SEO, server/browser E2E and launch-gate steps. CodeQL [37987930550](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930550) and Dependency Review [37987930570](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930570) passed on the same source revision. Results are arithmetic estimates from the supplied inputs, not financial, tax or lending advice. Regression tests live in `test/tool-fabric-calculators.test.js`.
+
 ## Output envelope
 
 Successful runs return `{ ok: true, status: "COMPLETED", tool, version, output, warnings, provenance }`. Errors use explicit states such as UNKNOWN_TOOL, INVALID_INPUT, INPUT_TOO_LARGE, BLOCKED, BROWSER_REQUIRED, NEEDS_BROWSER_METRICS, and NOT_CONFIGURED. Failure states must not be presented as successful execution.
