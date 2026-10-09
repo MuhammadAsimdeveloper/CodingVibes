@@ -35,6 +35,31 @@ test('in-memory queue preserves jobs and supports bounded retry',async()=>{
  await queue.close();assert.equal(await queue.healthcheck(),false);
 });
 
+test('PostgreSQL transaction commits and always releases its client',async()=>{
+ const calls=[];
+ const client={async query(sql){calls.push(sql);return {rows:[]};},release(){calls.push('RELEASE');}};
+ const pool={async connect(){calls.push('CONNECT');return client;},async query(sql){calls.push('POOL:'+sql);return {rows:[{ok:1}]};},async end(){calls.push('END');}};
+ const db=createPostgresDatabase({pool});
+ const result=await db.transaction(async tx=>{await tx.query('SELECT 42');return 'done';});
+ assert.equal(result,'done');
+ assert.deepEqual(calls,['CONNECT','BEGIN','SELECT 42','COMMIT','RELEASE']);
+ await db.close();
+ assert.ok(calls.includes('END'));
+ await assert.rejects(()=>db.query('SELECT 1'),/postgres_database_closed/);
+ await assert.rejects(()=>db.transaction(async()=>{}),/postgres_database_closed/);
+ assert.equal(await db.healthcheck(),false);
+});
+
+test('PostgreSQL transaction rolls back and releases the client when work fails',async()=>{
+ const calls=[];
+ const client={async query(sql){calls.push(sql);return {rows:[]};},release(){calls.push('RELEASE');}};
+ const pool={async connect(){return client;},async query(){return {rows:[]};},async end(){}};
+ const db=createPostgresDatabase({pool});
+ await assert.rejects(()=>db.transaction(async tx=>{await tx.query('UPDATE projects');throw new Error('write failed');}),/write failed/);
+ assert.deepEqual(calls,['BEGIN','UPDATE projects','ROLLBACK','RELEASE']);
+ await db.close();
+});
+
 test('PostgreSQL connection rejects unknown SSL modes instead of weakening TLS silently',()=>{
  assert.throws(()=>createPostgresDatabase({connectionString:'postgres://example.invalid/buildvibe',sslMode:'disabled'}),/invalid_postgres_ssl_mode/);
  assert.throws(()=>createPostgresDatabase({connectionString:'postgres://example.invalid/buildvibe',sslMode:'off'}),/invalid_postgres_ssl_mode/);
