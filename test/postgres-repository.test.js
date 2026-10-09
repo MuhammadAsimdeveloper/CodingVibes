@@ -55,7 +55,7 @@ test('collection limits are clamped before reaching PostgreSQL',async()=>{
  await repository.listSessions({userId:'u1',projectId:'p1',limit:0});
  await repository.listMessages({userId:'u1',sessionId:'s1',limit:100000});
  assert.equal(db.calls[0].params.at(-1),100);
- assert.equal(db.calls[1].params.at(-1),1);
+ assert.equal(db.calls[1].params.at(-1),50);
  assert.equal(db.calls[2].params.at(-1),500);
 });
 
