@@ -7,7 +7,7 @@ Audit branch: `codex/reconstruction-audit-2026-10-09`
 
 ## Decision
 
-**Automated checks PASS; production launch is not approved by this audit.** Implementation commit `b158811c37998bfa3ec51d2db4b47d290f459e05` passed Build Vibe CI run #806, CodeQL, and Dependency Review. Later changes to the audit and master-plan documents are documentation-only; the implementation source and tests are unchanged. The implementation extends the existing architecture rather than replacing it. Live third-party services, native device builds, real user-upload persistence, production deployment, and hardware/GPU experience checks remain unverified or not configured.
+**Automated checks PASS on the latest verified branch commit; production launch is not approved by this audit.** Branch head `ee8ca3069bd6711c8d6a1b10cbdf041250457912` (`docs: distinguish source verification from audit document updates`) has successful Build Vibe CI run `37919884973` (#809), CodeQL run `37919884987` and Dependency Review run `37919885041`. Unlike the earlier checkpoint, the current branch includes subsequent source/test commits for project-scoped design-token preservation, allowlisted natural-language design edits, safe CSS application, 3D image-texture application and its regression tests. The latest workflow ran against this branch head and passed the configured CI steps listed below. These are repository CI results, not proof of production deployment or physical-device/GPU behavior. Live third-party services, native device builds, durable user-upload persistence, production deployment and hardware/GPU experience checks remain unverified or not configured.
 
 ## Audit scope and evidence
 
@@ -82,7 +82,7 @@ Video upload provides an MP4/WebM preview only. Image/video/model choices are lo
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| Repository code/docs and regression changes | PASS | Draft PR #55, branch `codex/reconstruction-audit-2026-10-09`; code-tested implementation commit `b158811c37998bfa3ec51d2db4b47d290f459e05`. CI run #806 (run id `37919566805`) passed on this code; CodeQL run #372 and Dependency Review run #357 passed. Subsequent branch commits update only documentation. |
+| Repository code/docs and regression changes | PASS (latest branch CI) | Draft PR #55, branch `codex/reconstruction-audit-2026-10-09`, head `ee8ca3069bd6711c8d6a1b10cbdf041250457912`. Build Vibe CI run #809 (`37919884973`), CodeQL (`37919884987`) and Dependency Review (`37919885041`) all completed successfully on this head. Source/test changes after the earlier #806 checkpoint include bounded design-token/text-edit and 3D image-texture improvements; this row reflects the latest run, not only the older checkpoint. |
 | Unit/regression test suite and coverage | PASS | CI #806 `npm test`: 255 tests, 255 passed, 0 failed, 0 skipped; coverage command also completed with 255 passed, 0 failed. Includes visual-edit intent/API, safe CSS, generated visual-selection, 3D media/texture, and security-path regression coverage. |
 | Syntax/static and release check | PASS | CI #806 `npm run check` and release check passed; `packageLockPresent: true`. Generated admin server syntax regression discovered during implementation was fixed and the generator syntax test passed. |
 | SEO/discoverability checks | PASS | CI #806 `npm run seo:check`: score 100, grade A+, no issues or warnings. |
