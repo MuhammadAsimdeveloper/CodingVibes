@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {planRequirements} from './planner.js';
-import {generateProject} from './project-generator.js';
+import {generateProject,designSystemCssForSpec} from './project-generator.js';
 import {generateProjectWithModel} from './model-generator.js';
 import {collectProjectContext} from './context.js';
 import {makeRepairRequest,shouldRepair,MAX_REPAIR_CYCLES} from './repair.js';
@@ -35,6 +35,44 @@ import {runParallelAgentAnalysis,defaultDesignSystem,reflectBuild} from '../plat
 async function collectSourceText(workspace){let out='';const walk=dir=>{if(!fs.existsSync(dir)||out.length>350000)return;for(const name of fs.readdirSync(dir)){if(['.git','node_modules','.codingvibes'].includes(name))continue;const full=path.join(dir,name),st=fs.lstatSync(full);if(st.isDirectory())walk(full);else if(/\.(js|jsx|ts|tsx|html|css|json|dart|kt|swift|rs|yaml|yml)$/.test(name)){try{out+=fs.readFileSync(full,'utf8')+'\n'}catch{}}}};walk(workspace);return out.slice(0,350000)}
 function scrubText(text){return String(text??'').slice(0,12000);}
 function writeManifest(workspace,data){const dir=path.join(workspace,'.codingvibes');fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,'run.json'),JSON.stringify(data,null,2)+'\n');}
+
+function applyProjectDesignSystem(workspace,spec){
+ const css=designSystemCssForSpec(spec).trim();
+ if(!css)return {applied:false,reason:'no-design-system'};
+ const candidates=['public/styles.css','styles.css','style.css','src/styles.css','src/index.css','src/App.css','app/globals.css','src/app/globals.css','src/styles/globals.css'];
+ for(const rel of candidates){
+  const file=path.join(workspace,rel);
+  if(!fs.existsSync(file)||!fs.statSync(file).isFile())continue;
+  const before=fs.readFileSync(file,'utf8');
+  if(before.includes(css))return {applied:true,mode:'already-present',file:rel};
+  fs.writeFileSync(file,before+'\\n'+css+'\\n','utf8');
+  return {applied:true,mode:'appended',file:rel};
+ }
+ const publicDir=path.join(workspace,'public');fs.mkdirSync(publicDir,{recursive:true});
+ const relCss='public/build-vibe-design-system.css';
+ fs.writeFileSync(path.join(workspace,relCss),css+'\\n','utf8');
+ const htmlFiles=[];
+ const scan=(dir,depth=0)=>{
+  if(depth>3||htmlFiles.length>=100)return;
+  let entries=[];try{entries=fs.readdirSync(dir,{withFileTypes:true})}catch{return;}
+  for(const entry of entries){
+   if(entry.name.startsWith('.')||['node_modules','dist','build','coverage','vendor'].includes(entry.name))continue;
+   const file=path.join(dir,entry.name);
+   if(entry.isDirectory())scan(file,depth+1);
+   else if(entry.isFile()&&entry.name.endsWith('.html'))htmlFiles.push(file);
+   if(htmlFiles.length>=100)break;
+  }
+ };
+ scan(workspace);
+ let linked=0;
+ for(const file of htmlFiles){
+  let html=fs.readFileSync(file,'utf8');
+  if(html.includes('/build-vibe-design-system.css'))continue;
+  const link='<link rel="stylesheet" href="/build-vibe-design-system.css">';
+  if(html.includes('</head>')){html=html.replace('</head>',link+'</head>');fs.writeFileSync(file,html,'utf8');linked++;}
+ }
+ return {applied:linked>0,mode:'linked',file:relCss,pagesLinked:linked};
+}
 function isLiveWebTarget(target){return target.id==='web-node'||target.id==='web-pwa';}
 function statusFromEvidence(evidence){if(evidence?.passed)return 'verified';if(evidence?.status==='blocked')return 'blocked';return 'failed';}
 function checkpointRoot(){return path.resolve(process.env.CODINGVIBES_CHECKPOINT_ROOT||path.join(process.cwd(),'data','checkpoints'));}
@@ -154,6 +192,7 @@ export async function executeBuild({request,userId,sessionId,project,store,route
    const tools=new ToolRegistry({workspace:ws.worktree,store,runId:run.id,confirm:async()=>true,signal});
    for(const operation of operations){ensureActiveRun(store,run,userId,signal);await tools.call(operation.type,operation);}
    store.updateChangeset(changeset.id,{status:'applied'});
+   if(isLiveWebTarget(target)){const designResult=applyProjectDesignSystem(ws.worktree,spec);store.addEvidence(run.id,'design_system_applied',designResult);emit({type:'design_system_applied',runId:run.id,...designResult});}
    const experienceQuality=applyExperienceQuality(ws.worktree,{kind:spec.siteKind||'business',mode:spec.styling?.designSystem?.motion?.mode||'smooth'});
    store.addEvidence(run.id,'experience_quality',experienceQuality);
    emit({type:'experience_quality_completed',runId:run.id,...experienceQuality});
