@@ -15,7 +15,7 @@ export function assessBrowserQuality(result,{maxLoadMs=5000,maxTransferBytes=8_0
   return{ok:failures.length===0,failures};
 }
 
-export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir='artifacts',baselineDir='',viewport={width:1440,height:900},visualThreshold,pixelThreshold,maxLoadMs=Number(process.env.CODINGVIBES_BROWSER_MAX_LOAD_MS||5000),maxTransferBytes=Number(process.env.CODINGVIBES_BROWSER_MAX_TRANSFER_BYTES||8_000_000)}={}){
+export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir='artifacts',baselineDir='',viewport={width:1440,height:900},responsiveViewports=[{width:390,height:844},{width:768,height:1024},{width:1440,height:900}],visualThreshold,pixelThreshold,maxLoadMs=Number(process.env.CODINGVIBES_BROWSER_MAX_LOAD_MS||5000),maxTransferBytes=Number(process.env.CODINGVIBES_BROWSER_MAX_TRANSFER_BYTES||8_000_000)}={}){
  let pw;try{pw=await import('playwright');}catch{return{enabled:true,available:false,passed:false,skipped:'playwright not installed',results:[]};}
  const fs=await import('node:fs');fs.mkdirSync(artifactDir,{recursive:true});const browser=await pw.chromium.launch({headless:true});const results=[];
  try{
@@ -25,7 +25,7 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
    page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());if(m.type()==='warning')consoleWarnings.push(m.text());});
    page.on('requestfailed',r=>requestFailures.push({url:r.url(),failure:r.failure()?.errorText||'request failed'}));
    page.on('response',r=>{if(r.status()>=500)responseFailures.push({url:r.url(),status:r.status()});});
-   let status=0,error=null,ui={},screenshot=null,domSnapshot=null,visual=null,performance={},accessibility={};
+   let status=0,error=null,ui={},screenshot=null,domSnapshot=null,visual=null,performance={},accessibility={},responsive=[];
    try{
     const response=await page.goto(new URL(p,baseUrl).toString(),{waitUntil:'networkidle',timeout:15000});
     status=response?.status()||0;
@@ -35,6 +35,16 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
     performance=metrics;
     ui=await page.evaluate(()=>{const images=[...document.images],buttons=[...document.querySelectorAll('button,input[type="button"],input[type="submit"]')],links=[...document.querySelectorAll('a[href]')],rect=document.documentElement.getBoundingClientRect(),text=document.body?.innerText||'';return{title:document.title||'',lang:document.documentElement.lang||'',viewport:!!document.querySelector('meta[name="viewport"]'),main:!!document.querySelector('main'),nav:!!document.querySelector('nav'),h1:document.querySelectorAll('h1').length,imagesWithoutAlt:images.filter(x=>!x.getAttribute('alt')).length,controlsWithoutName:buttons.filter(x=>!(x.getAttribute('aria-label')||x.textContent?.trim()||x.getAttribute('title'))).length,linksWithoutName:links.filter(x=>!(x.getAttribute('aria-label')||x.textContent?.trim()||x.getAttribute('title'))).length,interactiveAriaHidden:[...document.querySelectorAll('button,a[href],input,select,textarea')].filter(x=>x.getAttribute('aria-hidden')==='true').length,documentWidth:rect.width,bodyScrollWidth:document.body?.scrollWidth||rect.width,bodyTextLength:text.length,forms:document.querySelectorAll('form').length};});
     const uiFailures=[];if(!ui.title)uiFailures.push('missing document title');if(!ui.lang)uiFailures.push('missing html lang');if(ui.viewport===false)uiFailures.push('missing responsive viewport');if(ui.main===false)uiFailures.push('missing main landmark');if(ui.imagesWithoutAlt>0)uiFailures.push(`${ui.imagesWithoutAlt} image(s) without alt text`);if(ui.controlsWithoutName>0)uiFailures.push(`${ui.controlsWithoutName} control(s) without accessible name`);if(ui.linksWithoutName>0)uiFailures.push(`${ui.linksWithoutName} link(s) without accessible name`);if(ui.interactiveAriaHidden>0)uiFailures.push(`${ui.interactiveAriaHidden} interactive element(s) incorrectly aria-hidden`);if(ui.bodyScrollWidth>ui.documentWidth+4)uiFailures.push('horizontal overflow detected');
+    for(const target of responsiveViewports){
+      const size={width:Math.max(240,Number(target.width)||390),height:Math.max(320,Number(target.height)||844)};
+      await page.setViewportSize(size);
+      const layout=await page.evaluate(()=>({width:document.documentElement.clientWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body?.scrollWidth||0)}));
+      const ok=layout.scrollWidth<=layout.width+4;
+      responsive.push({...size,...layout,ok});
+      if(!ok)uiFailures.push(`horizontal overflow at ${size.width}px viewport`);
+    }
+    ui.responsiveLayouts=responsive;
+    await page.setViewportSize(viewport);
     const focusableCount=await page.locator('a[href],button,input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"]').count();
     let firstTabFocused=false;
     if(focusableCount>0){await page.keyboard.press('Tab');firstTabFocused=await page.evaluate(()=>{const el=document.activeElement;return !!el&&el!==document.body&&!!el.matches('a[href],button,input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');});}
@@ -45,10 +55,10 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
       if(baselineDir){const base=baselinePath(baselineDir,p),diff=`${artifactDir}/${visualArtifactName(p,'diff')}`;visual=await comparePng(screenshot,base,diff,{visualThreshold,pixelThreshold});}
     }
     const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures,visual,performance,accessibility},{maxLoadMs,maxTransferBytes});
-    results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures,screenshot,domSnapshot,visual,performance,accessibility,quality,ok:quality.ok});
-   }catch(e){error=e.message;const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures:[]},{maxLoadMs,maxTransferBytes});results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures:[],screenshot,domSnapshot,visual,performance,accessibility,quality,ok:false});}
+    results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures,responsiveLayouts:responsive,screenshot,domSnapshot,visual,performance,accessibility,quality,ok:quality.ok});
+   }catch(e){error=e.message;const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures:[]},{maxLoadMs,maxTransferBytes});results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures:[],responsiveLayouts:responsive,screenshot,domSnapshot,visual,performance,accessibility,quality,ok:false});}
    await page.close();
   }
  }finally{await browser.close();}
- return{enabled:true,available:true,passed:results.every(x=>x.ok),results,uiQuality:{pages:results.length,passed:results.filter(x=>x.uiFailures.length===0).length,failures:results.flatMap(x=>x.uiFailures.map(f=>`${x.path}: ${f}`))},debug:{consoleErrors:results.reduce((n,x)=>n+x.consoleErrors.length,0),requestFailures:results.reduce((n,x)=>n+x.requestFailures.length,0),serverErrors:results.reduce((n,x)=>n+x.responseFailures.length,0),visualFailures:results.filter(x=>x.visual?.passed===false).length,performanceFailures:results.filter(x=>x.quality?.failures.some(f=>/navigation took|transfer was/.test(f))).length,accessibilityFailures:results.filter(x=>x.quality?.failures.some(f=>/keyboard|accessible|landmark|aria/.test(f))).length}};
+ return{enabled:true,available:true,passed:results.every(x=>x.ok),results,uiQuality:{pages:results.length,passed:results.filter(x=>x.uiFailures.length===0).length,failures:results.flatMap(x=>x.uiFailures.map(f=>`${x.path}: ${f}`))},debug:{consoleErrors:results.reduce((n,x)=>n+x.consoleErrors.length,0),requestFailures:results.reduce((n,x)=>n+x.requestFailures.length,0),serverErrors:results.reduce((n,x)=>n+x.responseFailures.length,0),visualFailures:results.filter(x=>x.visual?.passed===false).length,performanceFailures:results.filter(x=>x.quality?.failures.some(f=>/navigation took|transfer was/.test(f))).length,accessibilityFailures:results.filter(x=>x.quality?.failures.some(f=>/keyboard|accessible|landmark|aria/.test(f))).length,responsiveFailures:results.reduce((n,x)=>n+(x.responsiveLayouts||[]).filter(v=>!v.ok).length,0)}};
 }
