@@ -17,3 +17,7 @@ The current market is converging around several patterns rather than one “vibe
 4. Visual quality needs its own browser-level evidence: accessibility basics, responsive metadata, overflow, console errors, failed requests, and screenshots when enabled.
 5. Dependency installation should be explicit and auditable because target frameworks naturally bring external packages.
 6. The next strategic step is an **isolated target runner** layer for Android/iOS/Flutter/Rust/KMP rather than pretending the Node sandbox can build every ecosystem.
+
+## Implementation decision: evidence-led visual reconstruction
+
+The next scoped implementation is tracked in [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). Research and reuse decisions must be based on source inspection, compatibility, license/provenance, cost and testability. OriginKit components must use the authorized workflow and applicable license; do not copy its catalog. Benchmark competitor experiences for product insights, not for copying source, branding or marketing language.

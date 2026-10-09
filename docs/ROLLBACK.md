@@ -35,3 +35,7 @@ After any rollback:
 7. audit log evidence.
 
 A rollback is complete only when those checks pass or the release is explicitly marked BLOCKED.
+
+## Rollback readiness for visual changes
+
+Implement the [reconstruction plan](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) in reviewable increments. If a visual system, animation or 3D addition regresses critical flows or performance, revert the smallest affected change or disable the relevant optional capability without weakening core verification or deleting unrelated user work.

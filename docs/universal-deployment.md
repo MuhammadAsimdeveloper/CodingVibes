@@ -52,3 +52,7 @@ Implement a provider inside src/deployment/providers.js and keep provider API, a
 Deployment now validates provider/target compatibility before calling the provider adapter and records an artifact attestation containing the release version, source commit when available, target, artifact fingerprint and verification scope. Cryptographic signatures require CODINGVIBES_ATTESTATION_SECRET; unsigned state is explicitly reported as UNSIGNED.
 
 Use npm run deployment:preflight to distinguish PASS, BLOCKED and NOT_CONFIGURED states before a provider call.
+
+## Deployment boundary for rich visual output
+
+The [reconstruction plan](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) defines generated-site quality, while this document continues to define cross-provider deployment behavior. Verify the actual built artifact, environment, asset delivery, route handling and post-deployment smoke checks. Do not promote a motion/3D experience to production without testing supported fallbacks and device behavior.

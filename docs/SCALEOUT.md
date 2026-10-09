@@ -40,3 +40,7 @@ The Redis queue contract now supports idempotency keys, bounded retries, stale-m
 Request telemetry includes overall error rate, p95 latency and bounded per-route p95 samples. Product analytics has explicit retention controls, and SQLite backup/restore is executable in tests and CI.
 
 The load smoke can exercise 10, 25 and 50 concurrent health requests. It returns BLOCKED when a target server is not reachable rather than claiming a load result.
+
+## Resource boundaries for design and 3D generation
+
+Generation workloads from [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) must remain bounded by current queue, timeout, concurrency, cancellation and resource-limit contracts. Rich visual generation must not create unbounded model loops or unisolated rendering jobs; report infrastructure limitations explicitly.

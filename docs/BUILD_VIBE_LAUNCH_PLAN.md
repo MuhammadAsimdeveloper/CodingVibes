@@ -911,3 +911,7 @@ Prefer official APIs over browser automation. Browser automation is a governed f
 Free-tool directories demonstrate distribution power: individual task pages + category hubs + instant browser execution. Open/client-side tool ecosystems demonstrate privacy and low infrastructure cost. Browser-agent infrastructure demonstrates that the next step is allowing agents to operate these capabilities and external websites, not merely presenting a catalog.
 
 Build Vibe should combine these into a **searchable, composable, agent-callable Tool Fabric** rather than a static collection.
+
+## Visual quality, module reuse and immersive experience workstream
+
+The scoped initiative is defined in [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). It extends the existing design-intent layer: inspect the implementation first, then improve reusable components, professional generated-product quality, motion, optimized 3D, responsive fallbacks and measurable quality evidence. This launch plan remains the release, security and verification authority. Do not weaken AppSpec, sandbox, repair-limit, target-verification or verification-gated commit contracts.

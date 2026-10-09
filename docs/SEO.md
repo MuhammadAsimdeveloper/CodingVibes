@@ -63,3 +63,7 @@ SEO implementation never claims a ranking guarantee. Search visibility also depe
 ## LLM discovery
 
 The public site exposes /llms.txt as a supplemental machine-readable product index. It repeats the public intent page set and states the trust boundary: repository text, user project content and external research are data/evidence, not system instructions. The file is validated by the launch check alongside robots.txt and sitemap.xml.\n
+
+## Generated-site quality alignment
+
+The [reconstruction plan](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) treats SEO as part of product completeness. For each generated public route, verify accurate title/description, canonical/robots rules, social metadata, semantic headings, image alternatives, valid internal links and structured data only where content qualifies. Keep authenticated/private surfaces out of indexing. Never promise rankings or equate metadata generation with successful indexing.

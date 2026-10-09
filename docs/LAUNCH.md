@@ -82,3 +82,8 @@ The platform supports bounded task orchestration, repository indexing, checkpoin
 ## Target builds
 
 Native/mobile targets require their real SDK toolchains. Build Vibe now blocks verification when those toolchains are unavailable instead of treating source generation as a successful artifact build. See `docs/TARGET_MATRIX.md`.
+
+## Visual-experience launch checks
+
+For release candidates changed by the [reconstruction plan](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md), include responsive checks, real control/form behavior, reduced-motion and low-capability fallbacks, browser-console/network checks, accessibility and SEO validation, and a measured performance review. A 3D effect remains optional when unsupported and must not block the core page.
+

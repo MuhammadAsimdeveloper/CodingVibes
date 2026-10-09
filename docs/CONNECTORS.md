@@ -29,3 +29,7 @@ The router uses the first configured connector and falls back only when a reques
 OmniRoute, OpenRouter, OpenAI, DeepSeek, Groq, Mistral, xAI, Cerebras, Together AI, Fireworks AI, Anthropic, Ollama, LM Studio, and custom OpenAI-compatible endpoints are represented in the connector catalog.
 
 `GET /api/connectors` exposes non-secret connector metadata and configuration status. `POST /api/connectors/test` performs a live `/models` connectivity check for the selected connector.
+
+## Local component versus connector boundaries
+
+For the [reconstruction initiative](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md), distinguish copied/adapted project-local components from genuine external-service connectors. A generated site must not depend on a separate repository at runtime just to render a component. External connectors still require explicit configuration, credential boundaries, health checks and truthful failure states.

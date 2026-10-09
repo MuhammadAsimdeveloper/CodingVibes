@@ -149,3 +149,7 @@ Build Vibe should outperform competitors through the combination of:
 - provider-neutral core architecture
 
 Do not copy competitor branding, proprietary code, or proprietary assets.
+
+## Addendum — visual quality and immersive experience
+
+The subsequent visual/product initiative is defined in [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). The original dated requirements remain a historical snapshot; this addendum extends, and does not silently replace, those requirements. Any new animation/3D capability must include user-facing purpose, responsive behavior, accessible controls, reduced-motion support, graceful fallback and test evidence.

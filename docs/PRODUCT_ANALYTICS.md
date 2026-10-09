@@ -22,3 +22,8 @@ Use stable events such as:
 - `deployment.verification.completed`
 
 Do not put prompts, source code, access tokens, payment secrets or full user messages into analytics properties.
+
+## Quality metrics for the reconstruction initiative
+
+The [reconstruction plan](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) adds quality dimensions that may be evaluated through privacy-safe aggregate events: generation completion, verification failure categories, repair cycles, browser-check outcomes and performance budgets. Do not collect secrets, prompts or raw private source code solely to measure design quality; document consent, retention and event definitions.
+

@@ -77,3 +77,8 @@ The fleet has two application execution daemons in addition to optional GitHub A
 - macOS: `macos-runner/server.mjs` receives `codingvibes.macos-job.v3`, runs simulator tests before the Xcode build, uploads verified artifacts, and returns an attested `verified` result. `provision-macos.sh` stores the HTTP secret in Keychain and installs the runner as a LaunchAgent.
 
 Set `CODINGVIBES_LINUX_RUNNER_URL`/`TOKEN` or `CODINGVIBES_MACOS_RUNNER_URL`/`TOKEN` in the control plane to route native builds remotely. Remote runner endpoints must be private-network/HTTPS endpoints.
+
+## Visual-quality initiative compatibility
+
+Changes governed by [docs/BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](../../docs/BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) must preserve runner isolation, resource limits, workload contracts and artifact provenance. Treat generated code and imported assets as untrusted. Report a visual/3D capability as verified only when the relevant runtime actually ran and produced evidence.
+

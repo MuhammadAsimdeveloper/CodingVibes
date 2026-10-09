@@ -37,3 +37,7 @@ Never overwrite the live database during an unverified restore test.
 ## Incident handling
 
 Preserve the run/evidence/audit records, freeze deployments, verify the latest known-good commit/checkpoint, and follow `docs/ROLLBACK.md`. Keep security and verification gates fail-closed during incident response.
+
+## Runtime safeguards for rich visual output
+
+Follow [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) for visual workloads. Monitor relevant generation time, preview/render failures, asset-load errors and browser-runtime faults without logging secret data or raw private source unnecessarily. Preserve bounded jobs, resource limits, cancellation, cleanup and truthful readiness states.

@@ -283,3 +283,7 @@ Do not:
 ## Definition of done
 
 A new tool is complete only when its contract, implementation, tests, security policy, UX, documentation, privacy mode and verification state exist.
+
+## Reuse, provenance and license boundary
+
+Apply [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) when evaluating third-party tools or components. Record license, maintainer/source, dependency health, usage limits, privacy and whether the component can be bundled locally. “Free to access” does not automatically mean freely redistributable or free of runtime/API cost.

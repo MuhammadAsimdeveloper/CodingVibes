@@ -52,3 +52,7 @@ NODE_ENV=production npm run final:check
 ```
 
 Do not mark an external deployment successful merely because a handoff artifact was created; use the target's post-deploy smoke verification.
+
+## Starting a visual-quality implementation
+
+Before a coding agent modifies the product, read [AI_BUILD_START_HERE.md](AI_BUILD_START_HERE.md), [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) and [BUILD_VIBE_LAUNCH_PLAN.md](BUILD_VIBE_LAUNCH_PLAN.md). Use [BUILD_VIBE_START_PROMPT.md](BUILD_VIBE_START_PROMPT.md) to start. The plan adds no new installation command by itself; follow the project's actual package scripts and environment setup.

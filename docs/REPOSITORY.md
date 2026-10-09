@@ -46,3 +46,7 @@ The GitHub repository name remains CodingVibes for remote/clone compatibility; p
 - Dependency automation: `.github/dependabot.yml`
 - SEO implementation: `docs/SEO.md`
 - Final gate: `npm run final:check`
+
+## Reconstruction plan and start prompt
+
+The visual/3D reconstruction workstream has two new entry documents: [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) and [BUILD_VIBE_START_PROMPT.md](BUILD_VIBE_START_PROMPT.md). These complement the main launch plan and AI build instructions. Audit documents under docs/audit should be created or refreshed from verified repository findings before substantial code changes.

@@ -49,3 +49,7 @@ On a Hostinger VPS, Docker or a managed Node process can run the same Build Vibe
 ## Generated customer websites
 
 Customer-generated static sites can be deployed through GitHub, ZIP/manual hosting, or compatible static adapters. Server-backed generated projects require a server-capable runtime.
+
+## Generated-site visual readiness
+
+For projects created under [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md), retain this guide's Hostinger-specific steps and verify the real output after upload. Check asset paths, responsive behavior, forms/links, metadata and browser errors; a ZIP or successful upload alone is not proof of a working deployment.

@@ -17,3 +17,7 @@ After dependencies and secrets are configured, run:
   npm run scaleout:doctor
 
 The doctor command initializes the PostgreSQL reference migration and health-checks the selected queue and object-storage services.
+
+## Build Vibe reconstruction and production gates
+
+The [visual-quality initiative](../../docs/BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) does not replace production infrastructure readiness requirements. Any new generation, rendering or asset-processing capability must respect configured secrets, isolation, resource budgets, monitoring, persistence, and honest BLOCKED/NOT_CONFIGURED states.

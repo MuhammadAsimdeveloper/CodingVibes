@@ -40,3 +40,8 @@ T0 Contracts → T1 developer tools → T2 website foundation → T3 audits → 
 
 ## Definition of done
 All 18 tools have contracts, tests, Build Vibe implementations, Aira routing metadata, ownership documentation and truthful runtime status.
+
+## Integration with the visual-quality reconstruction initiative
+
+Tool modules used for component discovery, asset optimization, browser QA, accessibility inspection or 3D validation must follow [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). Keep tool contracts canonical, permissions and execution mode explicit, and module source local when reuse is permitted. Do not duplicate an existing tool or treat a catalog entry as functional without implementation and verification evidence.
+

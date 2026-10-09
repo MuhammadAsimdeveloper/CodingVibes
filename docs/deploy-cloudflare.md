@@ -15,3 +15,7 @@ Pages Functions run on Workers and have a subset of Node APIs, while static asse
 ## Static export convention
 
 When a generated project is static-only, export its `public/` directory (or equivalent static output) to Cloudflare Pages. Keep application secrets out of the generated site.
+
+## Generated-site visual readiness
+
+Use [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) alongside this Cloudflare-specific guide when deploying generated visual experiences. Confirm the actual target build, asset paths, environment configuration, redirects/canonicals and post-deploy smoke checks; do not infer successful deployment from generated source or a handoff package.

@@ -26,3 +26,7 @@ Runner operators must:
 - keep the runner sandboxed with CPU, memory, filesystem and network controls.
 
 A production release must not claim zero known dependency vulnerabilities while this advisory remains present in the optional runner graph.
+
+## Dependency checks for animation and 3D modules
+
+For candidate motion/3D or component-library dependencies, follow [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). Check license and maintenance status, bundle impact, transitive vulnerabilities, browser support, dependency approval policy and graceful failure behavior before adding them.

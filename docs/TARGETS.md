@@ -13,3 +13,7 @@ A configured provider must also be compatible with whether the artifact requires
 ## Native artifacts
 
 Artifact types are target-specific: APK/AAB for Android, Android/iOS source and builds for Expo/Flutter, IPA for SwiftUI, installers for desktop targets, and source/web preview for web targets. Availability is environment-dependent.
+
+## Visual effects across build targets
+
+Use [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) to keep motion and 3D target-aware. A web effect is not automatically supported on native/mobile/desktop targets; validate each declared target and provide an appropriate fallback. Never mark a native artifact verified without its actual target toolchain and isolated runner evidence.

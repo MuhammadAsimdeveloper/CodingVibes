@@ -18,3 +18,7 @@ Project-facing evaluation is exposed through:
 No flag endpoint returns secrets. Flag configuration should contain presentation or behavior parameters only.
 
 Feature flags are for controlled rollout and rapid rollback; they must not be used to bypass authentication, authorization, verification, dependency approval or release gates.
+
+## Progressive rollout for visual capabilities
+
+When rolling out work from [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md), use existing flag conventions for risky or resource-intensive motion/3D capabilities where appropriate. Flags need safe defaults and clear fallback behavior; never use a flag to bypass validation, security or verification.

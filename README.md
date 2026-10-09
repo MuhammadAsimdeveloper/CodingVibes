@@ -90,6 +90,10 @@ The application contract now carries an explicit design-system intent: palette, 
 
 This follows the direction of current AI design/build systems that combine prompt generation with visual refinement and code-backed editing, such as Figma Make, Webflow AI, and Wix Harmony. citeturn985444search0turn889226search0turn889226search2
 
+## Visual quality reconstruction initiative
+
+The next product-quality workstream is specified in [docs/BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](docs/BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md), with a concise agent prompt in [docs/BUILD_VIBE_START_PROMPT.md](docs/BUILD_VIBE_START_PROMPT.md). It extends the current AppSpec, design-intent and verified-build architecture rather than replacing it. Work must preserve security, isolation, licensing, accessibility and verification gates. “9D motion” is a creative label for layered interactive 3D and motion, not a literal dimensional or physical-sensation claim.
+
 ## Launch-candidate product layer
 
 The current release includes free/pro/team plan definitions, monthly run/token quotas, Stripe Checkout and signed webhook handling, explicit dependency approval before networked package installation, production readiness checks at `/ready`, durable checkpoints, cancellation/resume, connector health, GitHub import, and actionable diagnostics.
@@ -166,6 +170,7 @@ The 12.2 release line adds real Build Vibe account authentication with email/pas
 Google OAuth is optional and activates only when `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` are configured. The deployment environment must register the exact callback URI with Google before enabling the button.
 
 
+
 ## AI build handoff
 
-AI agents should begin with [`docs/AI_BUILD_START_HERE.md`](docs/AI_BUILD_START_HERE.md), then follow [`docs/BUILD_VIBE_LAUNCH_PLAN.md`](docs/BUILD_VIBE_LAUNCH_PLAN.md). The plan is the authoritative implementation roadmap.
+AI agents should begin with [docs/AI_BUILD_START_HERE.md](docs/AI_BUILD_START_HERE.md). For the visual-quality initiative, follow [docs/BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](docs/BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) and [docs/BUILD_VIBE_START_PROMPT.md](docs/BUILD_VIBE_START_PROMPT.md). The existing [docs/BUILD_VIBE_LAUNCH_PLAN.md](docs/BUILD_VIBE_LAUNCH_PLAN.md) remains authoritative for overall release, security and verification gates.
