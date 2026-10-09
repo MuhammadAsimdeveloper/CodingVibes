@@ -71,7 +71,10 @@ Update the launch audit, implementation baseline and affected docs from actual C
 - Baseline inspected: repository tree, package scripts, release identity, launch plan, start-here instructions, core generation/design/verification modules, 3D runtime, CI workflow inventory and OriginKit repository setup.
 - Found: this plan file was absent from baseline `main`.
 - Implemented on the execution branch: accessible 3D scene status and view controls; bounded image/video/model inputs; local media previews and explicit image-to-mesh texture application; texture/material/object-URL cleanup; reduced-motion-aware camera behavior; visibility/off-screen render pause; render-buffer optimization; mobile/tablet/desktop browser layout checks; project-persisted design tokens; an editor-authorized allowlisted natural-language design-edit route; an opt-in generated-site visual-selection runtime; safe CSS token injection and regression-test additions.
-- Not yet certified by this document: tests, browser screenshots, real external-provider operations, native binary builds and production deployment. These remain pending until the relevant check reports are recorded.
+- CI evidence recorded for current branch head `b158811c37998bfa3ec51d2db4b47d290f459e05`: Build Vibe CI run #806, CodeQL run #372, and Dependency Review run #357 passed. CI reports 255/255 tests, 100/A+ SEO checks with zero warnings/issues, generated-project E2E verified (9 pages/5 APIs/19 evidence), Playwright browser E2E verified (9 pages/5 APIs/19 evidence), security preflight PASS, load smoke PASS, recovery smoke PASS, and launch:check 20/20. These are automated CI results, not a production certification.
+
+
+- Still unverified/not configured: visual review of saved screenshots, real GPU/WebGL/CDN behavior under representative devices, durable user-media uploads, native binary/device builds, production deployment and rollback smoke, and live MiroFish/provider executions. Benchmark output is planning-contract-only and is not real artifact performance evidence.
 
 ## Definition of done
 
