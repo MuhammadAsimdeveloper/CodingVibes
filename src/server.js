@@ -64,7 +64,7 @@ function projectAssetFilename(publicPath){const value=String(publicPath||'');ret
 async function readProjectAssetBuffer(project,asset){
  const filename=projectAssetFilename(asset?.public_path);if(!filename)throw Object.assign(new Error('asset_public_path_invalid'),{status:409});
  let body=null;
- if(project?.repo_path){const localPath=resolveInside(project.repo_path,path.join('public','assets',filename));try{const stat=fs.lstatSync(localPath);if(stat.isFile()&&!stat.isSymbolicLink())body=fs.readFileSync(localPath)}catch{}}
+ if(project?.repo_path){try{const localPath=resolveInside(project.repo_path,path.join('public','assets',filename));const stat=fs.lstatSync(localPath);if(stat.isFile()&&!stat.isSymbolicLink())body=fs.readFileSync(localPath)}catch{/* A missing or unsafe workspace path must not prevent durable object-store recovery. */}}
  if(body&&body.length===Number(asset.size)&&hashBuffer(body)===asset.sha256)return body;
  const storage=asset?.metadata?.storage;
  if(storage?.key){
