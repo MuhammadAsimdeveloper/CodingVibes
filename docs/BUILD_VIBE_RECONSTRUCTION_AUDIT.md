@@ -7,7 +7,7 @@ Audit branch: `codex/reconstruction-audit-2026-10-09`
 
 ## Decision
 
-**In progress — do not treat this audit as a launch approval.** The repository already contains substantial working architecture, and this change set extends it rather than replacing it. The new source and regression checks must pass the repository CI before the code changes can be called verified. Deployment readiness still depends on live infrastructure and credentials described by the existing readiness contract.
+**Automated checks PASS; production launch is not approved by this audit.** Current branch head `b158811c37998bfa3ec51d2db4b47d290f459e05` passed Build Vibe CI run #806, CodeQL, and Dependency Review. The implementation extends the existing architecture rather than replacing it. Live third-party services, native device builds, real user-upload persistence, production deployment, and hardware/GPU experience checks remain unverified or not configured.
 
 ## Audit scope and evidence
 
@@ -62,20 +62,40 @@ The private OriginKit setup repo states that the official component source has n
 
 The 3D experience imports Three.js, OrbitControls and GLTFLoader from a pinned CDN URL at runtime. It already has a procedural fallback when import/model loading fails; that fallback should remain visible and usable. Offline reliability and third-party license/version checks must be measured separately from generator tests.
 
+### Additional implementation findings addressed on this branch
+
+#### Saved design tokens were not reliably carried into generation
+
+The orchestrator wrote a default design system again after planning, which could overwrite user-saved Design Mode settings. Generated CSS did not consistently consume stored project tokens or allowlisted visual edits.
+
+**Changes made:** existing project-level tokens are now retained, injected into `spec.styling.designSystem`, and recorded as design-system evidence. The deterministic generator emits bounded, validated palette/type/layout/radius/motion CSS and supported text-driven style operations. For model-generated web projects, the orchestrator applies the validated token CSS through a fixed-path helper that rejects symlink paths. The browser UI has a project-scoped natural-language design editor backed by `POST /api/projects/:id/design/intent`, authorized with the existing editor role. It records only operation metadata in the audit log and retains a bounded history of 24 edits. Unsupported requests return an explicit 422 rather than fabricated success.
+
+Supported edits are intentionally focused (named/hex colors, text size, alignment, weight, radius, spacing and visibility); this is not a claim of unrestricted natural-language recreation of every arbitrary UI element. The generated-site visual selection runtime is disabled by default and can be enabled explicitly. It emits selection metadata and does not eval or run user-supplied CSS/JavaScript.
+
+#### Local image-to-3D texture behavior
+
+The generated 3D runtime now provides an explicit “Apply image texture” action. In the local browser session, a selected image can be loaded as a Three.js texture and applied to meshes of the loaded GLTF model or fallback scene. Original mesh materials are restored when changing texture/models or tearing down; clones, textures and object URLs are disposed/revoked. CI syntax/contract tests pass for these paths. No real device/GPU rendering benchmark or dedicated live-CDN/WebGL screenshot validation was performed here.
+
+Video upload provides an MP4/WebM preview only. Image/video/model choices are local browser files; they are not persisted server-side or attached to a durable public asset record. Persisting media requires the authorized storage/asset flow and remains follow-up work.
+
 ## Validation status
 
-| Check | Status | Evidence required |
+| Check | Status | Evidence |
 | --- | --- | --- |
-| Source edits and new tests are committed to the audit branch | In progress | Branch commit history and diff |
-| Unit/regression test suite | Pending | GitHub Actions test output for this branch |
-| Syntax/static check | Pending | CI `npm run check` result |
-| Browser E2E at phone/tablet/desktop widths | Pending | CI browser job output and per-viewport reports |
-| SEO/discoverability checks | Pending | `npm run seo:check` and launch-check output |
-| Security preflight and dependency review | Not re-certified in this audit | Current branch workflow evidence |
-| Native runner/device and binary verification | Environment dependent | Real toolchain run and verified artifact record |
-| Production services and deployment smoke | Blocked until configured | Real deployment environment, credentials and smoke results |
-| Live OriginKit component use | Not installed / not used | Owner-authenticated official CLI delivery, dependency review and allowed distribution path |
-| Live MiroFish simulation | Not run here | Real configured MiroFish job/response; adapter contract tests are not a live simulation |
+| Repository code/docs and regression changes | PASS | Draft PR #55, branch `codex/reconstruction-audit-2026-10-09`; current head `b158811c37998bfa3ec51d2db4b47d290f459e05`. Latest CI run #806 (run id `37919566805`) passed; CodeQL run #372 and Dependency Review run #357 passed on this head. |
+| Unit/regression test suite and coverage | PASS | CI #806 `npm test`: 255 tests, 255 passed, 0 failed, 0 skipped; coverage command also completed with 255 passed, 0 failed. Includes visual-edit intent/API, safe CSS, generated visual-selection, 3D media/texture, and security-path regression coverage. |
+| Syntax/static and release check | PASS | CI #806 `npm run check` and release check passed; `packageLockPresent: true`. Generated admin server syntax regression discovered during implementation was fixed and the generator syntax test passed. |
+| SEO/discoverability checks | PASS | CI #806 `npm run seo:check`: score 100, grade A+, no issues or warnings. |
+| Generated-project HTTP/E2E | PASS | CI #806 `npm run e2e`: `status: verified`, 9 pages, 5 APIs, 19 evidence records. |
+| Playwright browser E2E and responsive overflow contract | PASS | CI #806 `npm run browser:e2e`: `status: verified`, 9 pages, 5 APIs, 19 evidence records. Browser QA now measures phone 390×844, tablet 768×1024 and desktop 1440×900 and fails on horizontal overflow. This is not a separate physical-device or dedicated GPU/WebGL certification. |
+| Security preflight and dependency review | PASS | CI #806 `npm run security:check`: PASS; CodeQL run #372: success; Dependency Review run #357: success. The workspace CSS applier refuses symbolic-link paths. |
+| Operations/load and recovery smoke | PASS (CI environment) | CI #806 `ops:load`: PASS, concurrent cases show zero failures and p95 below the 1000 ms limit; `recovery:smoke`: PASS, restored project verified. `scaleout:doctor` reports configured CI/local adapters, not production-service readiness. |
+| Launch-readiness script | PASS (preflight only) | CI #806 `npm run launch:check`: `ok: true`, 20 checks. |
+| Benchmark realism | LIMITED | Benchmark suite reports 60/60 planning-contract scenarios passed (100%); `measurementStatus: PLANNING_CONTRACT_ONLY` and `targetArtifactStatus: not_executed`. It does not measure real native artifacts or production performance. |
+| Native runner/device and binary verification | NOT RUN / environment-dependent | No device build or physical Android/iOS/macOS runner artifact was produced by this audit. A unit/contract pass is not a native artifact. |
+| Production deployment | NOT CONFIGURED | CI `deployment:preflight`: provider is null with `deployment_provider_not_selected`; no production deploy or rollback smoke was executed. |
+| Live OriginKit component use | NOT USED | Official source was not installed/copied. See the module reuse/license decision. |
+| Live MiroFish simulation | NOT CONFIGURED | CI `mirofish:status`: `NOT_CONFIGURED`; the required URL and API key are absent. No live simulation result is claimed. |
 
 ## Release caveats
 
@@ -83,8 +103,8 @@ Do not mark Build Vibe production-ready on source inspection alone. Production r
 
 ## Follow-up order
 
-1. Use the current branch's CI output to fix any regression before proceeding.
-2. Capture actual browser reports at all supported widths and test a generated 3D website that attaches an image and video, while confirming a graceful WebGL/CDN fallback.
-3. Complete a broader generated website/application acceptance corpus spanning CRUD, commerce, booking, dashboards, content, native targets and malicious repository inputs.
-4. Re-audit authentication, tenancy, dependency egress and deployment secret boundaries when real credentials/infrastructure are present.
-5. Update this report and `docs/IMPLEMENTATION_BASELINE.md` only with observed evidence and explicit blockers.
+1. Capture visual browser artifacts and manually inspect an actual generated 3D page with a GLB model, image texture and MP4/WebM preview; exercise the real WebGL/CDN-failure fallback on representative hardware.
+2. Broaden the generated website/application acceptance corpus across CRUD, commerce, booking, dashboards, content, native targets and malicious repository inputs; benchmark real artifacts in addition to planning contracts.
+3. Persist user-selected media through the existing authorized asset/storage pipeline if the intended product behavior requires uploads to survive a reload or publish.
+4. Complete physical native builds, live provider simulations and production deployment/rollback tests only when the relevant credentials, runners, device toolchains and infrastructure are configured.
+5. Update `docs/IMPLEMENTATION_BASELINE.md` only when its release-line baseline should be advanced; never replace environment blockers with assumed PASS results.
