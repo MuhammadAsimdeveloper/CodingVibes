@@ -25,5 +25,5 @@ test('editor uses private same-origin preview URLs while stored scenes retain de
   assert.match(editor,/node\.assetUrl\.startsWith\('\/assets\/'\)/);
   assert.match(sceneDocument,/isPersistableSceneAssetUrl/);
   assert.match(sceneDocument,/function safeAssetUrl\(value\)/);
-  assert.match(runtime,/^function validAssetUrl/ m);
+  assert.match(runtime,/function validAssetUrl\\(value\\)/);
 });
