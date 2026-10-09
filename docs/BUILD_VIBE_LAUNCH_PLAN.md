@@ -1008,3 +1008,13 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Added `test/scene-edit-transaction.test.js` for non-mutating previews, guarded commit, stale previews, tampering, unsupported prompts and undo.
 - **Integration status:** this is a safe transaction boundary, not yet a UI or renderer integration. It is not wired into the live Three.js runtime, chat orchestration, database revisions, or a user-facing preview/confirm/cancel panel. Those require explicit integration and end-to-end coverage.
 - **Verification gate:** rerun the complete CI suite on the current branch after the repair. Do not mark this phase verified until CI is green. Existing PostgreSQL-primary-store, asset durability, renderer integration, security alert triage and production deployment gates remain open.
+
+
+## 43. Bounded scene edit undo/redo history (2026-10-09)
+
+- Added `src/scene/scene-edit-history.js`, a session-scoped history manager that accepts only validated preview commits and stores inverse/forward typed operations.
+- Supports undo, redo, branch invalidation after a new edit, explicit empty-history states, bounded history (default 50; maximum 500), and conflict checks before replaying inverse/forward operations.
+- Returned documents are cloned so callers cannot mutate the history's internal snapshot by editing a previously returned object.
+- Added `test/scene-edit-history.test.js` for commit/undo/redo, redo invalidation, empty states, bounded history and invalid inputs.
+- This history is currently in-memory for a single editor session. It is not yet connected to the live 3D renderer, UI controls, persistent revision store, multi-tab concurrency or cross-user collaboration. Do not present it as durable history.
+- Verification required: complete CI on this branch, then integrate controls and scene persistence through authenticated project ownership before considering this capability end-to-end complete.
