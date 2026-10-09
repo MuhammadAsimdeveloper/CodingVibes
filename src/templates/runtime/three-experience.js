@@ -5,11 +5,12 @@ const GLTF_URL='https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/loaders/
 const canvas=document.querySelector('#experience3d');
 const stage=document.querySelector('.experience-stage');
 const fallback=document.querySelector('#experienceFallback');
+const motionQuery=window.matchMedia?.('(prefers-reduced-motion: reduce)');
+let reducedMotion=Boolean(motionQuery?.matches);
 
 async function start(){
   if(!canvas)return;
   try{
-    const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     let siteContent=null;try{const response=await fetch('/content/site.json',{cache:'no-store'});if(response.ok)siteContent=await response.json()}catch{}
     const featuredProduct=siteContent?.products?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.products?.find(p=>p.status!=='draft')||null;
     const featuredProperty=siteContent?.properties?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.properties?.find(p=>p.status!=='draft')||null;
@@ -39,7 +40,7 @@ async function start(){
     resize();
 
     const controls=new OrbitControls(camera,canvas);
-    controls.enableDamping=true;
+    controls.enableDamping=!reducedMotion;
     controls.target.set(0,1,0);
     controls.maxDistance=40;
     controls.minDistance=3;
@@ -86,29 +87,48 @@ async function start(){
     }
 
     let tourTimer=null;
+    let cameraFrame=0;
+    let renderFrame=0;
     function moveCamera(position,target=new Vector3(0,1,0),seconds=2){
+      if(cameraFrame){cancelAnimationFrame(cameraFrame);cameraFrame=0;}
+      if(reducedMotion||document.hidden){
+        camera.position.copy(position);
+        controls.target.copy(target);
+        controls.update();
+        if(!document.hidden)renderer.render(scene,camera);
+        return;
+      }
       const start=camera.position.clone(),startTarget=controls.target.clone(),t0=performance.now();
       const tick=now=>{
+        cameraFrame=0;
+        if(reducedMotion||document.hidden)return;
         const p=Math.min(1,(now-t0)/(seconds*1000));
         const eased=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
         camera.position.lerpVectors(start,position,eased);
         controls.target.lerpVectors(startTarget,target,eased);
-        if(p<1)requestAnimationFrame(tick);
+        controls.update();
+        if(p<1)cameraFrame=requestAnimationFrame(tick);
       };
-      requestAnimationFrame(tick);
+      cameraFrame=requestAnimationFrame(tick);
     }
 
     function playTour(){
       const fallbackShots=[new Vector3(12,6,14),new Vector3(-12,5,10),new Vector3(-10,4,-10),new Vector3(10,5,-12),new Vector3(7,3,8)];
       const shots=contentCameraPath?.map(p=>new Vector3(Number(p.x)||0,Number(p.y)||0,Number(p.z)||0)).filter(v=>Number.isFinite(v.x)&&Number.isFinite(v.y)&&Number.isFinite(v.z))||fallbackShots;
       const durations=contentCameraPath?.map(p=>Math.max(.5,Number(p.duration)||2.2))||[];
-      clearInterval(tourTimer);
+      clearInterval(tourTimer);tourTimer=null;
+      if(reducedMotion){
+        moveCamera(shots[0],new Vector3(0,1.4,0),0);
+        if(fallback)fallback.textContent='Camera tour is paused while reduced motion is enabled.';
+        return;
+      }
       let i=0;
       moveCamera(shots[0],new Vector3(0,1.4,0),durations[0]||2.2);
       tourTimer=setInterval(()=>{i=(i+1)%shots.length;moveCamera(shots[i],new Vector3(0,1.4,0),durations[i]||2.4)},Math.max(1400,(durations[0]||2.2)*1000+200));
     }
 
     function recordTour(){
+      if(reducedMotion){if(fallback)fallback.textContent='Tour recording is paused while reduced motion is enabled.';return}
       if(!canvas.captureStream||!window.MediaRecorder){if(fallback)fallback.textContent='Tour recording is not supported in this browser.';return}
       const stream=canvas.captureStream(30),chunks=[];
       let options={mimeType:'video/webm'};
@@ -143,8 +163,45 @@ async function start(){
       if(fallback)fallback.textContent='Viewing '+key;
     }));
 
-    const render=()=>{controls.update();renderer.render(scene,camera);requestAnimationFrame(render)};
-    render();
+    const stopRendering=()=>{
+      if(renderFrame){cancelAnimationFrame(renderFrame);renderFrame=0;}
+    };
+    const render=()=>{
+      renderFrame=0;
+      if(document.hidden)return;
+      controls.update();
+      renderer.render(scene,camera);
+      if(!reducedMotion)renderFrame=requestAnimationFrame(render);
+    };
+    const startRendering=()=>{
+      if(document.hidden||renderFrame)return;
+      controls.update();
+      renderer.render(scene,camera);
+      if(!reducedMotion)renderFrame=requestAnimationFrame(render);
+    };
+    const onVisibilityChange=()=>{
+      if(document.hidden){
+        stopRendering();
+        if(cameraFrame){cancelAnimationFrame(cameraFrame);cameraFrame=0;}
+        clearInterval(tourTimer);tourTimer=null;
+      }else startRendering();
+    };
+    const onMotionChange=event=>{
+      reducedMotion=Boolean(event.matches);
+      controls.enableDamping=!reducedMotion;
+      if(reducedMotion){
+        stopRendering();
+        if(cameraFrame){cancelAnimationFrame(cameraFrame);cameraFrame=0;}
+        clearInterval(tourTimer);tourTimer=null;
+        controls.update();
+        renderer.render(scene,camera);
+      }else startRendering();
+    };
+    controls.addEventListener('change',()=>{if(reducedMotion)renderer.render(scene,camera)});
+    document.addEventListener('visibilitychange',onVisibilityChange);
+    if(motionQuery?.addEventListener)motionQuery.addEventListener('change',onMotionChange);
+    else motionQuery?.addListener?.(onMotionChange);
+    startRendering();
     if(contentVideo){const video=document.querySelector('#tourVideo');if(video){video.src=contentVideo;video.load();}}
     if(fallback)fallback.textContent=reducedMotion?'Interactive 3D ready · motion reduced':'Interactive 3D ready';
   }catch(e){

@@ -911,3 +911,18 @@ Prefer official APIs over browser automation. Browser automation is a governed f
 Free-tool directories demonstrate distribution power: individual task pages + category hubs + instant browser execution. Open/client-side tool ecosystems demonstrate privacy and low infrastructure cost. Browser-agent infrastructure demonstrates that the next step is allowing agents to operate these capabilities and external websites, not merely presenting a catalog.
 
 Build Vibe should combine these into a **searchable, composable, agent-callable Tool Fabric** rather than a static collection.
+
+
+## 42. Repository reconstruction checkpoint — October 9, 2026
+
+This checkpoint follows the required read order and keeps the original architecture. It records actual repository access and explicit evidence limits rather than treating source presence as proof of a production feature.
+
+- Canonical application: MuhammadAsimdeveloper/CodingVibes, release identity 13.0.0. The reconstruction candidate is the open PR #53 branch codex/tool-fabric-ci-recovery-2026-10-09. The earlier head f33576e had successful Build Vibe CI, CodeQL and Dependency Review; every newer commit must obtain fresh results.
+- The feature branch contains the restored allow-listed visual edit intent runtime and local Tool Fabric contracts. Tool execution remains local by default; live network API testing and unconfigured external effects must remain explicit NOT_CONFIGURED/BLOCKED states.
+- The three requested audits are maintained in docs/audit/REPOSITORY_INVENTORY.md, docs/audit/MODULE_REUSE_MATRIX.md and docs/audit/CURRENT_STATE_AUDIT.md. They distinguish the real Build Vibe source from similarly named stubs and from the separate gstack repository.
+- The checked OriginKit repository is a showcase, not a delivery of the official component source. Its README explicitly says the source component has not yet been installed. No OriginKit animation is declared integrated until actual authenticated component source and its terms have been inspected.
+- The private Our-Tools repository exposes reusable utility source, but Build Vibe's Tool Fabric already covers much of the same category space. The local contract implementation remains canonical; imports should be narrow, compared, licensed/authorized and tested rather than copied in bulk or called remotely.
+- A regression test was committed first for the actual 3D reduced-motion/render-loop gap. The implementation now binds the live motion preference, changes camera tours to a non-animated view under reduced motion, pauses tour recording under that preference, and schedules continuous rendering only when appropriate. It also stops active camera/tour work when the tab is hidden. The new commit is not release-verified until its GitHub Actions gates complete.
+- Production release remains gated on real runner/toolchain, secrets, persistent storage and backup/restore, TLS/domain, monitoring, quotas and third-party credentials. A successful repository CI run is not proof of a live deployment or native binary.
+
+The source-side audit, module decisions and test changes do not mark unavailable OriginKit modules, live MiroFish simulations, cloud resources or deployment targets as complete.
