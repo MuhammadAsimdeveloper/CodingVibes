@@ -171,3 +171,89 @@ test('QR generation rejects non-ASCII until explicit UTF-8 ECI support is presen
   const result = await runTool('qr.generate', {text: '你好'});
   assert.equal(result.status, 'INVALID_INPUT');
 });
+
+
+import * as toolFabric from '../src/tool-fabric/index.js';
+
+test('Tool Fabric pipelines compose local tools through explicit prior-output references', async () => {
+  assert.equal(typeof toolFabric.runToolPipeline, 'function');
+  const result = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'format', tool: 'json.format', input: {text: '{"name":"Build Vibe","enabled":true}'}},
+      {id: 'types', tool: 'json.typescript', input: {json: {$ref: 'format.output.formatted'}, rootName: 'Product'}}
+    ]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.status, 'COMPLETED');
+  assert.equal(result.networkUsed, false);
+  assert.equal(result.stepCount, 2);
+  assert.equal(result.results[0].id, 'format');
+  assert.equal(result.results[0].status, 'COMPLETED');
+  assert.match(result.results[1].output.typescript, /interface Product/);
+  assert.match(result.results[1].output.typescript, /name: string/);
+  assert.match(result.results[1].output.typescript, /enabled: boolean/);
+});
+
+test('Tool Fabric pipelines reject forward, missing and prototype-property references before execution', async () => {
+  const forward = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'types', tool: 'json.typescript', input: {json: {$ref: 'later.output.formatted'}}},
+      {id: 'later', tool: 'json.format', input: {text: '{"ok":true}'}}
+    ]
+  });
+  assert.equal(forward.status, 'INVALID_REFERENCE');
+  assert.equal(forward.results.length, 0);
+
+  const prototype = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'format', tool: 'json.format', input: {text: '{"ok":true}'}},
+      {id: 'types', tool: 'json.typescript', input: {json: {$ref: 'format.output.__proto__'}}}
+    ]
+  });
+  assert.equal(prototype.status, 'INVALID_REFERENCE');
+  assert.equal(prototype.results.length, 0);
+});
+
+test('Tool Fabric pipelines preflight every tool and reject browser or network adapters', async () => {
+  const result = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'format', tool: 'json.format', input: {text: '{"safe":true}'}},
+      {id: 'request', tool: 'api.test', input: {url: 'https://example.com'}}
+    ]
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 'PIPELINE_BLOCKED');
+  assert.equal(result.results.length, 0);
+  assert.equal(result.networkUsed, false);
+});
+
+test('Tool Fabric pipelines stop on the first failed step and enforce bounded unique step IDs', async () => {
+  const failed = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'bad-json', tool: 'json.format', input: {text: '{'}},
+      {id: 'must-not-run', tool: 'json.format', input: {text: '{"ok":true}'}}
+    ]
+  });
+  assert.equal(failed.status, 'STEP_FAILED');
+  assert.equal(failed.failedStepId, 'bad-json');
+  assert.equal(failed.failedStatus, 'INVALID_INPUT');
+  assert.equal(failed.results.length, 1);
+
+  const duplicate = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'same', tool: 'json.format', input: {text: '{"ok":true}'}},
+      {id: 'same', tool: 'json.format', input: {text: '{"next":true}'}}
+    ]
+  });
+  assert.equal(duplicate.status, 'INVALID_PIPELINE');
+  assert.equal(duplicate.results.length, 0);
+
+  const tooMany = await toolFabric.runToolPipeline({
+    steps: Array.from({length: 11}, (_, index) => ({
+      id: 'step-' + index, tool: 'json.format', input: {text: '{"step":' + index + '}'}
+    }))
+  });
+  assert.equal(tooMany.status, 'INVALID_PIPELINE');
+  assert.equal(tooMany.results.length, 0);
+});
