@@ -1,4 +1,5 @@
 import {createStudioState,registerProjectWindow,beginProjectBuild,routeBuildEvent,finishProjectBuild,isProjectBuilding,visibleProjectWindows} from './studio-runtime.js';
+import {optimizeImageInBrowser} from './tool-fabric-browser.js';
 const $=s=>document.querySelector(s);const studio=createStudioState();const state={user:null,projects:[],project:null,session:null,run:null,targets:[],providers:[],windows:studio.windows,builds:studio.builds,drafts:new Map(),targetsByProject:new Map(),poll:null,visualSelection:null,visualSelectEnabled:false,previewReady:false};
 async function api(path,options={}){const r=await fetch(path,{headers:{'content-type':'application/json',...(options.headers||{})},...options});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'HTTP '+r.status);e.status=r.status;throw e;}return j}
 function feed(text,kind=''){const e=document.createElement('div');e.className='cv-event '+kind;e.textContent=text;$('#feed').prepend(e);return e}
@@ -284,6 +285,64 @@ async function loadFeatureSuite(){if(!state.project)return;await Promise.all([lo
 $('#launchCheck')?.addEventListener('click',loadLaunchStatus);$('#upgradePro')?.addEventListener('click',()=>startCheckout('pro'));$('#upgradeTeam')?.addEventListener('click',()=>startCheckout('team'));$('#manageBilling')?.addEventListener('click',manageBilling);$('#inviteMember')?.addEventListener('click',async()=>{try{const j=await api('/api/workspaces/'+state.project.workspace_id+'/invites',{method:'POST',body:JSON.stringify({email:$('#inviteEmail').value,role:$('#inviteRole').value})});feed('Invite created. Share token securely: '+j.token,'ok');await loadWorkspaceSuite();}catch(e){feed('Invite: '+e.message,'err')}});$('#saveDesign')?.addEventListener('click',saveDesignMode);$('#resetDesign')?.addEventListener('click',resetDesignMode);$('#provisionCloud')?.addEventListener('click',provisionCloud);$('#addDomain')?.addEventListener('click',addDomain);$('#newContentRevision')?.addEventListener('click',newContentRevision);$('#runResearch')?.addEventListener('click',runProjectResearch);$('#runDiscoverability')?.addEventListener('click',runDiscoverability);$('#buildBtn').onclick=startBuild;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $('#newWindow')?.addEventListener('click',createProjectWindow);
 startWindowPolling();$('#visualSelectToggle')?.addEventListener('click',()=>setVisualSelectionMode(!state.visualSelectEnabled));$('#visualAddToPrompt')?.addEventListener('click',addVisualSelectionToPrompt);$('#previewFrame')?.addEventListener('load',()=>{if(state.visualSelectEnabled)setVisualSelectionMode(true)});document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>{$('#request').value=b.dataset.prompt;$('#request').focus();previewBlueprint()});$('#request').addEventListener('input',()=>{if(state.project)state.drafts.set(state.project.id,$('#request').value);clearTimeout(window.cvPlanTimer);window.cvPlanTimer=setTimeout(previewBlueprint,500)});$('#targetSelect').addEventListener('change',()=>{if(state.project)state.targetsByProject.set(state.project.id,$('#targetSelect').value);});$('#newProject').onclick=createProjectWindow;$('#logout').onclick=async()=>{await api('/api/auth/logout',{method:'POST'});location.reload()};
+function formatImageBytes(value){
+  const bytes=Math.max(0,Number(value)||0);
+  if(bytes<1024)return bytes+' B';
+  if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KiB';
+  return (bytes/(1024*1024)).toFixed(2)+' MiB';
+}
+let imageOptimizeResultUrl=null;
+async function optimizeSelectedImage(){
+  const file=$('#imageOptimizeFile')?.files?.[0];
+  const statusNode=$('#imageOptimizeStatus');
+  const button=$('#imageOptimizeButton');
+  if(!file){
+    if(statusNode)statusNode.textContent='Choose a raster image first.';
+    return;
+  }
+  const format=$('#imageOptimizeFormat')?.value||'image/webp';
+  const quality=Number($('#imageOptimizeQuality')?.value||82)/100;
+  const dimension=Number($('#imageOptimizeMaxWidth')?.value||1920);
+  if(button){button.disabled=true;button.textContent='Optimizing locally…';}
+  if(statusNode)statusNode.textContent='Optimizing on this device. Your file is not uploaded.';
+  try{
+    const optimized=await optimizeImageInBrowser(file,{
+      type:format,quality,maxWidth:dimension,maxHeight:dimension
+    });
+    const nextUrl=URL.createObjectURL(optimized.blob);
+    const previousUrl=imageOptimizeResultUrl;
+    imageOptimizeResultUrl=nextUrl;
+    const preview=$('#imageOptimizePreview');
+    if(preview){preview.src=nextUrl;preview.alt='Optimized image preview: '+optimized.fileName;}
+    const download=$('#imageOptimizeDownload');
+    if(download){download.href=nextUrl;download.download=optimized.fileName;}
+    const stats=$('#imageOptimizeStats');
+    const saved=Math.max(0,optimized.originalBytes-optimized.optimizedBytes);
+    const percent=optimized.originalBytes>0?Math.round(saved/optimized.originalBytes*100):0;
+    if(stats)stats.textContent=optimized.width+' × '+optimized.height+' px · '+formatImageBytes(optimized.originalBytes)+' → '+formatImageBytes(optimized.optimizedBytes)+' · '+percent+'% smaller';
+    const result=$('#imageOptimizeResult');
+    if(result)result.hidden=false;
+    if(previousUrl)URL.revokeObjectURL(previousUrl);
+    if(statusNode)statusNode.textContent='Image optimized locally. Download the result when ready.';
+  }catch(error){
+    if(statusNode)statusNode.textContent='Image optimization failed: '+String(error?.message||error);
+  }finally{
+    if(button){button.disabled=false;button.textContent='Optimize image';}
+  }
+}
+$('#imageOptimizeButton')?.addEventListener('click',optimizeSelectedImage);
+$('#imageOptimizeQuality')?.addEventListener('input',event=>{
+  const output=$('#imageOptimizeQualityValue');
+  if(output)output.textContent=String(event.target.value)+'%';
+});
+$('#imageOptimizeFile')?.addEventListener('change',event=>{
+  const file=event.target.files?.[0];
+  if(file&&$('#imageOptimizeStatus'))$('#imageOptimizeStatus').textContent='Selected '+file.name+'. Processing stays in this browser.';
+});
+window.addEventListener('pagehide',()=>{
+  if(imageOptimizeResultUrl)URL.revokeObjectURL(imageOptimizeResultUrl);
+  imageOptimizeResultUrl=null;
+});
 async function initGoogleAuth(){
   const button=$('#googleBtn');if(!button)return;
   try{
