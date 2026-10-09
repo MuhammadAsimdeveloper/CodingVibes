@@ -39,11 +39,29 @@ test('server public and authenticated route smoke covers launch control plane',a
     assert.ok([200,404].includes(r.response.status),pathName+' status '+r.response.status);
   }
 
+  const unauthenticatedToolCatalog=await req('/api/tools/catalog');
+  assert.equal(unauthenticatedToolCatalog.response.status,401);
+
   const signup=await req('/api/auth/signup',{method:'POST',body:JSON.stringify({email:'smoke@example.com',password:'test-password-123'})});
   assert.equal(signup.response.status,201);
   const cookie=signup.response.headers.get('set-cookie');
   assert.ok(cookie);
   const sessionCookie=cookie.split(';')[0];
+
+  const toolCatalog=await req('/api/tools/catalog',{headers:{cookie:sessionCookie}});
+  assert.equal(toolCatalog.response.status,200);
+  assert.equal(toolCatalog.body.tools.length,18);
+  assert.equal(toolCatalog.body.tools.filter(tool=>tool.status==='available').length,4);
+  assert.ok(toolCatalog.body.tools.every(tool=>tool.owner==='build-vibe'&&tool.authenticationRequired===true));
+  const formatTool=await req('/api/tools/dev.json.format/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({text:'{"title":"Build Vibe"}'})});
+  assert.equal(formatTool.response.status,200);
+  assert.equal(formatTool.body.output.formatted,'{\\n  "title": "Build Vibe"\\n}');
+  const badToolInput=await req('/api/tools/dev.json.format/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({text:'{"a":'})});
+  assert.equal(badToolInput.response.status,422);
+  assert.equal(badToolInput.body.error,'invalid_json');
+  const plannedNetworkTool=await req('/api/tools/dev.api.test/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({url:'https://example.com'})});
+  assert.equal(plannedNetworkTool.response.status,501);
+  assert.equal(plannedNetworkTool.body.error,'tool_not_available');
 
   const authPaths=[
     '/api/auth/me','/api/billing','/api/features','/api/workspaces','/api/cloud/catalog','/api/connectors',

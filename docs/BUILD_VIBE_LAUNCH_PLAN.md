@@ -1093,3 +1093,24 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Local `blob:` asset URLs are removed from the published copy rather than emitting broken session-local references. This is a guardrail, not a durable upload solution: users still need managed asset storage and URL rewriting for persistent media.
 - Added source-contract regression tests for deployment serialization, runtime node coverage and media cleanup.
 - **Open verification:** these source-contract tests do not replace real browser/WebGL tests. The published runtime still needs visual E2E checks, external media CORS validation, hierarchy/transform verification, actual GLTF model tests, and generated artifact smoke tests. SQLite remains the scene persistence backend; PostgreSQL-primary migration and full launch gates remain incomplete.
+
+
+## 51. Durable project assets and 3D scene media persistence — 2026-10-09
+
+This stage closes the gap between local-only scene previews and media that survives reload, workspace loss and deployment. It reuses the project asset table and existing local/S3 object-store adapter; it does not migrate the primary SQLite Store or claim that production object storage is configured.
+
+- Uploads require an authenticated project editor, bounded declared and actual body size, an allowlisted extension/MIME pair, metadata schema validation and format-aware content inspection. Asset names are normalized; paths are generated server-side; SHA-256 and size are checked against object storage.
+- Asset records are project-scoped. Internal storage keys are kept out of client-facing asset records and audit events never store media bytes or user payloads.
+- Authenticated file/preview endpoints enforce project access and integrity, and can restore a missing workspace copy from the configured object store. A missing workspace file must not block this fallback.
+- The scene editor can add/remove typed nodes, upload an image/video/model for a selected media node and keep the durable /assets/... URL in the saved scene; the editor uses an authenticated preview URL while editing. Saved scenes reject session-only blob: references.
+- Deployment sync merges assets instead of deleting the generated public assets directory; it verifies registered asset checksums and copies registered assets into the published workspace. The 3D runtime accepts only flat, allowlisted same-site asset paths or credential-free HTTPS URLs.
+- Acceptance: format/metadata tests, malformed and renamed-file rejection, scene path safety and inverse-operation tests, upload/list/preview/delete route tests, missing-workspace recovery, editor contract tests, runtime checks and CI/CodeQL/dependency review.
+
+## 52. Tool Fabric foundation and first local utilities — 2026-10-09
+
+This phase begins the canonical agent-callable utility layer; it does not claim all 18 utility contracts have executable adapters. The catalog records owner, schemas, privacy and execution mode, network requirement, risk, authentication/confirmation requirements, timeout/retry policy, audit event and truthful implementation state for all 18 utilities.
+
+- Implemented local adapters: JSON formatter/validator, sample-driven JSON-to-TypeScript, Base64 text encode/decode and JWT header/claim inspection. The JWT inspector explicitly reports that signatures are not verified and must not be used for authentication decisions.
+- Local adapters impose input/output/depth/complexity limits, reject unknown input keys and make no outbound network calls. Network tools remain planned and fail closed with tool_not_available; a catalog entry is not evidence that a tool is executable.
+- Authenticated GET /api/tools/catalog discovers the contract. POST /api/tools/:id/execute runs only implemented local utilities and records bounded audit metadata without storing payloads/results.
+- Acceptance: catalog metadata consistency and unique IDs, local execution and failure boundaries, body size and complexity limits, no-network contract, route authentication, audit behavior and full CI gates.

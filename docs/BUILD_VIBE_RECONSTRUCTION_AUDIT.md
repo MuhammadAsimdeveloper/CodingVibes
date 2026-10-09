@@ -108,3 +108,22 @@ Do not mark Build Vibe production-ready on source inspection alone. Production r
 3. Persist user-selected media through the existing authorized asset/storage pipeline if the intended product behavior requires uploads to survive a reload or publish.
 4. Complete physical native builds, live provider simulations and production deployment/rollback tests only when the relevant credentials, runners, device toolchains and infrastructure are configured.
 5. Update `docs/IMPLEMENTATION_BASELINE.md` only when its release-line baseline should be advanced; never replace environment blockers with assumed PASS results.
+
+
+## Implementation update — October 9, 2026
+
+The older audit rows above describe the pre-media baseline and are historical; this addendum supersedes their stale statement that durable media uploads were still unimplemented.
+
+### Phase 51 — durable assets / 3D scene media
+
+Implemented on the audit branch: authenticated project-scoped media uploads; allowlisted media types and format-aware content inspection; server-generated flat filenames; SHA-256 and byte-length validation; metadata sanitization; local/S3 object-store persistence; client-safe asset records; authenticated preview/file routes; missing-workspace fallback; upload deletion; scene-editor image/video/model upload; add/remove node operations; safe same-origin asset URLs; model preview loading; and deployment-time asset restoration that merges instead of deleting the assets directory.
+
+Verified on source checkpoint ebbbcf2112faf8d77e3c0e638871d603eb548322: Build Vibe CI 37973098545, CodeQL 37973098422, and Dependency Review 37973098446 all completed successfully. Checks included unit/regression tests, coverage, syntax/release checks, SEO, generated-project E2E, Playwright browser E2E, operations/load, recovery, deployment preflight, security preflight, scale-out doctor and launch readiness. The successful local object-store recovery test is an adapter/integration test; it does not certify a live S3 bucket, multi-instance storage permissions, or production retention/backups.
+
+### Phase 52 — Tool Fabric initial contracts
+
+The current code checkpoint introduces a central 18-tool catalog and four no-egress local adapters: JSON formatting/validation, JSON-to-TypeScript, Base64 text encode/decode, and decode-only JWT claim inspection. The catalog distinguishes executable and planned tools, defines metadata for privacy, auth, network, risk, timeout/retry, audit and fallback, and exposes an authenticated catalog/execution API. Network-bound tools remain planned and fail closed. Verification for this addition is pending on the new branch head until CI, CodeQL and Dependency Review finish.
+
+### Release decision and remaining boundaries
+
+Build Vibe is not approved for production launch by this addendum. No live production deployment or rollback, real production S3 bucket, production primary-database migration, native device build or live MiroFish simulation is claimed. The primary application Store remains SQLite; PostgreSQL/S3/Redis are adapter foundations where not explicitly enabled and verified. Launch acceptance still requires the production environment gates in the canonical roadmap.

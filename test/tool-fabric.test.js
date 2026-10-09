@@ -41,14 +41,7 @@ test('JSON formatter is deterministic, bounded, and declares that it never leave
 });
 
 test('JSON-to-TypeScript creates stable nested interfaces and safely quotes hostile property names',()=>{
-  const input=JSON.stringify({
-    id:7,
-    'first-name':'Ada',
-    meta:{active:true},
-    tags:['a','b'],
-    rows:[{amount:1}],
-    '__proto__':'plain data'
-  });
+  const input='{"id":7,"first-name":"Ada","meta":{"active":true},"tags":["a","b"],"rows":[{"amount":1}],"__proto__":"plain data"}';
   const result=executeLocalTool('dev.json.typescript',{text:input,rootName:'StoreItem'});
   assert.equal(result.output.rootType,'StoreItem');
   assert.match(result.output.typescript,/export interface StoreItem\b/);

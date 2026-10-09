@@ -116,7 +116,7 @@ function inferType(value,hint,state,depth=0){
       const type=inferType(value[key],name+typeName(key),state,depth+1);
       fields.push('  '+propertyName(key)+': '+type+';');
     }
-    state.interfaces.push('export interface '+name+' {\\n'+(fields.length?fields.join('\\n'):'  [key: string]: unknown;')+'\\n}');
+    state.interfaces.push('export interface '+name+' {\n'+(fields.length?fields.join('\n'):'  [key: string]: unknown;')+'\n}');
     return name;
   }
   return 'unknown';
@@ -129,7 +129,7 @@ function jsonToTypescript(input){
   if(!isPlainObject(parsed))fail('json_root_must_be_object',422,'The JSON root must be an object to infer an interface.');
   const state={names:new Set(),interfaces:[]};
   const rootType=inferType(parsed,typeName(rootName),state);
-  const typescript=state.interfaces.join('\\n\\n')+'\\n';
+  const typescript=state.interfaces.join('\n\n')+'\n';
   if(Buffer.byteLength(typescript,'utf8')>TOOL_FABRIC_LIMITS.outputBytes)fail('tool_output_too_large',413,'Generated TypeScript exceeds the 1 MB output limit.');
   return {rootType,typescript};
 }

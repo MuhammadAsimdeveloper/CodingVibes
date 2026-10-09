@@ -309,3 +309,10 @@ Inspired by the production browser-agent pattern, but implemented as our own pro
 Do not compete on raw tool count. Compete on **coverage × reliability × privacy × composability × agent accessibility**.
 
 A utility is admitted to the canonical catalog only when it has a distinct user job, contract, tests, security/privacy classification, documentation and verification state.
+
+
+## Tool Fabric implementation checkpoint — 2026-10-09
+
+The first canonical registry is src/tools/fabric.js. It preserves a single catalog rather than duplicating agent tool definitions across UI and server code. Entries distinguish available from planned, and require an explicit local/network execution mode, privacy boundary, network consent, risk class, bounds, audit event and fallback behavior.
+
+The first four available implementations are JSON formatting/validation, JSON-to-TypeScript inference, Base64 encode/decode and JWT claim inspection. The API is session-authenticated, reports no external network use for these local tools, and records only tool identifier/outcome/size/timing metadata. API/network/browser tools remain blocked until their security boundary and approval contract are implemented.

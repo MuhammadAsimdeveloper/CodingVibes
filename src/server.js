@@ -55,6 +55,7 @@ import {normalizeFeatureFlag,evaluateFeatureFlag} from './ops/feature-flags.js';
 import {scaleOutConfig as scaleOutConfigSnapshot} from './platform/scaleout.js';
 import {validateSceneDocument} from './scene/scene-document.js';
 import {createObjectStore} from './storage/object-store.js';
+import {listToolDefinitions,executeLocalTool,TOOL_FABRIC_VERSION} from './tools/fabric.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');const PUBLIC_SEO_ROUTES=listPublicSeoPages().map(x=>x.path);
 export const store=new Store();export const router=new ModelRouter();
@@ -278,6 +279,20 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(method==='GET'&&!u.pathname.startsWith('/api/')&&await serveStatic(req,res))return;
   if(method==='POST'&&u.pathname==='/api/analytics/events'){try{const b=await readJson(req,MAX_BODY),event=sanitizeProductEvent({userId,projectId:b.projectId||null,sessionId:b.sessionId||null,event:b.event,properties:b.properties});if(event.projectId&&!store.getProject(event.projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const saved=recordProductEvent(store,event);return sendJson(res,201,{ok:true,event:{id:saved.id,event:saved.event,created_at:saved.created_at}});}catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message});}}
   const a=requireAuth(req,res);if(!a)return;const userId=a.user_id;
+  if(method==='GET'&&u.pathname==='/api/tools/catalog')return sendJson(res,200,{ok:true,version:TOOL_FABRIC_VERSION,tools:listToolDefinitions()});
+  if(method==='POST'&&/^\/api\/tools\/[^/]+\/execute$/.test(u.pathname)){
+    const toolId=decodeURIComponent(u.pathname.split('/')[3]),started=Date.now();let input;
+    try{input=await readJson(req,MAX_BODY)}catch(error){return sendJson(res,error.status||400,{ok:false,error:'invalid_tool_request'});}
+    try{
+      const result=executeLocalTool(toolId,input);
+      store.addAuditLog({actorUserId:userId,action:'tool.executed',resourceType:'tool',resourceId:result.tool.id,metadata:{outcome:'success',mode:'local',networkRequired:false,durationMs:Date.now()-started,inputBytes:result.execution.inputBytes,outputBytes:result.execution.outputBytes}});
+      return sendJson(res,200,result);
+    }catch(error){
+      const status=error.status||422,code=error.code||'tool_execution_failed';
+      store.addAuditLog({actorUserId:userId,action:'tool.execution_failed',resourceType:'tool',resourceId:String(toolId).slice(0,100),metadata:{outcome:status===501?'blocked':'failed',code,durationMs:Date.now()-started}});
+      return sendJson(res,status,{ok:false,error:code,message:String(error.message||'Tool execution failed.').slice(0,240)});
+    }
+  }
   if(method==='GET'&&u.pathname==='/api/builder/research')return sendJson(res,200,{ok:true,research:builderResearch()});
   if(method==='GET'&&u.pathname==='/api/cloud/catalog')return sendJson(res,200,{ok:true,services:CLOUD_SERVICE_CATALOG});
   if(/^\/api\/projects\/[^/]+\/discoverability$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/discoverability$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(pid,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});const audit=auditDiscoverability(latest.workspace,{baseUrl:publicOrigin(req)});return sendJson(res,200,{ok:true,audit,aeo:aeoSummary(audit),verifiedRunId:latest.run.id});}
