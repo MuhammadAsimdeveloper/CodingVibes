@@ -22,6 +22,7 @@ function vector3(value) {
 }
 
 function safeAssetUrl(value) {
+  if (value === '') return true;
   if (value.startsWith('blob:')) return true; // Preview only; the persistence API rejects blob URLs.
   if (/^\/assets\/[a-zA-Z0-9][a-zA-Z0-9._-]{0,240}$/.test(value) && !value.includes('..')) return true;
   try {
@@ -33,7 +34,7 @@ function safeAssetUrl(value) {
 }
 
 export function isPersistableSceneAssetUrl(value) {
-  return typeof value === 'string' && !value.startsWith('blob:') && safeAssetUrl(value);
+  return typeof value === 'string' && value.length > 0 && !value.startsWith('blob:') && safeAssetUrl(value);
 }
 
 function plainObject(value) {
