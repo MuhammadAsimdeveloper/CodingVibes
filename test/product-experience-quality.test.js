@@ -82,11 +82,11 @@ test('generated 3D website exposes accessible view controls and bounded renderin
   assert.match(html,/id="videoInput"[^>]+accept="video\/mp4,video\/webm"/);
   assert.match(html,/id="experienceImage"[^>]+alt="Uploaded image preview for this 3D experience"/);
   assert.match(html,/id="experienceFallback"[^>]+role="status"[^>]+aria-live="polite"/);
-  assert.match(runtime,/prefers-reduced-motion:\\s*reduce/);
-  assert.match(runtime,/sceneObserver\\s*=\\s*new IntersectionObserver/);
-  assert.match(runtime,/document.addEventListener\\('visibilitychange'/);
-  assert.match(runtime,/controls.addEventListener\\('change',scheduleRender\\)/);
-  assert.doesNotMatch(runtime,/preserveDrawingBuffer:\\s*true/);
+  assert.ok(runtime.includes("prefers-reduced-motion: reduce"));
+  assert.ok(runtime.includes('sceneObserver=new IntersectionObserver'));
+  assert.ok(runtime.includes("document.addEventListener('visibilitychange',handleVisibility)"));
+  assert.ok(runtime.includes("controls.addEventListener('change',scheduleRender)"));
+  assert.ok(!runtime.includes('preserveDrawingBuffer:true'));
   assert.match(runtime,/file\.size>20\*1024\*1024/);
   assert.match(runtime,/file\.size>100\*1024\*1024/);
   assert.match(runtime,/file\.size>150\*1024\*1024/);
