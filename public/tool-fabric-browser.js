@@ -11,7 +11,7 @@ export async function optimizeImageInBrowser(file, options = {}) {
   }
   const allowedInputTypes = new Set(['image/png','image/jpeg','image/webp','image/gif','image/avif','image/bmp']);
   const inputType = String(file?.type || '').toLowerCase();
-  if (!(file instanceof Blob) || !allowedInputTypes.has(inputType)) {
+  if (!(file instanceof Blob) || !allowedInputTypes.has(inputType) || file.size <= 0) {
     const error = new Error('INVALID_INPUT: Supply a supported raster image (PNG, JPEG, WebP, GIF, AVIF or BMP).');
     error.code = 'INVALID_INPUT';
     throw error;
