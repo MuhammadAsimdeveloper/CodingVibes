@@ -52,17 +52,17 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
     owned.push(texture);
     return texture;
   }
+  function disposeTree(object) {
+    object.traverse?.(part => {
+      part.geometry?.dispose?.();
+      const materials = Array.isArray(part.material) ? part.material : (part.material ? [part.material] : []);
+      materials.forEach(material => material.dispose?.());
+    });
+  }
   function build(document) {
-    while (root.children.length) {
-      const child = root.children.pop();
-      child.traverse?.(part => {
-        if (part.geometry) part.geometry.dispose();
-        if (part.material) {
-          const materials = Array.isArray(part.material) ? part.material : [part.material];
-          for (const material of materials) material.dispose?.();
-        }
-      });
-    }
+    for (const child of [...root.children]) disposeTree(child);
+    root.clear();
+    owned.splice(0).forEach(texture => texture.dispose?.());
     const objects = new Map();
     for (const node of document.nodes) {
       const object = node.type === 'group' ? new Group() : new Mesh(
@@ -153,11 +153,7 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('wheel', onWheel);
-      root.traverse?.(part => {
-        part.geometry?.dispose?.();
-        const materials = Array.isArray(part.material) ? part.material : (part.material ? [part.material] : []);
-        materials.forEach(material => material.dispose?.());
-      });
+      disposeTree(root);
       owned.forEach(texture => texture.dispose?.());
       renderer.dispose();
     }
