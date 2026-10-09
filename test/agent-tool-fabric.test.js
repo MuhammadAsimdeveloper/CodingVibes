@@ -65,3 +65,20 @@ test('generated-project audit caps pages and skips oversized HTML without readin
   assert.equal(result.oversizedFiles, 1);
   assert.ok(result.pages.some(page => page.status === 'INPUT_TOO_LARGE'));
 });
+
+test('generated-project audit never follows a public-directory symlink outside the workspace', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'build-vibe-public-link-'));
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'build-vibe-outside-'));
+  try {
+    fs.mkdirSync(path.join(outside, 'public'));
+    fs.writeFileSync(path.join(outside, 'public', 'private.html'), '<html><title>Private</title></html>');
+    fs.symlinkSync(path.join(outside, 'public'), path.join(root, 'public'), 'dir');
+    const result = await auditGeneratedProject(root);
+    assert.equal(result.status, 'SKIPPED');
+    assert.equal(result.reason, 'public_directory_not_real_directory');
+    assert.equal(result.pagesScanned, 0);
+  } finally {
+    fs.rmSync(root, {recursive:true,force:true});
+    fs.rmSync(outside, {recursive:true,force:true});
+  }
+});
