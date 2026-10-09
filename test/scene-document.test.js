@@ -82,7 +82,7 @@ test('typed add/remove operations keep scene structure valid and expose reversib
   assert.equal(removed.document.nodes.length,2);
   const removeParent=applySceneOperation(original,{op:'removeNode',nodeId:'root'});
   assert.equal(removeParent.ok,false);
-  assert.match(removeParent.errors.join(' '),/remove child nodes first/);
+  assert.match(removeParent.errors.join(' '),/remove child nodes before/);
   const remove=applySceneOperation(add.document,{op:'removeNode',nodeId:'media-1'});
   assert.equal(remove.ok,true);
   assert.deepEqual(remove.undo,{op:'addNode',node:add.document.nodes[2]});
