@@ -87,6 +87,95 @@ function staticSeoAudit(html) {
   const score=Math.max(0,100-findings.reduce((sum,f)=>sum+(deductions[f.severity]||0),0));
   return {score,findings,summary:{title:textLength(title)?textLength(title):0,description:textLength(description),h1Count:h1,imageCount:images.length,imagesMissingAlt:missingAlt},scope:'Static HTML inspection only; no URL was fetched.'};
 }
+function hasVisibleButtonText(markup) {
+  const source=String(markup || '');
+  const openingEnd=findMarkupTagEnd(source,0);
+  const closingStart=source.toLowerCase().lastIndexOf('</button>');
+  if(openingEnd<0||closingStart<openingEnd) return false;
+
+  const content=source.slice(openingEnd+1,closingStart);
+  const ignoredTags=new Set(['script','style','template','noscript']);
+  let ignoredTag='';
+  let ignoredDepth=0;
+  let index=0;
+
+  while(index<content.length) {
+    if(content.startsWith('<!--',index)) {
+      const commentEnd=content.indexOf('-->',index+4);
+      if(commentEnd<0) return false;
+      index=commentEnd+3;
+      continue;
+    }
+
+    if(content[index]==='<') {
+      const tagEnd=findMarkupTagEnd(content,index);
+      if(tagEnd<0) {
+        index++;
+        continue;
+      }
+      let nameStart=index+1;
+      let closing=false;
+      if(content[nameStart]==='/') { closing=true; nameStart++; }
+      if(!/[a-z]/i.test(content[nameStart]||'')) {
+        index=tagEnd+1;
+        continue;
+      }
+
+      let nameEnd=nameStart+1;
+      while(nameEnd<tagEnd&&/[a-z0-9:-]/i.test(content[nameEnd])) nameEnd++;
+      const name=content.slice(nameStart,nameEnd).toLowerCase();
+      const selfClosing=content.slice(index,tagEnd+1).trimEnd().endsWith('/>');
+
+      if(ignoredTag) {
+        if(name===ignoredTag) {
+          if(closing) {
+            ignoredDepth--;
+            if(ignoredDepth<=0) { ignoredTag=''; ignoredDepth=0; }
+          } else if(!selfClosing) {
+            ignoredDepth++;
+          }
+        }
+      } else if(!closing&&ignoredTags.has(name)&&!selfClosing) {
+        ignoredTag=name;
+        ignoredDepth=1;
+      }
+      index=tagEnd+1;
+      continue;
+    }
+
+    if(!ignoredTag) {
+      if(/\s/.test(content[index])) { index++; continue; }
+      if(content[index]==='&') {
+        const entityEnd=content.indexOf(';',index+1);
+        if(entityEnd>index&&entityEnd-index<=16) {
+          const entity=content.slice(index,entityEnd+1).toLowerCase();
+          if(/^&(?:nbsp|#0*160|#x0*a0|#0*(?:9|10|13)|#x0*(?:9|a|d));$/.test(entity)) {
+            index=entityEnd+1;
+            continue;
+          }
+        }
+      }
+      return true;
+    }
+    index++;
+  }
+  return false;
+}
+
+function findMarkupTagEnd(source,start) {
+  let quote='';
+  for(let index=start;index<source.length;index++) {
+    const char=source[index];
+    if(quote) {
+      if(char===quote) quote='';
+    } else if(char==='"'||char==="'") {
+      quote=char;
+    } else if(char==='>') {
+      return index;
+    }
+  }
+  return -1;
+}
 function staticAccessibilityAudit(html) {
   const source=String(html || '');
   if(source.length>1000000) throw new ToolFailure('INPUT_TOO_LARGE','HTML input exceeds 1 MB.');
@@ -101,8 +190,8 @@ function staticAccessibilityAudit(html) {
   const buttons=source.match(/<button\b[^>]*>[\s\S]*?<\/button>/gi)||[];
   for(const tag of buttons) {
     const name=tag.match(/\b(?:aria-label|title)\s*=\s*["']([^"']+)["']/i);
-    const inner=tag.replace(/^<button\b[^>]*>/i,'').replace(/<\/button>$/i,'').replace(/<[^>]+>/g,'').replace(/&nbsp;|&#160;/gi,' ').trim();
-    if(!(name&&textLength(name[1]))&&!textLength(inner)) add('button_name_missing','error','A button has no detectable accessible name.');
+    const hasText=hasVisibleButtonText(tag);
+    if(!(name&&textLength(name[1]))&&!hasText) add('button_name_missing','error','A button has no detectable accessible name.');
   }
   const controls=source.match(/<(?:input|select|textarea)\b[^>]*>/gi)||[];
   for(const tag of controls) {
