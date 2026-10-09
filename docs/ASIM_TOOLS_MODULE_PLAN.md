@@ -54,3 +54,11 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 
 - The agent orchestrator now invokes `auditGeneratedProject` after browser smoke/product quality on web builds and records a `tool_fabric_audit` evidence object plus a compact event summary.
 - The helper scans public HTML locally with bounds: maximum 40 HTML files by default, maximum 1 MB per file, maximum 2,000 discovered HTML files, no symlink traversal, and per-file overflow statuses. SEO and accessibility findings are advisory evidence; they do not replace Playwright checks or independently approve a release.
+
+
+## Calculator and date/time suite — 2026-10-10
+
+- Extended the canonical Tool Fabric from 27 to 40 contracts with eight local calculator tools, a dimensional unit converter, duration and age helpers, an IANA time-zone converter, and a decimal/binary data-size converter.
+- Executors live in `src/tool-fabric/calculators.js` and are routed through the existing `runTool` dispatcher. Every new tool is local-only and uses bounded input validation and the normal explicit result envelope; no network adapter or duplicate catalog was introduced.
+- Focused tests cover numeric outcomes, leap-day age policy, explicit-offset time-zone conversion, decimal versus binary size units, domain validation and fractional break-even rounding. The break-even unit ceiling uses the unrounded contribution margin so rounding the display value cannot understate the quantity required.
+- Verification record: implementation revision `4b796eb615ce77d734a66230995c57d353406bb9` passed Build Vibe CI run [37987930669](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930669), 309/309 tests, CodeQL run [37987930550](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930550), and Dependency Review run [37987930570](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930570). This is source/CI evidence only, not proof of configured production infrastructure.
