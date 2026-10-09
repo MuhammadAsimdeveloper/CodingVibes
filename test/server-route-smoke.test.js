@@ -37,6 +37,12 @@ test('server public and authenticated route smoke covers launch control plane',a
     assert.ok([200,404].includes(r.response.status),pathName+' status '+r.response.status);
   }
 
+  const unauthToolCatalog=await req('/api/tool-fabric/catalog');
+  assert.equal(unauthToolCatalog.response.status,401);
+
+  const unauthToolPipeline=await req('/api/tool-fabric/pipeline',{method:'POST',body:JSON.stringify({steps:[{id:'format',tool:'json.format',input:{text:'{"ok":true}'}}]})});
+  assert.equal(unauthToolPipeline.response.status,401);
+
   const signup=await req('/api/auth/signup',{method:'POST',body:JSON.stringify({email:'smoke@example.com',password:'test-password-123'})});
   assert.equal(signup.response.status,201);
   const cookie=signup.response.headers.get('set-cookie');
@@ -47,12 +53,38 @@ test('server public and authenticated route smoke covers launch control plane',a
     '/api/auth/me','/api/billing','/api/features','/api/workspaces','/api/cloud/catalog','/api/connectors',
     '/api/ai/providers','/api/model/status','/api/projects','/api/builder/research','/api/launch/status',
     '/api/deployment/providers','/api/targets/availability','/api/targets','/api/integrations','/api/ai/settings',
-    '/api/ai/tokens','/api/fleet'
+    '/api/ai/tokens','/api/fleet','/api/tool-fabric/catalog'
   ];
   for(const p of authPaths){
     const r=await req(p,{headers:{cookie:sessionCookie}});
     assert.notEqual(r.response.status,500,p);
   }
+
+  const catalog=await req('/api/tool-fabric/catalog',{headers:{cookie:sessionCookie}});
+  assert.equal(catalog.response.status,200);
+  assert.equal(catalog.body.tools.length,27);
+  assert.ok(catalog.body.tools.some(tool=>tool.id==='seo.meta.generate'));
+  assert.ok(catalog.body.tools.some(tool=>tool.id==='image.optimize'&&tool.executionMode==='browser'));
+
+  const formatted=await req('/api/tool-fabric/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({id:'json.format',input:{text:'{"ok":true}'}})});
+  assert.equal(formatted.response.status,200);
+  assert.equal(formatted.body.result.status,'COMPLETED');
+  assert.equal(formatted.body.result.output.formatted,'{\n  "ok": true\n}');
+
+  const blocked=await req('/api/tool-fabric/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({id:'api.test',input:{url:'http://127.0.0.1:8080/admin',method:'GET'}})});
+  assert.equal(blocked.response.status,200);
+  assert.equal(blocked.body.result.status,'BLOCKED');
+  assert.equal(blocked.body.result.networkUsed,false);
+
+  const pipeline=await req('/api/tool-fabric/pipeline',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({steps:[
+    {id:'format',tool:'json.format',input:{text:'{"ok":true}'}},
+    {id:'types',tool:'json.typescript',input:{json:{$ref:'format.output.formatted'},rootName:'Smoke'}}
+  ]})});
+  assert.equal(pipeline.response.status,200);
+  assert.equal(pipeline.body.result.status,'COMPLETED');
+  assert.equal(pipeline.body.result.networkUsed,false);
+  assert.equal(pipeline.body.result.stepCount,2);
+  assert.match(pipeline.body.result.results[1].output.typescript,/interface Smoke/);
 
   const project=await req('/api/projects',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({name:'Smoke Product'})});
   assert.equal(project.response.status,201);

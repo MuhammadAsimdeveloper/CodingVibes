@@ -46,6 +46,7 @@ import {assetType,safeAssetName,hashBuffer,makeAssetRecord,validateAssetUpload,M
 import {baselinePath} from './verification/visual.js';
 import {WORKSPACE_ROLES,canRole,authorizeProjectRole,projectCapabilityMatrix,normalizeDesignSystem,designModeContract,researchWeb,provisionCloudService,CLOUD_SERVICE_CATALOG,domainVerificationInstructions,hashInviteToken,makeInviteToken} from './platform/feature-suite.js';
 import {auditDiscoverability,aeoSummary} from './verification/discoverability.js';
+import {runTool as runFabricTool,runToolPipeline as runFabricPipeline,listToolContracts,getToolContract} from './tool-fabric/index.js';
 import {submitIndexNow} from './seo/indexnow.js';
 import {listPublicSeoPages,renderPublicSeoPage} from './seo/public-pages.js';
 import {telemetry} from './ops/telemetry.js';
@@ -247,6 +248,47 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(method==='GET'&&!u.pathname.startsWith('/api/')&&await serveStatic(req,res))return;
   if(method==='POST'&&u.pathname==='/api/analytics/events'){try{const b=await readJson(req,MAX_BODY),event=sanitizeProductEvent({userId,projectId:b.projectId||null,sessionId:b.sessionId||null,event:b.event,properties:b.properties});if(event.projectId&&!store.getProject(event.projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const saved=recordProductEvent(store,event);return sendJson(res,201,{ok:true,event:{id:saved.id,event:saved.event,created_at:saved.created_at}});}catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message});}}
   const a=requireAuth(req,res);if(!a)return;const userId=a.user_id;
+  if(method==='GET'&&u.pathname==='/api/tool-fabric/catalog'){
+    const contracts=listToolContracts({category:u.searchParams.get('category')||'',query:u.searchParams.get('q')||'',status:u.searchParams.get('status')||''});
+    return sendJson(res,200,{ok:true,version:1,outboundNetworkExecutionEnabled:false,tools:contracts.map(c=>({id:c.id,aliases:c.aliases,category:c.category,version:c.version,inputSchema:c.inputSchema,outputSchema:c.outputSchema,riskClass:c.riskClass,executionMode:c.executionMode,networkRequired:c.networkRequired,authRequired:c.authRequired,confirmationRequired:c.confirmationRequired,timeoutMs:c.timeoutMs,maxRetries:c.maxRetries,auditEvent:c.auditEvent,fallback:c.fallback,status:c.status,provenance:c.provenance}))});
+  }
+  if(method==='POST'&&u.pathname==='/api/tool-fabric/execute'){
+    if(!consumeRateLimit(buckets,'tool-fabric:'+userId,60,60000))return sendJson(res,429,{ok:false,error:'tool_rate_limit',retry_after_seconds:60});
+    const body=await readJson(req,Math.min(MAX_BODY,1_100_000)),id=String(body.id||'').trim().slice(0,128),contract=getToolContract(id);
+    if(!contract)return sendJson(res,404,{ok:false,error:'unknown_tool'});
+    const input=body.input===undefined?{}:body.input;
+    if(!input||typeof input!=='object'||Array.isArray(input))return sendJson(res,400,{ok:false,error:'tool_input_must_be_object'});
+    const started=Date.now();
+    const result=await runFabricTool(contract.id,input);
+    try{store.addAuditLog({actorUserId:userId,action:'tool_fabric.executed',resourceType:'tool',resourceId:contract.id,metadata:{status:result.status,riskClass:contract.riskClass,executionMode:contract.executionMode,networkUsed:false,durationMs:Date.now()-started,inputFields:Object.keys(input).slice(0,30),outputFields:result.output&&typeof result.output==='object'?Object.keys(result.output).slice(0,30):[]}})}catch{}
+    return sendJson(res,200,{ok:true,result,contract:{id:contract.id,status:contract.status,executionMode:contract.executionMode,networkRequired:contract.networkRequired,confirmationRequired:contract.confirmationRequired}});
+  }
+
+  if(method==='POST'&&u.pathname==='/api/tool-fabric/pipeline'){
+    if(!consumeRateLimit(buckets,'tool-fabric:'+userId,60,60000))return sendJson(res,429,{ok:false,error:'tool_rate_limit',retry_after_seconds:60});
+    const body=await readJson(req,Math.min(MAX_BODY,1_100_000));
+    const started=Date.now();
+    const result=await runFabricPipeline(body);
+    const requestedTools=Array.isArray(body?.steps)?body.steps.slice(0,10).map(step=>typeof step?.tool==='string'?step.tool.slice(0,128):'invalid'):[];
+    try{
+      store.addAuditLog({
+        actorUserId:userId,
+        action:'tool_fabric.pipeline_executed',
+        resourceType:'tool_pipeline',
+        resourceId:'pipeline',
+        metadata:{
+          status:result.status,
+          stepCount:requestedTools.length,
+          completedSteps:Array.isArray(result.results)?result.results.filter(step=>step.status==='COMPLETED').length:0,
+          failedStepId:result.failedStepId||null,
+          toolIds:requestedTools,
+          networkUsed:false,
+          durationMs:Date.now()-started
+        }
+      });
+    }catch{}
+    return sendJson(res,200,{ok:true,result});
+  }
   if(method==='GET'&&u.pathname==='/api/builder/research')return sendJson(res,200,{ok:true,research:builderResearch()});
   if(method==='GET'&&u.pathname==='/api/cloud/catalog')return sendJson(res,200,{ok:true,services:CLOUD_SERVICE_CATALOG});
   if(/^\/api\/projects\/[^/]+\/discoverability$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/discoverability$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(pid,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});const audit=auditDiscoverability(latest.workspace,{baseUrl:publicOrigin(req)});return sendJson(res,200,{ok:true,audit,aeo:aeoSummary(audit),verifiedRunId:latest.run.id});}

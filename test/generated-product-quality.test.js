@@ -30,3 +30,21 @@ test('deterministic generator creates a real portable web product without a mode
   assert.match(files.get('public/styles.css'),/data-style="luxury"|site-footer/);
   assert.match(files.get('package.json'),/node app\/server\.js/);
 });
+
+test('generated 3D routes declare the Three.js import map before dependent ES modules',()=>{
+  const spec=completeSpec(analyzeRequirements('Create an immersive 3D product launch site with an interactive model'));
+  spec.experience={...(spec.experience||{}),threeD:true,type:'interactive-3d'};
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  const html=files.get('public/index.html')||'';
+  const importTag='<script type="importmap">';
+  const moduleTag='<script type="module" src="/experience.js"></script>';
+  const importStart=html.indexOf(importTag);
+  const moduleStart=html.indexOf(moduleTag);
+  assert.ok(importStart>=0,'3D HTML must include a browser import map for Three.js addons');
+  assert.ok(moduleStart>importStart,'the import map must precede the 3D ES module');
+  const jsonStart=importStart+importTag.length;
+  const jsonEnd=html.indexOf('</script>',jsonStart);
+  const importMap=JSON.parse(html.slice(jsonStart,jsonEnd));
+  assert.equal(importMap.imports.three,'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js');
+});
+

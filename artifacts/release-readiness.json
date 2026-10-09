@@ -1,10 +1,10 @@
 {
   "product": "Build Vibe",
   "release": "13.0.0",
-  "source_branch": "codex/final-source-13",
-  "verification_commit": "10343892e530e504cf0cc97a79fbab2c53823200",
-  "verification_run": 37575340519,
-  "verification_date": "2026-10-07",
+  "source_branch": "codex/tool-fabric-ci-recovery-2026-10-09",
+  "verification_commit": "322d36db86047c9d7ff580959ee4d7afa1c8b3a2",
+  "verification_run": 37982011949,
+  "verification_date": "2026-10-10",
   "source_side_status": "READY_FOR_RUNNER_HANDOFF",
   "gates": {
     "npm_ci": true,
@@ -25,11 +25,13 @@
     "scaleout_doctor": true,
     "launch_readiness": true,
     "codeql": true,
-    "dependency_review": true
+    "dependency_review": true,
+    "browser_image_optimizer_ui": true,
+    "browser_image_optimizer_input_guards": true
   },
   "test_summary": {
-    "total": 231,
-    "passed": 231,
+    "total": 292,
+    "passed": 292,
     "failed": 0,
     "skipped": 0
   },
@@ -39,25 +41,40 @@
   },
   "security": {
     "core_dependency_audit": "PASS",
+    "codeql": "PASS",
+    "dependency_review": "PASS",
     "scope": "non-optional dependencies",
     "optional_runner_advisory": "documented in docs/DEPENDENCY_SECURITY.md"
   },
   "runner_status": {
     "status": "NOT_CONFIGURED",
     "required": [
-      "isolated build runner",
+      "isolated production build runner",
       "target SDK/toolchains as needed",
-      "production secrets",
-      "persistent storage and backups",
+      "production secrets and model-provider credentials",
+      "persistent production storage and tested backups/restore",
       "TLS/reverse proxy",
       "monitoring/alerting",
       "domain/DNS configuration",
-      "live third-party provider/payment credentials"
+      "live third-party provider/payment credentials",
+      "production quota enforcement"
     ]
   },
   "mirofish": {
     "status": "CONTRACT_READY_NOT_REAL_SIMULATION_EVIDENCE",
     "configured": false
   },
-  "launch_decision": "SOURCE_READY_RUNNER_REQUIRED"
+  "launch_decision": "SOURCE_READY_RUNNER_REQUIRED",
+  "feature_checkpoint": {
+    "name": "Tool Fabric pipeline and browser-local image optimizer",
+    "source_revision": "322d36db86047c9d7ff580959ee4d7afa1c8b3a2",
+    "tool_fabric_pipeline": "IMPLEMENTED_AND_VERIFIED",
+    "browser_image_optimizer": "IMPLEMENTED_AND_VERIFIED",
+    "image_input_policy": "PNG/JPEG/WebP/GIF/AVIF/BMP only; non-empty; <=25 MiB; <=50 megapixels; dimensions 64..8192 px",
+    "privacy": "image bytes processed locally; no upload API",
+    "ci_run": 37982011949,
+    "codeql_run": 37982012043,
+    "dependency_review_run": 37982011944
+  },
+  "verification_scope": "CI verifies the source revision. Public production launch remains blocked until required infrastructure and credentials are configured and the deployed instance passes its own readiness and smoke tests."
 }

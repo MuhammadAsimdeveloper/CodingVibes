@@ -1,4 +1,63 @@
 import {baselinePath,comparePng,visualArtifactName} from './visual.js';
+import {runTool} from '../tool-fabric/index.js';
+
+
+export function normalizeBrowserPerformanceMetrics({navigation={},resources=[],paintEntries=[],vitals={}}={}) {
+  const validNumber=value=>value!==undefined&&value!==null&&Number.isFinite(Number(value))&&Number(value)>=0;
+  const sizeOf=resource=>validNumber(resource?.transferSize)?Number(resource.transferSize):null;
+  const encodedOf=resource=>validNumber(resource?.encodedBodySize)?Number(resource.encodedBodySize):null;
+  const nameOf=resource=>String(resource?.name||'');
+  const isJavaScript=resource=>String(resource?.initiatorType||'').toLowerCase()==='script'||/\.(?:m?js|cjs)(?:[?#]|$)/iu.test(nameOf(resource));
+  const isImage=resource=>String(resource?.initiatorType||'').toLowerCase()==='img'||/\.(?:png|jpe?g|webp|gif|avif|svg|ico)(?:[?#]|$)/iu.test(nameOf(resource));
+  const resourceList=Array.isArray(resources)?resources:[];
+  const knownBytes=resource=> {
+    const transfer=sizeOf(resource), encoded=encodedOf(resource);
+    if(transfer===null)return false;
+    if(transfer===0&&encoded===0&&!/^(?:data|blob):/iu.test(nameOf(resource)))return false;
+    return true;
+  };
+  const allResourceBytesKnown=resourceList.length>0&&resourceList.every(knownBytes);
+  const sumTransfer=items=>items.reduce((total,item)=>total+(sizeOf(item)??0),0);
+  const opaqueJavaScript=resourceList.some(resource=>isJavaScript(resource)&&!knownBytes(resource));
+  const opaqueImages=resourceList.some(resource=>isImage(resource)&&!knownBytes(resource));
+  const fcp=Array.isArray(paintEntries)?paintEntries.find(entry=>entry?.name==='first-contentful-paint'):null;
+  const navNumber=key=>validNumber(navigation?.[key])?Number(navigation[key]):null;
+  const requestStart=navNumber('requestStart'), responseStart=navNumber('responseStart');
+  const metricsForAudit={};
+  if(vitals?.lcpObserved===true&&validNumber(vitals.lcpMs))metricsForAudit.lcpMs=Number(vitals.lcpMs);
+  if(vitals?.clsObserved===true&&validNumber(vitals.cls))metricsForAudit.cls=Number(vitals.cls);
+  if(requestStart!==null&&responseStart!==null&&responseStart>=requestStart)metricsForAudit.ttfbMs=responseStart-requestStart;
+  if(allResourceBytesKnown)metricsForAudit.totalBytes=sumTransfer(resourceList);
+  if(allResourceBytesKnown&&!opaqueJavaScript)metricsForAudit.jsBytes=sumTransfer(resourceList.filter(isJavaScript));
+  if(allResourceBytesKnown&&!opaqueImages)metricsForAudit.imageBytes=sumTransfer(resourceList.filter(isImage));
+  const renderBlockingKnown=resourceList.length>0&&resourceList.every(resource=>typeof resource?.renderBlockingStatus==='string');
+  if(renderBlockingKnown)metricsForAudit.blockingRequests=resourceList.filter(resource=>resource.renderBlockingStatus==='blocking').length;
+  if(vitals?.inpObserved===true&&validNumber(vitals.inpMs))metricsForAudit.inpMs=Number(vitals.inpMs);
+  const expected=['lcpMs','inpMs','cls','ttfbMs','totalBytes','jsBytes','imageBytes','blockingRequests'];
+  const missingForAudit=expected.filter(key=>metricsForAudit[key]===undefined);
+  const measurementStatus=Object.keys(metricsForAudit).length===0?'NEEDS_BROWSER_METRICS':missingForAudit.length?'PARTIAL_MEASURED':'MEASURED_COMPLETE';
+  return {
+    navigationDurationMs:navNumber('duration')??0,
+    domContentLoadedMs:navNumber('domContentLoadedEventEnd')??0,
+    firstContentfulPaintMs:fcp&&validNumber(fcp.startTime)?Number(fcp.startTime):null,
+    transferBytes:sumTransfer(resourceList),
+    lcpMs:metricsForAudit.lcpMs??null,
+    cls:metricsForAudit.cls??null,
+    ttfbMs:metricsForAudit.ttfbMs??null,
+    totalBytes:metricsForAudit.totalBytes??null,
+    jsBytes:metricsForAudit.jsBytes??null,
+    imageBytes:metricsForAudit.imageBytes??null,
+    blockingRequests:metricsForAudit.blockingRequests??null,
+    inpMs:metricsForAudit.inpMs??null,
+    interactionCount:Number.isSafeInteger(vitals?.interactionCount)&&vitals.interactionCount>=0?vitals.interactionCount:0,
+    observedInteractionDurationMs:validNumber(vitals?.interactionDurationMs)?Number(vitals.interactionDurationMs):null,
+    resourceBytesComplete:allResourceBytesKnown,
+    metricsForAudit,
+    missingForAudit,
+    measurementStatus,
+    measurementNotes:missingForAudit.includes('inpMs')?'INP was not inferred from a navigation-only smoke test; provide a real interaction or Lighthouse measurement.':''
+  };
+}
 
 export function assessBrowserQuality(result,{maxLoadMs=5000,maxTransferBytes=8_000_000}={}){
   const failures=[];
@@ -21,32 +80,93 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
  try{
   for(const p of paths){
    const page=await browser.newPage({viewport});
+   await page.addInitScript(()=>{
+     const vitals={lcpObserved:false,lcpMs:null,clsObserved:false,cls:0,inpObserved:false,inpMs:null,interactionCount:0,interactionDurationMs:null};
+     Object.defineProperty(window,'__cvBrowserVitals',{value:vitals,configurable:false});
+     try{
+       const observer=new PerformanceObserver(list=>{
+         for(const entry of list.getEntries()){
+           if(Number.isFinite(entry.startTime)){vitals.lcpObserved=true;vitals.lcpMs=Math.max(vitals.lcpMs||0,entry.startTime);}
+         }
+       });
+       observer.observe({type:'largest-contentful-paint',buffered:true});
+     }catch{}
+     try{
+       const observer=new PerformanceObserver(list=>{
+         for(const entry of list.getEntries()){
+           if(!entry.hadRecentInput&&Number.isFinite(entry.value)){vitals.clsObserved=true;vitals.cls+=entry.value;}
+         }
+       });
+       observer.observe({type:'layout-shift',buffered:true});
+       vitals.clsObserved=true;
+     }catch{}
+     try{
+       const durations=new Map();
+       const observer=new PerformanceObserver(list=>{
+         for(const entry of list.getEntries()){
+           if(entry.interactionId>0&&Number.isFinite(entry.duration)){
+             durations.set(entry.interactionId,Math.max(durations.get(entry.interactionId)||0,entry.duration));
+           }
+         }
+         vitals.interactionCount=durations.size;
+         vitals.interactionDurationMs=durations.size?Math.max(...durations.values()):null;
+       });
+       observer.observe({type:'event',buffered:true,durationThreshold:16});
+     }catch{}
+   });
    const consoleErrors=[],consoleWarnings=[],requestFailures=[],responseFailures=[];
    page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());if(m.type()==='warning')consoleWarnings.push(m.text());});
    page.on('requestfailed',r=>requestFailures.push({url:r.url(),failure:r.failure()?.errorText||'request failed'}));
    page.on('response',r=>{if(r.status()>=500)responseFailures.push({url:r.url(),status:r.status()});});
-   let status=0,error=null,ui={},screenshot=null,domSnapshot=null,visual=null,performance={},accessibility={};
+   let status=0,error=null,ui={},screenshot=null,domSnapshot=null,visual=null,performance={},performanceAudit=null,accessibility={};
    try{
     const response=await page.goto(new URL(p,baseUrl).toString(),{waitUntil:'networkidle',timeout:15000});
     status=response?.status()||0;
     const links=await page.locator('a[href]').evaluateAll(els=>els.map(e=>e.getAttribute('href')).filter(Boolean).filter(x=>x.startsWith('/')));
     for(const link of links){const linkedResponse=await fetch(new URL(link,baseUrl));const optionalIntegration=/^\/auth\/google(?:\?|$)/.test(link)&&linkedResponse.status===503;if(!(linkedResponse.status>=200&&linkedResponse.status<400)&&!optionalIntegration)requestFailures.push({url:linkedResponse.url,failure:`internal link ${linkedResponse.status}`});}
-    const metrics=await page.evaluate(()=>{const nav=performance.getEntriesByType('navigation')[0];const resources=performance.getEntriesByType('resource');return{navigationDurationMs:nav?.duration||0,domContentLoadedMs:nav?.domContentLoadedEventEnd||0,firstContentfulPaintMs:performance.getEntriesByName('first-contentful-paint')[0]?.startTime||null,transferBytes:resources.reduce((n,x)=>n+(Number(x.transferSize)||0),0)};});
-    performance=metrics;
     ui=await page.evaluate(()=>{const images=[...document.images],buttons=[...document.querySelectorAll('button,input[type="button"],input[type="submit"]')],links=[...document.querySelectorAll('a[href]')],rect=document.documentElement.getBoundingClientRect(),text=document.body?.innerText||'';return{title:document.title||'',lang:document.documentElement.lang||'',viewport:!!document.querySelector('meta[name="viewport"]'),main:!!document.querySelector('main'),nav:!!document.querySelector('nav'),h1:document.querySelectorAll('h1').length,imagesWithoutAlt:images.filter(x=>!x.getAttribute('alt')).length,controlsWithoutName:buttons.filter(x=>!(x.getAttribute('aria-label')||x.textContent?.trim()||x.getAttribute('title'))).length,linksWithoutName:links.filter(x=>!(x.getAttribute('aria-label')||x.textContent?.trim()||x.getAttribute('title'))).length,interactiveAriaHidden:[...document.querySelectorAll('button,a[href],input,select,textarea')].filter(x=>x.getAttribute('aria-hidden')==='true').length,documentWidth:rect.width,bodyScrollWidth:document.body?.scrollWidth||rect.width,bodyTextLength:text.length,forms:document.querySelectorAll('form').length};});
     const uiFailures=[];if(!ui.title)uiFailures.push('missing document title');if(!ui.lang)uiFailures.push('missing html lang');if(ui.viewport===false)uiFailures.push('missing responsive viewport');if(ui.main===false)uiFailures.push('missing main landmark');if(ui.imagesWithoutAlt>0)uiFailures.push(`${ui.imagesWithoutAlt} image(s) without alt text`);if(ui.controlsWithoutName>0)uiFailures.push(`${ui.controlsWithoutName} control(s) without accessible name`);if(ui.linksWithoutName>0)uiFailures.push(`${ui.linksWithoutName} link(s) without accessible name`);if(ui.interactiveAriaHidden>0)uiFailures.push(`${ui.interactiveAriaHidden} interactive element(s) incorrectly aria-hidden`);if(ui.bodyScrollWidth>ui.documentWidth+4)uiFailures.push('horizontal overflow detected');
     const focusableCount=await page.locator('a[href],button,input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"]').count();
     let firstTabFocused=false;
     if(focusableCount>0){await page.keyboard.press('Tab');firstTabFocused=await page.evaluate(()=>{const el=document.activeElement;return !!el&&el!==document.body&&!!el.matches('a[href],button,input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');});}
     accessibility={keyboard:{focusableCount,firstTabFocused},landmarks:{main:Boolean(ui.main),nav:Boolean(ui.nav)}};
+    const measured=await page.evaluate(()=>{
+      const nav=performance.getEntriesByType('navigation')[0];
+      const resources=performance.getEntriesByType('resource');
+      const paintEntries=performance.getEntriesByType('paint').map(entry=>({name:entry.name,startTime:entry.startTime}));
+      return {
+        navigation:nav?{
+          duration:nav.duration,domContentLoadedEventEnd:nav.domContentLoadedEventEnd,
+          requestStart:nav.requestStart,responseStart:nav.responseStart
+        }:{},
+        resources:resources.map(entry=>({
+          name:entry.name,initiatorType:entry.initiatorType,
+          transferSize:entry.transferSize,encodedBodySize:entry.encodedBodySize,
+          renderBlockingStatus:entry.renderBlockingStatus??null
+        })),
+        paintEntries,
+        vitals:window.__cvBrowserVitals||{}
+      };
+    });
+    performance=normalizeBrowserPerformanceMetrics(measured);
+    const auditResult=Object.keys(performance.metricsForAudit).length
+      ? await runTool('web.performance.audit',{metrics:performance.metricsForAudit})
+      : await runTool('web.performance.audit',{});
+    performanceAudit={
+      source:'playwright-browser-smoke',
+      status:performance.measurementStatus,
+      missingMetrics:performance.missingForAudit,
+      notes:performance.measurementNotes,
+      result:auditResult
+    };
     if(screenshots){
       const safe=encodeURIComponent(p.slice(1)||'home').replace(/%/g,'_');screenshot=`${artifactDir}/${safe}.png`;domSnapshot=`${artifactDir}/${safe}.html`;
       await page.screenshot({path:screenshot,fullPage:true});fs.writeFileSync(domSnapshot,await page.content(),'utf8');
       if(baselineDir){const base=baselinePath(baselineDir,p),diff=`${artifactDir}/${visualArtifactName(p,'diff')}`;visual=await comparePng(screenshot,base,diff,{visualThreshold,pixelThreshold});}
     }
     const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures,visual,performance,accessibility},{maxLoadMs,maxTransferBytes});
-    results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures,screenshot,domSnapshot,visual,performance,accessibility,quality,ok:quality.ok});
-   }catch(e){error=e.message;const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures:[]},{maxLoadMs,maxTransferBytes});results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures:[],screenshot,domSnapshot,visual,performance,accessibility,quality,ok:false});}
+    results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures,screenshot,domSnapshot,visual,performance,performanceAudit,accessibility,quality,ok:quality.ok});
+   }catch(e){error=e.message;const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures:[]},{maxLoadMs,maxTransferBytes});results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures:[],screenshot,domSnapshot,visual,performance,performanceAudit,accessibility,quality,ok:false});}
    await page.close();
   }
  }finally{await browser.close();}

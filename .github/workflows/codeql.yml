@@ -25,3 +25,51 @@ jobs:
       - uses: github/codeql-action/analyze@v4
         with:
           category: /language:javascript-typescript
+          post-processed-sarif-path: results/post-processed
+
+      - name: Summarize CodeQL finding locations
+        if: always()
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {existsSync, readdirSync, readFileSync} from 'node:fs';
+          const root = 'results/post-processed';
+          if (!existsSync(root)) {
+            console.log('CodeQL SARIF summary unavailable: post-processed SARIF directory was not retained.');
+            process.exit(0);
+          }
+          const files = [];
+          function collect(dir) {
+            for (const entry of readdirSync(dir, {withFileTypes:true})) {
+              const file = dir + '/' + entry.name;
+              if (entry.isDirectory()) collect(file);
+              else if (entry.isFile() && entry.name.endsWith('.sarif')) files.push(file);
+            }
+          }
+          collect(root);
+          if (!files.length) {
+            console.log('CodeQL SARIF summary unavailable: no SARIF files found in post-processed directory.');
+            process.exit(0);
+          }
+          for (const path of files) {
+            const sarif = JSON.parse(readFileSync(path, 'utf8'));
+            for (const run of sarif.runs || []) {
+              const rules = new Map((run.tool?.driver?.rules || []).map(rule => [rule.id, rule]));
+              for (const result of run.results || []) {
+                const rule = rules.get(result.ruleId);
+                console.log(JSON.stringify({
+                  sarifFile: path,
+                  ruleId: result.ruleId || null,
+                  level: result.level || null,
+                  securitySeverity: rule?.properties?.['security-severity'] || null,
+                  message: String(result.message?.text || '').slice(0, 240),
+                  locations: (result.locations || []).map(location => ({
+                    path: location.physicalLocation?.artifactLocation?.uri || null,
+                    line: location.physicalLocation?.region?.startLine || null,
+                    column: location.physicalLocation?.region?.startColumn || null
+                  }))
+                }));
+              }
+            }
+          }
+          NODE

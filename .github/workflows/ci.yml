@@ -35,6 +35,7 @@ jobs:
       - run: npm run e2e
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
+      - run: npm run browser:image-optimizer
       - run: npm run browser:e2e
       - run: npm run ops:load
       - run: npm run recovery:smoke

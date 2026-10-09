@@ -66,3 +66,28 @@ Those are the next deployment-layer steps.
 ## Final release rule
 
 Do not mark the public service launched until the runner and production preflight gates pass on the actual deployment environment.
+
+
+## Current feature-branch verification — 2026-10-10
+
+This follow-up does not rewrite the historical 13.0.0 source-release decision above. It records the current Build Vibe feature branch and its latest verified source revision.
+
+- Repository: MuhammadAsimdeveloper/CodingVibes
+- Pull request: #53 — https://github.com/MuhammadAsimdeveloper/CodingVibes/pull/53
+- Branch: codex/tool-fabric-ci-recovery-2026-10-09
+- Verified source revision: 322d36db86047c9d7ff580959ee4d7afa1c8b3a2
+- Build Vibe CI: run 37982011949 — PASS
+- Automated tests: 292 passed, 0 failed, 0 skipped.
+- CodeQL: run 37982012043 — PASS.
+- Dependency Review: run 37982011944 — PASS.
+- Coverage, syntax/release checks, SEO, server E2E, browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security preflight, scaleout doctor and launch readiness all passed in Build Vibe CI.
+
+### Feature evidence
+
+- Added safe local-only Tool Fabric pipelines with prior-output references, preflight restrictions, bounded inputs/outputs and authenticated API access.
+- Hardened the Three.js walkthrough-video preview input path (MP4/WebM/Ogg allowlist, 250 MiB cap, playback capability check and validated Blob MIME).
+- Integrated a browser-local image optimizer into Studio Content & data using the canonical Canvas/ImageBitmap adapter; its Node-side entry point re-exports the same implementation. Raster input is restricted to PNG/JPEG/WebP/GIF/AVIF/BMP; inputs are non-empty and at most 25 MiB; decoded images are capped at 50 megapixels; unsupported output encoders fail explicitly; image bytes are not uploaded.
+
+### Launch decision
+
+**SOURCE READY FOR RUNNER HANDOFF — PUBLIC PRODUCTION STILL BLOCKED PENDING ENVIRONMENT SETUP.** The release-readiness JSON remains explicit that production runner/toolchains, secrets/model credentials, persistent storage and tested restore, TLS/domain, monitoring, billing/provider configuration and quotas require verification on the actual deployment. Passing GitHub Actions is not equivalent to a live deployment, native binary certification or a real MiroFish simulation.

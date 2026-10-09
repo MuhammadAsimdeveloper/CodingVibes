@@ -911,3 +911,82 @@ Prefer official APIs over browser automation. Browser automation is a governed f
 Free-tool directories demonstrate distribution power: individual task pages + category hubs + instant browser execution. Open/client-side tool ecosystems demonstrate privacy and low infrastructure cost. Browser-agent infrastructure demonstrates that the next step is allowing agents to operate these capabilities and external websites, not merely presenting a catalog.
 
 Build Vibe should combine these into a **searchable, composable, agent-callable Tool Fabric** rather than a static collection.
+
+
+## 42. Repository reconstruction checkpoint — October 9, 2026
+
+This checkpoint follows the required read order and keeps the original architecture. It records actual repository access and explicit evidence limits rather than treating source presence as proof of a production feature.
+
+- Canonical application: MuhammadAsimdeveloper/CodingVibes, release identity 13.0.0. The reconstruction candidate is the open PR #53 branch codex/tool-fabric-ci-recovery-2026-10-09. The earlier head f33576e had successful Build Vibe CI, CodeQL and Dependency Review; every newer commit must obtain fresh results.
+- The feature branch contains the restored allow-listed visual edit intent runtime and local Tool Fabric contracts. Tool execution remains local by default; live network API testing and unconfigured external effects must remain explicit NOT_CONFIGURED/BLOCKED states.
+- The three requested audits are maintained in docs/audit/REPOSITORY_INVENTORY.md, docs/audit/MODULE_REUSE_MATRIX.md and docs/audit/CURRENT_STATE_AUDIT.md. They distinguish the real Build Vibe source from similarly named stubs and from the separate gstack repository.
+- The checked OriginKit repository is a showcase, not a delivery of the official component source. Its README explicitly says the source component has not yet been installed. No OriginKit animation is declared integrated until actual authenticated component source and its terms have been inspected.
+- The private Our-Tools repository exposes reusable utility source, but Build Vibe's Tool Fabric already covers much of the same category space. The local contract implementation remains canonical; imports should be narrow, compared, licensed/authorized and tested rather than copied in bulk or called remotely.
+- A regression test was committed first for the 3D reduced-motion/render-loop gap. A second test-first regression exposed missing import-map resolution for the bare specifier three; the generator now emits a matching import map before /experience.js. A third test-first set covered temporary model/video object URL cleanup and built-in camera fallback for an empty configured shot list. The combined implementation commit c4949625bd21abfcafbadbc9c2588d221e3a5961 passed Build Vibe CI, CodeQL and Dependency Review. The full Build Vibe CI includes unit/coverage, syntax/static, SEO, server and browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention, security, scaleout and launch readiness.
+- Production release remains gated on real runner/toolchain, secrets, persistent storage and backup/restore, TLS/domain, monitoring, quotas and third-party credentials. A successful repository CI run is not proof of a live deployment or native binary.
+
+The source-side audit, module decisions and test changes do not mark unavailable OriginKit modules, live MiroFish simulations, cloud resources or deployment targets as complete.
+
+
+## 42. TDD checkpoint — bounded Tool Fabric pipeline composition (2026-10-09)
+
+**Scope:** Build Vibe's first composition primitive, extending the existing Tool Fabric rather than duplicating its 18 contracts.
+
+- Add `runToolPipeline({ steps })` with ordered local execution and explicit `$ref: "stepId.output.property"` input mapping.
+- Preflight every step and reference before execution; reject unknown/duplicate step IDs, forward/missing references, prototype-sensitive paths, and browser/network/high-risk adapters.
+- Enforce a maximum of 10 steps, a 1 MB pipeline request, a 1 MB resolved per-step input, and 2 MB cumulative serialized outputs.
+- Stop at the first non-`COMPLETED` step with the original failure status, and return `networkUsed: false`.
+- Expose the capability through authenticated, rate-limited `POST /api/tool-fabric/pipeline`; audit only bounded tool IDs, statuses, counts and duration, never input or output contents.
+- TDD history on PR #53: regression tests were committed first at `0efcf86`, and the missing executor was confirmed by the failing CI test before implementation. The pipeline executor and API route were then added in `e6973f2` and `c560810` respectively.
+
+**Verification status:** the latest full CI run is in progress as of this checkpoint. Do not call this capability verified until its test, coverage, syntax/static, E2E, browser, security and launch checks complete successfully. This PR remains open and separate from `main`; it is not a production deployment.
+
+**Next unfinished Tool Fabric work:** complete the local/browser adapters still explicitly marked `BROWSER_REQUIRED`, `NEEDS_BROWSER_METRICS`, or `NOT_CONFIGURED` only when a real governed adapter and its test environment exist; then add remaining P1 utilities from `docs/ZEE_TOOLS_ECOSYSTEM_PLAN.md`. Declared contracts alone are not evidence that a tool is executable.
+
+
+## 43. Security regression checkpoint — Three.js walkthrough video upload (2026-10-10)
+
+**TDD scope:** resolve the CodeQL js/xss-through-dom finding associated with the local walkthrough-video preview path in src/templates/runtime/three-experience.js, without weakening CodeQL or changing the generated-project architecture.
+
+- Added the upload validation regression to test/three-experience-runtime.test.js before changing the runtime. The test-only commit 02b9fc3379b9b6f79ad09dfa9216b3b30cee0d7a intentionally failed CI at npm test, demonstrating the missing validation contract.
+- Implemented a strict video/mp4, video/webm, video/ogg MIME allowlist; rejected empty uploads and files above 250 MiB; checked video.canPlayType; and created a Blob with the validated media type before creating the object URL and assigning video.src. Invalid files do not replace the current preview.
+- Kept the existing cleanup contract that revokes the prior preview URL when a validated replacement is loaded. The file input is reset after processing so the same file can be selected again.
+- Latest implementation commit: fab79897aca9ed55992635e61d01b3ea7ec252ef.
+- Verification evidence on that exact commit: Build Vibe CI passed, including npm test, coverage (60% line/function and 40% branch thresholds), npm run check, SEO, server E2E, Playwright browser E2E, load/recovery smoke, deployment preflight, benchmark, MiroFish status, retention dry-run, security preflight, scaleout doctor and launch readiness. CodeQL and Dependency Review also passed.
+- The diagnostic SARIF logging added during investigation did not suppress alerts or alter scanner conclusions. The current CodeQL workflow reports a successful analysis; do not interpret that as proof that every historical alert in GitHub's alert history was automatically closed.
+- The PR is still open and not merged or deployed. Live infrastructure, configured third-party providers, native artifact verification, and production deployment remain separate gates.
+
+**Next unfinished Tool Fabric work:** review the P1 local utilities and the browser adapters marked BROWSER_REQUIRED / NEEDS_BROWSER_METRICS in docs/TOOL_FABRIC.md; implement the highest-value adapter only when its real governed runtime and tests are available. Do not treat a declared contract as execution evidence.
+
+
+## 44. TDD checkpoint — integrated browser-local image optimizer (2026-10-10)
+
+**Roadmap phase:** Tool/Agent Fabric P1 asset pipeline. This change completes a concrete user path for the existing `image.optimize` contract rather than adding a duplicate optimizer or remote upload service.
+
+- Added accessible image format, quality and max-dimension controls to Studio's Content & data tab; optimized output can be previewed and downloaded without uploading the source file.
+- Reused the existing Canvas/ImageBitmap adapter as a single canonical browser-served module at `public/tool-fabric-browser.js`; the Node-side `src/tool-fabric/browser.js` entry point re-exports the same implementation.
+- Input policy: PNG/JPEG/WebP/GIF/AVIF/BMP only, non-empty files, 25 MiB maximum input, 50 megapixels maximum decoded dimensions, quality 0.1–1 and dimensions 64–8192 px. SVG is blocked; an encoder MIME mismatch returns `BROWSER_REQUIRED` instead of producing a mislabeled file.
+- Preview object URLs are replaced/revoked safely and cleaned on page exit; processing stays client-side and does not call an upload API.
+- Regression tests were added before the UI/edge-case fixes. The first test-only CI run exposed unsupported-encoder and missing UI behavior; later tests exposed the missing zero-byte guard and a malformed picker assertion, both corrected before the final verification run.
+- Files changed for this checkpoint: `public/index.html`, `public/studio.js`, `public/app-polish.css`, `public/tool-fabric-browser.js`, `src/tool-fabric/browser.js`, `package.json`, `test/image-optimizer-ui.test.js`.
+
+**Verification status:** PASS for source revision `322d36db86047c9d7ff580959ee4d7afa1c8b3a2`. Build Vibe CI run `37982011949` passed all gates (292 tests, 0 failures, coverage, static/release, SEO, server/browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security, scaleout and launch readiness); CodeQL run `37982012043` and Dependency Review run `37982011944` also passed. The UI is a local asset utility, not proof that an uploaded image has been attached to a generated product or published.
+
+**Next unfinished stage:** add a governed, testable browser adapter for `web.performance.audit` only when the runner can supply real browser/Lighthouse measurements; until then it must continue to report `NEEDS_BROWSER_METRICS`. Then proceed through remaining P1 utilities with one distinct behavior contract and test suite at a time.
+
+
+## 45. Browser E2E checkpoint — image optimizer real-browser verification
+
+Added `scripts/image-optimizer-browser-e2e.mjs` and the `browser:image-optimizer` CI step after Playwright Chromium installation. It exercises the Studio controls in Chromium, verifies PNG-to-WebP encode, preview dimensions, download filename, SVG rejection, preview preservation and zero upload/API requests during optimization. The final CI result for this added check must be recorded before this stage is marked fully verified.
+
+
+## 46. TDD checkpoint — P1 local text utility suite
+
+Added nine task-level text utilities to the canonical Tool Fabric: count, case conversion, line sorting, duplicate-line removal, literal replacement, bounded line diff, whitespace cleaning, ASCII slug generation and Unicode inspection. The utilities use explicit contracts, stable tool IDs, local-only execution, bounded input/output and truthful INVALID_INPUT/INPUT_TOO_LARGE statuses. Literal replacement never compiles user text as a regex; diff limits both sides to 500 lines; Unicode inspection emits at most 1000 code-point entries. Tests cover the Unicode length/byte distinctions, casing modes, stable line handling, literal replacement, bounded diff, whitespace policy, slug errors and UTF-16 offsets.
+
+The test-first commit introduced the desired contract/output tests before executors. This implementation commit raises the canonical catalog from 18 to 27 tools only after adding nine executable local functions and contract rows; it does not change any external/network adapter states.
+
+
+## 47. Browser performance evidence — honest measurement gate
+
+Extended the existing Playwright browser smoke runner to collect measured navigation timing, FCP, TTFB, resource-transfer bytes, JS/image resource sizes when readable, render-blocking counts where supported, and observer-backed LCP/CLS. Opaque cross-origin resource timings make byte subtotals incomplete instead of silently counting as zero. A navigation-only smoke test does not claim INP; the report notes the missing metric and any observed interaction duration separately. The Tool Fabric performance evaluator marks partial evidence with `complete:false`, an explicit `missingMetrics` list and `metrics_incomplete`, not a false complete-pass finding. Regression tests validate known inputs and missing/opaque timing behavior.
