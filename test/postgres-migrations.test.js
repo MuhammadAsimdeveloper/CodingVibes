@@ -28,7 +28,7 @@ test('PostgreSQL migrations create core auth, project, session, run and chat per
  const result=await ensurePostgresMigrations(db);
  assert.ok(versions.has('0001_scaleout'));
  assert.ok(versions.has('0002_core_persistence'));
- const sql=statements.join(' ').replace(/\\s+/g,' ');
+ const sql=statements.join(' ');
  for(const table of ['users','auth_sessions','projects','sessions','runs','messages']){
   assert.ok(sql.toLowerCase().includes('create table if not exists '+table+' ('),`migration must create ${table}`);
  }
