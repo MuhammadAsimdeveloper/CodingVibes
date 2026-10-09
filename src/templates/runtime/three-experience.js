@@ -165,8 +165,15 @@ async function start(){
     }
 
     let tourTimer=null,cameraMotionFrame=0;
+    let activeRecorder=null,recordingTimer=null,recordingStream=null;
     function stopCameraMotion(){
       if(cameraMotionFrame){cancelAnimationFrame(cameraMotionFrame);cameraMotionFrame=0;}
+    }
+    function stopRecording(){
+      if(recordingTimer){clearTimeout(recordingTimer);recordingTimer=null;}
+      if(activeRecorder&&activeRecorder.state!=='inactive'){try{activeRecorder.stop()}catch{}}
+      recordingStream?.getTracks().forEach(track=>track.stop());
+      recordingStream=null;
     }
     function moveCamera(position,target=new Vector3(0,1,0),seconds=2){
       stopCameraMotion();
@@ -198,20 +205,46 @@ async function start(){
 
     function recordTour(){
       if(!canvas.captureStream||!window.MediaRecorder){if(fallback)fallback.textContent='Tour recording is not supported in this browser.';return}
+      if(activeRecorder&&activeRecorder.state!=='inactive'){if(fallback)fallback.textContent='A tour recording is already in progress.';return}
       const stream=canvas.captureStream(30),chunks=[];
-      let options={mimeType:'video/webm'};
-      try{const candidates=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];for(const t of candidates)if(MediaRecorder.isTypeSupported(t)){options={mimeType:t};break}}catch{}
-      const recorder=new MediaRecorder(stream,options);
+      const candidates=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+      let mimeType='';
+      try{mimeType=candidates.find(type=>MediaRecorder.isTypeSupported(type))||''}catch{}
+      let recorder;
+      try{recorder=new MediaRecorder(stream,mimeType?{mimeType}:{})}catch{
+        stream.getTracks().forEach(track=>track.stop());
+        if(fallback)fallback.textContent='Tour recording could not start in this browser.';
+        return;
+      }
+      activeRecorder=recorder;recordingStream=stream;
       recorder.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+      recorder.onerror=()=>{
+        if(recordingTimer){clearTimeout(recordingTimer);recordingTimer=null;}
+        stream.getTracks().forEach(track=>track.stop());
+        if(recordingStream===stream)recordingStream=null;
+        if(activeRecorder===recorder)activeRecorder=null;
+        if(fallback)fallback.textContent='Tour recording stopped because the browser reported an error.';
+      };
       recorder.onstop=()=>{
-        const blob=new Blob(chunks,{type:'video/webm'});
+        if(recordingTimer){clearTimeout(recordingTimer);recordingTimer=null;}
+        stream.getTracks().forEach(track=>track.stop());
+        if(recordingStream===stream)recordingStream=null;
+        if(activeRecorder===recorder)activeRecorder=null;
+        if(!chunks.length)return;
+        const blob=new Blob(chunks,{type:recorder.mimeType||'video/webm'});
         if(recordingUrl)URL.revokeObjectURL(recordingUrl);recordingUrl=URL.createObjectURL(blob);
         const a=document.createElement('a');a.href=recordingUrl;a.download='build-vibe-3d-tour.webm';a.textContent='Download recorded tour';a.className='download-link';
         stage?.append(a);
+        if(fallback)fallback.textContent='Tour recording ready to download.';
       };
-      recorder.start();
-      playTour();
-      setTimeout(()=>recorder.stop(),9000);
+      try{recorder.start();playTour();recordingTimer=setTimeout(()=>{if(recorder.state!=='inactive')recorder.stop()},9000)}
+      catch{
+        if(recordingTimer){clearTimeout(recordingTimer);recordingTimer=null;}
+        stream.getTracks().forEach(track=>track.stop());
+        if(recordingStream===stream)recordingStream=null;
+        if(activeRecorder===recorder)activeRecorder=null;
+        if(fallback)fallback.textContent='Tour recording could not start in this browser.';
+      }
     }
 
     document.querySelector('#tourPlay')?.addEventListener('click',playTour);
@@ -269,18 +302,18 @@ async function start(){
       animationFrame=requestAnimationFrame(render);
     };
     const stopRender=()=>{if(animationFrame){cancelAnimationFrame(animationFrame);animationFrame=0;}};
-    const handleVisibility=()=>{if(document.hidden){clearInterval(tourTimer);stopCameraMotion();stopRender();}else scheduleRender();};
+    const handleVisibility=()=>{if(document.hidden){clearInterval(tourTimer);stopCameraMotion();stopRecording();stopRender();}else scheduleRender();};
     document.addEventListener('visibilitychange',handleVisibility);
     if('IntersectionObserver' in window){
       sceneObserver=new IntersectionObserver(entries=>{
         sceneVisible=entries.some(entry=>entry.isIntersecting);
-        if(sceneVisible)scheduleRender();else{clearInterval(tourTimer);stopCameraMotion();stopRender();}
+        if(sceneVisible)scheduleRender();else{clearInterval(tourTimer);stopCameraMotion();stopRecording();stopRender();}
       },{threshold:0.01});
       sceneObserver.observe(stage||canvas);
     }
     controls.addEventListener('change',scheduleRender);
     addEventListener('beforeunload',()=>{
-      disposed=true;stopCameraMotion();stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
+      disposed=true;stopRecording();stopCameraMotion();stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
       controls.removeEventListener('change',scheduleRender);document.removeEventListener('visibilitychange',handleVisibility);
       removeEventListener('resize',resize);if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);if(localImageUrl)URL.revokeObjectURL(localImageUrl);if(recordingUrl)URL.revokeObjectURL(recordingUrl);
       restoreAppliedMaterials(loadedModel||group);if(loadedModel){scene.remove(loadedModel);disposeModelResources(loadedModel);loadedModel=null;}if(attachedTexture)attachedTexture.dispose();
