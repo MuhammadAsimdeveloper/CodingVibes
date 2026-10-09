@@ -119,8 +119,8 @@ test('generated sites apply validated project design tokens and allowed text edi
   assert.match(css,/--cv-content-width:1040px/);
   assert.match(css,/--cv-radius-md:18px/);
   assert.match(css,/--cv-motion-duration:500ms/);
-  assert.match(css,/h1, h2, h3\\{color:#ff00aa;font-weight:700\\}/);
-  assert.match(css,/body\\{background-color:#445566\\}/);
+  assert.ok(css.includes('h1, h2, h3{color:#ff00aa;font-weight:700}'));
+  assert.ok(css.includes('body{background-color:#445566}'));
   assert.doesNotMatch(css,/body;body/);
   assert.doesNotMatch(css,/javascript:alert/);
 });
