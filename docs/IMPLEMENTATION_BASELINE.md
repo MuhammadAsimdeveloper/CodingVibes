@@ -61,3 +61,8 @@ Do not convert environment-dependent BLOCKED/NOT_CONFIGURED states into fake PAS
 - Three.js walkthrough video previews now allow only MP4/WebM/Ogg MIME types, reject empty files and files over 250 MiB, check browser playback support, and create the preview Blob with the validated media type.
 - The regression test was committed first and failed before implementation as expected. The implementation commit passed Build Vibe CI, CodeQL and Dependency Review. The launch checks are repository CI evidence only, not production deployment evidence.
 - The PR remains open and unmerged. Production services, credentials, DNS/TLS, monitoring, backup/restore and real native/deployment artifacts remain environment-dependent blockers.
+
+
+## Browser image optimizer checkpoint — 2026-10-10
+
+Studio's Content & data tab now uses the canonical local Canvas/ImageBitmap optimizer from public/tool-fabric-browser.js. The Node entry point re-exports the same implementation. Supported raster inputs are PNG/JPEG/WebP/GIF/AVIF/BMP; limits are 25 MiB input, 50 MP decoded pixels and 64–8192 px output dimension. Unsupported encoders, SVG, empty files and over-limit files fail explicitly; source bytes are not uploaded. See docs/TOOL_FABRIC.md and test/image-optimizer-ui.test.js. Verification for the current feature-and-docs head is pending and is recorded only after GitHub Actions completes.

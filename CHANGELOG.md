@@ -12,6 +12,7 @@
 All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
+- Added a private browser-local image optimizer to Studio with raster MIME validation, dimension/size limits, explicit encoder capability handling and download output.
 
 - Added bounded, local-only Tool Fabric pipeline composition with safe prior-output references, preflight validation, output budgets, fail-fast results, authenticated API access and content-free audit metadata.
 

@@ -20,7 +20,7 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `seo.audit` | local | Static inspection of supplied HTML; it does not crawl a URL |
 | `web.performance.audit` | local | Scores supplied numeric browser/Lighthouse metrics; without metrics returns NEEDS_BROWSER_METRICS |
 | `web.accessibility.audit` | local | Static HTML checks; it does not replace browser, screen-reader or human testing |
-| `image.optimize` | browser | Separate Canvas/ImageBitmap adapter; Node invocation returns BROWSER_REQUIRED |
+| `image.optimize` | browser | Studio Content & data optimizer; local Canvas/ImageBitmap only; raster input allowlist, 25 MiB input cap and 50 MP decoded-pixel ceiling; Node invocation returns BROWSER_REQUIRED |
 | `json.format` | local | JSON parsing, validation and deterministic pretty printing |
 | `json.typescript` | local | Deterministic interface generation from JSON values |
 | `api.test` | adapter | Produces a redacted request plan; live outbound HTTP is NOT_CONFIGURED and no request is sent |
@@ -85,3 +85,12 @@ Example request:
 ```
 
 The current boundary is deliberately local-only. Adding live network or browser actions to a pipeline requires their own governed runner, risk/confirmation policy and separate verification evidence; pipeline composition does not bypass those boundaries.
+
+
+## Studio image optimizer
+
+The authenticated Studio Content & data tab exposes the `image.optimize` browser-local capability. Choose a raster image, output format (WebP/JPEG/PNG), quality (10–100%), and maximum dimension (64–8192 px), then optimize and download the resulting file. Supported input MIME types are PNG, JPEG, WebP, GIF, AVIF and BMP; SVG is intentionally rejected. Inputs must be non-empty and no larger than 25 MiB, and decoded images are capped at 50 megapixels.
+
+The single canonical implementation is served from `public/tool-fabric-browser.js`; `src/tool-fabric/browser.js` re-exports it for Node-side verification. No image bytes are uploaded. The adapter rejects an encoder that returns a different MIME type than requested rather than giving the user a mislabeled extension. Object URLs created for previews are revoked when replaced and when the Studio page is left. Unsupported browser APIs or image formats produce explicit errors instead of simulated success.
+
+Verification lives in `test/image-optimizer-ui.test.js`: it covers resize/output metadata, non-image/SVG/empty/oversized inputs, unsupported output encoders, no network calls, Studio control accessibility, and local-only UI wiring.

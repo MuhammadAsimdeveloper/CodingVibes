@@ -68,3 +68,8 @@ The earlier audit was written against c4949625 and must not be read as the curre
 The implementation commit fab79897aca9ed55992635e61d01b3ea7ec252ef passed Build Vibe CI, CodeQL and Dependency Review. CI covered unit tests, coverage, static/release checks, SEO, server and browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security preflight, scaleout and launch readiness. The diagnostic CodeQL workflow succeeded without disabling findings. A green CodeQL workflow run is not a guarantee that every historical alert in the repository alert history has been dismissed.
 
 The PR remains open and unmerged. Repository CI does not prove production deployment, native binaries, live MiroFish, managed database/storage/backup services, production secrets, domain/TLS or live third-party credentials. The next engineering priority remains a real governed Tool Fabric browser adapter or a concrete unfinished P1 utility, chosen only after checking the canonical contracts and available test runtime.
+
+
+## Follow-up — local image optimizer integration (2026-10-10)
+
+The P1 image.optimize tool now has a usable Studio path. Controls are in Content & data; the browser adapter stays local, supports bounded raster input only and reports format failures explicitly. Its source is shared through public/tool-fabric-browser.js, with src/tool-fabric/browser.js as the Node entrypoint. Test-first regression coverage is in test/image-optimizer-ui.test.js. The final feature-and-docs commit still requires a green full CI, CodeQL and Dependency Review run; no production deployment is claimed.

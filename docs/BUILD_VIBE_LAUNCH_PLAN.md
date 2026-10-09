@@ -957,3 +957,19 @@ The source-side audit, module decisions and test changes do not mark unavailable
 - The PR is still open and not merged or deployed. Live infrastructure, configured third-party providers, native artifact verification, and production deployment remain separate gates.
 
 **Next unfinished Tool Fabric work:** review the P1 local utilities and the browser adapters marked BROWSER_REQUIRED / NEEDS_BROWSER_METRICS in docs/TOOL_FABRIC.md; implement the highest-value adapter only when its real governed runtime and tests are available. Do not treat a declared contract as execution evidence.
+
+
+## 44. TDD checkpoint — integrated browser-local image optimizer (2026-10-10)
+
+**Roadmap phase:** Tool/Agent Fabric P1 asset pipeline. This change completes a concrete user path for the existing `image.optimize` contract rather than adding a duplicate optimizer or remote upload service.
+
+- Added accessible image format, quality and max-dimension controls to Studio's Content & data tab; optimized output can be previewed and downloaded without uploading the source file.
+- Reused the existing Canvas/ImageBitmap adapter as a single canonical browser-served module at `public/tool-fabric-browser.js`; the Node-side `src/tool-fabric/browser.js` entry point re-exports the same implementation.
+- Input policy: PNG/JPEG/WebP/GIF/AVIF/BMP only, non-empty files, 25 MiB maximum input, 50 megapixels maximum decoded dimensions, quality 0.1–1 and dimensions 64–8192 px. SVG is blocked; an encoder MIME mismatch returns `BROWSER_REQUIRED` instead of producing a mislabeled file.
+- Preview object URLs are replaced/revoked safely and cleaned on page exit; processing stays client-side and does not call an upload API.
+- Regression tests were added before the UI/edge-case fixes. The first test-only CI run exposed unsupported-encoder and missing UI behavior; later tests exposed the missing zero-byte guard and a malformed picker assertion, both corrected before the final verification run.
+- Files changed for this checkpoint: `public/index.html`, `public/studio.js`, `public/app-polish.css`, `public/tool-fabric-browser.js`, `src/tool-fabric/browser.js`, `package.json`, `test/image-optimizer-ui.test.js`.
+
+**Verification status:** waiting for the full CI, CodeQL and Dependency Review result on the final feature-and-documentation revision. Do not mark this stage fully verified until that exact head passes all gates. The UI is a local asset utility, not proof that an uploaded image has been attached to a generated product or published.
+
+**Next unfinished stage:** add a governed, testable browser adapter for `web.performance.audit` only when the runner can supply real browser/Lighthouse measurements; until then it must continue to report `NEEDS_BROWSER_METRICS`. Then proceed through remaining P1 utilities with one distinct behavior contract and test suite at a time.
