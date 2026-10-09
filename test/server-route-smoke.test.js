@@ -72,6 +72,49 @@ test('server public and authenticated route smoke covers launch control plane',a
     assert.ok(r.response.status<500,p+' status '+r.response.status);
   }
 
+  const scenePath='/api/projects/'+pid+'/scene';
+  const unauthenticatedScene=await req(scenePath);
+  assert.equal(unauthenticatedScene.response.status,401);
+
+  const emptyScene=await req(scenePath,{headers:{cookie:sessionCookie}});
+  assert.equal(emptyScene.response.status,200);
+  assert.equal(emptyScene.body.scene,null);
+  assert.equal(emptyScene.body.revision,0);
+
+  const scene={
+    schemaVersion:1,
+    id:'route-smoke-scene',
+    name:'Route smoke scene',
+    nodes:[{id:'hero',type:'box',name:'Hero',color:'#8b7dff',visible:true,position:[0,1,0]}]
+  };
+  const invalidScene=await req(scenePath,{method:'PUT',headers:{cookie:sessionCookie},body:JSON.stringify({scene:{schemaVersion:1,id:'invalid',name:'Invalid',nodes:[{id:'bad',type:'unknown'}]},expectedRevision:0})});
+  assert.equal(invalidScene.response.status,400);
+  assert.equal(invalidScene.body.error,'invalid_scene_document');
+
+  const missingRevision=await req(scenePath,{method:'PUT',headers:{cookie:sessionCookie},body:JSON.stringify({scene})});
+  assert.equal(missingRevision.response.status,400);
+  assert.equal(missingRevision.body.error,'expected_revision_must_be_nonnegative_integer');
+
+  const sceneSave=await req(scenePath,{method:'PUT',headers:{cookie:sessionCookie},body:JSON.stringify({scene,expectedRevision:0})});
+  assert.equal(sceneSave.response.status,200);
+  assert.equal(sceneSave.body.revision,1);
+  assert.equal(sceneSave.body.scene.nodes[0].id,'hero');
+
+  const loadedScene=await req(scenePath,{headers:{cookie:sessionCookie}});
+  assert.equal(loadedScene.response.status,200);
+  assert.equal(loadedScene.body.revision,1);
+  assert.equal(loadedScene.body.scene.nodes[0].color,'#8b7dff');
+
+  const staleScene=structuredClone(scene);
+  staleScene.nodes[0].color='#ff0000';
+  const staleSave=await req(scenePath,{method:'PUT',headers:{cookie:sessionCookie},body:JSON.stringify({scene:staleScene,expectedRevision:0})});
+  assert.equal(staleSave.response.status,409);
+  assert.equal(staleSave.body.error,'scene_revision_conflict');
+  assert.equal(staleSave.body.currentRevision,1);
+
+  const sceneAfterConflict=await req(scenePath,{headers:{cookie:sessionCookie}});
+  assert.equal(sceneAfterConflict.body.scene.nodes[0].color,'#8b7dff');
+
   const designEdit=await req('/api/projects/'+pid+'/design/intent',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({request:'make the heading blue, bigger, centered and bold'})});
   assert.equal(designEdit.response.status,200);
   assert.ok(designEdit.body.applied.length>=4);
