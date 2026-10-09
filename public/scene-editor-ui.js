@@ -131,7 +131,7 @@ if (panel) {
     $('#sceneUndo').disabled = !state.canUndo;
     $('#sceneRedo').disabled = !state.canRedo;
     const statusNode = $('#sceneEditorStatus');
-    if (statusNode && !statusNode.dataset.kind) statusNode.textContent = sceneProjectId
+    if (statusNode && statusNode.dataset.kind !== 'error') statusNode.textContent = sceneProjectId
       ? (sceneDirty ? 'Unsaved project scene changes · revision ' + sceneSavedRevision : 'Project scene · revision ' + sceneSavedRevision)
       : (importedDocument ? 'Imported scene · local session only · export to preserve changes' : 'Starter scene · local session only · export to preserve changes');
   }
