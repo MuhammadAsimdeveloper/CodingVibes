@@ -86,6 +86,10 @@ test('generated 3D website exposes accessible view controls and bounded renderin
   assert.ok(runtime.includes("prefers-reduced-motion: reduce"));
   assert.ok(runtime.includes('new TextureLoader()'));
   assert.ok(runtime.includes('applyTextureToObject(loadedModel,attachedTexture)'));
+  assert.ok(runtime.includes('function disposeModelResources(root)'),'replaced GLTF resources should be disposed');
+  assert.ok(runtime.includes('let modelLoadGeneration=0'),'stale concurrent model loads should be invalidated');
+  assert.ok(runtime.includes('modelLoadGeneration!==loadGeneration'),'late model loads must not replace the latest selection');
+  assert.ok(runtime.includes('finally{if(ownedUrl)URL.revokeObjectURL(ownedUrl)}'),'temporary model URLs must be revoked on success and failure');
   assert.ok(runtime.includes('restoreAppliedMaterials(loadedModel||group)'));
   assert.ok(runtime.includes('sceneObserver=new IntersectionObserver'));
   assert.ok(runtime.includes("document.addEventListener('visibilitychange',handleVisibility)"));
