@@ -72,6 +72,17 @@ test('server public and authenticated route smoke covers launch control plane',a
     assert.ok(r.response.status<500,p+' status '+r.response.status);
   }
 
+  const designEdit=await req('/api/projects/'+pid+'/design/intent',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({request:'make the heading blue, bigger, centered and bold'})});
+  assert.equal(designEdit.response.status,200);
+  assert.ok(designEdit.body.applied.length>=4);
+  assert.equal(designEdit.body.designSystem.system.visualEdits.length,designEdit.body.applied.length);
+  assert.match(designEdit.body.message,/next build|Rebuild/i);
+  const unsupportedEdit=await req('/api/projects/'+pid+'/design/intent',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({request:'write a newsletter'})});
+  assert.equal(unsupportedEdit.response.status,422);
+  const savedDesign=await req('/api/projects/'+pid+'/design',{headers:{cookie:sessionCookie}});
+  assert.equal(savedDesign.response.status,200);
+  assert.ok(savedDesign.body.designSystem.system.visualEdits.length>0);
+
   const blueprint=await req('/api/builder/blueprint',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({request:'Build a responsive landing page for a small SaaS product with SEO metadata.'})});
   assert.equal(blueprint.response.status,200);
   const analytics=await req('/api/analytics/events',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({event:'route-smoke',properties:{source:'ci'}})});
