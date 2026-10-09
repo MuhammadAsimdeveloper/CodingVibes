@@ -46,6 +46,13 @@ export class SceneEditorSession {
     return { ok: true, status: hadPreview ? 'preview_cancelled' : 'no_pending_preview', session: this.getState() };
   }
 
+  applyOperation(operation) {
+    this.#pending = null;
+    const result = this.#history.applyOperation(operation);
+    if (result.ok) this.#revision += 1;
+    return { ...result, session: this.getState() };
+  }
+
   undo() {
     this.#pending = null;
     const result = this.#history.undo();
