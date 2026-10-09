@@ -105,7 +105,7 @@ export function validateAssetContent({name,mime,body}={}){
   if(!gate.ok)return gate;
   const ext=gate.extension;
   let valid=false;
-  if(ext==='png')valid=starts(body,[0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]);
+  if(ext==='png')valid=starts(body,[0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])&&body.length>=33&&body.readUInt32BE(8)===13&&startsText(body.subarray(12,16),'IHDR');
   else if(ext==='jpg'||ext==='jpeg')valid=starts(body,[0xff,0xd8,0xff]);
   else if(ext==='gif')valid=startsText(body,'GIF87a')||startsText(body,'GIF89a');
   else if(ext==='webp')valid=startsText(body,'RIFF')&&startsText(body.subarray(8),'WEBP');
@@ -119,7 +119,7 @@ export function validateAssetContent({name,mime,body}={}){
   else if(ext==='woff2')valid=startsText(body,'wOF2');
   else if(ext==='ttf')valid=starts(body,[0,1,0,0]);
   else if(ext==='otf')valid=startsText(body,'OTTO');
-  else if(ext==='glb')valid=startsText(body,'glTF')&&body.length>=12&&body.readUInt32LE(8)<=body.length;
+  else if(ext==='glb')valid=startsText(body,'glTF')&&body.length>=20&&body.readUInt32LE(4)===2&&body.readUInt32LE(8)===body.length;
   else if(ext==='gltf'){
     try{
       const parsed=JSON.parse(body.toString('utf8'));
