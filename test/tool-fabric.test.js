@@ -293,7 +293,7 @@ test('P1 local text utilities publish explicit contracts before execution is ena
 });
 
 test('text.count counts Unicode code points, UTF-8 bytes, words, lines and paragraphs', async () => {
-  const result = await runTool('text.count', {text:'Build 🌱\\nVibe'});
+  const result = await runTool('text.count', {text:'Build 🌱\nVibe'});
   assert.equal(result.status, 'COMPLETED');
   assert.deepEqual(result.output, {
     characters: 12,
@@ -317,12 +317,12 @@ test('text.case.convert supports deterministic named casing modes', async () => 
 });
 
 test('text.lines.sort and text.duplicates.remove preserve documented order and comparison rules', async () => {
-  const sorted=await runTool('text.lines.sort',{text:'beta\\nAlpha\\ngamma',order:'asc',caseSensitive:false});
+  const sorted=await runTool('text.lines.sort',{text:'beta\nAlpha\ngamma',order:'asc',caseSensitive:false});
   assert.equal(sorted.status,'COMPLETED');
-  assert.equal(sorted.output.text,'Alpha\\nbeta\\ngamma');
-  const unique=await runTool('text.duplicates.remove',{text:'Apple\\napple\\nPear\\nApple',caseSensitive:false});
+  assert.equal(sorted.output.text,'Alpha\nbeta\ngamma');
+  const unique=await runTool('text.duplicates.remove',{text:'Apple\napple\nPear\nApple',caseSensitive:false});
   assert.equal(unique.status,'COMPLETED');
-  assert.equal(unique.output.text,'Apple\\nPear');
+  assert.equal(unique.output.text,'Apple\nPear');
   assert.equal(unique.output.removedCount,2);
   assert.equal(unique.output.lineCount,2);
 });
@@ -336,22 +336,22 @@ test('text.replace treats the search text literally and caps the resulting outpu
 });
 
 test('text.diff returns a bounded line diff without interpreting content as code', async () => {
-  const result=await runTool('text.diff',{before:'one\\ntwo\\n<script>alert(1)</script>',after:'one\\nthree\\n<script>alert(1)</script>\\nfour'});
+  const result=await runTool('text.diff',{before:'one\ntwo\n<script>alert(1)</script>',after:'one\nthree\n<script>alert(1)</script>\nfour'});
   assert.equal(result.status,'COMPLETED');
   assert.equal(result.output.additions,2);
   assert.equal(result.output.removals,1);
-  assert.match(result.output.diff,/\\+ three/);
-  assert.match(result.output.diff,/\\- two/);
-  assert.match(result.output.diff,/\\+ four/);
-  const tooLarge=await runTool('text.diff',{before:Array(501).fill('a').join('\\n'),after:'small'});
+  assert.match(result.output.diff,/\+ three/);
+  assert.match(result.output.diff,/\- two/);
+  assert.match(result.output.diff,/\+ four/);
+  const tooLarge=await runTool('text.diff',{before:Array(501).fill('a').join('\n'),after:'small'});
   assert.equal(tooLarge.status,'INPUT_TOO_LARGE');
 });
 
 test('text.whitespace.clean and text.slug.generate normalize content with explicit modes', async () => {
-  const cleaned=await runTool('text.whitespace.clean',{text:'  Hello  \\r\\n\\r\\n\\r\\n  world  \\r\\n',mode:'normalize'});
+  const cleaned=await runTool('text.whitespace.clean',{text:'  Hello  \r\n\r\n\r\n  world  \r\n',mode:'normalize'});
   assert.equal(cleaned.status,'COMPLETED');
-  assert.equal(cleaned.output.text,'Hello\\n\\nworld');
-  assert.equal((await runTool('text.whitespace.clean',{text:'a   b\\t c',mode:'collapse'})).output.text,'a b c');
+  assert.equal(cleaned.output.text,'Hello\n\nworld');
+  assert.equal((await runTool('text.whitespace.clean',{text:'a   b\t c',mode:'collapse'})).output.text,'a b c');
   assert.equal((await runTool('text.slug.generate',{text:'Crème Brûlée & Build Vibe!'})).output.slug,'creme-brulee-build-vibe');
   assert.equal((await runTool('text.slug.generate',{text:'!!!'})).status,'INVALID_INPUT');
 });
