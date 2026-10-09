@@ -86,3 +86,26 @@ test('Three.js adapter maps image asset URLs to textures and accepts light nodes
   renderer.dispose();
   assert.equal(canvas.listeners.size, 0);
 });
+
+
+test('Three.js adapter loads uploaded GLB models and ignores stale model callbacks', async () => {
+  const canvas = fakeCanvas();
+  const modelUrls = [];
+  class FakeGLTFLoader {
+    load(url, onLoad) {
+      modelUrls.push(url);
+      queueMicrotask(() => onLoad({ scene: new Group() }));
+    }
+  }
+  const renderer = createScenePreviewRenderer({ canvas, THREE: fakeThree, GLTFLoader: FakeGLTFLoader });
+  renderer.render({
+    schemaVersion: 1, id: 'model-scene', name: 'Model scene', nodes: [
+      { id: 'model-1', type: 'model', name: 'Product model', assetUrl: '/api/projects/p1/assets/a1/preview' }
+    ]
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(modelUrls, ['/api/projects/p1/assets/a1/preview']);
+  renderer.render({ schemaVersion: 1, id: 'empty-scene', name: 'Empty scene', nodes: [] });
+  renderer.dispose();
+  assert.equal(canvas.listeners.size, 0);
+});
