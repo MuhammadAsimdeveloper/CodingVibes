@@ -19,7 +19,7 @@ async function start(){
     const contentHotspots=Array.isArray(experienceRecord?.hotspots)?experienceRecord.hotspots:[];
     const contentModel=featuredProduct?.model?.url||featuredProperty?.model?.url||featuredScene?.model?.url||'';
     const contentVideo=featuredProduct?.video?.url||featuredProperty?.video?.url||featuredScene?.video?.url||'';
-    const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3,Box3}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
+    const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3,Box3,TextureLoader,SRGBColorSpace}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
       import(THREE_URL), import(CTRL_URL), import(GLTF_URL)
     ]);
     const scene=new Scene();
@@ -77,13 +77,59 @@ async function start(){
       const hero=new Mesh(new BoxGeometry(4,4,4),makeMat(0x6a7dff,.38));hero.position.y=2;group.add(hero);
     }
 
-    let loadedModel=null;
+    let loadedModel=null,attachedTexture=null;
+    const originalMaterials=new WeakMap(),appliedMaterials=new WeakMap();
+    function restoreAppliedMaterials(root){
+      root?.traverse(node=>{
+        if(!node.isMesh||!appliedMaterials.has(node))return;
+        const replacement=appliedMaterials.get(node),materials=Array.isArray(replacement)?replacement:[replacement];
+        materials.forEach(material=>material?.dispose?.());
+        node.material=originalMaterials.get(node);
+        appliedMaterials.delete(node);
+      });
+    }
+    function applyTextureToObject(root,texture){
+      if(!root)return 0;
+      let count=0;
+      root.traverse(node=>{
+        if(!node.isMesh)return;
+        if(!originalMaterials.has(node))originalMaterials.set(node,node.material);
+        const original=originalMaterials.get(node),materials=Array.isArray(original)?original:[original];
+        const replacements=materials.map(material=>{
+          const clone=material.clone();clone.map=texture;if(clone.color?.set)clone.color.set(0xffffff);clone.needsUpdate=true;return clone;
+        });
+        appliedMaterials.set(node,Array.isArray(original)?replacements:replacements[0]);
+        node.material=Array.isArray(original)?replacements:replacements[0];
+        count++;
+      });
+      return count;
+    }
+    function applyImageTexture(){
+      if(!localImageUrl){if(fallback)fallback.textContent='Load an image first, then apply it as a 3D texture.';return;}
+      const imageUrl=localImageUrl;
+      if(fallback)fallback.textContent='Applying image texture to the 3D scene…';
+      new TextureLoader().load(imageUrl,texture=>{
+        if(disposed||imageUrl!==localImageUrl){texture.dispose();return;}
+        const root=loadedModel||group;
+        restoreAppliedMaterials(root);
+        if(attachedTexture)attachedTexture.dispose();
+        texture.colorSpace=SRGBColorSpace;
+        texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+        attachedTexture=texture;
+        const count=applyTextureToObject(root,texture);
+        if(fallback)fallback.textContent=count?'Applied the image texture to '+count+' 3D mesh(es).':'This 3D scene has no compatible mesh to texture.';
+        scheduleRender();
+      },undefined,()=>{if(fallback)fallback.textContent='Image texture could not be loaded. Try a PNG, JPEG or WebP image.';});
+    }
     async function loadModel(source,label='model'){
       try{
+        restoreAppliedMaterials(loadedModel||group);
         const url=typeof source==='string'?source:URL.createObjectURL(source);const object=await new GLTFLoader().loadAsync(url);if(typeof source!=='string')setTimeout(()=>URL.revokeObjectURL(url),0);
         if(loadedModel)scene.remove(loadedModel);loadedModel=object.scene;loadedModel.position.y=0;
         const box3=new Box3().setFromObject(loadedModel);const size=box3.getSize(new Vector3()),maxSide=Math.max(size.x,size.y,size.z)||1;loadedModel.scale.setScalar(6/maxSide);loadedModel.position.y=Math.max(0,-box3.min.y*loadedModel.scale.y);scene.add(loadedModel);
+        if(attachedTexture)applyTextureToObject(loadedModel,attachedTexture);
         if(fallback)fallback.textContent='Loaded '+label;
+        scheduleRender();
       }catch(e){if(fallback)fallback.textContent='Model load failed; showing procedural fallback.';console.error(e)}
     }
 
@@ -133,6 +179,7 @@ async function start(){
 
     document.querySelector('#tourPlay')?.addEventListener('click',playTour);
     document.querySelector('#tourRecord')?.addEventListener('click',recordTour);
+    document.querySelector('#applyExperienceTexture')?.addEventListener('click',applyImageTexture);
     const rotateView=angle=>{controls.rotateLeft(angle);controls.update();scheduleRender();};
     document.querySelector('#viewLeft')?.addEventListener('click',()=>rotateView(Math.PI/12));
     document.querySelector('#viewRight')?.addEventListener('click',()=>rotateView(-Math.PI/12));
@@ -150,9 +197,12 @@ async function start(){
       const file=e.target.files?.[0];if(!file)return;
       const allowed=['image/png','image/jpeg','image/webp','image/avif','image/gif'];
       if(!allowed.includes(file.type)||file.size>20*1024*1024){if(fallback)fallback.textContent='Choose a PNG, JPEG, WebP, AVIF or GIF image smaller than 20 MB.';e.target.value='';return;}
+      restoreAppliedMaterials(loadedModel||group);
+      if(attachedTexture){attachedTexture.dispose();attachedTexture=null;}
       if(localImageUrl)URL.revokeObjectURL(localImageUrl);localImageUrl=URL.createObjectURL(file);
       const img=document.querySelector('#experienceImage');if(img){img.src=localImageUrl;img.alt='Preview image: '+file.name;img.hidden=false;}
-      if(fallback)fallback.textContent='Image attached to the 3D experience: '+file.name;
+      const applyButton=document.querySelector('#applyExperienceTexture');if(applyButton)applyButton.disabled=false;
+      if(fallback)fallback.textContent='Image attached. Apply image texture to update the 3D scene.';
     });
     document.querySelector('#videoInput')?.addEventListener('change',e=>{
       const file=e.target.files?.[0];if(!file)return;
@@ -196,6 +246,7 @@ async function start(){
       disposed=true;stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
       controls.removeEventListener('change',scheduleRender);document.removeEventListener('visibilitychange',handleVisibility);
       removeEventListener('resize',resize);if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);if(localImageUrl)URL.revokeObjectURL(localImageUrl);if(recordingUrl)URL.revokeObjectURL(recordingUrl);
+      restoreAppliedMaterials(loadedModel||group);if(attachedTexture)attachedTexture.dispose();
       renderer.dispose();controls.dispose?.();
     },{once:true});
     scheduleRender();
