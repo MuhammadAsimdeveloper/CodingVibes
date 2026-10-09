@@ -18,10 +18,18 @@ test('generated Three.js runtime loads the published saved-scene document', () =
   assert.match(runtime, /savedSceneVideos\.clear\(\)/);
 });
 
-test('deployment sync writes validated scene documents and strips local blob asset URLs', () => {
+test('deployment sync writes validated scene documents and preserves persistent asset files', () => {
   assert.match(server, /const scenePath=path\.join\(workspace,'public','content','scene\.json'\)/);
   assert.match(server, /validateSceneDocument\(saved\.scene\)/);
   assert.match(server, /node\.assetUrl\.startsWith\('blob:'\)\)delete node\.assetUrl/);
   assert.match(server, /fs\.writeFileSync\(scenePath,JSON\.stringify\(published,null,2\),'utf8'\)/);
   assert.match(server, /else fs\.rmSync\(scenePath,\{force:true\}\)/);
+  assert.match(server, /async function syncDeploymentContent\(/);
+  assert.match(server, /store\.listProjectAssets\(projectId,userId\)/);
+  assert.match(server, /hashBuffer\(desired\)/);
+  assert.equal(server.includes("fs.rmSync(dst,{recursive:true,force:true})"), false, 'sync must merge, not delete the whole output assets directory');
+  assert.match(runtime, /function validAssetUrl\(value\)/);
+  assert.match(runtime, /value\.includes\('\.\.'\)/);
+  assert.match(runtime, /\/assets\//);
+  assert.match(server, /validateAssetContent\(\{name,mime,body\}\)/);
 });
