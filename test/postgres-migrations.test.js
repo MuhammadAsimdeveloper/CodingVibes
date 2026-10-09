@@ -8,6 +8,7 @@ function migrationHarness(){
  const client={
   async query(sql,params=[]){
    statements.push(sql);
+   if(sql.startsWith('SELECT version FROM codingvibes_schema_migrations'))return {rowCount:versions.has(params[0])?1:0,rows:versions.has(params[0])?[{version:params[0]}]:[]};
    if(sql.startsWith('INSERT INTO codingvibes_schema_migrations'))versions.add(params[0]);
    return {rowCount:1,rows:[]};
   }
@@ -40,15 +41,19 @@ test('PostgreSQL migrations create core auth, project, session, run and chat per
  assert.ok(sql.includes('estimated_cost_usd REAL'));
  assert.ok(sql.includes('idx_project_assets_project'));
  assert.equal(result.schema,'codingvibes');
+ assert.deepEqual(result.applied,['0001_scaleout','0002_core_persistence','0003_application_tables']);
 });
 
 test('PostgreSQL core migration is recorded once and skipped on subsequent startup',async()=>{
  const {db,versions,statements}=migrationHarness();
- await ensurePostgresMigrations(db);
+ const first=await ensurePostgresMigrations(db);
  const firstCount=statements.filter(x=>x.startsWith('CREATE TABLE IF NOT EXISTS users')).length;
- await ensurePostgresMigrations(db);
+ const second=await ensurePostgresMigrations(db);
  const secondCount=statements.filter(x=>x.startsWith('CREATE TABLE IF NOT EXISTS users')).length;
  assert.equal(firstCount,1);
  assert.equal(secondCount,1);
  assert.equal(versions.size,3);
+ assert.deepEqual(first.applied,['0001_scaleout','0002_core_persistence','0003_application_tables']);
+ assert.deepEqual(second.applied,[]);
+ assert.equal(statements.filter(x=>x.startsWith('SELECT pg_advisory_xact_lock')).length,6);
 });
