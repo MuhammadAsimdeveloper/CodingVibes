@@ -1,5 +1,5 @@
-import { SceneEditorSession } from '../src/scene/scene-editor-session.js';
-import { SCENE_SCHEMA_VERSION, validateSceneDocument } from '../src/scene/scene-document.js';
+import { SceneEditorSession } from './scene/scene-editor-session.js';
+import { SCENE_SCHEMA_VERSION, validateSceneDocument } from './scene/scene-document.js';
 
 const $ = (selector) => document.querySelector(selector);
 const panel = $('#sceneEditor');
