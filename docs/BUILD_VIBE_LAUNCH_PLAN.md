@@ -1065,3 +1065,12 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Connected the Design Mode scene editor to the active project: it can load a saved scene and explicitly save to the project. Unsaved edits are tracked locally; revision conflicts require a reload before retrying.
 
 **Scope boundary:** scene document persistence is currently implemented on the SQLite Store. It does not mean the overall primary PostgreSQL Store has been migrated or wired. Scene data is not yet automatically injected into the generated site's `three-experience.js` runtime, and asset uploads remain a separate durable storage path. Those remain required before calling this a complete production scene workflow.
+
+
+## 48. Project scene API end-to-end regression coverage (2026-10-09)
+
+- Extended the authenticated server route smoke test to exercise the project scene API through HTTP, not just the SQLite Store.
+- Covers unauthenticated read denial, the empty-project revision contract, schema validation rejection, required optimistic-concurrency revision, successful save/load round-trip, and HTTP 409 on stale writes.
+- Verifies that a rejected stale write does not overwrite the current scene document.
+- Updated the scene inspector helper copy to match the implemented preview and project-save workflow.
+- **Verification gate:** the test has been committed on the reconstruction branch. Run and inspect all CI/security workflows on the new head before treating this integration as verified. This is not browser E2E coverage and does not connect the saved scene document to the generated public-site Three.js runtime. Durable uploaded assets and PostgreSQL-primary-store migration remain open.
