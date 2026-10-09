@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: build-vibe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: buildvibe
+      POSTGRES_USER: buildvibe
+      POSTGRES_PASSWORD: buildvibe_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - buildvibe_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buildvibe -d buildvibe"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  adminer:
+    image: adminer:4
+    container_name: build-vibe-adminer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+volumes:
+  buildvibe_postgres_data:

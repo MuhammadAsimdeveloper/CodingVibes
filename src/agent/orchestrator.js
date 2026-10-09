@@ -28,6 +28,7 @@ import {buildRepositoryIndex} from './repository-index.js';
 import {createCheckpoint} from '../git/checkpoints.js';
 import {reviewWorkspace,reviewWithModel} from './review.js';
 import {createDefaultSiteContent,applyContentOperation} from '../site/content.js';
+import {classifyCreationType} from '../billing/plans.js';
 import {copyArtifacts,hashFile} from '../artifacts/store.js';
 import {baselinePath} from '../verification/visual.js';
 import {runParallelAgentAnalysis,defaultDesignSystem,reflectBuild} from '../platform/feature-suite.js';
@@ -206,7 +207,7 @@ export async function executeBuild({request,userId,sessionId,project,store,route
    emit({type:'reflection_completed',runId:run.id,status:reflection.status,score:reflection.score,recommendations:reflection.recommendations});
    if(finalStatus==='verified'&&reflection.status==='blocked'){finalStatus='blocked';store.updateChangeset(changeset.id,{status:'blocked'});}
    writeManifest(ws.worktree,{version:'evidence.v3',runId:run.id,status:finalStatus,branch:ws.branch,baseSha:ws.baseSha,spec,target,verification:finalEvidence,review,reflection});
-   if(finalStatus==='verified')store.updateChangeset(changeset.id,{status:'verified'});else if(finalStatus==='failed')store.updateChangeset(changeset.id,{status:'failed'});
+   if(finalStatus==='verified'){store.updateChangeset(changeset.id,{status:'verified'});const creation=classifyCreationType(spec.request,target.id,spec);store.recordCreationEntitlement(userId,project.id,creation.type,run.id);}else if(finalStatus==='failed')store.updateChangeset(changeset.id,{status:'failed'});
    store.updateGoal(run.id,{status:finalStatus==='verified'?'completed':finalStatus==='blocked'?'blocked':'failed',metadata:{target:target.id,reviewPassed:review?.passed??null}});
    const result={runId:run.id,workspace:ws.worktree,branch:ws.branch,spec,target,contentOperations,verification:finalEvidence,review,reflection,evidence:store.listEvidence(run.id),changesets:store.listChangesets(run.id)};
    store.addMessage(sessionId,'assistant',finalStatus==='verified'?'Build verified, reviewed, and ready for commit.':finalStatus==='blocked'?'Build is blocked by toolchain or review findings.':'Build finished with verification failures.',{runId:run.id,status:finalStatus,target:target.id});emit({type:'completed',runId:run.id,result:{runId:run.id,status:finalStatus,branch:ws.branch,spec,target:target.id,reviewPassed:review?.passed??null}});

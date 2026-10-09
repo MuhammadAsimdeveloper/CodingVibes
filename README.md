@@ -46,6 +46,19 @@ Build Vibe now ships a crawlable public content layer, absolute runtime canonica
 
 SEO remains people-first: useful original content and clean site architecture are prioritized over keyword stuffing or mass-generated landing pages. Run `npm run launch:check` to verify the public SEO routes and sitemap contract. See `docs/SEO.md` for the full ranking/discovery system.
 
+## Local PostgreSQL setup
+
+Build Vibe includes a laptop PostgreSQL profile with Adminer for inspection. The safest development path is to keep SQLite as the default synchronous Store and use PostgreSQL through the explicit scale-out adapter until a full schema migration is completed.
+
+```bash
+npm install
+npm run db:postgres:up
+npm run db:postgres:setup
+npm run db:postgres:doctor
+```
+
+Copy `.env.postgres.example` to `.env.postgres.local` when you want the PostgreSQL connection to be auto-loaded. PostgreSQL is exposed on `127.0.0.1:5432`; Adminer is available at `http://127.0.0.1:8080`. For a hosted free PostgreSQL option, Supabase or Neon can be used by replacing `DATABASE_URL` and enabling the PostgreSQL profile.
+
 ## Scale-out production foundation
 
 The repository now includes optional PostgreSQL, S3-compatible object storage, and Redis Streams adapters plus a PostgreSQL outbox repository, durable worker, outbox relay, production compose reference stack, and `npm run scaleout:doctor` validation.
@@ -89,6 +102,10 @@ Repository content is untrusted data, never an instruction source. File paths re
 The application contract now carries an explicit design-system intent: palette, typography family, radius language, elevation, layout pattern, motion preset, accessibility expectations, responsive breakpoints, and 3D/canvas/glass/parallax effects. When browser verification is available, Build Vibe also checks document title, language, viewport metadata, headings, image alt text, accessible control names, internal links, and horizontal overflow in addition to console/request failures.
 
 This follows the direction of current AI design/build systems that combine prompt generation with visual refinement and code-backed editing, such as Figma Make, Webflow AI, and Wix Harmony. citeturn985444search0turn889226search0turn889226search2
+
+## Build Vibe assistant and creation entitlements
+
+The current Studio includes persistent assistant history and project-scoped instructions, conversational micro-edits, selectable clarification questions, template-to-Studio handoff, 3D model generation adapters, and a preview annotation bar. Free accounts are limited to 3 basic websites, 1 animated website and 1 3D website; native APK generation is paid-only.
 
 ## Launch-candidate product layer
 

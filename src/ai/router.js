@@ -14,13 +14,13 @@ export class ModelRouter{
     const id=String(provider||this.chain[0]||'').toLowerCase();
     const base=resolveConnector(id,this.env);
     const user=this.connections.find(c=>c.provider===base.id&&c.enabled!==false);
-    return user?{...base,baseUrl:String(user.baseUrl||base.baseUrl).replace(/\/$/,''),apiKey:user.apiKey||base.apiKey,configured:Boolean(user.baseUrl||base.baseUrl)&&(!base.apiKeyEnv||Boolean(user.apiKey||base.apiKey)||['ollama','lmstudio'].includes(base.id)),userConfigured:true,defaultModel:user.defaultModel||null}:base;
+    return user?{...base,baseUrl:String(user.baseUrl||base.baseUrl).replace(/\/$/,''),apiKey:user.apiKey||base.apiKey,configured:Boolean(user.baseUrl||base.baseUrl)&&(!base.apiKeyEnv||Boolean(user.apiKey||base.apiKey)||['ollama','lmstudio','llama-cpp'].includes(base.id)),userConfigured:true,defaultModel:user.defaultModel||null}:base;
   }
   resolveModel(tier,provider){
     const c=this.resolveProvider(provider),profile=this.profiles[c.id]||{};
-    return c.defaultModel||this.settings.defaultModels?.[tier]||profile.models?.[tier]||this.env[`CODINGVIBES_MODEL_${String(tier).toUpperCase()}`]||c.models?.[tier]||this.models[tier]||this.models.standard;
+    if(['ollama','lmstudio','llama-cpp'].includes(c.id))return c.defaultModel||this.settings.defaultModels?.[tier]||profile.models?.[tier]||this.env.CODINGVIBES_MODEL_LOCAL||c.models?.[tier]||(c.id==='ollama'?'qwen2.5:7b':'local-model'); return c.defaultModel||this.settings.defaultModels?.[tier]||profile.models?.[tier]||this.env[`CODINGVIBES_MODEL_${String(tier).toUpperCase()}`]||c.models?.[tier]||this.models[tier]||this.models.standard;
   }
-  requiresKey(provider){return !['ollama','lmstudio'].includes(provider.id)&&Boolean(provider.apiKeyEnv);}
+  requiresKey(provider){return !['ollama','lmstudio','llama-cpp'].includes(provider.id)&&Boolean(provider.apiKeyEnv);}
   getStatus(){const primary=this.resolveProvider(this.chain[0]);return{provider:primary.id,chain:this.chain,baseUrl:primary.baseUrl,configured:this.candidates().length>0,protocol:primary.protocol,models:{cheap:this.resolveModel('cheap',primary.id),standard:this.resolveModel('standard',primary.id),premium:this.resolveModel('premium',primary.id)},streaming:true,connectors:this.listConnectors()};}
   listConnectors(){return listConnectorDefinitions().map(d=>{const c=this.resolveProvider(d.id);return{...d,configured:c.configured,baseUrl:c.baseUrl,requiresKey:Boolean(d.apiKeyEnv),health:this.health.get(d.id)||null,userConfigured:Boolean(c.userConfigured),hasSecret:Boolean(c.apiKey),defaultModel:c.defaultModel||null};});}
   headers(provider){const h={'content-type':'application/json'};if(provider.protocol==='anthropic-messages'){if(provider.apiKey)h['x-api-key']=provider.apiKey;h['anthropic-version']='2023-06-01';return h;}if(provider.apiKey)h.authorization=`Bearer ${provider.apiKey}`;if(provider.id==='openrouter'){h['HTTP-Referer']=this.env.CODINGVIBES_APP_URL||'http://localhost:4400';h['X-Title']='codingVibes';}return h;}

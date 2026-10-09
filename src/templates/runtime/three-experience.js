@@ -76,10 +76,28 @@ async function start(){
     }
 
     let loadedModel=null;
+    let variantMaterials=[];
+    let immersiveMotion=false;
+    function collectMaterials(object){
+      variantMaterials=[];
+      object?.traverse?.(node=>{
+        const mats=Array.isArray(node.material)?node.material:(node.material?[node.material]:[]);
+        for(const material of mats)if(material?.color)variantMaterials.push({material,base:material.color.clone()});
+      });
+    }
+    function applyVariant(variant){
+      const value=variant?.options?.color||variant?.options?.colour||variant?.options?.finish||variant?.options?.material;
+      if(value&&variantMaterials.length){try{const nextColor=new Color(value);for(const item of variantMaterials)item.material.color.copy(nextColor);}catch{}}
+      const preview=variant?.image||'';
+      const media=document.querySelector('#productMediaStrip');
+      if(preview&&media){media.querySelectorAll('button').forEach(b=>b.removeAttribute('aria-current'));const button=[...media.querySelectorAll('button')].find(b=>b.dataset.src===preview);button?.setAttribute('aria-current','true');}
+      if(fallback&&variant?.title)fallback.textContent='3D variant: '+variant.title;
+      window.dispatchEvent(new CustomEvent('buildvibe:variant-change',{detail:variant}));
+    }
     async function loadModel(source,label='model'){
       try{
         const url=typeof source==='string'?source:URL.createObjectURL(source);const object=await new GLTFLoader().loadAsync(url);if(typeof source!=='string')setTimeout(()=>URL.revokeObjectURL(url),0);
-        if(loadedModel)scene.remove(loadedModel);loadedModel=object.scene;loadedModel.position.y=0;
+        if(loadedModel)scene.remove(loadedModel);loadedModel=object.scene;loadedModel.position.y=0;collectMaterials(loadedModel);
         const box3=new Box3().setFromObject(loadedModel);const size=box3.getSize(new Vector3()),maxSide=Math.max(size.x,size.y,size.z)||1;loadedModel.scale.setScalar(6/maxSide);loadedModel.position.y=Math.max(0,-box3.min.y*loadedModel.scale.y);scene.add(loadedModel);
         if(fallback)fallback.textContent='Loaded '+label;
       }catch(e){if(fallback)fallback.textContent='Model load failed; showing procedural fallback.';console.error(e)}
@@ -126,6 +144,14 @@ async function start(){
     }
 
     document.querySelector('#tourPlay')?.addEventListener('click',playTour);
+    const motionButton=document.querySelector('#motionToggle');
+    motionButton?.addEventListener('click',async()=>{
+      immersiveMotion=!immersiveMotion;motionButton.setAttribute('aria-pressed',String(immersiveMotion));motionButton.textContent=immersiveMotion?'Immersive motion on':'Immersive motion';
+      controls.autoRotate=immersiveMotion&&!reducedMotion;controls.autoRotateSpeed=.65;
+      if(immersiveMotion&&typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){try{const permission=await DeviceOrientationEvent.requestPermission();if(permission!=='granted')return}catch{}}
+      if(immersiveMotion)window.addEventListener('deviceorientation',onOrientation,{passive:true});else window.removeEventListener('deviceorientation',onOrientation);
+    });
+
     document.querySelector('#tourRecord')?.addEventListener('click',recordTour);
     if(contentModel)loadModel(contentModel,featuredProduct?.title||featuredProperty?.title||featuredScene?.title||'site model');
     document.querySelector('#modelInput')?.addEventListener('change',e=>e.target.files[0]&&loadModel(e.target.files[0],e.target.files[0].name));
@@ -133,6 +159,21 @@ async function start(){
       const file=e.target.files[0];if(!file)return;
       const video=document.querySelector('#tourVideo');if(video){video.src=URL.createObjectURL(file);video.load()}
     });
+    function onOrientation(event){
+      if(!immersiveMotion||reducedMotion)return;
+      const gamma=Math.max(-45,Math.min(45,Number(event.gamma)||0)),beta=Math.max(-35,Math.min(35,Number(event.beta)||0));
+      if(!controls.autoRotate){camera.rotation.y+=gamma*0.0008;camera.rotation.x+=beta*0.00025;}
+      else controls.target.y=Math.max(.4,Math.min(2.4,1+(-beta/35)*.45));
+    }
+    const featuredVariants=Array.isArray(featuredProduct?.variants)?featuredProduct.variants:[];
+    const variantHost=document.querySelector('#productVariantSwatches');
+    if(variantHost&&featuredVariants.length){variantHost.replaceChildren(...featuredVariants.slice(0,24).map(variant=>{const b=document.createElement('button');b.type='button';b.className='variant-swatch';b.textContent=variant.title||'Variant';b.dataset.variantId=variant.id||'';const value=variant.options?.color||variant.options?.colour||variant.options?.finish;b.style.setProperty('--swatch',typeof value==='string'?value:'currentColor');b.onclick=()=>applyVariant(variant);return b;}));}
+    const mediaStrip=document.querySelector('#productMediaStrip');
+    if(mediaStrip&&featuredProduct){
+      const mediaItems=[...(featuredProduct.images||[]),...(featuredProduct.gallery||[]).map(x=>x?.url).filter(Boolean)].slice(0,24);
+      mediaStrip.replaceChildren(...mediaItems.map(src=>{const b=document.createElement('button');b.type='button';b.dataset.src=src;b.setAttribute('aria-label','View product image');const img=document.createElement('img');img.src=src;img.alt=featuredProduct.title||'Product image';img.loading='lazy';b.append(img);b.onclick=()=>{document.querySelector('#experience3d')?.focus?.();applyVariant({image:src});};return b;}));
+    }
+
     const hotspotHost=document.querySelector('[data-experience-hotspots]');if(hotspotHost&&contentHotspots.length){hotspotHost.replaceChildren(...contentHotspots.slice(0,24).map(h=>{const b=document.createElement('button');b.type='button';b.dataset.room=h.room||h.label||'View';b.dataset.x=String(h.position?.x??0);b.dataset.y=String(h.position?.y??1.2);b.dataset.z=String(h.position?.z??0);b.textContent=h.label||h.room||'View';return b}));}
     const hotspotButtons=hotspotHost?hotspotHost.querySelectorAll('button[data-room]'):document.querySelectorAll('[data-room]');
     hotspotButtons.forEach(button=>button.addEventListener('click',()=>{
@@ -145,7 +186,7 @@ async function start(){
 
     const render=()=>{controls.update();renderer.render(scene,camera);requestAnimationFrame(render)};
     render();
-    if(contentVideo){const video=document.querySelector('#tourVideo');if(video){video.src=contentVideo;video.load();}}
+    if(contentVideo){const video=document.querySelector('#tourVideo');if(video){video.src=contentVideo;video.load();}const productVideo=document.querySelector('#productVideo');if(productVideo){productVideo.src=contentVideo;productVideo.load();}}
     if(fallback)fallback.textContent=reducedMotion?'Interactive 3D ready · motion reduced':'Interactive 3D ready';
   }catch(e){
     if(fallback)fallback.textContent='3D unavailable. Responsive content remains usable.';

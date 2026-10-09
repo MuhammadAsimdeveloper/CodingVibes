@@ -3,7 +3,59 @@ const $=s=>document.querySelector(s);const studio=createStudioState();const stat
 async function api(path,options={}){const r=await fetch(path,{headers:{'content-type':'application/json',...(options.headers||{})},...options});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'HTTP '+r.status);e.status=r.status;throw e;}return j}
 function feed(text,kind=''){const e=document.createElement('div');e.className='cv-event '+kind;e.textContent=text;$('#feed').prepend(e);return e}
 function status(text,kind='idle'){$('#runStatus').textContent=text;$('#runStatus').className='status '+kind}
-function showTab(tab){document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));['build','content','design','app','publish'].forEach(x=>$('#tab-'+x).classList.toggle('hidden',x!==tab));if(state.project&&tab==='content'){loadWorkspaceSuite();loadContentRevisions();}if(state.project&&tab==='design')loadDesignMode();if(tab==='publish'){loadProviders();loadResearch();loadLaunchStatus();loadCloudServices();loadDomains();}}
+function showTab(tab){document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));['build','content','templates','design','app','publish'].forEach(x=>$('#tab-'+x)?.classList.toggle('hidden',x!==tab));if(tab==='templates')loadTemplateCatalog();if(state.project&&tab==='content'){loadWorkspaceSuite();loadContentRevisions();load3DJobs();}if(state.project&&tab==='design')loadDesignMode();if(tab==='publish'){loadProviders();loadResearch();loadLaunchStatus();loadCloudServices();loadDomains();}}
+
+const visualEditState={selection:null};
+function initVisualAnnotation(){
+  window.addEventListener('message',event=>{
+    const d=event.data||{};if(d.type!=='buildvibe:visual-select')return;
+    visualEditState.selection=d;const label=$('#visualSelectionLabel');
+    if(label)label.textContent='Selected: '+(d.text||'<'+d.tag+'>')+(d.selector?' · '+d.selector:'');
+  });
+  $('#visualQuickApply')?.addEventListener('click',()=>{
+    const input=$('#visualEditInput'),command=input?.value.trim();if(!command)return;
+    const frame=$('#previewFrame');frame?.contentWindow?.postMessage({type:'buildvibe:visual-command',command},'*');
+    feed('Applied preview edit: '+command,'ok');
+  });
+  $('#visualAskAssistant')?.addEventListener('click',()=>{
+    const command=$('#visualEditInput')?.value.trim()||'';
+    const selection=visualEditState.selection;
+    const context=selection?('Selected '+(selection.tag||'element')+' '+(selection.selector||'')+' with text "'+(selection.text||'')+'". '):'';
+    openAssistantWithPrompt(context+(command||'Modify the selected element while preserving surrounding layout.'),'modify');
+  });
+}
+async function loadTemplateCatalog(){
+  const query=encodeURIComponent($('#templateSearch')?.value.trim()||'');
+  const genre=state.templateGenre||'';
+  const [genres,items]=await Promise.all([
+    api('/api/templates/genres'),
+    api('/api/templates?q='+query+(genre?'&genre='+encodeURIComponent(genre):''))
+  ]);
+  const ge=$('#templateGenres');if(ge){
+    ge.replaceChildren();
+    const all=document.createElement('button');all.className='cv-chip'+(!genre?' active':'');all.textContent='All';all.onclick=()=>{state.templateGenre='';loadTemplateCatalog()};ge.append(all);
+    for(const g of genres.genres||[]){const b=document.createElement('button');b.className='cv-chip'+(state.templateGenre===g.id?' active':'');b.textContent=g.label+' · '+g.count;b.onclick=()=>{state.templateGenre=g.id;loadTemplateCatalog()};ge.append(b);}
+  }
+  const grid=$('#templateGrid');if(!grid)return;grid.replaceChildren();
+  for(const t of items.templates||[]){
+    const card=document.createElement('div');card.className='cv-template-card';
+    const h=document.createElement('div');h.className='cv-template-head';const title=document.createElement('strong');title.textContent=t.label;h.append(title);
+    const p=document.createElement('p');p.className='cv-muted';p.textContent=(t.description||t.style||'Production-ready template blueprint.').slice(0,240);
+    const tags=document.createElement('div');tags.className='cv-chips';for(const g of (t.genres||[]).slice(0,6)){const s=document.createElement('span');s.className='cv-chip';s.textContent=g;tags.append(s)}
+    const meta=document.createElement('div');meta.className='cv-muted';meta.textContent=(t.experience||'standard')+' · '+(t.kind||'business')+' · '+(t.capabilities||[]).slice(0,4).join(' · ');
+    const b=document.createElement('button');b.className='cv-primary';b.textContent='Use in Studio';b.onclick=()=>startTemplate(t.id);
+    card.append(h,p,tags,meta,b);grid.append(card);
+  }
+}
+async function startTemplate(id){
+  try{
+    const j=await api('/api/templates/'+encodeURIComponent(id)+'/start',{method:'POST',body:JSON.stringify({name:$('#templateSearch')?.value.trim()?$('#templateSearch').value.trim()+' · '+(id||'Template'):undefined})});
+    await loadProjects();await selectProject(j.project);
+    const starter='Build the selected template as-is. Keep the template contract, then I will customize colors, content, products, pages, animations, 3D media and functionality by text.';
+    $('#request').value=starter;state.drafts.set(j.project.id,starter);showTab('build');feed('Template loaded into Studio: '+j.template.label,'ok');await previewBlueprint();
+  }catch(e){feed('Template: '+e.message,'err')}
+}
+
 async function loadCapabilities(){const j=await api('/api/builder/capabilities');const el=$('#capabilities');el.replaceChildren();for(const c of j.capabilities){const d=document.createElement('div');d.className='cv-cap';d.innerHTML='<strong></strong><span></span>';d.firstChild.textContent=c.label;d.lastChild.textContent=c.supports.slice(0,3).join(' · ');el.append(d)}}
 async function loadTargets(){const j=await api('/api/targets');state.targets=j.targets||[];const s=$('#targetSelect');for(const t of state.targets){const o=document.createElement('option');o.value=t.id;o.textContent=t.label;s.append(o)}$('#targets').replaceChildren(...state.targets.map(t=>{const d=document.createElement('div');d.className='cv-event';d.textContent=t.label+' · '+t.artifactTypes.join(', ');return d}))}
 async function loadProjects(){const j=await api('/api/projects');state.projects=j.projects||[];const el=$('#projects');el.replaceChildren();for(const p of state.projects){const b=document.createElement('button');b.className='cv-project'+(state.project?.id===p.id?' active':'');b.textContent=p.name;b.onclick=()=>selectProject(p);el.append(b);registerProjectWindow(state,{id:p.id,name:p.name,status:state.windows.get(p.id)?.status||'ready',runId:state.windows.get(p.id)?.runId||null});}renderWindows();if(!state.project){const preferred=localStorage.getItem('buildVibe.activeProjectId');const target=state.projects.find(p=>p.id===preferred)||state.projects[0];if(target)await selectProject(target)}}
@@ -57,10 +109,21 @@ async function refreshProjectAfterBuild(projectId){
   if(state.session){const r=await api('/api/sessions/'+state.session.id+'/runs').catch(()=>null);const latest=r?.runs?.[0];if(latest){state.run={id:latest.id,status:latest.status};await loadRun(latest.id);}}
 }
 
+function renderBuildClarification(e,projectId){
+  const card=document.createElement('div');card.className='cv-event ok';const h=document.createElement('strong');h.textContent=e.title||'A few details are needed';card.append(h);
+  const selected={};for(const q of e.questions||[]){const wrap=document.createElement('div');wrap.className='cv-choice-group';const label=document.createElement('div');label.textContent=q.label;wrap.append(label);for(const option of q.options||[]){const b=document.createElement('button');b.className='cv-chip';b.textContent=option;b.onclick=()=>{selected[q.id]=option;wrap.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active')};wrap.append(b)}card.append(wrap)}
+  const go=document.createElement('button');go.className='cv-primary';go.textContent='Continue';go.onclick=()=>{const parts=Object.entries(selected).map(([k,v])=>k+': '+v);if(!parts.length)return;$('#request').value=$('#request').value+'\n\nSelected options:\n'+parts.join('\n');card.remove();$('#buildBtn').focus();};card.append(go);$('#feed').prepend(card);
+}
+
 function handle(e,projectId){
-  const routed=routeBuildEvent(state,projectId,e);
   const projectName=state.projects.find(x=>x.id===projectId)?.name||projectId;
   const active=state.project?.id===projectId;
+  const routed=routeBuildEvent(state,projectId,e);
+  if(e.type==='clarification_required'){
+    finishProjectBuild(state,projectId,'ready');
+    if(active){status('ready','');$('#progress').textContent='A few choices are needed before generation.';renderBuildClarification(e,projectId);}
+    feed('Build Vibe needs a few choices before building.','ok');
+  }
   if(e.type==='run_created')feed('['+projectName+'] Build started.');
   if(e.type==='parallel_agents_completed')feed((active?'':'['+projectName+'] ')+'Parallel agents: research + design + architecture + QA aligned.','ok');
   if(e.type==='research_completed')feed((active?'':'['+projectName+'] ')+'Research lane completed.','ok');
@@ -85,11 +148,48 @@ function handle(e,projectId){
 }
 
 async function loadRun(id){try{const j=await api('/api/runs/'+id);state.run={id,status:j.run?.status};const p=j.run?.preview_url;if(p){$('#previewFrame').src=p;$('#previewLink').href=p}status(j.run?.status||'ready',j.run?.status==='verified'?'ok':'');const zip=$('#zipLink');if(zip&&j.run?.status==='verified'&&state.project){zip.href='/api/projects/'+encodeURIComponent(state.project.id)+'/export';zip.download='';}}catch{}}
-async function loadLaunchStatus(){try{const j=await api('/api/launch/status'),r=j.ready,s=$('#launchSummary'),b=$('#billingSummary'),t=$('#launchTargets');if(s){s.textContent=r.ready?'Production contract: READY':'Production contract: '+r.blockers.length+' blocker(s)';s.className=r.ready?'status ok':'status err'}if(b&&j.billing)b.textContent='Plan: '+j.billing.plan+' · '+(j.billing.usage?.runs||0)+' builds · '+(j.billing.usage?.tokens||0)+' tokens';if(t)t.replaceChildren(...(j.targets||[]).map(x=>{const d=document.createElement('div');d.className='cv-event';const e=x.execution,mode=e?.host?.available?'local toolchain':e?.remote?.linux?'remote Linux':e?.remote?.macos?'remote macOS':e?.canBuild?'web runtime':'runner required';d.textContent=x.label+' · '+mode;return d}));if(!r.ready&&r.blockers?.length)feed('Launch blockers: '+r.blockers.join(', '),'err')}catch(e){feed('Launch status: '+e.message,'err')}}
+async function loadLaunchStatus(){loadDatabaseStatus();try{const j=await api('/api/launch/status'),r=j.ready,s=$('#launchSummary'),b=$('#billingSummary'),t=$('#launchTargets');if(s){s.textContent=r.ready?'Production contract: READY':'Production contract: '+r.blockers.length+' blocker(s)';s.className=r.ready?'status ok':'status err'}if(b&&j.billing)b.textContent='Plan: '+j.billing.plan+' · '+(j.billing.usage?.runs||0)+' builds · '+(j.billing.usage?.tokens||0)+' tokens';if(t)t.replaceChildren(...(j.targets||[]).map(x=>{const d=document.createElement('div');d.className='cv-event';const e=x.execution,mode=e?.host?.available?'local toolchain':e?.remote?.linux?'remote Linux':e?.remote?.macos?'remote macOS':e?.canBuild?'web runtime':'runner required';d.textContent=x.label+' · '+mode;return d}));if(!r.ready&&r.blockers?.length)feed('Launch blockers: '+r.blockers.join(', '),'err')}catch(e){feed('Launch status: '+e.message,'err')}}
   await loadBilling();
-async function loadBilling(){try{const j=await api('/api/billing'),b=j.billing||{},plans=j.plans||[],el=$('#billingPlans');if(!el)return;const current=b.plan||'free';const provider=j.billingProvider||'stripe';const rows=plans.filter(p=>p.id!=='free').map(p=>{const d=document.createElement('div');d.className='cv-list-row';const left=document.createElement('span');left.textContent=p.label+' · $'+Number(p.priceUsd||0)+'/month';const right=document.createElement('strong');right.textContent=p.id===current?'Current':'Available';d.append(left,right);return d});el.replaceChildren(...rows);const pro=$('#upgradePro'),team=$('#upgradeTeam'),manage=$('#manageBilling');if(pro)pro.classList.toggle('hidden',current==='pro'||current==='team');if(team)team.classList.toggle('hidden',current==='team');if(manage)manage.classList.toggle('hidden',!b.customerConfigured);if($('#billingSummary'))$('#billingSummary').textContent='Plan: '+current+' · '+(b.usage?.runs||0)+' builds · '+(b.usage?.tokens||0)+' tokens · '+provider;}catch(e){feed('Billing: '+e.message,'err')}}
+async function loadBilling(){
+  try{
+    const j=await api('/api/billing');
+    const b=j.billing||{},plans=j.plans||[],el=$('#billingPlans');
+    if(!el)return;
+    const current=b.plan||'free';
+    const creation=j.creationUsage||{basic:0,'3d':0,animated:0,apk:0};
+    const provider=j.billingProvider||'stripe';
+    const rows=plans.filter(p=>p.id!=='free').map(p=>{
+      const d=document.createElement('div');d.className='cv-list-row';
+      const left=document.createElement('span');left.textContent=p.label+' · $'+Number(p.priceUsd||0)+'/month';
+      const right=document.createElement('strong');right.textContent=p.id===current?'Current':'Available';
+      const limits=p.creationLimits||{};
+      const meta=document.createElement('small');meta.className='cv-muted';
+      meta.textContent='Sites: '+['basic','animated','3d','apk'].map(k=>k+': '+Number(creation[k]||0)+'/'+(limits[k]??'∞')).join(' · ');
+      d.append(left,right,meta);return d;
+    });
+    el.replaceChildren(...rows);
+    const free=document.createElement('div');free.className='cv-event';
+    free.textContent='Your usage: '+creation.basic+'/3 basic · '+creation.animated+'/1 animated · '+creation['3d']+'/1 3D · '+creation.apk+'/0 APK on Free policy';
+    el.prepend(free);
+    const pro=$('#upgradePro'),team=$('#upgradeTeam'),business=$('#upgradeBusiness'),manage=$('#manageBilling');
+    if(pro)pro.classList.toggle('hidden',current!=='free');
+    if(team)team.classList.toggle('hidden',current==='team'||current==='business');
+    if(business)business.classList.toggle('hidden',current==='business');
+    if(manage)manage.classList.toggle('hidden',!b.customerConfigured);
+    if($('#billingSummary'))$('#billingSummary').textContent='Plan: '+current+' · '+(b.usage?.runs||0)+' builds · '+(b.usage?.tokens||0)+' tokens · '+provider;
+  }catch(e){feed('Billing: '+e.message,'err')}
+}
 async function startCheckout(plan){try{const j=await api('/api/billing/checkout',{method:'POST',body:JSON.stringify({plan})});if(j.checkout?.url)location.href=j.checkout.url;else feed('Checkout created but no payment URL was returned.','err');}catch(e){feed('Checkout: '+e.message,'err')}}
 async function manageBilling(){try{const j=await api('/api/billing/portal',{method:'POST',body:'{}'});const url=j.portal?.url||j.portal?.subscriptionUrl;if(url)window.location.href=url;else feed('Billing portal did not return a URL.','err');}catch(e){feed('Billing portal: '+e.message,'err')}}
+async function loadDatabaseStatus(){
+  try{
+    const j=await api('/api/database/status'),el=$('#databaseStatus');if(!el)return;el.replaceChildren();
+    const c=j.current||{},current=document.createElement('div');current.className='cv-event';current.textContent='Current backend: '+c.backend+' · '+(c.configured?'configured':'not configured');el.append(current);
+    for(const option of j.options||[]){const row=document.createElement('div');row.className='cv-list-row';const left=document.createElement('span');left.textContent=option.label+' · '+option.role;const right=document.createElement('small');right.className='cv-muted';right.textContent=option.recommended;row.append(left,right);el.append(row);}
+    const setup=document.createElement('div');setup.className='cv-event';setup.textContent=j.setup?.localCommand+' → '+j.setup?.migrateCommand+' → '+j.setup?.doctorCommand+' · Adminer '+j.setup?.adminer;el.append(setup);
+  }catch(e){feed('Database status: '+e.message,'err')}
+}
+
 async function loadProviders(){
   try{
     const j=await api('/api/deployment/providers');
@@ -127,6 +227,89 @@ async function exportProject(){
 }
 
 async function loadResearch(){try{const j=await api('/api/builder/research');const r=j.research;$('#research').innerHTML='<p>'+r.methodology+'</p>'+r.sources.map(s=>'<div style="margin:8px 0"><strong>'+s.name+'</strong><br><a href="'+s.url+'" target="_blank" rel="noreferrer">'+s.patterns.join(' · ')+'</a></div>').join('')}catch{}}
+
+
+const assistantState={conversationId:null,messages:[],tokenNode:null};
+function assistantOpen(){const d=$('#assistantDialog');if(!d)return;d.showModal();loadAssistantConversations();if(state.project)$('#assistantModeHint').textContent='Working with '+state.project.name+' · project-aware context';$('#assistantInput').focus();}
+function assistantClose(){const d=$('#assistantDialog');if(d?.open)d.close();}
+function renderAssistantMessages(){
+  const el=$('#assistantMessages');if(!el)return;el.replaceChildren();
+  for(const m of assistantState.messages){
+    const d=document.createElement('div');d.className='cv-assistant-msg '+(m.role==='user'?'user':'assistant');
+    const label=document.createElement('span');label.className='cv-assistant-role';label.textContent=m.role==='user'?'You':'Assistant';
+    const body=document.createElement('div');body.textContent=m.content||'';d.append(label,body);el.append(d);
+  }
+  el.scrollTop=el.scrollHeight;
+}
+async function saveAssistantInstructions(){
+  if(!state.project)return feed('Select a project before saving assistant instructions.','err');
+  try{const memory=(await api('/api/projects/'+encodeURIComponent(state.project.id)+'/memory')).memory||{};memory.assistantInstructions=$('#assistantInstructions')?.value.trim().slice(0,4000)||'';await api('/api/projects/'+encodeURIComponent(state.project.id)+'/memory',{method:'PUT',body:JSON.stringify({memory})});feed('Project assistant instructions saved.','ok');}catch(e){feed('Assistant instructions: '+e.message,'err')}
+}
+
+async function loadAssistantConversations(){
+  try{
+    const q=state.project?'?projectId='+encodeURIComponent(state.project.id):'';
+    if(state.project){try{const memory=(await api('/api/projects/'+encodeURIComponent(state.project.id)+'/memory')).memory||{};if($('#assistantInstructions'))$('#assistantInstructions').value=memory.assistantInstructions||'';}catch{}}
+    const j=await api('/api/assistant/conversations'+q),el=$('#assistantConversations');if(!el)return;el.replaceChildren();
+    for(const x of j.conversations||[]){
+      const b=document.createElement('button');b.className='cv-event'+(assistantState.conversationId===x.id?' ok':'');b.textContent=x.name||'Assistant chat';b.onclick=()=>loadAssistantConversation(x.id);el.append(b);
+    }
+    if(!assistantState.conversationId&&(j.conversations||[])[0])await loadAssistantConversation(j.conversations[0].id);
+  }catch(e){feed('Assistant history: '+e.message,'err')}
+}
+async function loadAssistantConversation(id){
+  try{const j=await api('/api/assistant/conversations/'+encodeURIComponent(id)+'/messages');assistantState.conversationId=id;assistantState.messages=(j.messages||[]).map(x=>({role:x.role==='user'?'user':'assistant',content:x.content}));renderAssistantMessages();loadAssistantConversations();}catch(e){feed('Assistant chat: '+e.message,'err')}
+}
+async function newAssistantConversation(){
+  try{
+    const j=await api('/api/assistant/conversations',{method:'POST',body:JSON.stringify({projectId:state.project?.id||null,mode:$('#assistantMode')?.value||'chat',name:'New Build Vibe chat'})});
+    assistantState.conversationId=j.conversation.id;assistantState.messages=[];renderAssistantMessages();loadAssistantConversations();$('#assistantInput').focus();
+  }catch(e){feed('New chat: '+e.message,'err')}
+}
+async function sendAssistantMessage(){
+  const input=$('#assistantInput'),message=input.value.trim();if(!message)return;
+  const mode=$('#assistantMode').value;input.value='';assistantState.messages.push({role:'user',content:message},{role:'assistant',content:''});renderAssistantMessages();
+  const nodes=$('#assistantMessages')?.querySelectorAll('.cv-assistant-msg');assistantState.tokenNode=nodes?.[nodes.length-1]?.querySelector('div:last-child')||null;
+  try{
+    const response=await fetch('/api/assistant/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message,conversationId:assistantState.conversationId||undefined,projectId:state.project?.id||undefined,mode,stream:true,target:$('#targetSelect')?.value||'auto'})});
+    if(!response.ok)throw new Error((await response.text())||'assistant_request_failed');
+    const reader=response.body?.getReader();if(!reader)throw new Error('assistant_stream_unavailable');
+    const decoder=new TextDecoder();let buf='';
+    while(true){
+      const {done,value}=await reader.read();if(done)break;buf+=decoder.decode(value,{stream:true});const chunks=buf.split('\n\n');buf=chunks.pop()||'';
+      for(const chunk of chunks){const line=chunk.split('\n').find(x=>x.startsWith('data:'));if(!line)continue;try{
+        const e=JSON.parse(line.slice(5));
+        if(e.type==='assistant_started')assistantState.conversationId=e.conversationId;
+        if(e.type==='assistant_token'){if(assistantState.tokenNode){assistantState.tokenNode.textContent+=(e.token||'');}else{assistantState.messages.at(-1).content+=(e.token||'');renderAssistantMessages();}}
+        if(e.type==='assistant_completed'){
+          const result=e.result||{};if(result.kind==='clarification')renderAssistantChoices(result);
+          if(result.kind==='message')renderAssistantActions(result,message);
+          if(result.text&&!assistantState.messages.at(-1).content)assistantState.messages.at(-1).content=result.text;else if(result.text&&assistantState.messages.at(-1).content!==result.text)assistantState.messages.at(-1).content=result.text;
+          renderAssistantMessages();
+        }
+      }catch{}}
+    }
+    await loadAssistantConversations();
+  }catch(e){assistantState.messages.at(-1).content='Assistant error: '+e.message;renderAssistantMessages();}
+}
+function renderAssistantActions(result,sourceMessage){
+  const actionable=['design_edit','product_3d_edit','catalog_edit','experience_3d_edit','qa_fix'].includes(result?.intent);
+  if(!actionable)return;
+  const wrap=$('#assistantChoices');if(!wrap)return;
+  const card=document.createElement('div');card.className='cv-choice-group';
+  const label=document.createElement('strong');label.textContent='Apply this to the current project';card.append(label);
+  const b=document.createElement('button');b.className='cv-primary';b.textContent='Apply in Studio';b.onclick=async()=>{wrap.classList.add('hidden');assistantClose();$('#request').value=sourceMessage;state.drafts.set(state.project?.id||'',sourceMessage);showTab('build');if(state.project)await startBuild();};card.append(b);wrap.prepend(card);wrap.classList.remove('hidden');
+}
+
+function renderAssistantChoices(result){
+  const wrap=$('#assistantChoices');if(!wrap)return;wrap.classList.remove('hidden');wrap.replaceChildren();
+  const selected={};
+  for(const q of result.questions||[]){const card=document.createElement('div');card.className='cv-choice-group';const h=document.createElement('strong');h.textContent=q.label;card.append(h);
+    for(const option of q.options||[]){const b=document.createElement('button');b.className='cv-chip';b.textContent=option;b.onclick=()=>{selected[q.id]=option;card.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active')};card.append(b);}wrap.append(card);
+  }
+  const go=document.createElement('button');go.className='cv-primary';go.textContent='Continue with selections';go.onclick=()=>{const lines=Object.entries(selected).map(([k,v])=>k+': '+v);if(!lines.length)return;$('#assistantInput').value=lines.join('\n');wrap.classList.add('hidden');sendAssistantMessage()};wrap.append(go);
+}
+function openAssistantWithPrompt(prompt,mode='chat'){assistantOpen();if(prompt){$('#assistantMode').value=mode;$('#assistantInput').value=prompt;$('#assistantInput').focus();}}
 
 async function loadWorkspaceSuite(){
   if(!state.project?.workspace_id)return;
@@ -172,11 +355,46 @@ async function addDomain(){if(!state.project)return;try{const j=await api('/api/
 async function loadContentRevisions(){if(!state.project)return;try{const j=await api('/api/projects/'+state.project.id+'/content/revisions'),el=$('#contentRevisions');if(el)el.replaceChildren(...(j.revisions||[]).slice(0,8).map(r=>{const d=document.createElement('div');d.className='cv-list-row';d.textContent='v'+r.version+' · '+r.status+(r.published_at?' · published':'');if(r.status!=='published'){const b=document.createElement('button');b.className='cv-secondary';b.textContent='Publish';b.onclick=async()=>{try{await api('/api/content-revisions/'+r.id+'/publish',{method:'POST',body:'{}'});feed('Content revision v'+r.version+' published.','ok');await loadContentRevisions();}catch(e){feed('Publish revision: '+e.message,'err')}};d.append(b);}return d;}));}catch(e){feed('Content revisions: '+e.message,'err')}}
 async function newContentRevision(){try{const j=await api('/api/projects/'+state.project.id+'/content/revisions',{method:'POST',body:JSON.stringify({status:'draft'})});feed('Content draft revision v'+j.revision.version+' saved.','ok');await loadContentRevisions();}catch(e){feed('Content revision: '+e.message,'err')}}
 async function runProjectResearch(){if(!state.project)return;const query=$('#researchQuery').value.trim();if(!query)return;try{const j=await api('/api/projects/'+state.project.id+'/research',{method:'POST',body:JSON.stringify({query})});const out=$('#research');out.replaceChildren(...(j.research.results||[]).map(r=>{const d=document.createElement('div');d.className='cv-research-item';const a=document.createElement('a');a.href=r.url||'#';a.target='_blank';a.rel='noreferrer';a.textContent=r.title||r.url||'Source';const p=document.createElement('p');p.textContent=r.text||'';d.append(a,p);return d;}));feed(j.research.configured?'Research completed.':'Research provider not configured; no live web results.','ok');}catch(e){feed('Research: '+e.message,'err')}}
+
+async function upload3DReference(file,role='product-image'){
+  if(!state.project)throw new Error('project_required');
+  const r=await fetch('/api/projects/'+encodeURIComponent(state.project.id)+'/assets',{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream','X-Asset-Name':file.name,'X-Asset-Role':role,'X-Asset-Meta':JSON.stringify({source:'3d-model-lab'})},body:file});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'asset_upload_failed');return j.asset;
+}
+async function generate3DModel(){
+  if(!state.project)return feed('Select a project first.','err');
+  const files=[...($('#threeAssets')?.files||[])];if(!files.length)return feed('Choose 1–4 reference images first.','err');if(files.length>4)return feed('3D generation accepts up to four reference images.','err');
+  try{
+    const role=$('#threeAttachmentCollection').value==='properties'?'property-image':$('#threeAttachmentCollection').value==='scenes'?'site-image':'product-image';
+    const assets=[];for(const file of files)assets.push(await upload3DReference(file,role));
+    const attachmentId=$('#threeAttachmentId').value.trim(),collection=$('#threeAttachmentCollection').value;
+    const j=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/3d/generate',{method:'POST',body:JSON.stringify({provider:$('#threeProvider').value,assetIds:assets.map(x=>x.id),name:$('#threeModelName').value.trim()||files[0].name,targetFormats:['glb'],attachment:attachmentId?{collection,recordId:attachmentId}:null})});
+    $('#threeJobStatus').textContent='3D task queued · '+j.job.id;await poll3DJob(j.job.id);
+  }catch(e){$('#threeJobStatus').textContent='3D error: '+e.message;feed('3D model generation: '+e.message,'err')}
+}
+async function poll3DJob(id){
+  for(let i=0;i<60;i++){
+    const j=await api('/api/3d/jobs/'+encodeURIComponent(id));const job=j.job||{};$('#threeJobStatus').textContent='3D '+job.status+' · '+Number(job.result?.progress||0)+'%';
+    if(job.status==='succeeded'){feed('3D model generated and stored as a local GLB asset.','ok');await load3DJobs();return}
+    if(job.status==='failed'){feed('3D model failed: '+(job.error||'provider error'),'err');await load3DJobs();return}
+    await new Promise(r=>setTimeout(r,4000));
+  }
+  feed('3D task is still running; reopen Content & data to check status.','ok');
+}
+async function load3DJobs(){
+  if(!state.project)return;
+  try{const j=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/3d/jobs'),el=$('#threeJobs');if(!el)return;el.replaceChildren(...(j.jobs||[]).map(job=>{const d=document.createElement('div');d.className='cv-event';d.textContent=(job.input?.name||job.id)+' · '+job.status+(job.error?' · '+job.error:'');return d;}));}catch{}
+}
+
 async function runDiscoverability(){if(!state.project)return;try{const j=await api('/api/projects/'+state.project.id+'/discoverability/audit',{method:'POST',body:'{}'});const el=$('#discoverabilitySummary');const a=j.audit||{},rows=[['Score',String(a.score||0)+'/100'],['Pages',String((a.pages||[]).length)],['Issues',String((a.issues||[]).length)],['Warnings',String((a.warnings||[]).length)],['AEO',j.aeo?.answerEngineReady?'ready':'needs work']];if(el)el.replaceChildren(...rows.map(([k,v])=>{const d=document.createElement('div');d.className='cv-list-row';const x=document.createElement('span');x.textContent=k;const y=document.createElement('strong');y.textContent=v;d.append(x,y);return d;}));feed(j.aeo?.answerEngineReady?'SEO/AEO audit passed.':'SEO/AEO audit found improvements.','ok');}catch(e){feed('SEO/AEO: '+e.message,'err')}}
 async function loadFeatureSuite(){if(!state.project)return;await Promise.all([loadWorkspaceSuite(),loadDesignMode(),loadCloudServices(),loadDomains(),loadContentRevisions()]);}
 
-$('#launchCheck')?.addEventListener('click',loadLaunchStatus);$('#upgradePro')?.addEventListener('click',()=>startCheckout('pro'));$('#upgradeTeam')?.addEventListener('click',()=>startCheckout('team'));$('#manageBilling')?.addEventListener('click',manageBilling);$('#inviteMember')?.addEventListener('click',async()=>{try{const j=await api('/api/workspaces/'+state.project.workspace_id+'/invites',{method:'POST',body:JSON.stringify({email:$('#inviteEmail').value,role:$('#inviteRole').value})});feed('Invite created. Share token securely: '+j.token,'ok');await loadWorkspaceSuite();}catch(e){feed('Invite: '+e.message,'err')}});$('#saveDesign')?.addEventListener('click',saveDesignMode);$('#resetDesign')?.addEventListener('click',resetDesignMode);$('#provisionCloud')?.addEventListener('click',provisionCloud);$('#addDomain')?.addEventListener('click',addDomain);$('#newContentRevision')?.addEventListener('click',newContentRevision);$('#runResearch')?.addEventListener('click',runProjectResearch);$('#runDiscoverability')?.addEventListener('click',runDiscoverability);$('#buildBtn').onclick=startBuild;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$('#launchCheck')?.addEventListener('click',loadLaunchStatus);
+$('#assistantOpen')?.addEventListener('click',assistantOpen);$('#assistantInstructionsSave')?.addEventListener('click',saveAssistantInstructions);$('#assistantClose')?.addEventListener('click',assistantClose);$('#assistantNew')?.addEventListener('click',newAssistantConversation);$('#assistantSend')?.addEventListener('click',sendAssistantMessage);$('#assistantInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAssistantMessage();}});
+$('#templateSearchBtn')?.addEventListener('click',loadTemplateCatalog);$('#databaseRefresh')?.addEventListener('click',loadDatabaseStatus);$('#postgresCopy')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText('npm run db:postgres:up\nnpm run db:postgres:setup\nnpm run db:postgres:doctor\n\nAdminer: http://127.0.0.1:8080\nDATABASE_URL=postgresql://buildvibe:buildvibe_dev_password@127.0.0.1:5432/buildvibe\nCODINGVIBES_DB_BACKEND=postgres');feed('Local PostgreSQL setup copied.','ok');}catch{feed('Clipboard permission denied. Use the commands shown in Database status.','err')}});$('#templateSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();loadTemplateCatalog();}});
+$('#generate3d')?.addEventListener('click',generate3DModel);$('#upgradeBusiness')?.addEventListener('click',()=>startCheckout('business'));$('#openAssistant3d')?.addEventListener('click',()=>openAssistantWithPrompt('Help me design the 3D model experience for this product: include 360/orbit, media, hotspots, materials/colors and performance-safe fallbacks.','chat'));$('#upgradePro')?.addEventListener('click',()=>startCheckout('pro'));$('#upgradeTeam')?.addEventListener('click',()=>startCheckout('team'));$('#manageBilling')?.addEventListener('click',manageBilling);$('#inviteMember')?.addEventListener('click',async()=>{try{const j=await api('/api/workspaces/'+state.project.workspace_id+'/invites',{method:'POST',body:JSON.stringify({email:$('#inviteEmail').value,role:$('#inviteRole').value})});feed('Invite created. Share token securely: '+j.token,'ok');await loadWorkspaceSuite();}catch(e){feed('Invite: '+e.message,'err')}});$('#saveDesign')?.addEventListener('click',saveDesignMode);$('#resetDesign')?.addEventListener('click',resetDesignMode);$('#provisionCloud')?.addEventListener('click',provisionCloud);$('#addDomain')?.addEventListener('click',addDomain);$('#newContentRevision')?.addEventListener('click',newContentRevision);$('#runResearch')?.addEventListener('click',runProjectResearch);$('#runDiscoverability')?.addEventListener('click',runDiscoverability);$('#buildBtn').onclick=startBuild;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $('#newWindow')?.addEventListener('click',createProjectWindow);
+initVisualAnnotation();
 startWindowPolling();document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>{$('#request').value=b.dataset.prompt;$('#request').focus();previewBlueprint()});$('#request').addEventListener('input',()=>{if(state.project)state.drafts.set(state.project.id,$('#request').value);clearTimeout(window.cvPlanTimer);window.cvPlanTimer=setTimeout(previewBlueprint,500)});$('#targetSelect').addEventListener('change',()=>{if(state.project)state.targetsByProject.set(state.project.id,$('#targetSelect').value);});$('#newProject').onclick=createProjectWindow;$('#logout').onclick=async()=>{await api('/api/auth/logout',{method:'POST'});location.reload()};
 async function initGoogleAuth(){
   const button=$('#googleBtn');if(!button)return;

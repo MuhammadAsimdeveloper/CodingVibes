@@ -2,6 +2,8 @@ const FEATURE_RULES = {
   basic_site: { label: 'Basic website generation', minPlan: 'free' },
   visual_builder: { label: 'Visual product builder', minPlan: 'free' },
   basic_seo: { label: 'Core SEO markup', minPlan: 'free' },
+  three_d_creation: { label: '3D website creation', minPlan: 'free' },
+  animated_creation: { label: 'Animated website creation', minPlan: 'free' },
   advanced_animation: { label: 'Advanced motion / 3D', minPlan: 'pro' },
   ai_video: { label: 'AI video generation', minPlan: 'pro' },
   advanced_seo: { label: 'Advanced SEO automation', minPlan: 'pro' },
@@ -11,9 +13,14 @@ const FEATURE_RULES = {
   team_collaboration: { label: 'Team collaboration controls', minPlan: 'team' },
   audit_export: { label: 'Audit and release evidence export', minPlan: 'team' },
   scaleout: { label: 'Production scale-out controls', minPlan: 'team' },
+  apk_build: { label: 'Android / APK generation', minPlan: 'pro' },
+  assistant_history: { label: 'Assistant chat history', minPlan: 'free' },
+  local_llm: { label: 'Local LLM connections', minPlan: 'free' },
+  catalog_3d: { label: 'Structured catalog + 3D products', minPlan: 'free' },
+  native_apk: { label: 'Native Android / APK generation', minPlan: 'pro' },
 };
 
-const PLAN_ORDER = { free: 0, pro: 1, team: 2 };
+const PLAN_ORDER = { free: 0, pro: 1, team: 2, business: 3 };
 
 export function featureCatalog() {
   return Object.entries(FEATURE_RULES).map(([id, rule]) => ({ id, ...rule }));
@@ -29,7 +36,9 @@ export function classifyRequest(request = '') {
   const features = new Set(['basic_site']);
   if (/(^|\W)(3d|3-d|webgl|three\.js|threejs|babylon|spline|immersive|shader|particle|particles)(\W|$)/.test(text) ||
       /(gsap|scrolltrigger|lottie|rive|parallax|smooth scroll|advanced animation|motion design)/.test(text)) {
-    features.add('advanced_animation');
+    if(/(^|\W)(3d|3-d|webgl|three\.js|threejs|babylon|spline|immersive|virtual tour|360)(\W|$)/.test(text)) features.add('three_d_creation');
+    if(/(gsap|scrolltrigger|lottie|rive|parallax|smooth scroll|advanced animation|motion design)/.test(text)) features.add('animated_creation');
+    if(/(shader|particle|particles|advanced animation|motion design)/.test(text)) features.add('advanced_animation');
   }
   if (/(ai video|generate video|text[- ]to[- ]video|image[- ]to[- ]video|video generator|make a video)/.test(text)) {
     features.add('ai_video');
@@ -37,6 +46,7 @@ export function classifyRequest(request = '') {
   if (/(seo audit|schema automation|programmatic seo|keyword research|content cluster|search console integration)/.test(text)) {
     features.add('advanced_seo');
   }
+  if (/(apk|android\s+app|native\s+android|kotlin\s+app|gradle\s+assemble|react\s+native|expo|flutter|ios\s+app)/.test(text)) features.add('native_apk');
   if (/(deploy|publish|host it|hosting|custom domain|cloudflare|hostinger|production url)/.test(text)) {
     features.add('deployment');
   }
