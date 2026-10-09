@@ -7,7 +7,8 @@ const DEFAULT_IDLE=Number(process.env.CODINGVIBES_PG_IDLE_TIMEOUT_MS||30000);
 function connectionConfig(overrides={}){
   const url=String(overrides.connectionString||process.env.DATABASE_URL||'').trim();
   if(!url)throw new Error('DATABASE_URL is required for the PostgreSQL backend');
-  const sslMode=String(overrides.sslMode||process.env.CODINGVIBES_PG_SSL_MODE||'require').toLowerCase();
+  const sslMode=String(overrides.sslMode||process.env.CODINGVIBES_PG_SSL_MODE||'require').trim().toLowerCase();
+  if(!['disable','require','verify-full'].includes(sslMode))throw new Error('invalid_postgres_ssl_mode: use disable, require, or verify-full');
   const ssl=sslMode==='disable'?false:{rejectUnauthorized:sslMode==='verify-full'};
   return {connectionString:url,max:Math.min(Math.max(Number(overrides.max||DEFAULT_MAX),1),100),connectionTimeoutMillis:Number(overrides.connectionTimeoutMillis||DEFAULT_TIMEOUT),idleTimeoutMillis:Number(overrides.idleTimeoutMillis||DEFAULT_IDLE),allowExitOnIdle:false,ssl,application_name:String(overrides.applicationName||'build-vibe')};
 }
