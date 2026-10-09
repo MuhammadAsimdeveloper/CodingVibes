@@ -1028,3 +1028,12 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Added `test/scene-editor-session.test.js` for review-before-apply, cancel/unsupported intent, undo/redo lifecycle and snapshot isolation.
 - **Integration boundary:** this is a tested session/controller layer, not yet connected to the actual Three.js runtime, public studio UI, authenticated project persistence or durable revision history. It performs no DOM, renderer, network or database side effects. Those integrations remain separate acceptance gates.
 - Verification: the current-head CI was green for dependency review; Build Vibe CI and CodeQL were still running when this phase began. Re-run/inspect workflows on the resulting head and resolve any failures or security alerts before treating this phase as verified.
+
+
+## 45. Browser scene editor surface (2026-10-09)
+
+- Added a beta scene-editing panel to the Design tab with a node hierarchy, property inspector, text-to-edit preview, confirm/cancel, undo/redo, validated JSON import, JSON export and starter-scene reset.
+- The UI uses the scene document validator and the session controller; scene text is rendered with DOM text nodes/textContent and imported JSON is size-limited and schema-validated before use.
+- Prompt edits require an explicit preview and confirmation. Direct inspector changes are validated against the scene document contract. Unsupported prompt requests are shown as errors and do not apply.
+- **Scope boundary:** this is currently a local browser-session scene-document editor with a starter scene, not a live Three.js renderer editor. It does not yet save scenes to authenticated project storage, persist uploaded assets, or change a generated site's running 3D scene. JSON export/import is the explicit portability bridge for this phase.
+- Acceptance gate: CI/browser E2E must confirm the panel loads, invalid imports are rejected, preview cancellation is non-mutating, confirm/undo/redo work, and exports validate on re-import. Continue with renderer binding and project-owned durable scene storage as separate phases.
