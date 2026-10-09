@@ -46,7 +46,7 @@ import {assetType,safeAssetName,hashBuffer,makeAssetRecord,validateAssetUpload,M
 import {baselinePath} from './verification/visual.js';
 import {WORKSPACE_ROLES,canRole,authorizeProjectRole,projectCapabilityMatrix,normalizeDesignSystem,designModeContract,researchWeb,provisionCloudService,CLOUD_SERVICE_CATALOG,domainVerificationInstructions,hashInviteToken,makeInviteToken} from './platform/feature-suite.js';
 import {auditDiscoverability,aeoSummary} from './verification/discoverability.js';
-import {runTool as runFabricTool,listToolContracts,getToolContract} from './tool-fabric/index.js';
+import {runTool as runFabricTool,runToolPipeline as runFabricPipeline,listToolContracts,getToolContract} from './tool-fabric/index.js';
 import {submitIndexNow} from './seo/indexnow.js';
 import {listPublicSeoPages,renderPublicSeoPage} from './seo/public-pages.js';
 import {telemetry} from './ops/telemetry.js';
@@ -262,6 +262,32 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     const result=await runFabricTool(contract.id,input);
     try{store.addAuditLog({actorUserId:userId,action:'tool_fabric.executed',resourceType:'tool',resourceId:contract.id,metadata:{status:result.status,riskClass:contract.riskClass,executionMode:contract.executionMode,networkUsed:false,durationMs:Date.now()-started,inputFields:Object.keys(input).slice(0,30),outputFields:result.output&&typeof result.output==='object'?Object.keys(result.output).slice(0,30):[]}})}catch{}
     return sendJson(res,200,{ok:true,result,contract:{id:contract.id,status:contract.status,executionMode:contract.executionMode,networkRequired:contract.networkRequired,confirmationRequired:contract.confirmationRequired}});
+  }
+
+  if(method==='POST'&&u.pathname==='/api/tool-fabric/pipeline'){
+    if(!consumeRateLimit(buckets,'tool-fabric:'+userId,60,60000))return sendJson(res,429,{ok:false,error:'tool_rate_limit',retry_after_seconds:60});
+    const body=await readJson(req,Math.min(MAX_BODY,1_100_000));
+    const started=Date.now();
+    const result=await runFabricPipeline(body);
+    const requestedTools=Array.isArray(body?.steps)?body.steps.slice(0,10).map(step=>typeof step?.tool==='string'?step.tool.slice(0,128):'invalid'):[];
+    try{
+      store.addAuditLog({
+        actorUserId:userId,
+        action:'tool_fabric.pipeline_executed',
+        resourceType:'tool_pipeline',
+        resourceId:'pipeline',
+        metadata:{
+          status:result.status,
+          stepCount:requestedTools.length,
+          completedSteps:Array.isArray(result.results)?result.results.filter(step=>step.status==='COMPLETED').length:0,
+          failedStepId:result.failedStepId||null,
+          toolIds:requestedTools,
+          networkUsed:false,
+          durationMs:Date.now()-started
+        }
+      });
+    }catch{}
+    return sendJson(res,200,{ok:true,result});
   }
   if(method==='GET'&&u.pathname==='/api/builder/research')return sendJson(res,200,{ok:true,research:builderResearch()});
   if(method==='GET'&&u.pathname==='/api/cloud/catalog')return sendJson(res,200,{ok:true,services:CLOUD_SERVICE_CATALOG});
