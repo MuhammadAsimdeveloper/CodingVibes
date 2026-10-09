@@ -16,7 +16,7 @@ test('generated products include dependency-free visual selection runtime',()=>{
   assert.match(visual.content,/buildvibe:visual-select/);
   assert.match(plan.files.find(x=>x.path==='public/index.html').content,/visual-edit\.js/);
   assert.match(visual.content,/prefers-reduced-motion/);
-  assert.match(visual.content,/Alt/);
+  assert.match(visual.content,/altKey/);
   assert.match(plan.files.find(x=>x.path==='package.json').content,/visual-edit/);
   const runtimePath=path.join(root,'visual-edit.js');
   fs.writeFileSync(runtimePath,visual.content,'utf8');
