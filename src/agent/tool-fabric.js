@@ -56,8 +56,16 @@ function collectHtmlFiles(publicDir) {
 export async function auditGeneratedProject(workspace, options = {}) {
   const root=path.resolve(String(workspace || '.'));
   const publicDir=path.join(root,'public');
-  if(!fs.existsSync(publicDir) || !fs.statSync(publicDir).isDirectory()) {
+  if(!fs.existsSync(publicDir)) {
     return {version:1,status:'SKIPPED',reason:'public_directory_missing',networkUsed:false,pagesScanned:0,oversizedFiles:0,truncated:false,pages:[],summary:{seoFindings:0,accessibilityFindings:0,seoErrors:0,accessibilityErrors:0}};
+  }
+  let publicStat;
+  try { publicStat=fs.lstatSync(publicDir); }
+  catch {
+    return {version:1,status:'SKIPPED',reason:'public_directory_missing',networkUsed:false,pagesScanned:0,oversizedFiles:0,truncated:false,pages:[],summary:{seoFindings:0,accessibilityFindings:0,seoErrors:0,accessibilityErrors:0}};
+  }
+  if(!publicStat.isDirectory() || publicStat.isSymbolicLink()) {
+    return {version:1,status:'SKIPPED',reason:'public_directory_not_real_directory',networkUsed:false,pagesScanned:0,oversizedFiles:0,truncated:false,pages:[],summary:{seoFindings:0,accessibilityFindings:0,seoErrors:0,accessibilityErrors:0}};
   }
 
   const maxPages=safeLimit(options.maxPages,DEFAULT_MAX_PAGES,DEFAULT_MAX_PAGES);

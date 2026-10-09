@@ -48,3 +48,9 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 - API testing currently produces a redacted request plan only. The default execution path never sends outbound requests; live network execution remains NOT_CONFIGURED pending a dedicated SSRF-safe runner, timeouts, credential isolation, audit and explicit approval.
 - Website audits analyze supplied HTML only. Performance reports require caller-supplied measurements; the registry does not fabricate browser or Lighthouse metrics.
 - Local contracts and tests are located in src/tool-fabric/ and test/tool-fabric.test.js. Consume these modules directly; never call Asim Tools over HTTP at runtime.
+
+
+## Build verification integration — 2026-10-09
+
+- The agent orchestrator now invokes `auditGeneratedProject` after browser smoke/product quality on web builds and records a `tool_fabric_audit` evidence object plus a compact event summary.
+- The helper scans public HTML locally with bounds: maximum 40 HTML files by default, maximum 1 MB per file, maximum 2,000 discovered HTML files, no symlink traversal, and per-file overflow statuses. SEO and accessibility findings are advisory evidence; they do not replace Playwright checks or independently approve a release.
