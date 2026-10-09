@@ -462,10 +462,10 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     try{content=applyContentOperation(content,{type:'update',collection,id:recordId,patch},{kind:content.kit});content.meta={...(content.meta||{}),managed:true};content=store.upsertProjectContent(projectId,userId,content);syncProjectContent(projectId,userId,content);return sendJson(res,200,{ok:true,content,asset,attached:{collection,recordId,mode}});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}
   }
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='GET'){
-    const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const kind=u.searchParams.get('kind')||'',role=u.searchParams.get('role')||'';const assets=store.listProjectAssets(projectId,userId).filter(a=>(!kind||a.kind===kind)&&(!role||a.role===role)).map(projectAssetApiRecord);return sendJson(res,200,{ok:true,assets});
+    const projectId=u.pathname.split('/')[3];if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const kind=u.searchParams.get('kind')||'',role=u.searchParams.get('role')||'';const assets=store.listProjectAssets(projectId,userId).filter(a=>(!kind||a.kind===kind)&&(!role||a.role===role)).map(projectAssetApiRecord);return sendJson(res,200,{ok:true,assets});
   }
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='POST'){
-     const projectId=pathParam(u.pathname,'/api/projects/');try{requireProjectRole(projectId,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
+     const projectId=u.pathname.split('/')[3];try{requireProjectRole(projectId,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
      const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});if(!project.repo_path)return sendJson(res,409,{ok:false,error:'project_workspace_missing'});
      let name=String(req.headers['x-asset-name']||'asset');try{name=decodeURIComponent(name)}catch{}
      const mime=String(req.headers['content-type']||'application/octet-stream'),role=String(req.headers['x-asset-role']||'other');
