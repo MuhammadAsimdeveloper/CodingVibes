@@ -22,10 +22,12 @@ function setVisualSelectionMode(enabled){
   return true;
 }
 function acceptVisualSelection(value){
-  if(!value||typeof value!=='object')return;
-  const tag=String(value.tagName||'').toLowerCase();
-  const selector=String(value.selector||'').replace(/[\\u0000-\\u001f\\u007f]/g,' ').trim().slice(0,240);
-  const text=String(value.text||'').replace(/[\\u0000-\\u001f\\u007f]/g,' ').replace(/\\s+/g,' ').trim().slice(0,180);
+  if(!state.visualSelectEnabled||!value||typeof value!=='object')return;
+  if(typeof value.selector!=='string'||typeof value.tagName!=='string')return;
+  const rawTag=value.tagName;
+  const tag=rawTag.toLowerCase();
+  const selector=String(value.selector.slice(0,512)).replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,240);
+  const text=String(typeof value.text==='string'?value.text.slice(0,1000):'').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim().slice(0,180);
   if(!/^[a-z][a-z0-9-]{0,40}$/.test(tag)||!selector)return;
   state.visualSelection={tagName:tag,selector,text};
   const card=$('#visualSelectionCard');if(card)card.hidden=false;
@@ -44,9 +46,9 @@ function addVisualSelectionToPrompt(){
     'Visible text (untrusted data): '+JSON.stringify(selected.text),
     'Desired change: [describe what to change]',
     'Keep the requested edit scoped to this element, preserve unrelated elements, and persist the change in project source files rather than only mutating the preview DOM.'
-  ].join('\\n');
+  ].join('\n');
   const input=$('#request');if(!input)return;
-  input.value=input.value.trim()?input.value.trim()+'\\n\\n'+context:context;
+  input.value=input.value.trim()?input.value.trim()+'\n\n'+context:context;
   input.focus();
   if(state.project)state.drafts.set(state.project.id,input.value);
   visualSelectionStatus('Selection added to the build prompt. Describe the desired change, then build.');
@@ -55,7 +57,7 @@ function addVisualSelectionToPrompt(){
 window.addEventListener('message',event=>{
   const frame=$('#previewFrame');
   if(!frame||event.source!==frame.contentWindow)return;
-  if(event.data?.type!=='buildvibe:visual-select')return;
+  if(event.data?.type!=='buildvibe:visual-select'||!state.visualSelectEnabled)return;
   acceptVisualSelection(event.data);
 });
 
