@@ -53,6 +53,7 @@ import {telemetry} from './ops/telemetry.js';
 import {sanitizeProductEvent,recordProductEvent} from './ops/product-analytics.js';
 import {normalizeFeatureFlag,evaluateFeatureFlag} from './ops/feature-flags.js';
 import {scaleOutConfig as scaleOutConfigSnapshot} from './platform/scaleout.js';
+import {validateSceneDocument} from './scene/scene-document.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');const PUBLIC_SEO_ROUTES=listPublicSeoPages().map(x=>x.path);
 export const store=new Store();export const router=new ModelRouter();
@@ -280,6 +281,31 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
       store.addAuditLog({actorUserId:userId,action:'design_system.text_edit_applied',resourceType:'project',resourceId:pid,metadata:{operationCount:additions.length,operationTypes:additions.map(x=>x.reason)}});
       return sendJson(res,200,{ok:true,applied:additions,designSystem,contract:designModeContract(designSystem.system),message:'Saved to this project. Rebuild to apply the visual changes.'});
     }catch(e){return sendJson(res,400,{ok:false,error:e.message});}
+  }
+  if(/^\/api\/projects\/[^/]+\/scene$/.test(u.pathname)&&method==='GET'){
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\\/scene$/,'');
+    try{requireProjectRole(pid,userId,'viewer')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
+    const saved=store.getSceneDocument(pid,userId);
+    return sendJson(res,200,{ok:true,scene:saved?.scene||null,revision:Number(saved?.revision||0),updatedAt:saved?.updated_at||null});
+  }
+  if(/^\/api\/projects\/[^/]+\/scene$/.test(u.pathname)&&method==='PUT'){
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\\/scene$/,'');
+    try{requireProjectRole(pid,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
+    let body;
+    try{body=await readJson(req,MAX_BODY)}catch(e){return sendJson(res,400,{ok:false,error:'invalid_json_body'})}
+    const checked=validateSceneDocument(body.scene);
+    if(!checked.ok)return sendJson(res,400,{ok:false,error:'invalid_scene_document',details:checked.errors});
+    const expectedRevision=body.expectedRevision===undefined?null:body.expectedRevision;
+    if(expectedRevision!==null&&(!Number.isInteger(expectedRevision)||expectedRevision<0))return sendJson(res,400,{ok:false,error:'expected_revision_must_be_nonnegative_integer'});
+    try{
+      const saved=store.saveSceneDocument(pid,userId,checked.value,{expectedRevision});
+      store.addAuditLog({actorUserId:userId,action:'scene_document.saved',resourceType:'project',resourceId:pid,metadata:{revision:saved.revision,nodeCount:checked.value.nodes.length}});
+      return sendJson(res,200,{ok:true,scene:saved.scene,revision:saved.revision,updatedAt:saved.updated_at});
+    }catch(e){
+      if(e.code==='scene_revision_conflict')return sendJson(res,409,{ok:false,error:'scene_revision_conflict',currentRevision:e.currentRevision});
+      if(e.message==='Project not found')return sendJson(res,404,{ok:false,error:'project_not_found'});
+      return sendJson(res,400,{ok:false,error:e.message});
+    }
   }
   if(/^\/api\/projects\/[^/]+\/design$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/design$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});let ds=store.getDesignSystem(pid,userId);if(!ds){ds=store.upsertDesignSystem(pid,userId,{system:normalizeDesignSystem({},'')});}return sendJson(res,200,{ok:true,designSystem:ds,contract:designModeContract(ds.system)});}
   if(/^\/api\/projects\/[^/]+\/design$/.test(u.pathname)&&method==='PUT'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/design$/,'');try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const b=await readJson(req,MAX_BODY);try{const ds=store.upsertDesignSystem(pid,userId,{name:String(b.name||'Build Vibe Design System'),system:normalizeDesignSystem(b.system||b.tokens||{},String(b.request||''))});store.addAuditLog({actorUserId:userId,action:'design_system.updated',resourceType:'project',resourceId:pid,metadata:{version:ds.version}});return sendJson(res,200,{ok:true,designSystem:ds,contract:designModeContract(ds.system)});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}}
