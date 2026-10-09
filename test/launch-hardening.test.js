@@ -96,3 +96,11 @@ test('cross-site Fetch Metadata is rejected even when Origin is absent',()=>{
   assert.match(source,/sec-fetch-site/);
   assert.match(source,/fetchSite==='cross-site'/);
 });
+
+test('browser QA covers phone tablet and desktop widths and fails on overflow',()=>{
+  const source=fs.readFileSync('src/verification/playwright.js','utf8');
+  assert.ok(source.includes('responsiveViewports=[{width:390,height:844},{width:768,height:1024},{width:1440,height:900}]'));
+  assert.ok(source.includes('horizontal overflow at '));
+  assert.ok(source.includes('responsiveFailures:'));
+  assert.ok(source.includes('ui.responsiveLayouts=responsive'));
+});
