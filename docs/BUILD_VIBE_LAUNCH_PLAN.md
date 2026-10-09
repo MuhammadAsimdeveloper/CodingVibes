@@ -989,3 +989,11 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - This is a tested-contract implementation step, not yet the complete 3D editor. The generated Three.js runtime and assistant orchestration are not yet wired to this scene document; current media remains local-session unless passed through the existing authorized asset path.
 - Next: add prompt-to-scene intent mapping that emits only these typed operations; then connect a read-only scene hierarchy/inspector and preview/commit/undo UI. Persist revisions and asset references only after project ownership and durable-storage boundaries are integrated.
 - Required verification: run the full CI suite on the new head, including the Node test suite, coverage, lint/check, SEO, E2E, browser E2E, live PostgreSQL tests, CodeQL and Dependency Review. Do not claim completion from source-level tests alone.
+
+
+## 41. Prompt-to-scene typed operation mapping (2026-10-09)
+
+- Added `src/scene/prompt-operations.js` as a deliberately limited intent adapter: supported color, visibility, position and rename requests are translated into typed operations, never JavaScript or executable snippets.
+- Ambiguous multi-node requests and unsupported prompts return explicit `ok: false` responses instead of claiming the scene changed. The caller must show a preview/confirmation and pass accepted operations to `applySceneOperation`; this module does not mutate or persist a scene.
+- Added `test/scene-prompt-operations.test.js` to cover supported edits, ambiguous targeting, unsupported requests, input bounds and invalid scenes.
+- Next: run and repair full CI; connect a selected-node context from the visual editor; add a human-readable preview/diff and apply/cancel UX; only then connect operation application to the renderer and durable revision history.
