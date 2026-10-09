@@ -184,8 +184,56 @@ async function exportProject(){
   }catch(e){feed('Export: '+e.message,'err')}
 }
 
-async function loadResearch(){try{const j=await api('/api/builder/research');const r=j.research;$('#research').innerHTML='<p>'+r.methodology+'</p>'+r.sources.map(s=>'<div style="margin:8px 0"><strong>'+s.name+'</strong><br><a href="'+s.url+'" target="_blank" rel="noreferrer">'+s.patterns.join(' · ')+'</a></div>').join('')}catch{}}
+async function loadResearch(){
+  const host=$('#research');
+  if(!host)return;
+  try{
+    const response=await api('/api/builder/research');
+    const research=response?.research||{};
+    const fragment=document.createDocumentFragment();
+    const methodologyNode=document.createElement('p');
+    methodologyNode.textContent=String(research.methodology||'');
+    fragment.append(methodologyNode);
 
+    const sources=Array.isArray(research.sources)?research.sources.slice(0,40):[];
+    for(const source of sources){
+      if(!source||typeof source!=='object')continue;
+      const row=document.createElement('div');
+      row.style.margin='8px 0';
+      const sourceName=document.createElement('strong');
+      sourceName.textContent=String(source.name||'Source');
+      row.append(sourceName,document.createElement('br'));
+
+      const patternsNode=document.createElement('span');
+      patternsNode.textContent=(Array.isArray(source.patterns)?source.patterns:[])
+        .slice(0,20).map(pattern=>String(pattern)).join(' · ');
+
+      let safeUrl='';
+      const rawUrl=String(source.url||'');
+      try{
+        const url=new URL(rawUrl);
+        const hasHttpScheme=rawUrl.startsWith('https://')||rawUrl.startsWith('http://');
+        if(hasHttpScheme&&['http:','https:'].includes(url.protocol)&&url.hostname&&!url.username&&!url.password){
+          safeUrl=url.href;
+        }
+      }catch{}
+      if(safeUrl){
+        const link=document.createElement('a');
+        link.href=safeUrl;
+        link.target='_blank';
+        link.rel='noopener noreferrer';
+        link.append(patternsNode);
+        row.append(link);
+      }else{
+        row.append(patternsNode);
+      }
+      fragment.append(row);
+    }
+    host.replaceChildren(fragment);
+  }catch{
+    host.textContent='Research results are temporarily unavailable.';
+  }
+}
 async function loadWorkspaceSuite(){
   if(!state.project?.workspace_id)return;
   try{
