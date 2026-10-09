@@ -978,3 +978,10 @@ The source-side audit, module decisions and test changes do not mark unavailable
 ## 45. Browser E2E checkpoint — image optimizer real-browser verification
 
 Added `scripts/image-optimizer-browser-e2e.mjs` and the `browser:image-optimizer` CI step after Playwright Chromium installation. It exercises the Studio controls in Chromium, verifies PNG-to-WebP encode, preview dimensions, download filename, SVG rejection, preview preservation and zero upload/API requests during optimization. The final CI result for this added check must be recorded before this stage is marked fully verified.
+
+
+## 46. TDD checkpoint — P1 local text utility suite
+
+Added nine task-level text utilities to the canonical Tool Fabric: count, case conversion, line sorting, duplicate-line removal, literal replacement, bounded line diff, whitespace cleaning, ASCII slug generation and Unicode inspection. The utilities use explicit contracts, stable tool IDs, local-only execution, bounded input/output and truthful INVALID_INPUT/INPUT_TOO_LARGE statuses. Literal replacement never compiles user text as a regex; diff limits both sides to 500 lines; Unicode inspection emits at most 1000 code-point entries. Tests cover the Unicode length/byte distinctions, casing modes, stable line handling, literal replacement, bounded diff, whitespace policy, slug errors and UTF-16 offsets.
+
+The test-first commit introduced the desired contract/output tests before executors. This implementation commit raises the canonical catalog from 18 to 27 tools only after adding nine executable local functions and contract rows; it does not change any external/network adapter states.

@@ -30,6 +30,15 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `design.color.palette` | local | Generates validated HEX tint/shade/complement palette |
 | `design.css.gradient` | local | Validates HEX stops and returns a bounded CSS linear-gradient |
 | `qr.generate` | local | Dependency-free QR Code Model 2, byte mode, error-correction L, versions 1–4; ASCII payload up to 78 bytes |
+| `text.count` | local | Unicode code points, UTF-16 units, UTF-8 bytes, words, lines and paragraphs |
+| `text.case.convert` | local | Explicit lower/upper/title/sentence/camel/Pascal/kebab/snake/constant casing modes |
+| `text.lines.sort` | local | Stable ascending/descending line sorting, optional case-insensitive comparison |
+| `text.duplicates.remove` | local | Stable duplicate-line removal; preserves first occurrence and optional trimming/case-folding |
+| `text.replace` | local | Literal-only first/all replacement, no user-controlled regex, bounded replacement count/output |
+| `text.diff` | local | Bounded line-based diff, up to 500 lines per side |
+| `text.whitespace.clean` | local | Line-ending/trailing-space/blank-line normalization or whitespace collapse |
+| `text.slug.generate` | local | Bounded ASCII slugs with combining-mark removal and empty-result rejection |
+| `text.unicode.inspect` | local | Unicode code points, UTF-16 offsets and UTF-8 bytes, capped at 1000 code points |
 
 ## Output envelope
 

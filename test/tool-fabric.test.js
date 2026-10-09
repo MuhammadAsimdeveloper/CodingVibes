@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getToolContract, listToolContracts, runTool} from '../src/tool-fabric/index.js';
 
-test('canonical Tool Fabric publishes 18 unique contracts with auditable safety metadata', () => {
+test('canonical Tool Fabric publishes 27 unique contracts with auditable safety metadata', () => {
   const contracts = listToolContracts();
-  assert.equal(contracts.length, 18);
+  assert.equal(contracts.length, 27);
   assert.equal(new Set(contracts.map(contract => contract.id)).size, contracts.length);
   for (const contract of contracts) {
     assert.equal(contract.owner, 'build-vibe');

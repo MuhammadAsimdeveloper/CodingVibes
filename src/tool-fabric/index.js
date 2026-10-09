@@ -1,5 +1,6 @@
 import {TOOL_CONTRACTS, getToolContract, listToolContracts} from './contracts.js';
 import {generateQrSvg} from './qr.js';
+import {runTextTool} from './text.js';
 
 class ToolFailure extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -432,6 +433,15 @@ export async function runTool(id, input = {}) {
       case 'seo.og.generate': output=generateOg(input);break;
       case 'seo.audit': output=staticSeoAudit(input.html);break;
       case 'web.accessibility.audit': output=staticAccessibilityAudit(input.html);break;
+      case 'text.count': output=runTextTool(contract.id,input);break;
+      case 'text.case.convert': output=runTextTool(contract.id,input);break;
+      case 'text.lines.sort': output=runTextTool(contract.id,input);break;
+      case 'text.duplicates.remove': output=runTextTool(contract.id,input);break;
+      case 'text.replace': output=runTextTool(contract.id,input);break;
+      case 'text.diff': output=runTextTool(contract.id,input);break;
+      case 'text.whitespace.clean': output=runTextTool(contract.id,input);break;
+      case 'text.slug.generate': output=runTextTool(contract.id,input);break;
+      case 'text.unicode.inspect': output=runTextTool(contract.id,input);break;
       case 'json.format': {
         if(typeof input.text!=='string') throw new ToolFailure('INVALID_INPUT','JSON text is required.');
         let value;try{value=JSON.parse(input.text);}catch{throw new ToolFailure('INVALID_INPUT','The JSON input is invalid.');}
