@@ -69,6 +69,10 @@ test('percentage, ratio, discount, profit margin, ROI and break-even calculation
   assert.equal(breakEven.output.contributionMargin, 20);
   assert.equal(breakEven.output.exactUnitsToBreakEven, 500);
   assert.equal(breakEven.output.unitsToBreakEven, 500);
+  const fractionalUnits = await runTool('calc.break_even', {fixedCosts:1,pricePerUnit:1,variableCostPerUnit:0.0000004});
+  assert.equal(fractionalUnits.status, 'COMPLETED');
+  assert.equal(fractionalUnits.output.exactUnitsToBreakEven, 1);
+  assert.equal(fractionalUnits.output.unitsToBreakEven, 2);
 });
 
 test('compound interest and loan tools handle positive interest and zero-interest edge cases', async () => {
