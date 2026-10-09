@@ -89,3 +89,19 @@ test('Studio includes an accessible, local-only image optimizer and uses the can
   assert.match(studio,/URL\.createObjectURL\(/);
   assert.match(studio,/URL\.revokeObjectURL\(/);
 });
+
+test('browser image optimizer refuses SVG files before decoding their contents', async () => {
+  const previous=Object.getOwnPropertyDescriptor(globalThis,'createImageBitmap');
+  let decodeCalls=0;
+  globalThis.createImageBitmap=async()=>{decodeCalls++;throw new Error('must not decode');};
+  try {
+    await assert.rejects(
+      optimizeImageInBrowser(new Blob(['<svg></svg>'],{type:'image/svg+xml'})),
+      error => error.code==='INVALID_INPUT'
+    );
+    assert.equal(decodeCalls,0);
+  } finally {
+    if(previous) Object.defineProperty(globalThis,'createImageBitmap',previous);
+    else delete globalThis.createImageBitmap;
+  }
+});
