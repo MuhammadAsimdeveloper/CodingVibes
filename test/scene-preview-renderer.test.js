@@ -28,7 +28,7 @@ class Renderer {
 class Light extends Object3D { constructor(color, intensity) { super(); this.color = color; this.intensity = intensity; } }
 class GridHelper extends Object3D {}
 class Texture { constructor() { this.disposed = false; } dispose() { this.disposed = true; } }
-class TextureLoader { load(url, onLoad) { const texture = new Texture(); texture.url = url; onLoad(texture); return texture; } }
+class TextureLoader { load(url, onLoad) { const texture = new Texture(); texture.url = url; queueMicrotask(() => onLoad(texture)); return texture; } }
 class PointLight extends Light {}
 const fakeThree = {
   Scene, PerspectiveCamera: Camera, WebGLRenderer: Renderer, Color,
