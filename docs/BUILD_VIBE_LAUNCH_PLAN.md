@@ -1018,3 +1018,13 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Added `test/scene-edit-history.test.js` for commit/undo/redo, redo invalidation, empty states, bounded history and invalid inputs.
 - This history is currently in-memory for a single editor session. It is not yet connected to the live 3D renderer, UI controls, persistent revision store, multi-tab concurrency or cross-user collaboration. Do not present it as durable history.
 - Verification required: complete CI on this branch, then integrate controls and scene persistence through authenticated project ownership before considering this capability end-to-end complete.
+
+
+## 44. UI-facing scene edit session facade (2026-10-09)
+
+- Added `src/scene/scene-editor-session.js` to coordinate the existing scene contract, prompt mapper, guarded preview/commit transaction, and bounded undo/redo history behind one small UI-facing API.
+- Exposes `preview`, `confirm`, `cancel`, `undo`, `redo`, detached state snapshots, a session revision counter, and explicit pending-preview/confirmability state. A valid prompt does not change the active document until confirmation; unsupported prompts and cancelled previews do not mutate it.
+- Undo/redo clears any pending preview so the user cannot accidentally confirm an obsolete review. Every successful commit/undo/redo advances the session revision.
+- Added `test/scene-editor-session.test.js` for review-before-apply, cancel/unsupported intent, undo/redo lifecycle and snapshot isolation.
+- **Integration boundary:** this is a tested session/controller layer, not yet connected to the actual Three.js runtime, public studio UI, authenticated project persistence or durable revision history. It performs no DOM, renderer, network or database side effects. Those integrations remain separate acceptance gates.
+- Verification: the current-head CI was green for dependency review; Build Vibe CI and CodeQL were still running when this phase began. Re-run/inspect workflows on the resulting head and resolve any failures or security alerts before treating this phase as verified.
