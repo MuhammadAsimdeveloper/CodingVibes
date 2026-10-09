@@ -14,5 +14,7 @@ test('targeted design language parses common visual edits',()=>{
 test('visual edits target background safely and reject unsupported requests',()=>{
  const background=classifyAssistantRequest('make the page background blue');
  assert.ok(background.operations.some(x=>x.css?.backgroundColor==='#3b82f6'));
+ assert.ok(classifyAssistantRequest('make the heading #ff00aa').operations.some(x=>x.css?.color==='#ff00aa'));
+ assert.ok(classifyAssistantRequest('make buttons blue').operations.some(x=>x.css?.backgroundColor==='#3b82f6'));
  assert.equal(classifyAssistantRequest('write a newsletter').intent,'unclassified');
 });
