@@ -26,7 +26,7 @@ test('deployment sync writes validated scene documents and preserves persistent 
   assert.match(server, /else fs\.rmSync\(scenePath,\{force:true\}\)/);
   assert.match(server, /async function syncDeploymentContent\(/);
   assert.match(server, /store\.listProjectAssets\(projectId,userId\)/);
-  assert.match(server, /hashBuffer\(desired\)/);
+  assert.match(server, /hashBuffer\(current\)!==asset\.sha256/);
   assert.equal(server.includes("fs.rmSync(dst,{recursive:true,force:true})"), false, 'sync must merge, not delete the whole output assets directory');
   assert.match(runtime, /function validAssetUrl\(value\)/);
   assert.match(runtime, /value\.includes\('\.\.'\)/);
