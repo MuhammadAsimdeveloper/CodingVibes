@@ -175,7 +175,7 @@ function cleanWhitespace(input) {
     case 'normalize':
       cleaned = text.replace(/\r\n?/gu,'\n')
         .split('\n')
-        .map(line=>line.replace(/[ \t]+$/gu,''))
+        .map(line=>line.replace(/^[ \t]+|[ \t]+$/gu,''))
         .join('\n')
         .replace(/\n{3,}/gu,'\n\n')
         .trim();
