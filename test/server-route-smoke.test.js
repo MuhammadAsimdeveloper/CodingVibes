@@ -37,6 +37,9 @@ test('server public and authenticated route smoke covers launch control plane',a
     assert.ok([200,404].includes(r.response.status),pathName+' status '+r.response.status);
   }
 
+  const unauthToolCatalog=await req('/api/tool-fabric/catalog');
+  assert.equal(unauthToolCatalog.response.status,401);
+
   const signup=await req('/api/auth/signup',{method:'POST',body:JSON.stringify({email:'smoke@example.com',password:'test-password-123'})});
   assert.equal(signup.response.status,201);
   const cookie=signup.response.headers.get('set-cookie');

@@ -57,3 +57,7 @@ Focused tests live in `test/tool-fabric.test.js`; `npm test`, `npm run test:cove
 For web-node and web-pwa builds, `src/agent/orchestrator.js` runs `src/agent/tool-fabric.js` after the existing browser smoke test and product-quality audit. It stores a `tool_fabric_audit` evidence record and emits a `tool_fabric_audit_completed` event containing counts and truncation status. Static findings are advisory, not a substitute for the existing release gates.
 
 The helper scans only files under a real `public/` directory, skips symlinks, limits scans to 40 pages and 1 MB per file by default, and bounds directory discovery at 2,000 HTML files. Missing or symlinked public directories are reported as skipped rather than followed.
+
+## Authenticated backend API
+
+The existing authenticated Build Vibe backend exposes the catalog at `GET /api/tool-fabric/catalog` and local tool execution at `POST /api/tool-fabric/execute`. Requests use the current session cookie, are rate-limited (60 executions/minute per account), and create an audit event containing tool/status/execution metadata and input/output field names only—not input values or generated output contents. Unknown tools, malformed inputs and each tool's explicit non-success status remain visible. Live outbound HTTP execution is disabled; API testing only returns an SSRF-conscious request plan.
