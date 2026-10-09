@@ -147,6 +147,23 @@ async function loadDesignMode(){
     $('#designStatus').textContent='Version '+(j.designSystem?.version||1)+' · '+(j.designSystem?.name||'Design System');
   }catch(e){$('#designStatus').textContent='Design mode unavailable: '+e.message;}
 }
+async function applyDesignText(){
+  if(!state.project)return;
+  const field=$('#designTextRequest'),statusEl=$('#designTextStatus'),button=$('#applyDesignText');
+  const request=String(field?.value||'').trim();
+  if(!request){if(statusEl)statusEl.textContent='Describe a focused design change first.';return;}
+  if(button)button.disabled=true;
+  if(statusEl)statusEl.textContent='Applying supported design changes…';
+  try{
+    const result=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/design/intent',{method:'POST',body:JSON.stringify({request})});
+    if(statusEl)statusEl.textContent=(result.message||'Saved. Rebuild to apply the changes.')+' '+(result.applied?.length||0)+' change(s) saved.';
+    feed('Saved '+(result.applied?.length||0)+' text-driven design change(s). Rebuild to apply them.','ok');
+    await loadDesignMode();
+    field.value='';
+  }catch(e){
+    if(statusEl)statusEl.textContent=e.status===422?'That change is not supported yet. Try “make the heading blue and centered” or “make cards more rounded”.':e.message;
+  }finally{if(button)button.disabled=false;}
+}
 async function saveDesignMode(){
   if(!state.project)return;
   const base=await api('/api/projects/'+state.project.id+'/design');
@@ -175,7 +192,7 @@ async function runProjectResearch(){if(!state.project)return;const query=$('#res
 async function runDiscoverability(){if(!state.project)return;try{const j=await api('/api/projects/'+state.project.id+'/discoverability/audit',{method:'POST',body:'{}'});const el=$('#discoverabilitySummary');const a=j.audit||{},rows=[['Score',String(a.score||0)+'/100'],['Pages',String((a.pages||[]).length)],['Issues',String((a.issues||[]).length)],['Warnings',String((a.warnings||[]).length)],['AEO',j.aeo?.answerEngineReady?'ready':'needs work']];if(el)el.replaceChildren(...rows.map(([k,v])=>{const d=document.createElement('div');d.className='cv-list-row';const x=document.createElement('span');x.textContent=k;const y=document.createElement('strong');y.textContent=v;d.append(x,y);return d;}));feed(j.aeo?.answerEngineReady?'SEO/AEO audit passed.':'SEO/AEO audit found improvements.','ok');}catch(e){feed('SEO/AEO: '+e.message,'err')}}
 async function loadFeatureSuite(){if(!state.project)return;await Promise.all([loadWorkspaceSuite(),loadDesignMode(),loadCloudServices(),loadDomains(),loadContentRevisions()]);}
 
-$('#launchCheck')?.addEventListener('click',loadLaunchStatus);$('#upgradePro')?.addEventListener('click',()=>startCheckout('pro'));$('#upgradeTeam')?.addEventListener('click',()=>startCheckout('team'));$('#manageBilling')?.addEventListener('click',manageBilling);$('#inviteMember')?.addEventListener('click',async()=>{try{const j=await api('/api/workspaces/'+state.project.workspace_id+'/invites',{method:'POST',body:JSON.stringify({email:$('#inviteEmail').value,role:$('#inviteRole').value})});feed('Invite created. Share token securely: '+j.token,'ok');await loadWorkspaceSuite();}catch(e){feed('Invite: '+e.message,'err')}});$('#saveDesign')?.addEventListener('click',saveDesignMode);$('#resetDesign')?.addEventListener('click',resetDesignMode);$('#provisionCloud')?.addEventListener('click',provisionCloud);$('#addDomain')?.addEventListener('click',addDomain);$('#newContentRevision')?.addEventListener('click',newContentRevision);$('#runResearch')?.addEventListener('click',runProjectResearch);$('#runDiscoverability')?.addEventListener('click',runDiscoverability);$('#buildBtn').onclick=startBuild;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$('#launchCheck')?.addEventListener('click',loadLaunchStatus);$('#upgradePro')?.addEventListener('click',()=>startCheckout('pro'));$('#upgradeTeam')?.addEventListener('click',()=>startCheckout('team'));$('#manageBilling')?.addEventListener('click',manageBilling);$('#inviteMember')?.addEventListener('click',async()=>{try{const j=await api('/api/workspaces/'+state.project.workspace_id+'/invites',{method:'POST',body:JSON.stringify({email:$('#inviteEmail').value,role:$('#inviteRole').value})});feed('Invite created. Share token securely: '+j.token,'ok');await loadWorkspaceSuite();}catch(e){feed('Invite: '+e.message,'err')}});$('#applyDesignText')?.addEventListener('click',applyDesignText);$('#saveDesign')?.addEventListener('click',saveDesignMode);$('#resetDesign')?.addEventListener('click',resetDesignMode);$('#provisionCloud')?.addEventListener('click',provisionCloud);$('#addDomain')?.addEventListener('click',addDomain);$('#newContentRevision')?.addEventListener('click',newContentRevision);$('#runResearch')?.addEventListener('click',runProjectResearch);$('#runDiscoverability')?.addEventListener('click',runDiscoverability);$('#buildBtn').onclick=startBuild;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $('#newWindow')?.addEventListener('click',createProjectWindow);
 startWindowPolling();document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>{$('#request').value=b.dataset.prompt;$('#request').focus();previewBlueprint()});$('#request').addEventListener('input',()=>{if(state.project)state.drafts.set(state.project.id,$('#request').value);clearTimeout(window.cvPlanTimer);window.cvPlanTimer=setTimeout(previewBlueprint,500)});$('#targetSelect').addEventListener('change',()=>{if(state.project)state.targetsByProject.set(state.project.id,$('#targetSelect').value);});$('#newProject').onclick=createProjectWindow;$('#logout').onclick=async()=>{await api('/api/auth/logout',{method:'POST'});location.reload()};
 async function initGoogleAuth(){
