@@ -942,3 +942,18 @@ The source-side audit, module decisions and test changes do not mark unavailable
 **Verification status:** the latest full CI run is in progress as of this checkpoint. Do not call this capability verified until its test, coverage, syntax/static, E2E, browser, security and launch checks complete successfully. This PR remains open and separate from `main`; it is not a production deployment.
 
 **Next unfinished Tool Fabric work:** complete the local/browser adapters still explicitly marked `BROWSER_REQUIRED`, `NEEDS_BROWSER_METRICS`, or `NOT_CONFIGURED` only when a real governed adapter and its test environment exist; then add remaining P1 utilities from `docs/ZEE_TOOLS_ECOSYSTEM_PLAN.md`. Declared contracts alone are not evidence that a tool is executable.
+
+
+## 43. Security regression checkpoint — Three.js walkthrough video upload (2026-10-10)
+
+**TDD scope:** resolve the CodeQL js/xss-through-dom finding associated with the local walkthrough-video preview path in src/templates/runtime/three-experience.js, without weakening CodeQL or changing the generated-project architecture.
+
+- Added the upload validation regression to test/three-experience-runtime.test.js before changing the runtime. The test-only commit 02b9fc3379b9b6f79ad09dfa9216b3b30cee0d7a intentionally failed CI at npm test, demonstrating the missing validation contract.
+- Implemented a strict video/mp4, video/webm, video/ogg MIME allowlist; rejected empty uploads and files above 250 MiB; checked video.canPlayType; and created a Blob with the validated media type before creating the object URL and assigning video.src. Invalid files do not replace the current preview.
+- Kept the existing cleanup contract that revokes the prior preview URL when a validated replacement is loaded. The file input is reset after processing so the same file can be selected again.
+- Latest implementation commit: fab79897aca9ed55992635e61d01b3ea7ec252ef.
+- Verification evidence on that exact commit: Build Vibe CI passed, including npm test, coverage (60% line/function and 40% branch thresholds), npm run check, SEO, server E2E, Playwright browser E2E, load/recovery smoke, deployment preflight, benchmark, MiroFish status, retention dry-run, security preflight, scaleout doctor and launch readiness. CodeQL and Dependency Review also passed.
+- The diagnostic SARIF logging added during investigation did not suppress alerts or alter scanner conclusions. The current CodeQL workflow reports a successful analysis; do not interpret that as proof that every historical alert in GitHub's alert history was automatically closed.
+- The PR is still open and not merged or deployed. Live infrastructure, configured third-party providers, native artifact verification, and production deployment remain separate gates.
+
+**Next unfinished Tool Fabric work:** review the P1 local utilities and the browser adapters marked BROWSER_REQUIRED / NEEDS_BROWSER_METRICS in docs/TOOL_FABRIC.md; implement the highest-value adapter only when its real governed runtime and tests are available. Do not treat a declared contract as execution evidence.
