@@ -76,6 +76,11 @@ async function readProjectAssetBuffer(project,asset){
  if(body)throw Object.assign(new Error('asset_integrity_check_failed'),{status:409});
  return null;
 }
+function projectAssetApiRecord(record){
+ const metadata=record?.metadata&&typeof record.metadata==='object'&&!Array.isArray(record.metadata)?{...record.metadata}:{};
+ delete metadata.storage;
+ return makeAssetRecord({id:record.id,name:record.name,mime:record.mime,size:record.size,sha256:record.sha256,role:record.role,publicPath:record.public_path||record.publicPath,metadata});
+}
 function sendProjectAsset(res,asset,body,{inline=false}={}){
  const filename=safeAssetName(asset.name||'asset');const headers={'content-type':String(asset.mime||'application/octet-stream').split(';')[0],'content-length':String(body.length),'content-disposition':(inline?'inline':'attachment')+'; filename="'+filename+'"','cache-control':'private, no-store','x-content-type-options':'nosniff'};
  if(inline&&String(asset.mime||'').toLowerCase()==='image/svg+xml')headers['content-security-policy']="default-src 'none'; sandbox; img-src data:; style-src 'unsafe-inline'; base-uri 'none'";
@@ -457,7 +462,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     try{content=applyContentOperation(content,{type:'update',collection,id:recordId,patch},{kind:content.kit});content.meta={...(content.meta||{}),managed:true};content=store.upsertProjectContent(projectId,userId,content);syncProjectContent(projectId,userId,content);return sendJson(res,200,{ok:true,content,asset,attached:{collection,recordId,mode}});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}
   }
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='GET'){
-    const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const kind=u.searchParams.get('kind')||'',role=u.searchParams.get('role')||'';const assets=store.listProjectAssets(projectId,userId).filter(a=>(!kind||a.kind===kind)&&(!role||a.role===role));return sendJson(res,200,{ok:true,assets});
+    const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const kind=u.searchParams.get('kind')||'',role=u.searchParams.get('role')||'';const assets=store.listProjectAssets(projectId,userId).filter(a=>(!kind||a.kind===kind)&&(!role||a.role===role)).map(projectAssetApiRecord);return sendJson(res,200,{ok:true,assets});
   }
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='POST'){
      const projectId=pathParam(u.pathname,'/api/projects/');try{requireProjectRole(projectId,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
@@ -481,7 +486,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
        const metadata={...checkedMetadata.value,storage:{provider:objects.provider,key:stored.key}};
        const record=store.createProjectAsset(projectId,userId,{id,name:safe,mime:finalGate.mime,kind:finalGate.kind,role,size,sha256,publicPath,metadata});
        store.addAuditLog({actorUserId:userId,action:'project.asset.uploaded',resourceType:'project_asset',resourceId:id,metadata:{projectId,kind:record.kind,role,size,sha256}});
-       return sendJson(res,201,{ok:true,asset:makeAssetRecord({id:record.id,name:record.name,mime:record.mime,size:record.size,sha256:record.sha256,role:record.role,publicPath:record.public_path,metadata:record.metadata})});
+       return sendJson(res,201,{ok:true,asset:projectAssetApiRecord(record)});
      }catch(error){
        try{fs.rmSync(tempPath,{force:true})}catch{}
        if(localWritten)try{fs.rmSync(absolute,{force:true})}catch{}
@@ -497,7 +502,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
      if(asset.metadata?.storage?.key){try{const objects=await getAssetObjectStore();if(asset.metadata.storage.provider&&asset.metadata.storage.provider!==objects.provider)return sendJson(res,503,{ok:false,error:'asset_storage_backend_mismatch'});await objects.delete({key:asset.metadata.storage.key})}catch(e){return sendJson(res,e.status||503,{ok:false,error:'asset_storage_delete_failed'})}}
      const filename=projectAssetFilename(asset.public_path);if(filename&&project.repo_path){try{const file=resolveInside(project.repo_path,path.join('public','assets',filename));fs.rmSync(file,{force:true})}catch{}}
      store.deleteProjectAsset(assetId,projectId,userId);store.addAuditLog({actorUserId:userId,action:'project.asset.deleted',resourceType:'project_asset',resourceId:assetId,metadata:{projectId}});
-     return sendJson(res,200,{ok:true,asset});
+     return sendJson(res,200,{ok:true,asset:projectAssetApiRecord(asset)});
    }
   if(/^\/api\/projects\/[^/]+\/assets\/[^/]+\/(?:file|preview)$/.test(u.pathname)&&method==='GET'){
      const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5],inline=parts[6]==='preview';const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});
