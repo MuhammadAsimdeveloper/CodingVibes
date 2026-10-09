@@ -258,11 +258,6 @@ test('Tool Fabric pipelines stop on the first failed step and enforce bounded un
   assert.equal(tooMany.status, 'INVALID_PIPELINE');
   assert.equal(tooMany.results.length, 0);
 });
-; keep the dangerous pattern out of a regex literal
-  const unsafe = await runTool('regex.test', {pattern: unsafePattern, input: 'aaaaaaaaaaaaaaaa!'});
-  assert.equal(unsafe.status, 'BLOCKED');
-});
-
 test('JWT inspector explicitly reports decoded-only, unverified claims', async () => {
   const header = Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');
   const payload = Buffer.from(JSON.stringify({sub:'user-1',admin:false})).toString('base64url');
