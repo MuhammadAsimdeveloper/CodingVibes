@@ -13,6 +13,8 @@ All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
 
+- Added bounded, local-only Tool Fabric pipeline composition with safe prior-output references, preflight validation, output budgets, fail-fast results, authenticated API access and content-free audit metadata.
+
 ### Phase 1
 - Added canonical release verification via `npm run release:check`.
 - Added Node version pinning with `.nvmrc`.
