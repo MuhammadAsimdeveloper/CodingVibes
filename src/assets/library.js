@@ -125,7 +125,7 @@ export function validateAssetContent({name,mime,body}={}){
       const parsed=JSON.parse(body.toString('utf8'));
       valid=Boolean(parsed&&typeof parsed==='object'&&parsed.asset&&/^2(?:\.\d+)?$/.test(String(parsed.asset.version||'')));
       const refs=[...(Array.isArray(parsed.buffers)?parsed.buffers:[]),...(Array.isArray(parsed.images)?parsed.images:[])].map(item=>item?.uri).filter(uri=>typeof uri==='string'&&!uri.startsWith('data:'));
-      valid=valid&&refs.every(uri=>/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,200}$/.test(uri)&&!uri.includes('..'));
+      valid=valid&&refs.every(uri=>/^data:[^,]{1,120};base64,/.test(uri));
     }catch{valid=false}
   }
   else if(ext==='obj'){
