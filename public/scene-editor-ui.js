@@ -20,6 +20,9 @@ if (panel) {
   let importedDocument = false;
   let previewRenderer = null;
   let previewRendererLoading = false;
+  let sceneProjectId = null;
+  let sceneSavedRevision = 0;
+  let sceneDirty = false;
 
   const status = (message, kind = '') => {
     const node = $('#sceneEditorStatus');
@@ -112,6 +115,7 @@ if (panel) {
     root.append(button('Confirm edit', () => {
       const result = session.confirm();
       if (!result.ok) { status(result.errors?.join(' ') || result.status, 'error'); return; }
+      sceneDirty = true;
       status('Edit applied to the local scene session.', 'success'); renderAll();
     }, 'cv-primary'));
     root.append(button('Cancel preview', () => { session.cancel(); status('Preview cancelled; scene unchanged.'); renderAll(); }));
@@ -126,9 +130,10 @@ if (panel) {
     const state = session.getState();
     $('#sceneUndo').disabled = !state.canUndo;
     $('#sceneRedo').disabled = !state.canRedo;
-    $('#sceneEditorStatus').textContent = importedDocument
-      ? 'Imported scene · local session only · export to preserve changes'
-      : 'Starter scene · local session only · export to preserve changes';
+    const statusNode = $('#sceneEditorStatus');
+    if (statusNode && !statusNode.dataset.kind) statusNode.textContent = sceneProjectId
+      ? (sceneDirty ? 'Unsaved project scene changes · revision ' + sceneSavedRevision : 'Project scene · revision ' + sceneSavedRevision)
+      : (importedDocument ? 'Imported scene · local session only · export to preserve changes' : 'Starter scene · local session only · export to preserve changes');
   }
 
   function applyDirect(fieldName, value, message) {
@@ -142,6 +147,7 @@ if (panel) {
     try {
       const result = session.applyOperation(op);
       if (!result.ok) throw new Error(result.errors.join('; '));
+      sceneDirty = true;
       status(message, 'success');
       renderAll();
     } catch (error) { status(error.message, 'error'); renderInspector(); }
@@ -160,18 +166,18 @@ if (panel) {
   $('#sceneUndo')?.addEventListener('click', () => {
     const result = session.undo();
     if (!result.ok) status(result.errors?.join(' ') || result.status, 'error');
-    else status('Undid the last prompt-based edit.');
+    else { sceneDirty = true; status('Undid the last scene edit.'); }
     renderAll();
   });
   $('#sceneRedo')?.addEventListener('click', () => {
     const result = session.redo();
     if (!result.ok) status(result.errors?.join(' ') || result.status, 'error');
-    else status('Redid the last prompt-based edit.');
+    else { sceneDirty = true; status('Redid the last scene edit.'); }
     renderAll();
   });
   $('#sceneReset')?.addEventListener('click', () => {
-    session = new SceneEditorSession(starterScene()); selectedId = 'hero'; importedDocument = false;
-    status('Starter scene restored.'); renderAll();
+    session = new SceneEditorSession(starterScene()); selectedId = 'hero'; importedDocument = false; sceneDirty = true;
+    status('Starter scene restored. Save to project to preserve it.'); renderAll();
   });
   $('#sceneExport')?.addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(session.document, null, 2)], { type: 'application/json' });
@@ -187,11 +193,78 @@ if (panel) {
       const parsed = JSON.parse(await file.text());
       const checked = validateSceneDocument(parsed);
       if (!checked.ok) throw new Error(checked.errors.join('; '));
-      session = new SceneEditorSession(checked.value); selectedId = checked.value.nodes[0]?.id || ''; importedDocument = true;
-      status('Scene imported and validated.'); renderAll();
+      session = new SceneEditorSession(checked.value); selectedId = checked.value.nodes[0]?.id || ''; importedDocument = true; sceneDirty = true;
+      status('Scene imported and validated. Save to project to preserve it.'); renderAll();
     } catch (error) { status('Import rejected: ' + error.message, 'error'); }
     finally { event.target.value = ''; }
   });
+  async function loadProjectScene(projectId) {
+    if (!projectId) return;
+    if (sceneDirty && !window.confirm('Discard unsaved scene edits before switching projects?')) {
+      status('Project switch kept the current scene open. Save it before switching.', 'error');
+      return;
+    }
+    try {
+      const response = await fetch('/api/projects/' + encodeURIComponent(projectId) + '/scene', { headers: { accept: 'application/json' } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'HTTP ' + response.status);
+      sceneProjectId = projectId;
+      sceneSavedRevision = Number(payload.revision || 0);
+      if (payload.scene) {
+        const checked = validateSceneDocument(payload.scene);
+        if (!checked.ok) throw new Error('Saved scene failed validation: ' + checked.errors.join('; '));
+        session = new SceneEditorSession(checked.value);
+        selectedId = checked.value.nodes[0]?.id || '';
+        importedDocument = true;
+      } else {
+        session = new SceneEditorSession(starterScene());
+        selectedId = 'hero';
+        importedDocument = false;
+      }
+      sceneDirty = false;
+      status(payload.scene ? 'Loaded saved scene revision ' + sceneSavedRevision + '.' : 'No saved scene yet. Save this scene to create project revision 1.', 'success');
+      renderAll();
+    } catch (error) {
+      status('Could not load project scene: ' + error.message, 'error');
+    }
+  }
+
+  async function saveProjectScene() {
+    if (!sceneProjectId) {
+      status('Select a project in Build Vibe before saving the scene.', 'error');
+      return;
+    }
+    const saveButton = $('#sceneSaveProject');
+    if (saveButton) saveButton.disabled = true;
+    try {
+      const response = await fetch('/api/projects/' + encodeURIComponent(sceneProjectId) + '/scene', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ scene: session.document, expectedRevision: sceneSavedRevision })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (response.status === 409) {
+        status('Save conflict: project scene is now revision ' + Number(payload.currentRevision || 0) + '. Reload the project scene before retrying.', 'error');
+        return;
+      }
+      if (!response.ok) throw new Error(payload.error || 'HTTP ' + response.status);
+      sceneSavedRevision = Number(payload.revision);
+      sceneDirty = false;
+      status('Saved project scene revision ' + sceneSavedRevision + '.', 'success');
+      renderAll();
+    } catch (error) {
+      status('Could not save project scene: ' + error.message, 'error');
+    } finally {
+      if (saveButton) saveButton.disabled = false;
+    }
+  }
+  $('#sceneLoadProject')?.addEventListener('click', () => loadProjectScene(window.cvProjectId || sceneProjectId));
+  $('#sceneSaveProject')?.addEventListener('click', saveProjectScene);
+  window.addEventListener('buildvibe:project-changed', event => {
+    if (event.detail?.projectId) loadProjectScene(event.detail.projectId);
+  });
+  if (window.cvProjectId) loadProjectScene(window.cvProjectId);
+
   async function initializePreviewRenderer() {
     if (previewRenderer || previewRendererLoading) return;
     previewRendererLoading = true;
