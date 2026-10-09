@@ -113,7 +113,8 @@ test('regex tester returns bounded matches and rejects common catastrophic patte
   const result = await runTool('regex.test', {pattern: '\\w+', input: 'build vibe 13'});
   assert.equal(result.status, 'COMPLETED');
   assert.ok(result.output.matches.length >= 2);
-  const unsafePattern = String.fromCharCode(40, 97, 43, 41, 43, 36); // '(a+)+
+  const unsafePattern = String.fromCharCode(40, 97, 43, 41, 43, 36);
+  const unsafe = await runTool('regex.test', {pattern: unsafePattern, input: 'aaaaaaaaaaaaaaaa!'});
   assert.equal(unsafe.status, 'BLOCKED');
 });
 
