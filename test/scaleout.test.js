@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {createLocalObjectStore} from '../src/storage/object-store.js';
 import {InMemoryJobQueue} from '../src/jobs/queue.js';
-import {postgresConfigStatus} from '../src/db/postgres.js';
+import {createPostgresDatabase,postgresConfigStatus} from '../src/db/postgres.js';
 import {scaleOutConfig} from '../src/platform/scaleout.js';
 import {Store} from '../src/db/store.js';
 
@@ -33,6 +33,11 @@ test('in-memory queue preserves jobs and supports bounded retry',async()=>{
  assert.equal(retry.requeued,true);assert.equal(retry.job.attempt,1);
  const next=await queue.reserve({blockMs:0});assert.equal(next[0].id,created.id);
  await queue.close();assert.equal(await queue.healthcheck(),false);
+});
+
+test('PostgreSQL connection rejects unknown SSL modes instead of weakening TLS silently',()=>{
+ assert.throws(()=>createPostgresDatabase({connectionString:'postgres://example.invalid/buildvibe',sslMode:'disabled'}),/invalid_postgres_ssl_mode/);
+ assert.throws(()=>createPostgresDatabase({connectionString:'postgres://example.invalid/buildvibe',sslMode:'off'}),/invalid_postgres_ssl_mode/);
 });
 
 test('scaleout configuration fails closed for incomplete managed backends',()=>{
