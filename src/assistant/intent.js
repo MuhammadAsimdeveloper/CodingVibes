@@ -22,9 +22,11 @@ const SELECTORS = [
   { names: ['image', 'images', 'photo'], selector: 'img' }
 ];
 
-const hasPhrase = (text, phrases) => phrases.some(phrase =>
-  new RegExp('(?:^|\\\\W)' + phrase.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '(?:$|\\\\W)', 'i').test(text)
-);
+const normalizePhrase = value => String(value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const hasPhrase = (text, phrases) => {
+  const haystack = ' ' + normalizePhrase(text) + ' ';
+  return phrases.some(phrase => haystack.includes(' ' + normalizePhrase(phrase) + ' '));
+};
 
 function targetFor(text) {
   return SELECTORS.find(item => hasPhrase(text, item.names))?.selector || 'main';
