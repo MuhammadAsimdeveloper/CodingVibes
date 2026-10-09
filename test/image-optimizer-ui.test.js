@@ -6,6 +6,7 @@ import {optimizeImageInBrowser} from '../src/tool-fabric/browser.js';
 const root = new URL('../', import.meta.url);
 const html = fs.readFileSync(new URL('public/index.html', root), 'utf8');
 const studio = fs.readFileSync(new URL('public/studio.js', root), 'utf8');
+const browserAdapter = fs.readFileSync(new URL('public/tool-fabric-browser.js', root), 'utf8');
 
 function withBrowserCanvas({width=4000,height=2000,encodedType='image/webp',blobSize=8}={}, run) {
   const keys = ['createImageBitmap','OffscreenCanvas','document'];
@@ -88,6 +89,27 @@ test('Studio includes an accessible, local-only image optimizer and uses the can
   assert.match(studio,/optimizeImageInBrowser\(/);
   assert.match(studio,/URL\.createObjectURL\(/);
   assert.match(studio,/URL\.revokeObjectURL\(/);
+});
+
+test('browser image optimizer rejects empty and over-25-MiB files before decoding', async () => {
+  const previous=Object.getOwnPropertyDescriptor(globalThis,'createImageBitmap');
+  let decodeCalls=0;
+  globalThis.createImageBitmap=async()=>{decodeCalls++;throw new Error('must not decode');};
+  try {
+    await assert.rejects(
+      optimizeImageInBrowser(new Blob([],{type:'image/png'})),
+      error => error.code==='INVALID_INPUT'
+    );
+    const large=new Blob([new Uint8Array(25*1024*1024+1)],{type:'image/png'});
+    await assert.rejects(
+      optimizeImageInBrowser(large),
+      error => error.code==='INPUT_TOO_LARGE'
+    );
+    assert.equal(decodeCalls,0);
+  } finally {
+    if(previous) Object.defineProperty(globalThis,'createImageBitmap',previous);
+    else delete globalThis.createImageBitmap;
+  }
 });
 
 test('browser image optimizer refuses SVG files before decoding their contents', async () => {
