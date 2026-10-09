@@ -49,3 +49,18 @@ Use TLS at the edge, keep /api/* uncached, maintain backups, keep the /ops conso
 GREEN: GET /ready is 200 with ready:true, CI is green, billing is configured, at least one production AI provider is configured, browser verification is enabled, backups are writable, and the production deployment has been smoke-tested.
 
 RED: any blocker from /ready, any failing CI gate, missing Stripe production configuration for a paid launch, missing AI provider, missing isolated runtime, or inability to verify browser-visible output.
+
+## Additional visual-quality checks
+
+For relevant release candidates, use [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) and verify:
+
+- [ ] Visual hierarchy and typography are coherent.
+- [ ] Mobile, tablet and desktop layouts work.
+- [ ] Key controls and forms function.
+- [ ] Reduced-motion and fallback states work.
+- [ ] Animation and 3D asset failures are recoverable.
+- [ ] Accessibility and SEO checks ran.
+- [ ] Browser/runtime errors and performance evidence were reviewed.
+
+Mark unavailable checks BLOCKED or NOT RUN, never PASS.
+
