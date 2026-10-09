@@ -30,8 +30,18 @@ export async function optimizeImageInBrowser(file, options = {}) {
     error.code = 'INVALID_INPUT';
     throw error;
   }
+  if (file.size > 25 * 1024 * 1024) {
+    const error = new Error('INPUT_TOO_LARGE: Browser image input is limited to 25 MB.');
+    error.code = 'INPUT_TOO_LARGE';
+    throw error;
+  }
   const bitmap = await createImageBitmap(file);
   try {
+    if (bitmap.width * bitmap.height > 50000000) {
+      const error = new Error('INPUT_TOO_LARGE: Decoded image dimensions exceed 50 megapixels.');
+      error.code = 'INPUT_TOO_LARGE';
+      throw error;
+    }
     const scale = Math.min(1, maxWidth / bitmap.width, maxHeight / bitmap.height);
     const width = Math.max(1, Math.round(bitmap.width * scale));
     const height = Math.max(1, Math.round(bitmap.height * scale));
