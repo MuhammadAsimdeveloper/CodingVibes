@@ -103,3 +103,7 @@ Install it with `infra/runner-fleet/linux-runner/install-service.sh` under the `
 ## macOS control-plane daemon
 
 `infra/runner-fleet/macos-runner/start.sh` loads the runner bearer token from macOS Keychain. `provision-macos.sh` installs the HTTP service as a per-user LaunchAgent so iOS Simulator/Xcode can operate in a GUI-capable session without putting the secret into the plist.
+
+## Visual and 3D workload evidence
+
+The [reconstruction plan](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) does not replace the runner protocol or capability matrix. Record actual browser/3D/native runner capability, timeouts, resource use, asset failures and artifact evidence. Do not mark an unsupported target or unavailable renderer as verified.

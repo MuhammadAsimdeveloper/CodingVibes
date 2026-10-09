@@ -28,3 +28,6 @@ Existing project/session/run data must remain readable by newer releases. SQLite
 5. Run `npm test`, coverage, syntax/security/scale-out/E2E/launch checks.
 6. Record version, commit SHA and verification evidence in the final audit artifact.
 
+## Versioning for the reconstruction initiative
+
+Changes made under [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) should follow the project's normal versioning and release-note policy when shipped. Documentation-only planning commits should not be represented as a released product version or as proof that the planned capabilities have been implemented.

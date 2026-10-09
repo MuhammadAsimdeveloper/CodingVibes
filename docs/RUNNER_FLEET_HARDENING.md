@@ -76,3 +76,7 @@ Every native verification should persist:
 `npm run fleet:doctor` provides a local readiness report without installing toolchains or making cloud changes.
 
 Runner failures have stable codes (`RUNNER_TIMEOUT`, `DEPENDENCY_INSTALL_FAILED`, `BUILD_FAILED`, `ARTIFACT_UPLOAD_FAILED`, `DEVICE_INSTALL_FAILED`, `DEVICE_SMOKE_FAILED`, and related codes) so UI/repair logic can act on failure classes instead of parsing free-form stderr.
+
+## Visual workload safety boundary
+
+Changes in [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) must preserve these runner isolation requirements. Treat generated source and downloaded visual assets as untrusted, maintain resource/time limits and restricted network policy, and test motion/3D output only in the approved isolated environment.
