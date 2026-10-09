@@ -51,3 +51,7 @@ https://help.webflow.com/hc/en-us/articles/42832301823635-Intro-to-GSAP
 https://spline.design/
 https://base44.com/ai-app-builder
 https://www.framer.com/solutions/builders/
+
+## Next benchmark scope: motion, 3D and product quality
+
+Use [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) as the next implementation scope. Expand evaluations to test generated product usefulness, visual hierarchy, responsive behavior, real controls/forms, keyboard/focus and reduced-motion support, SEO metadata, browser errors, loading behavior and measured performance. Include at least one animated experience and one real interactive 3D experience where the test environment supports it. Report evidence; do not infer quality from code volume or screenshots alone.

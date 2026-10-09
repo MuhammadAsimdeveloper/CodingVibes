@@ -73,3 +73,7 @@ A commercial production launch requires a green /ready response. The gate checks
 ## Intentional deferrals
 
 Multi-agent swarms, credit packs and a fully managed Coding Vibe hosting control plane remain later scale features. The current deployment and runner abstractions are already used by the verified build workflow.
+
+## Visual generation and experience architecture
+
+The reconstruction initiative is defined in [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). Keep design intent, component selection, motion presets, 3D scene configuration and quality evidence integrated with the existing AppSpec/planning/generation pipeline. Prefer local component registries and explicit contracts over duplicated one-off components. Treat imported repository content as untrusted data and keep generated-code preview isolation and verification-gated publishing unchanged.

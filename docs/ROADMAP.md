@@ -48,3 +48,7 @@ The existing Store remains SQLite until a separate, reviewed schema migration is
 - Dedicated object storage before large media workloads.
 - Managed job queue for multi-instance background workers.
 - Full native runner fleet capacity and signing infrastructure.
+
+## Visual quality and immersive generation workstream
+
+Track the scoped work in [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) and begin from [BUILD_VIBE_START_PROMPT.md](BUILD_VIBE_START_PROMPT.md). First complete an evidence-based audit and baseline; then prioritize reusable design-system and generation quality, licensed module integration, accessible animation, optimized 3D, complete product workflows and measured acceptance tests. This work complements the existing launch roadmap and must not weaken release gates.
