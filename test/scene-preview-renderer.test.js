@@ -12,6 +12,7 @@ class Object3D {
   remove(child) { this.children = this.children.filter(item => item !== child); child.parent = null; }
   clear() { for (const child of this.children) child.parent = null; this.children = []; }
   traverse(callback) { callback(this); for (const child of this.children) child.traverse(callback); }
+  getObjectByName(name) { if (this.name === name) return this; for (const child of this.children) { const found = child.getObjectByName?.(name); if (found) return found; } return null; }
 }
 class Scene extends Object3D {}
 class Group extends Object3D {}
@@ -26,11 +27,15 @@ class Renderer {
 }
 class Light extends Object3D { constructor(color, intensity) { super(); this.color = color; this.intensity = intensity; } }
 class GridHelper extends Object3D {}
+class Texture { constructor() { this.disposed = false; } dispose() { this.disposed = true; } }
+class TextureLoader { load(url, onLoad) { const texture = new Texture(); texture.url = url; onLoad(texture); return texture; } }
+class PointLight extends Light {}
 const fakeThree = {
   Scene, PerspectiveCamera: Camera, WebGLRenderer: Renderer, Color,
   AmbientLight: Light, DirectionalLight: Light, Group, Mesh,
   BoxGeometry: Geometry, SphereGeometry: Geometry, PlaneGeometry: Geometry,
   MeshStandardMaterial: Material, GridHelper, CanvasTexture: class {},
+  TextureLoader, VideoTexture: class extends Texture {}, PointLight, SpotLight: class extends Light {},
   DoubleSide: 2, SRGBColorSpace: 'srgb'
 };
 function fakeCanvas() {
@@ -64,4 +69,20 @@ test('Three.js adapter renders supported scene nodes with hierarchy and transfor
 test('Three.js adapter rejects missing canvas or Three.js namespace', () => {
   assert.throws(() => createScenePreviewRenderer({ canvas: null, THREE: fakeThree }), /required/);
   assert.throws(() => createScenePreviewRenderer({ canvas: fakeCanvas() }), /required/);
+});
+
+test('Three.js adapter maps image asset URLs to textures and accepts light nodes', () => {
+  const canvas = fakeCanvas();
+  const renderer = createScenePreviewRenderer({ canvas, THREE: fakeThree });
+  const sceneDocument = {
+    schemaVersion: 1, id: 'media-scene', name: 'Media scene', nodes: [
+      { id: 'image-1', type: 'image', name: 'Product image', assetUrl: 'https://assets.example.test/product.webp', position: [0, 1, 0] },
+      { id: 'key-light', type: 'light', name: 'Key light', color: '#ffffff', position: [2, 3, 1] },
+      { id: 'video-1', type: 'video', name: 'Product video', assetUrl: 'https://assets.example.test/demo.mp4' }
+    ]
+  };
+  renderer.render(sceneDocument);
+  renderer.render({ ...sceneDocument, nodes: sceneDocument.nodes.slice(0, 2) });
+  renderer.dispose();
+  assert.equal(canvas.listeners.size, 0);
 });
