@@ -90,7 +90,7 @@ export function applySceneOperation(document, operation) {
   if (typeof operation.nodeId !== 'string' || typeof operation.field !== 'string' || !Object.hasOwn(EDITABLE_FIELDS, operation.field)) {
     return { ok: false, errors: ['operation target field is not editable'] };
   }
-  if (!EDITABLE_FIELDS[operation.field](operation.value)) return { ok: false, errors: [`invalid value for ${operation.field}`] };
+  if (operation.op === 'set' && !EDITABLE_FIELDS[operation.field](operation.value)) return { ok: false, errors: [`invalid value for ${operation.field}`] };
   const index = validated.value.nodes.findIndex(node => node.id === operation.nodeId);
   if (index < 0) return { ok: false, errors: [`node not found: ${operation.nodeId}`] };
   const before = structuredClone(validated.value);
