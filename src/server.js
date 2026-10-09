@@ -458,7 +458,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='GET'){
     const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const kind=u.searchParams.get('kind')||'',role=u.searchParams.get('role')||'';const assets=store.listProjectAssets(projectId,userId).filter(a=>(!kind||a.kind===kind)&&(!role||a.role===role));return sendJson(res,200,{ok:true,assets});
   }
-  if(/^\\/api\\/projects\\/[^/]+\\/assets$/.test(u.pathname)&&method==='POST'){
+  if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='POST'){
      const projectId=pathParam(u.pathname,'/api/projects/');try{requireProjectRole(projectId,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
      const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});if(!project.repo_path)return sendJson(res,409,{ok:false,error:'project_workspace_missing'});
      let name=String(req.headers['x-asset-name']||'asset');try{name=decodeURIComponent(name)}catch{}
@@ -489,7 +489,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
        throw error;
      }
    }
-  if(/^\\/api\\/projects\\/[^/]+\\/assets\\/[^/]+$/.test(u.pathname)&&method==='DELETE'){
+  if(/^\/api\/projects\/[^/]+\/assets\/[^/]+$/.test(u.pathname)&&method==='DELETE'){
      const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5];try{requireProjectRole(projectId,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
      const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});
      const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});
@@ -498,7 +498,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
      store.deleteProjectAsset(assetId,projectId,userId);store.addAuditLog({actorUserId:userId,action:'project.asset.deleted',resourceType:'project_asset',resourceId:assetId,metadata:{projectId}});
      return sendJson(res,200,{ok:true,asset});
    }
-  if(/^\\/api\\/projects\\/[^/]+\\/assets\\/[^/]+\\/(?:file|preview)$/.test(u.pathname)&&method==='GET'){
+  if(/^\/api\/projects\/[^/]+\/assets\/[^/]+\/(?:file|preview)$/.test(u.pathname)&&method==='GET'){
      const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5],inline=parts[6]==='preview';const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});
      try{const body=await readProjectAssetBuffer(project,asset);if(!body)return sendJson(res,404,{ok:false,error:'asset_file_not_found'});sendProjectAsset(res,asset,body,{inline});return}catch(e){return sendJson(res,e.status||503,{ok:false,error:e.message})}
    }
