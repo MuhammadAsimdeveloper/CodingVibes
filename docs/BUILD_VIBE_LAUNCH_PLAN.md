@@ -997,3 +997,14 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Ambiguous multi-node requests and unsupported prompts return explicit `ok: false` responses instead of claiming the scene changed. The caller must show a preview/confirmation and pass accepted operations to `applySceneOperation`; this module does not mutate or persist a scene.
 - Added `test/scene-prompt-operations.test.js` to cover supported edits, ambiguous targeting, unsupported requests, input bounds and invalid scenes.
 - Next: run and repair full CI; connect a selected-node context from the visual editor; add a human-readable preview/diff and apply/cancel UX; only then connect operation application to the renderer and durable revision history.
+
+
+## 42. Scene edit preview, stale-state guard and reversible commit (2026-10-09)
+
+- Added `src/scene/scene-edit-transaction.js` to create an immutable before/after preview from the supported prompt parser and typed scene operations. Preview generation does not mutate or persist the live scene.
+- Applying a preview is guarded by a snapshot of the reviewed scene. If the scene changed, the preview belongs to another scene, or the proposed operations no longer match the parsed prompt, commit is rejected and the caller must regenerate the preview.
+- Successful commit returns a new document, change records and inverse operations in reverse application order, allowing callers to implement undo without executing user code.
+- Corrected a CI-discovered source-formatting defect in the scene contract and its tests, and corrected `unset` operation validation so removing a supported optional property can be undone.
+- Added `test/scene-edit-transaction.test.js` for non-mutating previews, guarded commit, stale previews, tampering, unsupported prompts and undo.
+- **Integration status:** this is a safe transaction boundary, not yet a UI or renderer integration. It is not wired into the live Three.js runtime, chat orchestration, database revisions, or a user-facing preview/confirm/cancel panel. Those require explicit integration and end-to-end coverage.
+- **Verification gate:** rerun the complete CI suite on the current branch after the repair. Do not mark this phase verified until CI is green. Existing PostgreSQL-primary-store, asset durability, renderer integration, security alert triage and production deployment gates remain open.
