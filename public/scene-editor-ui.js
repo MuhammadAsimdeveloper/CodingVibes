@@ -23,6 +23,7 @@ if (panel) {
   let sceneProjectId = null;
   let sceneSavedRevision = 0;
   let sceneDirty = false;
+  let sceneAssetsByPath = new Map();
 
   const status = (message, kind = '') => {
     const node = $('#sceneEditorStatus');
@@ -43,10 +44,73 @@ if (panel) {
   };
   const selectedNode = () => session.document.nodes.find(node => node.id === selectedId) || null;
 
+  async function loadProjectAssets(projectId) {
+    const response = await fetch('/api/projects/' + encodeURIComponent(projectId) + '/assets', { headers: { accept: 'application/json' } });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'Could not load project assets (HTTP ' + response.status + ').');
+    const next = new Map();
+    for (const asset of payload.assets || []) {
+      const publicPath = asset.public_path || asset.publicPath;
+      if (typeof publicPath === 'string' && /^\/assets\/[a-zA-Z0-9][a-zA-Z0-9._-]{0,240}$/.test(publicPath) && !publicPath.includes('..')) {
+        next.set(publicPath, { id: asset.id, name: asset.name, mime: asset.mime, kind: asset.kind, publicPath });
+      }
+    }
+    sceneAssetsByPath = next;
+  }
+
+  async function uploadAssetForNode(file, node) {
+    if (!sceneProjectId) throw new Error('Select a project and load its scene before uploading media.');
+    if (!file || !node || !['image', 'video', 'model'].includes(node.type)) return;
+    const maxBytes = 100 * 1024 * 1024;
+    if (!file.size || file.size > maxBytes) throw new Error('Choose a non-empty media file smaller than 100 MB.');
+    const nodeId = node.id, projectId = sceneProjectId, fileName = encodeURIComponent(file.name);
+    const role = node.type === 'image' ? 'texture' : node.type === 'video' ? 'scene-video' : 'scene-model';
+    const fallbackMime = ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', svg: 'image/svg+xml', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', glb: 'model/gltf-binary', gltf: 'model/gltf+json', obj: 'model/obj', fbx: 'application/octet-stream' })[file.name.split('.').pop().toLowerCase()] || 'application/octet-stream';
+    const response = await fetch('/api/projects/' + encodeURIComponent(projectId) + '/assets', {
+      method: 'POST',
+      headers: { 'content-type': file.type || fallbackMime, 'x-asset-name': fileName, 'x-asset-role': role, 'x-asset-meta': JSON.stringify({ source: 'scene-editor', nodeId }) },
+      body: file
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.asset?.publicPath) throw new Error(payload.error || 'Media upload failed (HTTP ' + response.status + ').');
+    const asset = payload.asset;
+    sceneAssetsByPath.set(asset.publicPath, { id: asset.id, name: asset.name, mime: asset.mime, kind: asset.kind, publicPath: asset.publicPath });
+    const result = session.applyOperation({ op: 'set', nodeId, field: 'assetUrl', value: asset.publicPath });
+    if (!result.ok) throw new Error('Uploaded media but could not attach it to the selected scene node: ' + (result.errors || []).join('; '));
+    sceneDirty = true;
+    status('Uploaded ' + file.name + ' and attached it to ' + (node.name || node.id) + '. Save the scene to persist the asset reference.', 'success');
+    renderAll();
+  }
+
   function renderHierarchy() {
     const list = $('#sceneHierarchy');
     if (!list) return;
     list.replaceChildren();
+    const controls = document.createElement('div'); controls.className = 'scene-node-actions';
+    const typeSelect = document.createElement('select'); typeSelect.setAttribute('aria-label', 'New scene node type');
+    for (const type of ['group', 'box', 'sphere', 'plane', 'text', 'image', 'video', 'model', 'light']) {
+      const option = document.createElement('option'); option.value = type; option.textContent = type[0].toUpperCase() + type.slice(1); typeSelect.append(option);
+    }
+    const add = button('Add node', () => {
+      const type = typeSelect.value;
+      const token = globalThis.crypto?.randomUUID?.().replaceAll('-', '').slice(0, 12) || String(Date.now());
+      const selected = selectedNode();
+      const parentId = selected?.type === 'group' ? selected.id : selected?.parentId;
+      const node = { id: type + '-' + token, type, name: type[0].toUpperCase() + type.slice(1) + ' node', visible: true, position: [0, 1, 0], scale: [1, 1, 1], color: '#ffffff' };
+      if (parentId) node.parentId = parentId;
+      if (type === 'text') node.text = 'Edit this text';
+      const result = session.applyOperation({ op: 'addNode', node });
+      if (!result.ok) { status((result.errors || []).join('; ') || 'Could not add node.', 'error'); return; }
+      selectedId = node.id; sceneDirty = true; status('Added ' + node.name + '. Save the scene to keep it.', 'success'); renderAll();
+    });
+    const remove = button('Remove selected', () => {
+      const node = selectedNode(); if (!node) { status('Select a scene node first.', 'error'); return; }
+      const result = session.applyOperation({ op: 'removeNode', nodeId: node.id });
+      if (!result.ok) { status((result.errors || []).join('; ') || 'Could not remove node.', 'error'); return; }
+      selectedId = session.document.nodes.find(item => item.id !== node.id)?.id || '';
+      sceneDirty = true; status('Removed ' + (node.name || node.id) + '. Undo remains available until the scene is reloaded.', 'success'); renderAll();
+    });
+    controls.append(typeSelect, add, remove); list.append(controls);
     for (const node of session.document.nodes) {
       const row = button((node.visible === false ? '◌ ' : '● ') + (node.name || node.id) + ' · ' + node.type, () => {
         selectedId = node.id; renderInspector(); renderHierarchy();
@@ -96,6 +160,28 @@ if (panel) {
       text.addEventListener('change', () => applyDirect('text', text.value, 'Updated text.'));
       root.append(field('Text', text));
     }
+    if (['image', 'video', 'model'].includes(node.type)) {
+      const upload = document.createElement('input'); upload.type = 'file'; upload.accept = node.type === 'image'
+        ? '.png,.jpg,.jpeg,.webp,.gif,.avif,.svg,image/png,image/jpeg,image/webp,image/gif,image/avif,image/svg+xml'
+        : node.type === 'video' ? '.mp4,.webm,.mov,video/mp4,video/webm,video/quicktime'
+          : '.glb,.gltf,.obj,.fbx,model/gltf-binary,model/gltf+json';
+      upload.addEventListener('change', async () => {
+        const file = upload.files?.[0]; if (!file) return;
+        upload.disabled = true;
+        try { await uploadAssetForNode(file, node); }
+        catch (error) { status('Media upload failed: ' + error.message, 'error'); }
+        finally { upload.disabled = false; upload.value = ''; }
+      });
+      root.append(field('Upload ' + node.type + ' asset', upload));
+      const assetState = document.createElement('p'); assetState.className = 'cv-muted';
+      const stored = node.assetUrl && sceneAssetsByPath.get(node.assetUrl);
+      assetState.textContent = stored ? 'Attached: ' + stored.name : node.assetUrl ? 'Attached URL: ' + node.assetUrl : 'No media attached yet.';
+      root.append(assetState);
+      if (node.assetUrl) {
+        const clear = button('Remove media reference', () => applyDirect('assetUrl', '', 'Removed media reference.'));
+        root.append(clear);
+      }
+    }
     const hint = document.createElement('p'); hint.className = 'cv-muted'; hint.textContent = 'Edits update the live preview. Save to the active project to persist changes; export JSON for a portable backup.';
     root.append(hint);
   }
@@ -124,7 +210,15 @@ if (panel) {
   function renderAll() {
     renderHierarchy(); renderInspector(); renderPreview();
     if (previewRenderer) {
-      try { previewRenderer.render(session.document); }
+      try {
+        const previewDocument = structuredClone(session.document);
+        for (const node of previewDocument.nodes) {
+          if (typeof node.assetUrl !== 'string' || !node.assetUrl.startsWith('/assets/')) continue;
+          const asset = sceneAssetsByPath.get(node.assetUrl);
+          if (asset && sceneProjectId) node.assetUrl = '/api/projects/' + encodeURIComponent(sceneProjectId) + '/assets/' + encodeURIComponent(asset.id) + '/preview';
+        }
+        previewRenderer.render(previewDocument);
+      }
       catch (error) { const message = $('#scenePreviewStatus'); if (message) message.textContent = 'Preview update failed: ' + error.message; }
     }
     const state = session.getState();
@@ -210,6 +304,8 @@ if (panel) {
       if (!response.ok) throw new Error(payload.error || 'HTTP ' + response.status);
       sceneProjectId = projectId;
       sceneSavedRevision = Number(payload.revision || 0);
+      let assetWarning = '';
+      try { await loadProjectAssets(projectId); } catch (assetError) { assetWarning = ' Asset previews could not be refreshed: ' + assetError.message; sceneAssetsByPath = new Map(); }
       if (payload.scene) {
         const checked = validateSceneDocument(payload.scene);
         if (!checked.ok) throw new Error('Saved scene failed validation: ' + checked.errors.join('; '));
@@ -222,7 +318,7 @@ if (panel) {
         importedDocument = false;
       }
       sceneDirty = false;
-      status(payload.scene ? 'Loaded saved scene revision ' + sceneSavedRevision + '.' : 'No saved scene yet. Save this scene to create project revision 1.', 'success');
+      status((payload.scene ? 'Loaded saved scene revision ' + sceneSavedRevision + '.' : 'No saved scene yet. Save this scene to create project revision 1.') + assetWarning, assetWarning ? 'error' : 'success');
       renderAll();
     } catch (error) {
       status('Could not load project scene: ' + error.message, 'error');
