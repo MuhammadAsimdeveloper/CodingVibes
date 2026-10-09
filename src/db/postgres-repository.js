@@ -18,11 +18,36 @@ export function createPostgresRepository(db){
       const result=await db.query('SELECT id,email,created_at FROM users WHERE email=$1',[String(email).trim().toLowerCase()]);
       return result.rows[0]||null;
     },
+    async getUserById(id){
+      if(!id)return null;
+      const result=await db.query('SELECT id,email,created_at FROM users WHERE id=$1',[id]);
+      return result.rows[0]||null;
+    },
+    async createAuthSession({id=randomUUID(),userId,expiresAt=new Date(Date.now()+7*24*60*60*1000).toISOString()}){
+      if(!userId)throw new TypeError('user_id_required');
+      const result=await db.query('INSERT INTO auth_sessions(id,user_id,expires_at,created_at) VALUES($1,$2,$3,$4) RETURNING id,user_id,expires_at,created_at',[id,userId,expiresAt,now()]);
+      return result.rows[0];
+    },
+    async getAuthSession(id){
+      if(!id)return null;
+      const result=await db.query('SELECT a.id,a.user_id,a.expires_at,a.created_at FROM auth_sessions a WHERE a.id=$1 AND a.expires_at>$2',[id,now()]);
+      return result.rows[0]||null;
+    },
+    async deleteAuthSession(id){
+      if(!id)return false;
+      const result=await db.query('DELETE FROM auth_sessions WHERE id=$1',[id]);
+      return result.rowCount>0;
+    },
     async createProject({userId,id=randomUUID(),name,slug,repoPath=null}){
       if(!userId||!name||!slug)throw new TypeError('user_id_name_and_slug_required');
       const timestamp=now();
       const result=await db.query('INSERT INTO projects(id,user_id,name,slug,repo_path,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$6) RETURNING id,user_id,name,slug,repo_path,created_at,updated_at',[id,userId,String(name).trim(),String(slug).trim().toLowerCase(),repoPath,timestamp]);
       return result.rows[0];
+    },
+    async getProject({userId,projectId}){
+      if(!userId||!projectId)return null;
+      const result=await db.query('SELECT id,user_id,name,slug,repo_path,created_at,updated_at FROM projects WHERE id=$1 AND user_id=$2',[projectId,userId]);
+      return result.rows[0]||null;
     },
     async listProjects({userId,limit=50}){
       if(!userId)throw new TypeError('user_id_required');
@@ -36,6 +61,17 @@ export function createPostgresRepository(db){
       const result=await db.query('INSERT INTO sessions(id,project_id,user_id,title,created_at,updated_at) SELECT $1,p.id,$2,$4,$5,$5 FROM projects p WHERE p.id=$3 AND p.user_id=$2 RETURNING id,project_id,user_id,title,created_at,updated_at',[id,userId,projectId,String(title).trim()||'New conversation',timestamp]);
       if(!result.rowCount)throw new Error('project_not_found_or_forbidden');
       return result.rows[0];
+    },
+    async getSession({userId,sessionId}){
+      if(!userId||!sessionId)return null;
+      const result=await db.query('SELECT id,project_id,user_id,title,created_at,updated_at FROM sessions WHERE id=$1 AND user_id=$2',[sessionId,userId]);
+      return result.rows[0]||null;
+    },
+    async listSessions({userId,projectId,limit=50}){
+      if(!userId||!projectId)throw new TypeError('user_id_and_project_id_required');
+      const safeLimit=Math.min(Math.max(Number.parseInt(limit,10)||50,1),100);
+      const result=await db.query('SELECT id,project_id,user_id,title,created_at,updated_at FROM sessions WHERE project_id=$1 AND user_id=$2 ORDER BY updated_at DESC,id LIMIT $3',[projectId,userId,safeLimit]);
+      return result.rows;
     },
     async appendMessage({userId,sessionId,id=randomUUID(),role,content,metadata=null}){
       if(!userId||!sessionId||!['system','user','assistant','tool'].includes(role)||typeof content!=='string')throw new TypeError('invalid_message_input');
