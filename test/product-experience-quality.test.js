@@ -87,6 +87,8 @@ test('generated 3D website exposes accessible view controls and bounded renderin
   assert.ok(runtime.includes('new TextureLoader()'));
   assert.ok(runtime.includes('applyTextureToObject(loadedModel,attachedTexture)'));
   assert.ok(runtime.includes('function disposeModelResources(root)'),'replaced GLTF resources should be disposed');
+  assert.ok(runtime.includes('function stopCameraMotion()'),'camera tours should expose a cancellable motion lifecycle');
+  assert.ok(runtime.includes('stopCameraMotion();clearInterval(tourTimer)')||runtime.includes('clearInterval(tourTimer);stopCameraMotion()'),'camera animation must stop when the tab is hidden');
   assert.ok(runtime.includes('attachedTexture=null,modelLoadGeneration=0'),'stale concurrent model loads should be invalidated');
   assert.ok(runtime.includes('loadGeneration!==modelLoadGeneration'),'late model loads must not replace the latest selection');
   assert.ok((runtime.includes('finally{')&&runtime.includes('URL.revokeObjectURL(ownedUrl)')),'temporary model URLs must be revoked on success and failure');
