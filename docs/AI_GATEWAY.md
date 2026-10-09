@@ -54,3 +54,7 @@ Never place a provider API key or gateway token in generated application source,
 Every provider connection, routing update, token creation, and token revocation is recorded in the existing durable audit log.
 
 The control plane still owns project permissions, verification gates, deployment records, and owner-only administration; the provider router only chooses how model inference is performed.
+
+## Design-aware generation and bounded repair
+
+Design-aware generation changes should follow [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). Keep provider routing, structured output validation, timeouts, token/cost budgets, repair limits, provenance and explicit NOT_CONFIGURED/BLOCKED states. Do not assume a model's prose claim proves a generated page renders, a 3D scene works or a test passed.

@@ -8,3 +8,6 @@ Build Vibe does not claim parity where the repository has no executable contract
 
 See benchmarks/competitive-matrix.json for machine-readable notes.
 
+## Generated experience benchmark extension
+
+Add scenarios from [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md): a professional business/SaaS site, a functional application, a motion-rich landing page and a genuine interactive 3D experience where supported. Score visual coherence, functional controls, responsive layouts, accessibility, reduced-motion fallback, browser errors, generation/repair evidence and performance measurements. Record BLOCKED or NOT RUN instead of converting unavailable browser/3D infrastructure into PASS.

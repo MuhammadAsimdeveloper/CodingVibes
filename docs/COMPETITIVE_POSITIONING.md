@@ -44,3 +44,7 @@ The current $7 Pro / $15 Team prices are a strong acquisition position against t
 - https://api2.v0.dev/pricing
 - https://webflow.com/pricing
 - https://help.webflow.com/hc/en-us/articles/38840145286035-Build-a-site-with-Webflow-s-AI-site-builder
+
+## Visual product quality benchmark
+
+Use [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) to benchmark professional product quality, visual editing, useful motion, 3D capability, responsive behavior and verified output. Competitor analysis is for requirements and differentiation; do not copy proprietary code, exact branding, protected assets or marketing language. Every Build Vibe capability claim must match implementation and test evidence.
