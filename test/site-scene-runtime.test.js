@@ -30,6 +30,6 @@ test('deployment sync writes validated scene documents and preserves persistent 
   assert.equal(server.includes("fs.rmSync(dst,{recursive:true,force:true})"), false, 'sync must merge, not delete the whole output assets directory');
   assert.match(runtime, /function validAssetUrl\(value\)/);
   assert.match(runtime, /value\.includes\('\.\.'\)/);
-  assert.match(runtime, /\/assets\//);
+  assert.ok(runtime.includes('\\/assets\\/'), 'runtime must explicitly allow the safe same-origin /assets/ path');
   assert.match(server, /validateAssetContent\(\{name,mime,body\}\)/);
 });
