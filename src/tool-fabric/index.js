@@ -223,9 +223,24 @@ function generateOg(input) {
   const description=String(input.description||'').trim().slice(0,500);
   if(!title||!description) throw new ToolFailure('INVALID_INPUT','Title and description are required.');
   const image=input.image?validWebUrl(input.image).href:'';
-  const rows=[['og:type','website'],['og:title',title],['og:description',description],['og:url',url],['twitter:card','summary_large_image'],['twitter:title',title],['twitter:description',description]];
-  if(image) { rows.push(['og:image',image]);rows.push(['twitter:image',image]); }
-  return {url,title,description,html:rows.map(row=>'<meta property="'+esc(row[0])+'" content="'+esc(row[1])+'">').join('\n'),tags:Object.fromEntries(rows)};
+  const rows=[
+    {attribute:'property',key:'og:type',value:'website'},
+    {attribute:'property',key:'og:title',value:title},
+    {attribute:'property',key:'og:description',value:description},
+    {attribute:'property',key:'og:url',value:url},
+    {attribute:'name',key:'twitter:card',value:'summary_large_image'},
+    {attribute:'name',key:'twitter:title',value:title},
+    {attribute:'name',key:'twitter:description',value:description}
+  ];
+  if(image) {
+    rows.push({attribute:'property',key:'og:image',value:image});
+    rows.push({attribute:'name',key:'twitter:image',value:image});
+  }
+  return {
+    url,title,description,
+    html:rows.map(row=>'<meta '+row.attribute+'="'+esc(row.key)+'" content="'+esc(row.value)+'">').join('\n'),
+    tags:Object.fromEntries(rows.map(row=>[row.key,row.value]))
+  };
 }
 function cssColor(input) { return parseHex(input).hex; }
 function colorPalette(input) {
