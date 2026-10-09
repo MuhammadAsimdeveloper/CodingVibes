@@ -94,3 +94,8 @@ The authenticated Studio Content & data tab exposes the `image.optimize` browser
 The single canonical implementation is served from `public/tool-fabric-browser.js`; `src/tool-fabric/browser.js` re-exports it for Node-side verification. No image bytes are uploaded. The adapter rejects an encoder that returns a different MIME type than requested rather than giving the user a mislabeled extension. Object URLs created for previews are revoked when replaced and when the Studio page is left. Unsupported browser APIs or image formats produce explicit errors instead of simulated success.
 
 Verification lives in `test/image-optimizer-ui.test.js`: it covers resize/output metadata, non-image/SVG/empty/oversized inputs, unsupported output encoders, no network calls, Studio control accessibility, and local-only UI wiring.
+
+
+### Browser E2E
+
+CI runs `npm run browser:image-optimizer` after installing Playwright Chromium. The test loads the real Studio module from a local-only HTTP harness, creates and downloads a 1x1 WebP preview from a valid PNG, rejects SVG input while preserving the previous preview, checks browser errors, and asserts that image processing made no API requests.

@@ -27,6 +27,7 @@
     "scaleout:doctor": "node scripts/scaleout-doctor.mjs",
     "scaleout:worker": "node scripts/scaleout-worker.mjs",
     "browser:e2e": "CODINGVIBES_E2E_BROWSER=true node scripts/e2e.mjs",
+    "browser:image-optimizer": "node scripts/image-optimizer-browser-e2e.mjs",
     "ops:load": "CODINGVIBES_LOAD_AUTOSTART=true node scripts/load-smoke.mjs",
     "recovery:smoke": "node scripts/recovery-smoke.mjs",
     "benchmark": "node src/evaluation/run-benchmark.mjs",

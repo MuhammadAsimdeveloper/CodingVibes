@@ -973,3 +973,8 @@ The source-side audit, module decisions and test changes do not mark unavailable
 **Verification status:** PASS for source revision `322d36db86047c9d7ff580959ee4d7afa1c8b3a2`. Build Vibe CI run `37982011949` passed all gates (292 tests, 0 failures, coverage, static/release, SEO, server/browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security, scaleout and launch readiness); CodeQL run `37982012043` and Dependency Review run `37982011944` also passed. The UI is a local asset utility, not proof that an uploaded image has been attached to a generated product or published.
 
 **Next unfinished stage:** add a governed, testable browser adapter for `web.performance.audit` only when the runner can supply real browser/Lighthouse measurements; until then it must continue to report `NEEDS_BROWSER_METRICS`. Then proceed through remaining P1 utilities with one distinct behavior contract and test suite at a time.
+
+
+## 45. Browser E2E checkpoint — image optimizer real-browser verification
+
+Added `scripts/image-optimizer-browser-e2e.mjs` and the `browser:image-optimizer` CI step after Playwright Chromium installation. It exercises the Studio controls in Chromium, verifies PNG-to-WebP encode, preview dimensions, download filename, SVG rejection, preview preservation and zero upload/API requests during optimization. The final CI result for this added check must be recorded before this stage is marked fully verified.
