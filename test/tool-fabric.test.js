@@ -296,12 +296,12 @@ test('text.count counts Unicode code points, UTF-8 bytes, words, lines and parag
   const result = await runTool('text.count', {text:'Build 🌱\\nVibe'});
   assert.equal(result.status, 'COMPLETED');
   assert.deepEqual(result.output, {
-    characters: 11,
-    utf16CodeUnits: 12,
+    characters: 12,
+    utf16CodeUnits: 13,
     utf8Bytes: 15,
     words: 3,
     lines: 2,
-    paragraphs: 2
+    paragraphs: 1
   });
   assert.equal((await runTool('text.count', {text:''})).output.words, 0);
 });
