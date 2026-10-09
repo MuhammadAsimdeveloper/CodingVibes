@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { inferDesignSystem } from '../src/agent/design-system.js';
 import { listTemplates } from '../src/templates/catalog.js';
 import { analyzeRequirements } from '../src/agent/requirements.js';
@@ -65,4 +66,27 @@ test('deterministic mobile app fallback has a real product shell, not a placehol
   assert.match(app,/Get started/);
   assert.match(app,/Core experience/);
   assert.doesNotMatch(app,/Generated for mobile-expo/);
+});
+
+test('generated 3D website exposes accessible view controls and bounded rendering behavior',()=>{
+  const spec=analyzeRequirements('Create an immersive 3D product showroom with uploaded GLB models, interactive camera views, and video walkthroughs');
+  assert.equal(spec.experience?.threeD,true);
+  const plan=generateProject(spec);
+  const files=new Map(plan.files.map(f=>[f.path,f.content]));
+  const html=files.get('public/index.html')||'';
+  const runtime=files.get('public/experience.js')||'';
+  assert.match(html,/id="viewLeft"[^>]+aria-label="Rotate 3D view left"/);
+  assert.match(html,/id="viewRight"[^>]+aria-label="Rotate 3D view right"/);
+  assert.match(html,/id="viewZoomIn"[^>]+aria-label="Zoom in to 3D view"/);
+  assert.match(html,/id="experienceFallback"[^>]+role="status"[^>]+aria-live="polite"/);
+  assert.match(runtime,/prefers-reduced-motion:\\s*reduce/);
+  assert.match(runtime,/sceneObserver\\s*=\\s*new IntersectionObserver/);
+  assert.match(runtime,/document.addEventListener\\('visibilitychange'/);
+  assert.match(runtime,/controls.addEventListener\\('change',scheduleRender\\)/);
+  assert.doesNotMatch(runtime,/preserveDrawingBuffer:\\s*true/);
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-3d-'));
+  const runtimePath=path.join(root,'experience.js');
+  fs.writeFileSync(runtimePath,runtime,'utf8');
+  const checked=spawnSync(process.execPath,['--check',runtimePath],{encoding:'utf8'});
+  assert.equal(checked.status,0,checked.stderr||checked.stdout);
 });
