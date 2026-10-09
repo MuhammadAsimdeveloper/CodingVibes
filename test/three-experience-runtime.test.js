@@ -18,3 +18,17 @@ test('3D experience renders on demand instead of running a permanent loop for re
   assert.match(runtime, /clearInterval\(tourTimer\);tourTimer=null/);
   assert.match(runtime, /motionQuery\?\.addListener\?\.\(onMotionChange\)/);
 });
+
+test('failed or successful local model imports release their temporary object URL',()=>{
+  assert.match(runtime,/finally\s*\{\s*if\(objectUrl\)\s*URL\.revokeObjectURL\(objectUrl\)/);
+});
+
+test('empty configured camera paths fall back to a safe built-in tour',()=>{
+  assert.match(runtime,/const shots=requestedShots\.length\?requestedShots:fallbackShots/);
+});
+
+test('replacing a local walkthrough video releases the previous object URL',()=>{
+  assert.match(runtime,/if\(video\.dataset\.objectUrl\)URL\.revokeObjectURL\(video\.dataset\.objectUrl\)/);
+  assert.match(runtime,/video\.dataset\.objectUrl=objectUrl/);
+});
+
