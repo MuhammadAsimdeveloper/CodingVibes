@@ -1083,3 +1083,13 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Added adapter regression coverage for image, video, and light node documents using a lightweight Three.js test double.
 - **Limits:** this is still the local editor preview. It does not upload assets, make local blob URLs durable, load `model` nodes in this adapter, or inject the saved scene into the published site's `three-experience.js`. Browser-level visual verification and actual media CORS/playback checks remain open.
 - **Verification gate:** the new tests and syntax checks must pass on the latest head; inspect CodeQL and Dependency Review again. PostgreSQL-primary-store migration and deployment readiness remain incomplete.
+
+
+## 50. Publish saved scene documents to generated 3D sites
+
+- Deployment content synchronization now validates the project's saved scene document and writes it to `public/content/scene.json`, which is served as `/content/scene.json` by static-site hosts.
+- The generated Three.js runtime loads this document independently of the site's marketing/CMS content and renders supported group, box, sphere, plane, text, image, video, model and light nodes. If there is no valid scene document, the procedural experience remains as a fallback.
+- The runtime bounds the scene to 250 nodes, uses allowlisted node types and HTTPS media URLs, and disposes scene-owned textures and video sources during teardown.
+- Local `blob:` asset URLs are removed from the published copy rather than emitting broken session-local references. This is a guardrail, not a durable upload solution: users still need managed asset storage and URL rewriting for persistent media.
+- Added source-contract regression tests for deployment serialization, runtime node coverage and media cleanup.
+- **Open verification:** these source-contract tests do not replace real browser/WebGL tests. The published runtime still needs visual E2E checks, external media CORS validation, hierarchy/transform verification, actual GLTF model tests, and generated artifact smoke tests. SQLite remains the scene persistence backend; PostgreSQL-primary migration and full launch gates remain incomplete.
