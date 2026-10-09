@@ -75,6 +75,12 @@ test('generated 3D website exposes accessible view controls and bounded renderin
   const files=new Map(plan.files.map(f=>[f.path,f.content]));
   const html=files.get('public/index.html')||'';
   const runtime=files.get('public/experience.js')||'';
+  const importMap='<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>';
+  assert.ok(html.includes(importMap),"generated 3D page must map the bare three specifier used by its add-on modules");
+  assert.ok(html.indexOf(importMap)<html.indexOf('src="/experience.js"'),"import map must appear before the runtime module");
+  assert.match(runtime,/three@0\.186\.1\/build\/three\.module\.js/);
+  assert.match(runtime,/three@0\.186\.1\/examples\/jsm\/controls\/OrbitControls\.js/);
+  assert.match(runtime,/three@0\.186\.1\/examples\/jsm\/loaders\/GLTFLoader\.js/);
   assert.match(html,/id="viewLeft"[^>]+aria-label="Rotate 3D view left"/);
   assert.match(html,/id="viewRight"[^>]+aria-label="Rotate 3D view right"/);
   assert.match(html,/id="viewZoomIn"[^>]+aria-label="Zoom in to 3D view"/);
