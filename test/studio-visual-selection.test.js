@@ -19,3 +19,18 @@ test('Studio exposes an opt-in visual selector and prompt handoff without relaxi
   assert.match(studio,/Visual selection from the current preview/);
   assert.match(studio,/aria-pressed/);
 });
+
+
+test('research results render as text nodes and only link to validated HTTP(S) URLs', () => {
+  const start=studio.indexOf('async function loadResearch(){');
+  const end=studio.indexOf('\nasync function loadWorkspaceSuite()', start);
+  assert.ok(start >= 0 && end > start, 'research renderer is present and bounded');
+  const renderer=studio.slice(start,end);
+  assert.doesNotMatch(renderer, /\.innerHTML\s*=/);
+  assert.match(renderer, /methodologyNode\.textContent\s*=/);
+  assert.match(renderer, /sourceName\.textContent\s*=/);
+  assert.match(renderer, /patternsNode\.textContent\s*=/);
+  assert.match(renderer, /new URL\(/);
+  assert.match(renderer, /https:\/\//);
+  assert.match(renderer, /noopener noreferrer/);
+});
