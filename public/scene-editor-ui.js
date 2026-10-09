@@ -18,6 +18,8 @@ if (panel) {
   let session = new SceneEditorSession(starterScene());
   let selectedId = 'hero';
   let importedDocument = false;
+  let previewRenderer = null;
+  let previewRendererLoading = false;
 
   const status = (message, kind = '') => {
     const node = $('#sceneEditorStatus');
@@ -117,6 +119,10 @@ if (panel) {
 
   function renderAll() {
     renderHierarchy(); renderInspector(); renderPreview();
+    if (previewRenderer) {
+      try { previewRenderer.render(session.document); }
+      catch (error) { const message = $('#scenePreviewStatus'); if (message) message.textContent = 'Preview update failed: ' + error.message; }
+    }
     const state = session.getState();
     $('#sceneUndo').disabled = !state.canUndo;
     $('#sceneRedo').disabled = !state.canRedo;
@@ -186,5 +192,32 @@ if (panel) {
     } catch (error) { status('Import rejected: ' + error.message, 'error'); }
     finally { event.target.value = ''; }
   });
+  async function initializePreviewRenderer() {
+    if (previewRenderer || previewRendererLoading) return;
+    previewRendererLoading = true;
+    const statusNode = $('#scenePreviewStatus');
+    try {
+      const canvas = $('#scenePreviewCanvas');
+      if (!canvas) return;
+      const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js';
+      const [{ createScenePreviewRenderer }, THREE] = await Promise.all([
+        import('./scene/scene-preview-renderer.js'),
+        import(THREE_URL)
+      ]);
+      previewRenderer = createScenePreviewRenderer({
+        canvas,
+        THREE,
+        onStatus: message => { if (statusNode) statusNode.textContent = message; }
+      });
+      renderAll();
+    } catch (error) {
+      if (statusNode) statusNode.textContent = '3D preview unavailable. Check WebGL support and network access; scene editing and JSON export still work.';
+      status('3D preview could not initialize: ' + error.message, 'error');
+    } finally {
+      previewRendererLoading = false;
+    }
+  }
+  window.addEventListener('beforeunload', () => previewRenderer?.dispose(), { once: true });
   renderAll();
+  initializePreviewRenderer();
 }
