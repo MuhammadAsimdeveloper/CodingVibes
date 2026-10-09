@@ -19,7 +19,7 @@ async function start(){
     const contentHotspots=Array.isArray(experienceRecord?.hotspots)?experienceRecord.hotspots:[];
     const contentModel=featuredProduct?.model?.url||featuredProperty?.model?.url||featuredScene?.model?.url||'';
     const contentVideo=featuredProduct?.video?.url||featuredProperty?.video?.url||featuredScene?.video?.url||'';
-    const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3,Box3,TextureLoader,PointLight,SRGBColorSpace}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
+    const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3,Box3,TextureLoader,PointLight,CanvasTexture,VideoTexture,SRGBColorSpace}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
       import(THREE_URL), import(CTRL_URL), import(GLTF_URL)
     ]);
     const scene=new Scene();
@@ -56,7 +56,7 @@ async function start(){
     const group=new Group();
     scene.add(group);
     const makeMat=(color,roughness=.72)=>new MeshStandardMaterial({color,roughness});
-    const sceneObjects=new Map();
+    const sceneObjects=new Map(),savedSceneTextures=new Set(),savedSceneVideos=new Set();
     function validAssetUrl(value){try{const u=new URL(value,location.href);return u.protocol==='https:'&&!u.username&&!u.password}catch{return false}}
     function buildSavedScene(documentData){
       if(!documentData||!Array.isArray(documentData.nodes)||documentData.nodes.length>250)return false;
@@ -68,9 +68,21 @@ async function start(){
         else if(node.type==='box')object=new Mesh(new BoxGeometry(1,1,1),makeMat(node.color||'#a7b5ff'));
         else if(node.type==='sphere')object=new Mesh(new SphereGeometry(.5,24,16),makeMat(node.color||'#a7b5ff'));
         else if(node.type==='plane')object=new Mesh(new PlaneGeometry(1,1),makeMat(node.color||'#a7b5ff'));
-        else if(node.type==='text'){object=new Group();object.userData.buildVibeText=String(node.text||node.name||'');}
+        else if(node.type==='text'){
+          const canvasText=document.createElement('canvas');canvasText.width=1024;canvasText.height=256;
+          const ctx=canvasText.getContext('2d');if(ctx){ctx.clearRect(0,0,1024,256);ctx.fillStyle=node.color||'#ffffff';ctx.font='bold 88px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(node.text||node.name||'Text').slice(0,120),512,128,960);}
+          const texture=new CanvasTexture(canvasText);savedSceneTextures.add(texture);object=new Mesh(new PlaneGeometry(3,0.75),new MeshStandardMaterial({map:texture,transparent:true,side:2}));
+        }
         else if(node.type==='light')object=new PointLight(new Color(node.color||'#ffffff'),1.5,0,2);
-        else if(node.type==='image'||node.type==='video'){object=new Mesh(new PlaneGeometry(1,1),new MeshStandardMaterial({color:node.color||'#ffffff',side:2}));if(node.assetUrl&&validAssetUrl(node.assetUrl)){new TextureLoader().load(node.assetUrl,texture=>{if(disposed){texture.dispose();return}texture.colorSpace=SRGBColorSpace;object.material.map=texture;object.material.needsUpdate=true;scheduleRender()},undefined,()=>{if(fallback)fallback.textContent='A saved scene media asset could not be loaded.'})}}
+        else if(node.type==='image'||node.type==='video'){
+          object=new Mesh(new PlaneGeometry(1,1),new MeshStandardMaterial({color:node.color||'#ffffff',side:2}));
+          if(node.assetUrl&&validAssetUrl(node.assetUrl)){
+            if(node.type==='video'){
+              const video=document.createElement('video');video.crossOrigin='anonymous';video.muted=true;video.loop=true;video.playsInline=true;video.preload='metadata';video.src=node.assetUrl;savedSceneVideos.add(video);
+              const texture=new VideoTexture(video);texture.colorSpace=SRGBColorSpace;savedSceneTextures.add(texture);object.material.map=texture;object.material.needsUpdate=true;video.play().catch(()=>{});
+            }else new TextureLoader().load(node.assetUrl,texture=>{if(disposed){texture.dispose();return}texture.colorSpace=SRGBColorSpace;savedSceneTextures.add(texture);object.material.map=texture;object.material.needsUpdate=true;scheduleRender()},undefined,()=>{if(fallback)fallback.textContent='A saved scene media asset could not be loaded.'});
+          }
+        }
         else if(node.type==='model'){object=new Group();if(node.assetUrl&&validAssetUrl(node.assetUrl)){new GLTFLoader().load(node.assetUrl,gltf=>{if(disposed){disposeModelResources(gltf.scene);return}object.add(gltf.scene);scheduleRender()},undefined,()=>{if(fallback)fallback.textContent='A saved scene model could not be loaded.'})}}
         else continue;
         object.name=node.id;object.visible=node.visible!==false;
@@ -343,7 +355,7 @@ async function start(){
       disposed=true;stopRecording();stopCameraMotion();stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
       controls.removeEventListener('change',scheduleRender);document.removeEventListener('visibilitychange',handleVisibility);
       removeEventListener('resize',resize);if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);if(localImageUrl)URL.revokeObjectURL(localImageUrl);if(recordingUrl)URL.revokeObjectURL(recordingUrl);
-      restoreAppliedMaterials(loadedModel||group);if(loadedModel){scene.remove(loadedModel);disposeModelResources(loadedModel);loadedModel=null;}if(attachedTexture)attachedTexture.dispose();
+      restoreAppliedMaterials(loadedModel||group);if(loadedModel){scene.remove(loadedModel);disposeModelResources(loadedModel);loadedModel=null;}for(const texture of savedSceneTextures)texture.dispose?.();for(const video of savedSceneVideos){video.pause();video.removeAttribute('src');video.load();}savedSceneTextures.clear();savedSceneVideos.clear();if(attachedTexture)attachedTexture.dispose();
       renderer.dispose();controls.dispose?.();
     },{once:true});
     scheduleRender();
