@@ -61,3 +61,27 @@ The helper scans only files under a real `public/` directory, skips symlinks, li
 ## Authenticated backend API
 
 The existing authenticated Build Vibe backend exposes the catalog at `GET /api/tool-fabric/catalog` and local tool execution at `POST /api/tool-fabric/execute`. Requests use the current session cookie, are rate-limited (60 executions/minute per account), and create an audit event containing tool/status/execution metadata and input/output field names only—not input values or generated output contents. Unknown tools, malformed inputs and each tool's explicit non-success status remain visible. Live outbound HTTP execution is disabled; API testing only returns an SSRF-conscious request plan.
+
+
+## Bounded pipeline composition
+
+Local tools can be composed through `runToolPipeline({ steps })` or the authenticated `POST /api/tool-fabric/pipeline` endpoint.
+
+A pipeline contains 1–10 steps. Each step has a unique identifier, a canonical tool ID (or alias), and an object input. A value may reference a previous step's output with a single-key object such as `{"$ref":"format.output.formatted"}`. References cannot point forward, address the prototype-sensitive keys `__proto__`, `constructor` or `prototype`, or use undeclared properties. Every step is preflighted before execution. Only low-risk local tools are allowed; browser tools and network/confirmation adapters are rejected before any step starts.
+
+Execution is sequential and fail-fast. If a tool does not return `COMPLETED`, the pipeline returns `STEP_FAILED` with the failing step and original status and does not execute later steps. The request is capped at 1 MB and cumulative serialized step outputs at 2 MB. The executor reports `networkUsed: false`; it never activates an external adapter.
+
+The API uses the existing authenticated session and per-account tool rate limit. Audit events contain status, bounded tool IDs, step counts and duration only. They exclude step inputs and output values.
+
+Example request:
+
+```json
+{
+  "steps": [
+    { "id": "format", "tool": "json.format", "input": { "text": "{\"name\":\"Build Vibe\"}" } },
+    { "id": "types", "tool": "json.typescript", "input": { "json": { "$ref": "format.output.formatted" }, "rootName": "Product" } }
+  ]
+}
+```
+
+The current boundary is deliberately local-only. Adding live network or browser actions to a pipeline requires their own governed runner, risk/confirmation policy and separate verification evidence; pipeline composition does not bypass those boundaries.
