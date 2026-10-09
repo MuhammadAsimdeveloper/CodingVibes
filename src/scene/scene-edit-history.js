@@ -38,6 +38,24 @@ export class SceneEditHistory {
     return { ...result, history: this.getState() };
   }
 
+  applyOperation(operation) {
+    const result = applySceneOperation(this.#document, operation);
+    if (!result.ok) return { ...result, status: 'rejected' };
+    const entry = {
+      before: this.#document,
+      after: result.document,
+      undoOperations: [structuredClone(result.undo)],
+      redoOperations: [structuredClone(operation)],
+      changes: [structuredClone(result.change)],
+      prompt: 'property inspector edit'
+    };
+    this.#past.push(entry);
+    if (this.#past.length > this.#limit) this.#past.shift();
+    this.#future = [];
+    this.#document = result.document;
+    return { ok: true, status: 'applied', document: this.document, changes: [result.change], undoOperations: [result.undo], history: this.getState() };
+  }
+
   undo() {
     const entry = this.#past.at(-1);
     if (!entry) return { ok: false, status: 'nothing_to_undo', errors: ['there are no scene edits to undo'] };
