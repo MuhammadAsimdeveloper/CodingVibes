@@ -296,7 +296,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     const checked=validateSceneDocument(body.scene);
     if(!checked.ok)return sendJson(res,400,{ok:false,error:'invalid_scene_document',details:checked.errors});
     const expectedRevision=body.expectedRevision===undefined?null:body.expectedRevision;
-    if(expectedRevision!==null&&(!Number.isInteger(expectedRevision)||expectedRevision<0))return sendJson(res,400,{ok:false,error:'expected_revision_must_be_nonnegative_integer'});
+    if(!Number.isInteger(expectedRevision)||expectedRevision<0)return sendJson(res,400,{ok:false,error:'expected_revision_must_be_nonnegative_integer'});
     try{
       const saved=store.saveSceneDocument(pid,userId,checked.value,{expectedRevision});
       store.addAuditLog({actorUserId:userId,action:'scene_document.saved',resourceType:'project',resourceId:pid,metadata:{revision:saved.revision,nodeCount:checked.value.nodes.length}});
