@@ -164,19 +164,25 @@ async function start(){
       }
     }
 
-    let tourTimer=null;
+    let tourTimer=null,cameraMotionFrame=0;
+    function stopCameraMotion(){
+      if(cameraMotionFrame){cancelAnimationFrame(cameraMotionFrame);cameraMotionFrame=0;}
+    }
     function moveCamera(position,target=new Vector3(0,1,0),seconds=2){
+      stopCameraMotion();
       if(reducedMotion){camera.position.copy(position);controls.target.copy(target);controls.update();scheduleRender();return;}
       const start=camera.position.clone(),startTarget=controls.target.clone(),t0=performance.now();
       const tick=now=>{
+        cameraMotionFrame=0;
+        if(disposed||document.hidden||!sceneVisible)return;
         const p=Math.min(1,(now-t0)/(seconds*1000));
         const eased=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
         camera.position.lerpVectors(start,position,eased);
         controls.target.lerpVectors(startTarget,target,eased);
         scheduleRender();
-        if(p<1&&!document.hidden&&sceneVisible)requestAnimationFrame(tick);
+        if(p<1)cameraMotionFrame=requestAnimationFrame(tick);
       };
-      requestAnimationFrame(tick);
+      cameraMotionFrame=requestAnimationFrame(tick);
     }
 
     function playTour(){
@@ -263,18 +269,18 @@ async function start(){
       animationFrame=requestAnimationFrame(render);
     };
     const stopRender=()=>{if(animationFrame){cancelAnimationFrame(animationFrame);animationFrame=0;}};
-    const handleVisibility=()=>{if(document.hidden){clearInterval(tourTimer);stopRender();}else scheduleRender();};
+    const handleVisibility=()=>{if(document.hidden){clearInterval(tourTimer);stopCameraMotion();stopRender();}else scheduleRender();};
     document.addEventListener('visibilitychange',handleVisibility);
     if('IntersectionObserver' in window){
       sceneObserver=new IntersectionObserver(entries=>{
         sceneVisible=entries.some(entry=>entry.isIntersecting);
-        if(sceneVisible)scheduleRender();else{clearInterval(tourTimer);stopRender();}
+        if(sceneVisible)scheduleRender();else{clearInterval(tourTimer);stopCameraMotion();stopRender();}
       },{threshold:0.01});
       sceneObserver.observe(stage||canvas);
     }
     controls.addEventListener('change',scheduleRender);
     addEventListener('beforeunload',()=>{
-      disposed=true;stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
+      disposed=true;stopCameraMotion();stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
       controls.removeEventListener('change',scheduleRender);document.removeEventListener('visibilitychange',handleVisibility);
       removeEventListener('resize',resize);if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);if(localImageUrl)URL.revokeObjectURL(localImageUrl);if(recordingUrl)URL.revokeObjectURL(recordingUrl);
       restoreAppliedMaterials(loadedModel||group);if(loadedModel){scene.remove(loadedModel);disposeModelResources(loadedModel);loadedModel=null;}if(attachedTexture)attachedTexture.dispose();
