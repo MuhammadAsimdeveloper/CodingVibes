@@ -94,14 +94,17 @@ export function applySceneOperation(document, operation) {
   const index = validated.value.nodes.findIndex(node => node.id === operation.nodeId);
   if (index < 0) return { ok: false, errors: [`node not found: ${operation.nodeId}`] };
   const before = structuredClone(validated.value);
-  if (operation.op === 'unset') delete validated.value.nodes[index][operation.field];\n  else validated.value.nodes[index][operation.field] = structuredClone(operation.value);
+  if (operation.op === 'unset') delete validated.value.nodes[index][operation.field];
+  else validated.value.nodes[index][operation.field] = structuredClone(operation.value);
   const afterValidation = validateSceneDocument(validated.value);
   if (!afterValidation.ok) return { ok: false, errors: afterValidation.errors };
   return {
     ok: true,
     document: afterValidation.value,
     change: { nodeId: operation.nodeId, field: operation.field, before: before.nodes[index][operation.field] ?? null, after: structuredClone(operation.value) },
-    undo: Object.hasOwn(before.nodes[index], operation.field)\n      ? { op: 'set', nodeId: operation.nodeId, field: operation.field, value: structuredClone(before.nodes[index][operation.field]) }\n      : { op: 'unset', nodeId: operation.nodeId, field: operation.field }
+    undo: Object.hasOwn(before.nodes[index], operation.field)
+      ? { op: 'set', nodeId: operation.nodeId, field: operation.field, value: structuredClone(before.nodes[index][operation.field]) }
+      : { op: 'unset', nodeId: operation.nodeId, field: operation.field }
   };
 }
 
