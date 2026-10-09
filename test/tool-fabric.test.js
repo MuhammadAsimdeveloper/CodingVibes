@@ -94,6 +94,11 @@ test('performance audits require real metrics instead of fabricating browser mea
   assert.equal(audited.status, 'COMPLETED');
   assert.ok(audited.output.score < 100);
   assert.ok(audited.output.findings.length > 0);
+  const partial=await runTool('web.performance.audit',{metrics:{lcpMs:800,cls:0.01}});
+  assert.equal(partial.status,'COMPLETED');
+  assert.equal(partial.output.complete,false);
+  assert.ok(partial.output.missingMetrics.includes('inpMs'));
+  assert.ok(partial.output.findings.some(item=>item.code==='metrics_incomplete'));
 });
 
 test('API tester blocks private destinations and never performs an unconfigured request', async () => {
