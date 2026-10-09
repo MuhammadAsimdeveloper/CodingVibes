@@ -72,7 +72,7 @@ function pageMarkup(route,spec){
 const SAFE_COLOR_NAMES={black:'#111827',white:'#ffffff',blue:'#3b82f6',red:'#ef4444',green:'#22c55e',purple:'#8b5cf6',pink:'#ec4899',orange:'#f97316',yellow:'#eab308',teal:'#14b8a6'};
 function safeDesignColor(value,fallback){
  const raw=String(value??'').trim().toLowerCase();
- if(/^#(?:[\\da-f]{3}|[\\da-f]{4}|[\\da-f]{6}|[\\da-f]{8})$/i.test(raw))return raw;
+ if(/^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(raw))return raw;
  return SAFE_COLOR_NAMES[raw]||fallback;
 }
 function safeDesignFont(value,fallback){
