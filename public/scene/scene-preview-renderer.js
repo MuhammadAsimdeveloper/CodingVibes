@@ -7,7 +7,7 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
   const {
     Scene, PerspectiveCamera, WebGLRenderer, Color, AmbientLight, DirectionalLight,
     Group, Mesh, BoxGeometry, SphereGeometry, PlaneGeometry, MeshStandardMaterial,
-    GridHelper, CanvasTexture, SRGBColorSpace
+    GridHelper, CanvasTexture, TextureLoader, VideoTexture, SRGBColorSpace, PointLight, SpotLight
   } = THREE;
   const scene = new Scene();
   scene.background = new Color('#080f1b');
@@ -33,9 +33,10 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
   let pitch = 0.35;
   let distance = camera.position.length();
   const owned = [];
+  const mediaElements = new Set();
   const geometryFor = (node) => {
     if (node.type === 'sphere') return new SphereGeometry(0.7, 24, 16);
-    if (node.type === 'plane') return new PlaneGeometry(1.5, 1.5);
+    if (node.type === 'plane' || node.type === 'image' || node.type === 'video') return new PlaneGeometry(1.5, 1.5);
     return new BoxGeometry(1.2, 1.2, 1.2);
   };
   function makeTextTexture(text, color) {
@@ -59,23 +60,63 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
       materials.forEach(material => material.dispose?.());
     });
   }
+  function releaseMediaElements() {
+    for (const element of mediaElements) {
+      element.pause?.();
+      element.removeAttribute?.('src');
+      element.load?.();
+    }
+    mediaElements.clear();
+  }
+  function attachAssetTexture(node, material) {
+    if (!node.assetUrl || typeof TextureLoader !== 'function') return;
+    const url = node.assetUrl;
+    new TextureLoader().load(url, texture => {
+      if (disposed || !root.getObjectByName?.(node.id)) { texture.dispose?.(); return; }
+      if (SRGBColorSpace) texture.colorSpace = SRGBColorSpace;
+      owned.push(texture);
+      material.map = texture;
+      material.needsUpdate = true;
+      draw();
+    }, undefined, () => onStatus('Could not load media for scene node "' + (node.name || node.id) + '". Check the asset URL and CORS policy.'));
+  }
   function build(document) {
     for (const child of [...root.children]) disposeTree(child);
     root.clear();
+    releaseMediaElements();
     owned.splice(0).forEach(texture => texture.dispose?.());
     const objects = new Map();
     for (const node of document.nodes) {
-      const object = node.type === 'group' ? new Group() : new Mesh(
-        node.type === 'text' ? new PlaneGeometry(2.8, 0.7) : geometryFor(node),
-        new MeshStandardMaterial({
-          color: node.color || '#8b7dff',
+      let object;
+      if (node.type === 'group') object = new Group();
+      else if (node.type === 'light') {
+        const intensity = Math.max(0, Math.min(10, Number(node.intensity ?? 1.5)));
+        object = node.lightType === 'spot' && typeof SpotLight === 'function'
+          ? new SpotLight(node.color || '#ffffff', intensity)
+          : typeof PointLight === 'function' ? new PointLight(node.color || '#ffffff', intensity) : new Group();
+      } else {
+        const mediaNode = node.type === 'image' || node.type === 'video';
+        const material = new MeshStandardMaterial({
+          color: mediaNode && node.assetUrl ? '#ffffff' : (node.color || '#8b7dff'),
           roughness: 0.65,
           transparent: node.type === 'text',
           map: node.type === 'text' ? makeTextTexture(node.text || node.name, node.color) : null,
           side: THREE.DoubleSide
-        })
-      );
-      object.name = node.name || node.id;
+        });
+        object = new Mesh(node.type === 'text' ? new PlaneGeometry(2.8, 0.7) : geometryFor(node), material);
+        if (node.type === 'image') attachAssetTexture(node, material);
+        if (node.type === 'video' && node.assetUrl && typeof document.createElement === 'function' && typeof VideoTexture === 'function') {
+          const video = document.createElement('video');
+          video.crossOrigin = 'anonymous'; video.muted = true; video.loop = true; video.playsInline = true; video.preload = 'metadata'; video.src = node.assetUrl;
+          mediaElements.add(video);
+          const texture = new VideoTexture(video);
+          if (SRGBColorSpace) texture.colorSpace = SRGBColorSpace;
+          owned.push(texture); material.map = texture; material.needsUpdate = true;
+          video.play?.().catch?.(() => onStatus('Video is ready but autoplay was blocked; use a browser that permits muted preview playback.'));
+        }
+      }
+      object.name = node.id;
+      object.userData.sceneNodeName = node.name || node.id;
       object.visible = node.visible !== false;
       object.position.set(...(node.position || [0, 0, 0]));
       object.rotation.set(...(node.rotation || [0, 0, 0]));
@@ -154,6 +195,7 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
       canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('wheel', onWheel);
       disposeTree(root);
+      releaseMediaElements();
       owned.forEach(texture => texture.dispose?.());
       renderer.dispose();
     }
