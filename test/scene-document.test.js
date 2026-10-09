@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applySceneOperation, SCENE_SCHEMA_VERSION, validateSceneDocument } from '../src/scene/scene-document.js';
+import { applySceneOperation, isPersistableSceneAssetUrl, SCENE_SCHEMA_VERSION, validateSceneDocument } from '../src/scene/scene-document.js';
 
 const scene = () => ({
   schemaVersion: SCENE_SCHEMA_VERSION,
@@ -58,4 +58,32 @@ test('rejects arbitrary operation paths, script-like values, and unknown nodes',
   assert.equal(applySceneOperation(scene(), { op: 'set', nodeId: 'hero', field: 'text', value: '<script>alert(1)</script>' }).ok, true);
   assert.equal(applySceneOperation(scene(), { op: 'set', nodeId: 'missing', field: 'visible', value: false }).ok, false);
   assert.equal(applySceneOperation(scene(), { op: 'run', code: 'alert(1)' }).ok, false);
+});
+
+test('accepts deployment-stable asset paths but rejects traversal and ephemeral URLs for persistence',()=>{
+  const relative=scene();relative.nodes[1].assetUrl='/assets/550e8400-e29b-41d4-a716-446655440000-hero.png';
+  assert.equal(validateSceneDocument(relative).ok,true);
+  assert.equal(isPersistableSceneAssetUrl(relative.nodes[1].assetUrl),true);
+  assert.equal(isPersistableSceneAssetUrl('blob:https://example.test/session-url'),false);
+  const traversal=scene();traversal.nodes[1].assetUrl='/assets/../private.txt';
+  assert.equal(validateSceneDocument(traversal).ok,false);
+  const protocolRelative=scene();protocolRelative.nodes[1].assetUrl='//evil.example/asset.png';
+  assert.equal(validateSceneDocument(protocolRelative).ok,false);
+});
+
+test('typed add/remove operations keep scene structure valid and expose reversible operations',()=>{
+  const original=scene();
+  const add=applySceneOperation(original,{op:'addNode',node:{id:'media-1',type:'image',name:'Product image',visible:true,position:[0,1,0],assetUrl:'/assets/550e8400-e29b-41d4-a716-446655440000-product.png'}});
+  assert.equal(add.ok,true);
+  assert.equal(add.document.nodes.length,3);
+  assert.deepEqual(add.undo,{op:'removeNode',nodeId:'media-1'});
+  const removed=applySceneOperation(add.document,add.undo);
+  assert.equal(removed.ok,true);
+  assert.equal(removed.document.nodes.length,2);
+  const removeParent=applySceneOperation(original,{op:'removeNode',nodeId:'root'});
+  assert.equal(removeParent.ok,false);
+  assert.match(removeParent.errors.join(' '),/remove child nodes first/);
+  const remove=applySceneOperation(add.document,{op:'removeNode',nodeId:'media-1'});
+  assert.equal(remove.ok,true);
+  assert.deepEqual(remove.undo,{op:'addNode',node:add.document.nodes[2]});
 });
