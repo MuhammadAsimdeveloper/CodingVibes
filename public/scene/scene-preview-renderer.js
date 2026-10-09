@@ -2,7 +2,7 @@
  * Three.js adapter for the validated renderer-neutral Build Vibe scene document.
  * It accepts a Three.js namespace from the caller so unit tests do not need WebGL or network access.
  */
-export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} }) {
+export function createScenePreviewRenderer({ canvas, THREE, GLTFLoader = null, onStatus = () => {} }) {
   if (!canvas || !THREE) throw new TypeError('canvas and Three.js are required');
   const {
     Scene, PerspectiveCamera, WebGLRenderer, Color, AmbientLight, DirectionalLight,
@@ -25,6 +25,7 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
   const root = new Group();
   scene.add(root);
   let animationFrame = 0;
+  let buildVersion = 0;
   let disposed = false;
   let dragging = false;
   let lastX = 0;
@@ -54,11 +55,16 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
     return texture;
   }
   function disposeTree(object) {
+    const textures = new Set();
     object.traverse?.(part => {
       part.geometry?.dispose?.();
       const materials = Array.isArray(part.material) ? part.material : (part.material ? [part.material] : []);
-      materials.forEach(material => material.dispose?.());
+      materials.forEach(material => {
+        for (const value of Object.values(material || {})) if (value?.isTexture) textures.add(value);
+        material.dispose?.();
+      });
     });
+    for (const texture of textures) texture.dispose?.();
   }
   function releaseMediaElements() {
     for (const element of mediaElements) {
@@ -81,6 +87,7 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
     }, undefined, () => onStatus('Could not load media for scene node "' + (node.name || node.id) + '". Check the asset URL and CORS policy.'));
   }
   function build(document) {
+    const buildToken = ++buildVersion;
     for (const child of [...root.children]) disposeTree(child);
     root.clear();
     releaseMediaElements();
@@ -89,6 +96,21 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
     for (const node of document.nodes) {
       let object;
       if (node.type === 'group') object = new Group();
+      else if (node.type === 'model' && node.assetUrl && typeof GLTFLoader === 'function') {
+        object = new Group();
+        const url = node.assetUrl;
+        new GLTFLoader().load(url, gltf => {
+          if (disposed || buildToken !== buildVersion) { disposeTree(gltf.scene); return; }
+          queueMicrotask(() => {
+            const target = root.getObjectByName?.(node.id);
+            if (disposed || buildToken !== buildVersion || !target) { disposeTree(gltf.scene); return; }
+            target.add(gltf.scene);
+            draw();
+          });
+        }, undefined, () => {
+          if (!disposed && buildToken === buildVersion) onStatus('Could not load 3D model for scene node "' + (node.name || node.id) + '". Check the model file and asset URL.');
+        });
+      }
       else if (node.type === 'light') {
         object = typeof PointLight === 'function'
           ? new PointLight(node.color || '#ffffff', 1.5)
