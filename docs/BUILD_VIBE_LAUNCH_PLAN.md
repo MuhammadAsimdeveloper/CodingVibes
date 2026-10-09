@@ -990,3 +990,16 @@ The test-first commit introduced the desired contract/output tests before execut
 ## 47. Browser performance evidence — honest measurement gate
 
 Extended the existing Playwright browser smoke runner to collect measured navigation timing, FCP, TTFB, resource-transfer bytes, JS/image resource sizes when readable, render-blocking counts where supported, and observer-backed LCP/CLS. Opaque cross-origin resource timings make byte subtotals incomplete instead of silently counting as zero. A navigation-only smoke test does not claim INP; the report notes the missing metric and any observed interaction duration separately. The Tool Fabric performance evaluator marks partial evidence with `complete:false`, an explicit `missingMetrics` list and `metrics_incomplete`, not a false complete-pass finding. Regression tests validate known inputs and missing/opaque timing behavior.
+
+
+## 48. TDD checkpoint — local calculator and date/time utility suite (2026-10-10)
+
+**Roadmap phase:** P1 local utility suite. A regression suite was committed before the implementation and confirmed red CI for the missing `calc.percentage` contract and all 13 absent tool executors. The fix extends the existing canonical Tool Fabric; it does not create a separate registry or call a provider.
+
+- Added 13 unique local contracts with schema, aliases, bounded numeric/string input expectations, category, provenance and local/no-network execution metadata.
+- Added deterministic percentage, ratio, discount, profit margin, ROI, break-even, compound-interest, fixed-rate loan, dimensional unit, elapsed-duration, calendar-age, IANA time-zone and decimal/binary data-size calculations.
+- Invalid, non-finite, unknown-unit, mismatched-dimension, impossible-date, ambiguous-timezone-input, unsupported-timezone and out-of-range inputs return explicit `INVALID_INPUT` rather than a simulated result.
+- Added focused coverage for expected outputs, invalid domains and no-network status; included the new module in the syntax gate and raised the canonical catalog assertion from 27 to 40.
+- Source verification is pending on this branch. Do not mark this tranche verified until focused tests, full Build Vibe CI, CodeQL and Dependency Review pass on the same head.
+
+**Explicit exclusions:** PDF merge/split/extract/OCR is not represented as complete: the current dependency/runtime set does not yet provide a selected, governed local PDF-processing engine with its own test fixtures, parser limits and real-browser/runtime verification. The next follow-up should be the browser-evidence adapter for `web.performance.audit` when the runner's measured metrics are integrated end-to-end, then proceed to the PDF/document suite with an actual approved local runtime.
