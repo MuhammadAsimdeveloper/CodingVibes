@@ -132,7 +132,6 @@ if (panel) {
     const field = position ? 'position' : fieldName;
     const nextValue = position ? value : value;
     const op = { op: 'set', nodeId: node.id, field, value: nextValue };
-    const { applySceneOperation } = window.__unusedSceneDocument || {};
     // Direct inspector edits are translated to the same allowlisted scene contract via a one-operation preview path.
     try {
       const result = session.applyOperation(op);
