@@ -19,7 +19,7 @@ async function start(){
     const contentHotspots=Array.isArray(experienceRecord?.hotspots)?experienceRecord.hotspots:[];
     const contentModel=featuredProduct?.model?.url||featuredProperty?.model?.url||featuredScene?.model?.url||'';
     const contentVideo=featuredProduct?.video?.url||featuredProperty?.video?.url||featuredScene?.video?.url||'';
-    const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3,Box3,TextureLoader,SRGBColorSpace}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
+    const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3,Box3,TextureLoader,PointLight,SRGBColorSpace}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
       import(THREE_URL), import(CTRL_URL), import(GLTF_URL)
     ]);
     const scene=new Scene();
