@@ -28,13 +28,13 @@ test('PostgreSQL migrations create core auth, project, session, run and chat per
  const result=await ensurePostgresMigrations(db);
  assert.ok(versions.has('0001_scaleout'));
  assert.ok(versions.has('0002_core_persistence'));
- const sql=statements.join('\\n');
+ const sql=statements.join(' ').replace(/\\s+/g,' ');
  for(const table of ['users','auth_sessions','projects','sessions','runs','messages']){
-  assert.match(sql,new RegExp('CREATE TABLE IF NOT EXISTS '+table+'\\\\s*\\\\('i'),`migration must create ${table}`);
+  assert.ok(sql.toLowerCase().includes('create table if not exists '+table+' ('),`migration must create ${table}`);
  }
- assert.match(sql,/REFERENCES users\\(id\\) ON DELETE CASCADE/i);
- assert.match(sql,/REFERENCES projects\\(id\\) ON DELETE CASCADE/i);
- assert.match(sql,/idx_messages_session_created/i);
+ assert.ok(sql.includes('REFERENCES users(id) ON DELETE CASCADE'));
+ assert.ok(sql.includes('REFERENCES projects(id) ON DELETE CASCADE'));
+ assert.ok(sql.includes('idx_messages_session_created'));
  assert.equal(result.schema,'codingvibes');
 });
 
