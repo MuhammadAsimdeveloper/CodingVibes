@@ -113,7 +113,7 @@ test('regex tester returns bounded matches and rejects common catastrophic patte
   const result = await runTool('regex.test', {pattern: '\\w+', input: 'build vibe 13'});
   assert.equal(result.status, 'COMPLETED');
   assert.ok(result.output.matches.length >= 2);
-  const unsafe = await runTool('regex.test', {pattern: '(a+)+$', input: 'aaaaaaaaaaaaaaaa!'});
+  const unsafePattern = String.fromCharCode(40, 97, 43, 41, 43, 36); // '(a+)+
   assert.equal(unsafe.status, 'BLOCKED');
 });
 
@@ -256,4 +256,158 @@ test('Tool Fabric pipelines stop on the first failed step and enforce bounded un
   });
   assert.equal(tooMany.status, 'INVALID_PIPELINE');
   assert.equal(tooMany.results.length, 0);
+});
+; keep the dangerous pattern out of a regex literal
+  const unsafe = await runTool('regex.test', {pattern: unsafePattern, input: 'aaaaaaaaaaaaaaaa!'});
+  assert.equal(unsafe.status, 'BLOCKED');
+});
+
+test('JWT inspector explicitly reports decoded-only, unverified claims', async () => {
+  const header = Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({sub:'user-1',admin:false})).toString('base64url');
+  const result = await runTool('jwt.inspect', {token: header + '.' + payload + '.signature'});
+  assert.equal(result.status, 'COMPLETED');
+  assert.equal(result.output.signatureVerified, false);
+  assert.equal(result.output.payload.sub, 'user-1');
+  assert.ok(result.warnings.some(warning => /not verified/i.test(warning)));
+});
+
+test('Base64 and binary conversions round-trip locally', async () => {
+  const encoded = await runTool('encoding.base64-binary', {operation: 'base64-encode', value: 'Hello'});
+  assert.equal(encoded.output.value, 'SGVsbG8=');
+  const decoded = await runTool('encoding.base64-binary', {operation: 'base64-decode', value: 'SGVsbG8='});
+  assert.equal(decoded.output.value, 'Hello');
+  const binary = await runTool('encoding.base64-binary', {operation: 'binary-encode', value: 'A'});
+  assert.equal(binary.output.value, '01000001');
+  const binaryDecoded = await runTool('encoding.base64-binary', {operation: 'binary-decode', value: '01000001'});
+  assert.equal(binaryDecoded.output.value, 'A');
+});
+
+test('color palette and gradient tools validate before generating CSS', async () => {
+  const palette = await runTool('design.color.palette', {color: '#336699'});
+  assert.equal(palette.status, 'COMPLETED');
+  assert.equal(palette.output.colors.length, 7);
+  assert.ok(palette.output.colors.every(color => /^#[0-9a-f]{6}$/i.test(color.hex)));
+  const gradient = await runTool('design.css.gradient', {colors: ['#ff0000', '#0000ff'], angle: 135});
+  assert.equal(gradient.status, 'COMPLETED');
+  assert.equal(gradient.output.css, 'linear-gradient(135deg, #ff0000 0%, #0000ff 100%)');
+  const unsafe = await runTool('design.css.gradient', {colors: ['red;}</style><script>', '#000000']});
+  assert.equal(unsafe.status, 'INVALID_INPUT');
+});
+
+test('QR tool emits a local SVG QR artifact and rejects payloads beyond supported capacity', async () => {
+  const qr = await runTool('qr.generate', {text: 'https://example.com'});
+  assert.equal(qr.status, 'COMPLETED');
+  assert.match(qr.output.svg, /<svg/);
+  assert.match(qr.output.svg, /shape-rendering="crispEdges"/);
+  assert.match(qr.output.svg, /<path/);
+  const large = await runTool('qr.generate', {text: 'x'.repeat(100)});
+  assert.equal(large.status, 'INVALID_INPUT');
+});
+
+test('image optimizer advertises its actual browser-only boundary', async () => {
+  const image = await runTool('image.optimize', {});
+  assert.equal(image.status, 'BROWSER_REQUIRED');
+  assert.equal(getToolContract('image.optimize').executionMode, 'browser');
+});
+
+ 
+test('QR generation rejects non-ASCII until explicit UTF-8 ECI support is present', async () => {
+  const result = await runTool('qr.generate', {text: '你好'});
+  assert.equal(result.status, 'INVALID_INPUT');
+});
+
+
+import * as toolFabric from '../src/tool-fabric/index.js';
+
+test('Tool Fabric pipelines compose local tools through explicit prior-output references', async () => {
+  assert.equal(typeof toolFabric.runToolPipeline, 'function');
+  const result = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'format', tool: 'json.format', input: {text: '{"name":"Build Vibe","enabled":true}'}},
+      {id: 'types', tool: 'json.typescript', input: {json: {$ref: 'format.output.formatted'}, rootName: 'Product'}}
+    ]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.status, 'COMPLETED');
+  assert.equal(result.networkUsed, false);
+  assert.equal(result.stepCount, 2);
+  assert.equal(result.results[0].id, 'format');
+  assert.equal(result.results[0].status, 'COMPLETED');
+  assert.match(result.results[1].output.typescript, /interface Product/);
+  assert.match(result.results[1].output.typescript, /name: string/);
+  assert.match(result.results[1].output.typescript, /enabled: boolean/);
+});
+
+test('Tool Fabric pipelines reject forward, missing and prototype-property references before execution', async () => {
+  const forward = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'types', tool: 'json.typescript', input: {json: {$ref: 'later.output.formatted'}}},
+      {id: 'later', tool: 'json.format', input: {text: '{"ok":true}'}}
+    ]
+  });
+  assert.equal(forward.status, 'INVALID_REFERENCE');
+  assert.equal(forward.results.length, 0);
+
+  const prototype = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'format', tool: 'json.format', input: {text: '{"ok":true}'}},
+      {id: 'types', tool: 'json.typescript', input: {json: {$ref: 'format.output.__proto__'}}}
+    ]
+  });
+  assert.equal(prototype.status, 'INVALID_REFERENCE');
+  assert.equal(prototype.results.length, 0);
+});
+
+test('Tool Fabric pipelines preflight every tool and reject browser or network adapters', async () => {
+  const result = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'format', tool: 'json.format', input: {text: '{"safe":true}'}},
+      {id: 'request', tool: 'api.test', input: {url: 'https://example.com'}}
+    ]
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 'PIPELINE_BLOCKED');
+  assert.equal(result.results.length, 0);
+  assert.equal(result.networkUsed, false);
+});
+
+test('Tool Fabric pipelines stop on the first failed step and enforce bounded unique step IDs', async () => {
+  const failed = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'bad-json', tool: 'json.format', input: {text: '{'}},
+      {id: 'must-not-run', tool: 'json.format', input: {text: '{"ok":true}'}}
+    ]
+  });
+  assert.equal(failed.status, 'STEP_FAILED');
+  assert.equal(failed.failedStepId, 'bad-json');
+  assert.equal(failed.failedStatus, 'INVALID_INPUT');
+  assert.equal(failed.results.length, 1);
+
+  const duplicate = await toolFabric.runToolPipeline({
+    steps: [
+      {id: 'same', tool: 'json.format', input: {text: '{"ok":true}'}},
+      {id: 'same', tool: 'json.format', input: {text: '{"next":true}'}}
+    ]
+  });
+  assert.equal(duplicate.status, 'INVALID_PIPELINE');
+  assert.equal(duplicate.results.length, 0);
+
+  const tooMany = await toolFabric.runToolPipeline({
+    steps: Array.from({length: 11}, (_, index) => ({
+      id: 'step-' + index, tool: 'json.format', input: {text: '{"step":' + index + '}'}
+    }))
+  });
+  assert.equal(tooMany.status, 'INVALID_PIPELINE');
+  assert.equal(tooMany.results.length, 0);
+});
+
+
+test('accessibility audit does not treat script-only button content as an accessible name', async () => {
+  const html = '<html lang="en"><body><button><script>alert(1)</script></button><button>Submit</button></body></html>';
+  const result = await runTool('web.accessibility.audit', {html});
+  assert.equal(result.status, 'COMPLETED');
+  assert.ok(result.output.findings.some(item => item.code === 'button_name_missing'),
+    'script-only content must not count as visible button text');
 });
