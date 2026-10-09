@@ -26,7 +26,10 @@ export function createPostgresDatabase(options={}){
 
 export async function ensurePostgresMigrations(db){
   await db.query('CREATE TABLE IF NOT EXISTS codingvibes_schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())');
-  const migrations=[{version:'0001_scaleout',sql:migration0001()}];
+  const migrations=[
+    {version:'0001_scaleout',sql:migration0001()},
+    {version:'0002_core_persistence',sql:migration0002Core()}
+  ];
   for(const migration of migrations){const existing=await db.query('SELECT version FROM codingvibes_schema_migrations WHERE version=$1',[migration.version]);if(existing.rowCount)continue;await db.transaction(async client=>{await client.query(migration.sql);await client.query('INSERT INTO codingvibes_schema_migrations(version) VALUES($1)',[migration.version]);});}
   return {applied:migrations.map(x=>x.version),schema:'codingvibes'};
 }
@@ -45,4 +48,64 @@ function migration0001(){
     'CREATE TABLE IF NOT EXISTS codingvibes_audit_events (id UUID PRIMARY KEY, actor_user_id TEXT, action TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT, metadata JSONB NOT NULL DEFAULT \'{}\'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT now())',
     'CREATE INDEX IF NOT EXISTS idx_codingvibes_audit_events_created ON codingvibes_audit_events(created_at DESC)'
   ].join(';\n')+';';
+}
+
+function migration0002Core(){
+  return [
+    `CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS auth_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_expiry ON auth_sessions(user_id,expires_at)',
+    `CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      repo_path TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_projects_user_updated ON projects(user_id,updated_at DESC)',
+    `CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_sessions_project_updated ON sessions(project_id,user_id,updated_at DESC)',
+    `CREATE TABLE IF NOT EXISTS runs (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status TEXT NOT NULL,
+      request TEXT NOT NULL,
+      target_id TEXT,
+      spec_json TEXT,
+      workspace TEXT,
+      preview_url TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_runs_session_created ON runs(session_id,created_at DESC)',
+    `CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      metadata_json TEXT,
+      created_at TEXT NOT NULL
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_messages_session_created ON messages(session_id,created_at)'
+  ].join(';\\n')+';';
 }
