@@ -38,8 +38,8 @@ test('real PostgreSQL applies the complete schema, is idempotent, and rolls back
    await client.query('INSERT INTO users(id,email,password_hash,created_at) VALUES($1,$2,$3,$4)',[id,id+'@example.invalid','test-hash',new Date().toISOString()]);
    throw new Error('intentional_transaction_rollback');
   }),/intentional_transaction_rollback/);
-  const user=await db.query('SELECT id FROM users WHERE id=$1',[id]);
-  assert.equal(user.rowCount,0,'failed transaction must not persist partial writes');
+  const rolledBackUser=await db.query('SELECT id FROM users WHERE id=$1',[id]);
+  assert.equal(rolledBackUser.rowCount,0,'failed transaction must not persist partial writes');
  }finally{
   await db.close();
  }
