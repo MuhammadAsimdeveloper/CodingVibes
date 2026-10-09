@@ -26,7 +26,9 @@ async function start(){
     scene.background=new Color('#08111c');
     const camera=new PerspectiveCamera(45,1,0.1,500);
     camera.position.set(12,7,14);
-    const renderer=new WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
+    const renderer=new WebGLRenderer({canvas,antialias:true});
+    let animationFrame=0,sceneVisible=true,disposed=false,sceneObserver=null,localVideoUrl=null;
+    let scheduleRender=()=>{};
     renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
     const resize=()=>{
       const r=canvas.getBoundingClientRect();
@@ -39,7 +41,7 @@ async function start(){
     resize();
 
     const controls=new OrbitControls(camera,canvas);
-    controls.enableDamping=true;
+    controls.enableDamping=!reducedMotion;
     controls.target.set(0,1,0);
     controls.maxDistance=40;
     controls.minDistance=3;
@@ -87,13 +89,15 @@ async function start(){
 
     let tourTimer=null;
     function moveCamera(position,target=new Vector3(0,1,0),seconds=2){
+      if(reducedMotion){camera.position.copy(position);controls.target.copy(target);controls.update();scheduleRender();return;}
       const start=camera.position.clone(),startTarget=controls.target.clone(),t0=performance.now();
       const tick=now=>{
         const p=Math.min(1,(now-t0)/(seconds*1000));
         const eased=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
         camera.position.lerpVectors(start,position,eased);
         controls.target.lerpVectors(startTarget,target,eased);
-        if(p<1)requestAnimationFrame(tick);
+        scheduleRender();
+        if(p<1&&!document.hidden&&sceneVisible)requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
     }
@@ -104,6 +108,7 @@ async function start(){
       const durations=contentCameraPath?.map(p=>Math.max(.5,Number(p.duration)||2.2))||[];
       clearInterval(tourTimer);
       let i=0;
+      if(reducedMotion){moveCamera(shots[0],new Vector3(0,1.4,0),0);if(fallback)fallback.textContent='Motion is reduced. Camera tour moved to its first view.';return;}
       moveCamera(shots[0],new Vector3(0,1.4,0),durations[0]||2.2);
       tourTimer=setInterval(()=>{i=(i+1)%shots.length;moveCamera(shots[i],new Vector3(0,1.4,0),durations[i]||2.4)},Math.max(1400,(durations[0]||2.2)*1000+200));
     }
@@ -127,11 +132,17 @@ async function start(){
 
     document.querySelector('#tourPlay')?.addEventListener('click',playTour);
     document.querySelector('#tourRecord')?.addEventListener('click',recordTour);
+    const rotateView=angle=>{controls.rotateLeft(angle);controls.update();scheduleRender();};
+    document.querySelector('#viewLeft')?.addEventListener('click',()=>rotateView(Math.PI/12));
+    document.querySelector('#viewRight')?.addEventListener('click',()=>rotateView(-Math.PI/12));
+    const zoomView=factor=>{const offset=camera.position.clone().sub(controls.target).multiplyScalar(factor);offset.clampLength(controls.minDistance,controls.maxDistance);camera.position.copy(controls.target).add(offset);controls.update();scheduleRender();};
+    document.querySelector('#viewZoomOut')?.addEventListener('click',()=>zoomView(1.15));
+    document.querySelector('#viewZoomIn')?.addEventListener('click',()=>zoomView(.87));
     if(contentModel)loadModel(contentModel,featuredProduct?.title||featuredProperty?.title||featuredScene?.title||'site model');
     document.querySelector('#modelInput')?.addEventListener('change',e=>e.target.files[0]&&loadModel(e.target.files[0],e.target.files[0].name));
     document.querySelector('#videoInput')?.addEventListener('change',e=>{
       const file=e.target.files[0];if(!file)return;
-      const video=document.querySelector('#tourVideo');if(video){video.src=URL.createObjectURL(file);video.load()}
+      const video=document.querySelector('#tourVideo');if(video){if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);localVideoUrl=URL.createObjectURL(file);video.src=localVideoUrl;video.load()}
     });
     const hotspotHost=document.querySelector('[data-experience-hotspots]');if(hotspotHost&&contentHotspots.length){hotspotHost.replaceChildren(...contentHotspots.slice(0,24).map(h=>{const b=document.createElement('button');b.type='button';b.dataset.room=h.room||h.label||'View';b.dataset.x=String(h.position?.x??0);b.dataset.y=String(h.position?.y??1.2);b.dataset.z=String(h.position?.z??0);b.textContent=h.label||h.room||'View';return b}));}
     const hotspotButtons=hotspotHost?hotspotHost.querySelectorAll('button[data-room]'):document.querySelectorAll('[data-room]');
@@ -143,8 +154,34 @@ async function start(){
       if(fallback)fallback.textContent='Viewing '+key;
     }));
 
-    const render=()=>{controls.update();renderer.render(scene,camera);requestAnimationFrame(render)};
-    render();
+    const render=()=>{
+      animationFrame=0;
+      if(disposed||document.hidden||!sceneVisible)return;
+      controls.update();renderer.render(scene,camera);
+      if(!reducedMotion)scheduleRender();
+    };
+    scheduleRender=()=>{
+      if(animationFrame||disposed||document.hidden||!sceneVisible)return;
+      animationFrame=requestAnimationFrame(render);
+    };
+    const stopRender=()=>{if(animationFrame){cancelAnimationFrame(animationFrame);animationFrame=0;}};
+    const handleVisibility=()=>{if(document.hidden){clearInterval(tourTimer);stopRender();}else scheduleRender();};
+    document.addEventListener('visibilitychange',handleVisibility);
+    if('IntersectionObserver' in window){
+      sceneObserver=new IntersectionObserver(entries=>{
+        sceneVisible=entries.some(entry=>entry.isIntersecting);
+        if(sceneVisible)scheduleRender();else{clearInterval(tourTimer);stopRender();}
+      },{threshold:0.01});
+      sceneObserver.observe(stage||canvas);
+    }
+    controls.addEventListener('change',scheduleRender);
+    addEventListener('beforeunload',()=>{
+      disposed=true;stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
+      controls.removeEventListener('change',scheduleRender);document.removeEventListener('visibilitychange',handleVisibility);
+      removeEventListener('resize',resize);if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);
+      renderer.dispose();controls.dispose?.();
+    },{once:true});
+    scheduleRender();
     if(contentVideo){const video=document.querySelector('#tourVideo');if(video){video.src=contentVideo;video.load();}}
     if(fallback)fallback.textContent=reducedMotion?'Interactive 3D ready · motion reduced':'Interactive 3D ready';
   }catch(e){
