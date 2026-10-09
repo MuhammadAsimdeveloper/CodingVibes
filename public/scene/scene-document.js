@@ -22,13 +22,18 @@ function vector3(value) {
 }
 
 function safeAssetUrl(value) {
-  if (value.startsWith('blob:')) return true; // local-session preview URLs only; persistence layer must replace these.
+  if (value.startsWith('blob:')) return true; // Preview only; the persistence API rejects blob URLs.
+  if (/^\/assets\/[a-zA-Z0-9][a-zA-Z0-9._-]{0,240}$/.test(value) && !value.includes('..')) return true;
   try {
     const url = new URL(value);
     return url.protocol === 'https:' && !url.username && !url.password;
   } catch {
     return false;
   }
+}
+
+export function isPersistableSceneAssetUrl(value) {
+  return typeof value === 'string' && !value.startsWith('blob:') && safeAssetUrl(value);
 }
 
 function plainObject(value) {
@@ -84,15 +89,59 @@ export function validateSceneDocument(input) {
 export function applySceneOperation(document, operation) {
   const validated = validateSceneDocument(document);
   if (!validated.ok) return { ok: false, errors: validated.errors };
-  if (!plainObject(operation) || !['set', 'unset'].includes(operation.op) || Object.keys(operation).some(key => !['op', 'nodeId', 'field', 'value'].includes(key)) || (operation.op === 'unset' && Object.hasOwn(operation, 'value'))) {
+  if (!plainObject(operation) || typeof operation.op !== 'string') {
+    return { ok: false, errors: ['operation must be a supported typed operation'] };
+  }
+
+  if (operation.op === 'addNode') {
+    if (Object.keys(operation).some(key => !['op', 'node'].includes(key)) || !plainObject(operation.node)) {
+      return { ok: false, errors: ['addNode operation requires only a node object'] };
+    }
+    const before = validated.value;
+    const candidate = structuredClone(before);
+    candidate.nodes.push(structuredClone(operation.node));
+    const result = validateSceneDocument(candidate);
+    if (!result.ok) return { ok: false, errors: result.errors };
+    return {
+      ok: true,
+      document: result.value,
+      change: { nodeId: operation.node.id, field: 'node', before: null, after: structuredClone(operation.node) },
+      undo: { op: 'removeNode', nodeId: operation.node.id }
+    };
+  }
+
+  if (operation.op === 'removeNode') {
+    if (Object.keys(operation).some(key => !['op', 'nodeId'].includes(key)) || typeof operation.nodeId !== 'string') {
+      return { ok: false, errors: ['removeNode operation requires only a node identifier'] };
+    }
+    const index = validated.value.nodes.findIndex(node => node.id === operation.nodeId);
+    if (index < 0) return { ok: false, errors: ['node not found: ' + operation.nodeId] };
+    if (validated.value.nodes.some(node => node.parentId === operation.nodeId)) {
+      return { ok: false, errors: ['remove child nodes before removing their parent'] };
+    }
+    const candidate = structuredClone(validated.value);
+    const [removed] = candidate.nodes.splice(index, 1);
+    const result = validateSceneDocument(candidate);
+    if (!result.ok) return { ok: false, errors: result.errors };
+    return {
+      ok: true,
+      document: result.value,
+      change: { nodeId: removed.id, field: 'node', before: structuredClone(removed), after: null },
+      undo: { op: 'addNode', node: structuredClone(removed) }
+    };
+  }
+
+  if (!['set', 'unset'].includes(operation.op) ||
+      Object.keys(operation).some(key => !['op', 'nodeId', 'field', 'value'].includes(key)) ||
+      (operation.op === 'unset' && Object.hasOwn(operation, 'value'))) {
     return { ok: false, errors: ['operation must be a supported set operation'] };
   }
   if (typeof operation.nodeId !== 'string' || typeof operation.field !== 'string' || !Object.hasOwn(EDITABLE_FIELDS, operation.field)) {
     return { ok: false, errors: ['operation target field is not editable'] };
   }
-  if (operation.op === 'set' && !EDITABLE_FIELDS[operation.field](operation.value)) return { ok: false, errors: [`invalid value for ${operation.field}`] };
+  if (operation.op === 'set' && !EDITABLE_FIELDS[operation.field](operation.value)) return { ok: false, errors: ['invalid value for ' + operation.field] };
   const index = validated.value.nodes.findIndex(node => node.id === operation.nodeId);
-  if (index < 0) return { ok: false, errors: [`node not found: ${operation.nodeId}`] };
+  if (index < 0) return { ok: false, errors: ['node not found: ' + operation.nodeId] };
   const before = structuredClone(validated.value);
   if (operation.op === 'unset') delete validated.value.nodes[index][operation.field];
   else validated.value.nodes[index][operation.field] = structuredClone(operation.value);
@@ -101,7 +150,7 @@ export function applySceneOperation(document, operation) {
   return {
     ok: true,
     document: afterValidation.value,
-    change: { nodeId: operation.nodeId, field: operation.field, before: before.nodes[index][operation.field] ?? null, after: structuredClone(operation.value) },
+    change: { nodeId: operation.nodeId, field: operation.field, before: before.nodes[index][operation.field] ?? null, after: operation.op === 'unset' ? null : structuredClone(operation.value) },
     undo: Object.hasOwn(before.nodes[index], operation.field)
       ? { op: 'set', nodeId: operation.nodeId, field: operation.field, value: structuredClone(before.nodes[index][operation.field]) }
       : { op: 'unset', nodeId: operation.nodeId, field: operation.field }
