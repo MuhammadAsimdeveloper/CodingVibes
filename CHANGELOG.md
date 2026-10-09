@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added a focused reconstruction roadmap and short agent prompt for professional generated-site quality, module reuse, accessible motion and optimized interactive 3D. Documentation only; this entry does not claim implementation or release completion.
+
 ## 13.0.0 — 2026-10-07
 
 - Completed final source-side launch hardening.

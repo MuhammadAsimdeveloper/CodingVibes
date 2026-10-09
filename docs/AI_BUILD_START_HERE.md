@@ -2,13 +2,16 @@
 
 ## Authority
 Read these files before changing code:
-1. `docs/BUILD_VIBE_LAUNCH_PLAN.md` — authoritative implementation roadmap.
-2. `docs/ZEE_TOOLS_ECOSYSTEM_PLAN.md` — canonical 18 utility/tool layer.
-3. `docs/INDUSTRY_TOOL_ARSENAL.md` — broader agent/tool fabric.
-4. `docs/AI_BUILD_START_HERE.md` — execution rules in this file.
+1. docs/BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md — authoritative scope for design quality, module reuse, animated websites and 3D/“9D” experience.
+2. docs/BUILD_VIBE_LAUNCH_PLAN.md — authoritative overall roadmap, engineering gates, security and release requirements.
+3. docs/ZEE_TOOLS_ECOSYSTEM_PLAN.md — canonical 18 utility/tool layer.
+4. docs/INDUSTRY_TOOL_ARSENAL.md — broader agent/tool fabric.
+5. docs/AI_BUILD_START_HERE.md — execution rules in this file.
+6. docs/BUILD_VIBE_START_PROMPT.md — concise prompt for initiating implementation.
 
+The reconstruction plan supplements—not replaces—the launch roadmap and existing verification contracts.
 ## Mission
-Continue the existing Build Vibe architecture; do not rebuild it. Make it a production-grade AI product builder with a canonical Tool/Agent Fabric, verified generation, research, multi-agent execution, SEO/AEO, visual editing, integrations, deployment and operations.
+Continue the existing Build Vibe architecture; do not rebuild it without audit evidence. Improve generated product quality, professional design systems, reusable modules, accessible motion/animation, optimized 3D and the full generation-to-verification journey while retaining the canonical Tool/Agent Fabric, SEO/AEO, integrations, deployment and operations.
 
 ## Ownership
 Build Vibe owns canonical web/developer/creation implementations. Aira orchestrates them; Atlas consumes business capabilities; Auto-Vid consumes media capabilities; Asim-OS consumes local adapters. Do not duplicate canonical logic.
@@ -26,7 +29,7 @@ Build Vibe owns canonical web/developer/creation implementations. Aira orchestra
 10. If external credentials/infrastructure are missing, build the adapter and tests, then record the exact blocker.
 
 ## Priority order
-Tool/Agent Fabric → 18 Zee-derived utilities → Teamily-derived multi-agent/memory/automation/studio capabilities → integrations/MCP/OAuth → visual/product depth → cloud/operations → deployment/native → benchmarks/release.
+Baseline and module audit → preserve/fix verification pipeline → Tool/Agent Fabric and canonical utilities → generation/design quality → licensed module integration → accessible motion and optimized 3D → integrations/cloud/deployment → benchmarks and release.
 
 ## Definition of done
 Code exists, tests prove behavior, security boundaries are enforced, docs describe reality, and the launch matrix says PASS only when evidence exists.
