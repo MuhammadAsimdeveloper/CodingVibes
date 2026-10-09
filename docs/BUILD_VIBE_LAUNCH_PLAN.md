@@ -911,3 +911,67 @@ Prefer official APIs over browser automation. Browser automation is a governed f
 Free-tool directories demonstrate distribution power: individual task pages + category hubs + instant browser execution. Open/client-side tool ecosystems demonstrate privacy and low infrastructure cost. Browser-agent infrastructure demonstrates that the next step is allowing agents to operate these capabilities and external websites, not merely presenting a catalog.
 
 Build Vibe should combine these into a **searchable, composable, agent-callable Tool Fabric** rather than a static collection.
+
+
+## 39. Creative 3D Web Stack Research — PeachWeb, Threlte, Theatre.js, Spline (2026-10-09)
+
+### Purpose and non-destructive rule
+This addendum extends the existing roadmap; it does not replace prior phases, features, commitments, or launch gates. Use the current design system, AppSpec, project generator, 3D runtime, motion engine, media/content model, verification runner and target registry as the canonical implementation. Do not create a second editor/runtime merely to imitate a competitor.
+
+### Research-backed capability map
+- **PeachWeb** — visual no-code/low-code WebGL/Three.js builder; drag-and-drop 3D scene editor, keyframe animation, custom interactions, responsive UI/layout and scroll effects, embedding/export, publishing/CDN and marketplace. Its feature page labels the node editor for custom interactions/shaders as “coming soon”; treat it as a direction, not an assumed available feature. Source: https://peachweb.io/features
+- **Threlte** — open-source, MIT-licensed Svelte integration for Three.js. Declarative/type-safe/reactive scene construction, component-level interaction/events, extras/plugins, GLTF-to-component tooling, Rapier physics, Theatre.js integration and XR support. It is a developer framework, not a turnkey no-code product builder. Sources: https://threlte.xyz/ and https://github.com/threlte/threlte
+- **Theatre.js** — web animation and motion-design toolkit with sequence editor, dope sheet, graph editor/easing presets, property editing and extensions; integrates with Three.js, React Three Fiber, HTML/CSS/SVG and custom JavaScript/WebGPU stacks. Best as an optional authored-timeline engine, not the whole 3D stack. Source: https://www.theatrejs.com/
+- **Spline** — closest end-user workflow benchmark: browser-based collaborative 2D/3D design, real-time editing, modeling/materials/lights/cameras, animation, particles/physics, states/events/game controls, AI scene/object/material generation, text/image-to-3D, textures, web embedding and platform exports. Its AI agent operates on editable scene objects and preserves undo/collaboration. AI features are credit-metered by plan; generated detailed meshes can affect runtime performance. Sources: https://docs.spline.design/basics/what-is-spline, https://docs.spline.design/, https://spline.design/solutions/ai-3d-generation
+
+### Product fit ranking for Build Vibe
+1. **Spline — best product/workflow benchmark** for the user's goal: natural-language 3D creation/editing, a visual scene editor, asset generation, interactivity, collaboration and publishing. Adopt original equivalents where they fit the roadmap; do not copy proprietary code, UI assets or branding.
+2. **PeachWeb — best reference for a streamlined no-code 3D website workflow**: scene assembly, responsive DOM overlays, scroll-linked effects, embed/publish handoff and optimization feedback.
+3. **Threlte — best optional implementation technology when the generated target is Svelte** and deeper typed, reactive 3D components or Rapier/XR features are needed. It is not the default for vanilla HTML projects.
+4. **Theatre.js — best specialized animation authoring layer** for timeline-based camera/object/property animation. Integrate only if an authored timeline/graph editor is needed and its serialization/runtime compatibility is proven.
+
+These rankings measure relevance to Build Vibe's product direction, not an absolute quality or performance benchmark.
+
+### Add to the existing plan: incremental implementation stages
+**Stage A — 3D AppSpec and asset contract**
+- Extend existing AppSpec/requirements with typed scene objects, GLTF/GLB assets, image textures, video media, materials, lights, camera, interaction triggers, scroll scenes, animation timelines, responsive breakpoints, physics/XR intent and publishing target.
+- Validate asset type, size, provenance, licensing metadata, texture dimensions, model complexity and safe URL policy. Persist durable assets only through the existing authorized asset/storage pipeline; local previews must remain clearly local-only.
+- Acceptance: schema/round-trip tests, malformed input tests, tenant ownership tests, and a deterministic non-WebGL fallback.
+
+**Stage B — prompt-to-scene and text-based iterative editing**
+- Translate requests such as “make the product metallic blue, rotate on hover, zoom on scroll, add my video” into explicit, typed, reviewable scene operations. Preserve scene IDs and unrelated edits. Use allowlists; never evaluate arbitrary user JavaScript or shader code in the control plane.
+- Support preview/diff, undo/redo, edit history, regeneration of only the targeted scene/property, and clear unsupported-operation responses.
+- Acceptance: deterministic intent fixtures, negative/security tests, persisted project-scoped scene history, and end-to-end edit/reload tests.
+
+**Stage C — visual scene editor**
+- Add scene hierarchy/layers, select/move/rotate/scale, camera/light/material controls, asset panel, viewport, properties inspector, responsive preview, and accessible non-canvas controls.
+- Keep UI state and scene document separate; serialize through a versioned scene format. Do not make an image-only mockup the implementation.
+- Acceptance: keyboard operation, touch/mobile behavior, save/reload, version migration, and Playwright tests for core edit flows.
+
+**Stage D — timeline and event graph**
+- First build a small native timeline contract for keyframes, easing, camera paths, scroll triggers, hover/click actions and reduced-motion alternatives. Evaluate Theatre.js as an optional authoring adapter after testing license, bundle/runtime cost, export/serialization and generated-project compatibility.
+- Keep the current motion engine for lightweight CSS/UI motion. Avoid shipping Theatre.js into every project by default.
+- Acceptance: deterministic playback, pause/resume, lifecycle cleanup, reduced-motion compliance and generated artifact tests.
+
+**Stage E — runtime and renderer strategy**
+- Keep the current Three.js runtime as the baseline for vanilla projects. Add a target-aware renderer adapter: vanilla Three.js by default; Threlte only for Svelte output when selected/justified; future renderers must implement the same scene contract.
+- Preserve WebGL failure fallback, visibility-aware rendering, disposal of geometry/material/texture/URL resources, lazy loading, context-loss recovery, and configurable quality tiers. Measure before adding physics/XR or a second renderer.
+- Acceptance: browser smoke with and without WebGL/CDN access, memory/resource lifecycle tests, low-end/mobile performance budgets and actual visual artifact review.
+
+**Stage F — publish/export and collaboration**
+- Provide an embed/publish handoff with origin allowlists, CSP guidance, responsive iframe sizing, asset integrity and clear local-vs-hosted asset states. Integrate with existing deployment adapters instead of inventing another deploy system.
+- Add scene versioning and collaboration only through existing project RBAC/audit/version infrastructure; define conflict behavior before real-time multiplayer editing.
+- Acceptance: embed security tests, authorized cross-user denial, reproducible export and publish rollback tests.
+
+### Phased delivery and dependencies
+- **Near term:** typed scene/asset contracts, text-to-scene operations, media persistence integration, safe preview and regression corpus.
+- **Next:** scene hierarchy/property inspector and timeline authoring; evaluate Theatre.js adapter in a separate proof of concept.
+- **Later/optional:** Threlte target adapter for Svelte-only projects; Rapier physics, XR and multiplayer collaboration after capability, performance, security and demand validation.
+- **Do not block basic website/app generation** on the 3D editor or optional libraries. Keep free/low-end paths lightweight and apply plan quotas through the existing billing/quota system, not hard-coded UI promises.
+
+### Completion status at this checkpoint (not a launch approval)
+- **Already implemented according to current source/audit documentation:** baseline Three.js generated experiences; GLTF model loading; local image/video/model inputs and previews; local image-to-mesh texture application; upload limits and URL/resource cleanup; reduced-motion-aware camera behavior; hidden/off-screen render pause; accessible view controls/status; deterministic fallback; responsive viewport checks; design tokens and allowlisted natural-language visual edits.
+- **Partially implemented / needs real-product integration:** media is local-session only rather than durable upload; text-based edits focus on basic CSS tokens and do not yet edit arbitrary scene graphs; there is no complete visual 3D scene editor or editable timeline/graph; no Theatre.js or Threlte adapter; no real-time scene collaboration; actual GPU/device performance and visual screenshot review remain unverified.
+- **Independent blocker unrelated to these four references:** the async PostgreSQL repository is not wired as the primary application store. Authentication/project/conversation route migration and end-to-end ownership/session tests remain required before primary PostgreSQL can be enabled.
+- **CI checkpoint:** commit `b222f4b1597436bf19a2fc32d57021beb3d0f0b5` failed `npm test` because a newly added repository test expected the `listSessions(limit: 0)` clamp to be 1 while implementation clamps it to 50. The implementation behavior is bounded; the test has been corrected to match the existing 50-item minimum. Re-run all workflows on the corrected head. CodeQL and Dependency Review passed on that commit, but CodeQL reported DOM text-to-HTML findings in `src/templates/runtime/three-experience.js`; triage/fix and verify those findings rather than assuming a green workflow means no alerts.
+- **Do not mark complete until:** all current tests/CI pass on the latest head, CodeQL findings are resolved or formally dispositioned, scene/media end-to-end flows are tested, and launch gates in section 35 still pass. Production launch additionally requires the infrastructure and external-provider gates already documented above.
