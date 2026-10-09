@@ -23,10 +23,10 @@ function experienceMarkup(spec){
  const property=spec.experience.type==='property-tour';
  return '<section class="experience-wrap card" data-reveal aria-label="'+(property?'Interactive 3D property tour':'Interactive 3D experience')+'">'+
  '<div class="experience-toolbar"><strong>'+(property?'Explore the home':'Explore in 3D')+'</strong><div class="experience-actions">'+
- '<button id="tourPlay" type="button">Camera tour</button><button id="tourRecord" type="button">Record tour</button>'+
+ '<button id="tourPlay" type="button">Camera tour</button><button id="tourRecord" type="button">Record tour</button><button id="viewLeft" type="button" aria-label="Rotate 3D view left">↶</button><button id="viewRight" type="button" aria-label="Rotate 3D view right">↷</button><button id="viewZoomOut" type="button" aria-label="Zoom out of 3D view">−</button><button id="viewZoomIn" type="button" aria-label="Zoom in to 3D view">+</button>'+
  '<label class="file-button">Load 3D model<input id="modelInput" type="file" accept=".glb,.gltf" hidden></label></div></div>'+
- '<div class="experience-stage" data-property-tour="'+(property?'true':'false')+'"><canvas id="experience3d" aria-label="Interactive 3D scene"></canvas>'+
- '<div id="experienceFallback" class="experience-fallback">3D is loading. Your content remains available below.</div>'+
+ '<div class="experience-stage" data-property-tour="'+(property?'true':'false')+'"><canvas id="experience3d" role="img" aria-label="Interactive 3D scene; use the view controls to navigate"></canvas>'+
+ '<div id="experienceFallback" class="experience-fallback" role="status" aria-live="polite">3D is loading. Your content remains available below.</div>'+
  '<div class="hotspots" data-experience-hotspots>'+ (property?'<button type="button" data-room="Living">Living room</button><button type="button" data-room="Kitchen">Kitchen</button><button type="button" data-room="Bedroom">Bedroom</button>':'') +'</div>'+
  '</div>'+
  (property?'<div class="tour-media"><div><h3>Video walkthrough</h3><p class="muted">Add an MP4/WebM tour or use the camera-tour recording.</p><label class="file-button" for="videoInput">Load walkthrough video</label><input id="videoInput" type="file" accept="video/mp4,video/webm" aria-label="Upload walkthrough video"></div><video id="tourVideo" controls playsinline preload="metadata"></video></div>':'')+
