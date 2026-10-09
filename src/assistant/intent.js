@@ -15,19 +15,15 @@ const COLOR_TOKENS = Object.freeze({
   gray: '#6b7280',
   grey: '#6b7280',
 });
-
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
-
-function hasPhrase(text, pattern) {
-  return pattern.test(text);
-}
+const UNSAFE_CSS_INTENT = /\b(?:url|expression)\s*\(|javascript\s*:|<\/?script\b|\beval\s*\(/i;
+const NAMED_COLOR_PATTERN = /\b(blue|navy|red|green|purple|violet|pink|orange|yellow|teal|cyan|white|black|gray|grey)\b/;
 
 function colorFrom(text) {
-  const candidates = Object.keys(COLOR_TOKENS).join('|');
-  const match = text.match(new RegExp('(?:\\b(?:color|colour|blue|red|green|purple|violet|pink|orange|yellow|teal|cyan|white|black|gray|grey|navy)\\b[^.]{0,32}?\\b)(' + candidates + ')\\b'));
-  if (match) return COLOR_TOKENS[match[1]];
-  const direct = text.match(new RegExp('\\b(' + candidates + ')\\b'));
-  return direct ? COLOR_TOKENS[direct[1]] : null;
+  const hex = text.match(/#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})\b/i);
+  if (hex) return hex[0];
+  const named = text.match(NAMED_COLOR_PATTERN);
+  return named ? COLOR_TOKENS[named[1]] : null;
 }
 
 function operationsFor(text) {
@@ -36,48 +32,45 @@ function operationsFor(text) {
     if (operations.some(item => item.css?.[property] !== undefined)) return;
     operations.push({ type: 'style', css: { [property]: value } });
   };
+  // Do not reinterpret CSS injection payloads as harmless style instructions.
+  if (UNSAFE_CSS_INTENT.test(text)) return operations;
 
-  const unsafeCssIntent = /\\b(?:url|expression)\\s*\\(|javascript\\s*:|<\\/?script\\b|\\beval\\s*\\(/i.test(text);
-  if (unsafeCssIntent) return operations;
-
-  const wantsBackground = /\\b(?:background|background[- ]color|backdrop)\\b/.test(text);
+  const wantsBackground = /\b(?:background|background[- ]color|backdrop)\b/.test(text);
   const color = colorFrom(text);
-  if (color && /\\b(?:color|colour|background|blue|red|green|purple|violet|pink|orange|yellow|teal|cyan|white|black|gray|grey|navy)\\b/.test(text)) {
+  if (color && /\b(?:color|colour|background|blue|navy|red|green|purple|violet|pink|orange|yellow|teal|cyan|white|black|gray|grey|#[0-9a-f]{3,8})\b/i.test(text)) {
     add(wantsBackground ? 'backgroundColor' : 'color', color);
   }
 
-  if (hasPhrase(text, /\\b(?:bigger|larger|increase(?:d)?(?: the)? (?:font|text|size)|make (?:the )?(?:text|font) bigger|increase (?:the )?(?:text|font) size)\\b/)) {
+  if (/\b(?:bigger|larger|increase(?:d)?(?: the)? (?:font|text|size)|make (?:the )?(?:text|font) bigger|increase (?:the )?(?:text|font) size)\b/.test(text)) {
     add('fontSize', '1.25rem');
-  } else if (hasPhrase(text, /\\b(?:smaller|reduce(?:d)?(?: the)? (?:font|text|size)|make (?:the )?(?:text|font) smaller|decrease (?:the )?(?:text|font) size)\\b/)) {
+  } else if (/\b(?:smaller|reduce(?:d)?(?: the)? (?:font|text|size)|make (?:the )?(?:text|font) smaller|decrease (?:the )?(?:text|font) size)\b/.test(text)) {
     add('fontSize', '0.875rem');
   }
 
-  if (hasPhrase(text, /\\b(?:centered|center(?: it)?|align(?: it)? center|text[- ]align center)\\b/)) add('textAlign', 'center');
-  else if (hasPhrase(text, /\\b(?:align(?: it)? left|left[- ]aligned|text[- ]align left)\\b/)) add('textAlign', 'left');
-  else if (hasPhrase(text, /\\b(?:align(?: it)? right|right[- ]aligned|text[- ]align right)\\b/)) add('textAlign', 'right');
+  if (/\b(?:centered|center(?: it)?|align(?: it)? center|text[- ]align center)\b/.test(text)) add('textAlign', 'center');
+  else if (/\b(?:align(?: it)? left|left[- ]aligned|text[- ]align left)\b/.test(text)) add('textAlign', 'left');
+  else if (/\b(?:align(?: it)? right|right[- ]aligned|text[- ]align right)\b/.test(text)) add('textAlign', 'right');
 
-  if (hasPhrase(text, /\\b(?:bold|heavier|make (?:it|this|the text) bold)\\b/)) add('fontWeight', '700');
-  else if (hasPhrase(text, /\\b(?:normal weight|not bold|lighter font)\\b/)) add('fontWeight', '400');
+  if (/\b(?:bold|heavier|make (?:it|this|the text) bold)\b/.test(text)) add('fontWeight', '700');
+  else if (/\b(?:normal weight|not bold|lighter font)\b/.test(text)) add('fontWeight', '400');
 
-  if (hasPhrase(text, /\\b(?:rounded|round the corners|rounded corners|more rounded)\\b/)) add('borderRadius', /\\b(?:pill|fully rounded|circle|circular)\\b/.test(text) ? '999px' : '12px');
-  else if (hasPhrase(text, /\\b(?:square corners|remove rounded corners|not rounded)\\b/)) add('borderRadius', '0');
-
+  if (/\b(?:rounded|round the corners|rounded corners|more rounded)\b/.test(text)) {
+    add('borderRadius', /\b(?:pill|fully rounded|circle|circular)\b/.test(text) ? '999px' : '12px');
+  } else if (/\b(?:square corners|remove rounded corners|not rounded)\b/.test(text)) {
+    add('borderRadius', '0');
+  }
   return operations;
 }
 
 /**
- * Converts a narrow set of natural-language design requests into safe CSS edits.
- * This is deliberately a deterministic parser, not a general command executor.
+ * Convert a narrow, deterministic subset of natural-language design requests
+ * into CSS edits. Unsupported requests are no-ops, never arbitrary execution.
  */
 export function classifyAssistantRequest(request) {
   const original = String(request ?? '').replace(CONTROL_CHARS, ' ').trim().slice(0, 2000);
-  const normalized = original.toLowerCase().replace(/[^a-z0-9#()., _-]+/g, ' ').replace(/\\s+/g, ' ').trim();
+  const normalized = original.toLowerCase().replace(/\s+/g, ' ').trim();
   const operations = normalized ? operationsFor(normalized) : [];
-  return {
-    intent: operations.length ? 'visual_style_edit' : 'none',
-    matched: operations.length > 0,
-    operations,
-  };
+  return { intent: operations.length ? 'visual_style_edit' : 'none', matched: operations.length > 0, operations };
 }
 
 export const VISUAL_EDIT_COLOR_TOKENS = COLOR_TOKENS;
