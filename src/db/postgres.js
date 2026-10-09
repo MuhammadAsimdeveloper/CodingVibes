@@ -107,5 +107,5 @@ function migration0002Core(){
       created_at TEXT NOT NULL
     )`,
     'CREATE INDEX IF NOT EXISTS idx_messages_session_created ON messages(session_id,created_at)'
-  ].join(';\\n')+';';
+  ].join(';\n')+';';
 }
