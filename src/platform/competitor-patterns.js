@@ -9,6 +9,10 @@ export const COMPETITOR_PATTERNS = [
   {source:'Bolt',pattern:'fast_preview_deploy',adaptation:'Fast prompt-to-preview loop with deployment as a first-class action.'},
   {source:'Base44',pattern:'built_in_services',adaptation:'Treat auth, database, storage, email and payments as composable platform services.'},
   {source:'v0',pattern:'design_to_app',adaptation:'Design-system-aware generation and iterative UI refinement from natural language.'},
+  {source:'Lovable',pattern:'parallel_drafts',adaptation:'Independent project/draft conversations with separate preview state and safe acceptance before publishing.'},
+  {source:'Bolt',pattern:'visual_edits',adaptation:'Dependency-free preview selection metadata feeds the conversational edit target.'},
+  {source:'Base44',pattern:'grounded_assistant',adaptation:'Product-aware assistant combines project state, stored conversations and explicit fallback rules.'},
+  {source:'modern_3d_builders',pattern:'media_rich_3d',adaptation:'3D scenes treat models, images, video, hotspots, camera paths, materials and lighting as editable data.'},
 ];
 
 export function competitorResearch(){return COMPETITOR_PATTERNS.map(x=>({...x}));}

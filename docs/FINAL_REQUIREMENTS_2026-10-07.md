@@ -149,3 +149,16 @@ Build Vibe should outperform competitors through the combination of:
 - provider-neutral core architecture
 
 Do not copy competitor branding, proprietary code, or proprietary assets.
+
+
+## Conversational Studio & Assistant Addendum
+
+- Base creation and template creation are distinct Studio entry modes.
+- Template selection is genre-aware and hands off to Studio with persistent template memory.
+- Users can modify an existing project with short text commands such as color, spacing, content, feature, and 3D changes without repeating the original build prompt.
+- Preview supports dependency-free element selection metadata that can be sent into the assistant as the edit target.
+- Each project keeps multiple chat sessions, draft conversations, runs, revisions and checkpoints.
+- Assistant can explain Build Vibe sections, answer workflow questions, turn ideas into complete prompts, request clarification choices, and apply safe incremental edits.
+- Assistant may use a local GGUF model through a llama.cpp-compatible executable using a bounded context, timeout and output budget. This follows the local-model contract used by Aira but does not import or bundle the Aira application.
+- The 3D content pipeline supports model/image/video/poster/floorplan assets, hotspots, camera paths, materials and lighting as structured project data.
+- QA is exposed inside Studio, and MiroFish simulation is an optional non-blocking reaction/risk layer rather than the functional release gate.

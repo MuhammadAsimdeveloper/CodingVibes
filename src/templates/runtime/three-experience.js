@@ -19,11 +19,15 @@ async function start(){
     const contentHotspots=Array.isArray(experienceRecord?.hotspots)?experienceRecord.hotspots:[];
     const contentModel=featuredProduct?.model?.url||featuredProperty?.model?.url||featuredScene?.model?.url||'';
     const contentVideo=featuredProduct?.video?.url||featuredProperty?.video?.url||featuredScene?.video?.url||'';
+    const mediaImages=[...(experienceRecord?.images||[]),...(experienceRecord?.gallery||[]).map(x=>x?.url||x).filter(Boolean)].map(x=>typeof x==='string'?x:x?.url).filter(Boolean).slice(0,24);
+    const environment=experienceRecord?.environment&&typeof experienceRecord.environment==='object'?experienceRecord.environment:{};
+    const materialName=String(environment.material||'').toLowerCase();
+    const lightingMode=String(environment.lighting||'bright').toLowerCase();
     const [{Scene,PerspectiveCamera,WebGLRenderer,Color,HemisphereLight,DirectionalLight,PlaneGeometry,MeshStandardMaterial,Mesh,BoxGeometry,ConeGeometry,SphereGeometry,Group,Vector3,Box3}, {OrbitControls}, {GLTFLoader}] = await Promise.all([
       import(THREE_URL), import(CTRL_URL), import(GLTF_URL)
     ]);
     const scene=new Scene();
-    scene.background=new Color('#08111c');
+    scene.background=new Color(environment.background||'#08111c');
     const camera=new PerspectiveCamera(45,1,0.1,500);
     camera.position.set(12,7,14);
     const renderer=new WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
@@ -44,8 +48,8 @@ async function start(){
     controls.maxDistance=40;
     controls.minDistance=3;
 
-    scene.add(new HemisphereLight(0xe3efff,0x1d3428,2.4));
-    const sun=new DirectionalLight(0xffefcf,3.1);sun.position.set(12,18,10);scene.add(sun);
+    scene.add(new HemisphereLight(0xe3efff,0x1d3428,lightingMode==='low'?1.15:2.4));
+    const sun=new DirectionalLight(0xffefcf,lightingMode==='low'?1.4:3.1);sun.position.set(12,18,10);scene.add(sun);
 
     const ground=new Mesh(new PlaneGeometry(50,50),new MeshStandardMaterial({color:0x1e382b,roughness:1}));
     ground.rotation.x=-Math.PI/2;
@@ -53,8 +57,10 @@ async function start(){
 
     const group=new Group();
     scene.add(group);
+    const materialColors={marble:0xe8e5df,wood:0x76502f,metal:0x8a94a5,glass:0x6fa9ba,stone:0x77706a,concrete:0x8a8a86};
+    const defaultSurfaceColor=materialColors[materialName]||0xe8dfd0;
     const makeMat=(color,roughness=.72)=>new MeshStandardMaterial({color,roughness});
-    const wall=makeMat(0xe8dfd0), roof=makeMat(0x4a392e), wood=makeMat(0x62432c), glass=makeMat(0x78afbf,.25);
+    const wall=makeMat(defaultSurfaceColor,materialName==='glass'?.35:materialName==='metal'?.42:.72), roof=makeMat(0x4a392e), wood=makeMat(materialName==='wood'?0x76502f:0x62432c), glass=makeMat(materialName==='glass'?0x5f9eb2:0x78afbf,.25);
     const box=(w,h,d,mat,x=0,y=h/2,z=0)=>{
       const mesh=new Mesh(new BoxGeometry(w,h,d),mat);
       mesh.position.set(x,y,z);group.add(mesh);return mesh;
@@ -79,7 +85,7 @@ async function start(){
     async function loadModel(source,label='model'){
       try{
         const url=typeof source==='string'?source:URL.createObjectURL(source);const object=await new GLTFLoader().loadAsync(url);if(typeof source!=='string')setTimeout(()=>URL.revokeObjectURL(url),0);
-        if(loadedModel)scene.remove(loadedModel);loadedModel=object.scene;loadedModel.position.y=0;
+        if(loadedModel)scene.remove(loadedModel);loadedModel=object.scene;loadedModel.position.y=Number(experienceRecord?.transform?.positionY)||0;loadedModel.rotation.y=(Number(experienceRecord?.transform?.rotationY)||0)*Math.PI/180;loadedModel.scale.setScalar((6/maxSide)*(Number(experienceRecord?.transform?.scale)||1));
         const box3=new Box3().setFromObject(loadedModel);const size=box3.getSize(new Vector3()),maxSide=Math.max(size.x,size.y,size.z)||1;loadedModel.scale.setScalar(6/maxSide);loadedModel.position.y=Math.max(0,-box3.min.y*loadedModel.scale.y);scene.add(loadedModel);
         if(fallback)fallback.textContent='Loaded '+label;
       }catch(e){if(fallback)fallback.textContent='Model load failed; showing procedural fallback.';console.error(e)}
@@ -134,6 +140,10 @@ async function start(){
       const video=document.querySelector('#tourVideo');if(video){video.src=URL.createObjectURL(file);video.load()}
     });
     const hotspotHost=document.querySelector('[data-experience-hotspots]');if(hotspotHost&&contentHotspots.length){hotspotHost.replaceChildren(...contentHotspots.slice(0,24).map(h=>{const b=document.createElement('button');b.type='button';b.dataset.room=h.room||h.label||'View';b.dataset.x=String(h.position?.x??0);b.dataset.y=String(h.position?.y??1.2);b.dataset.z=String(h.position?.z??0);b.textContent=h.label||h.room||'View';return b}));}
+    const galleryHost=document.querySelector('[data-experience-gallery]');
+    if(galleryHost&&mediaImages.length){
+      galleryHost.replaceChildren(...mediaImages.map((src,index)=>{const b=document.createElement('button');b.type='button';b.className='experience-thumb';b.title='Open image '+(index+1);const img=document.createElement('img');img.loading='lazy';img.src=src;img.alt=(experienceRecord?.title||'3D experience')+' image '+(index+1);b.append(img);b.addEventListener('click',()=>{let viewer=document.querySelector('#experienceMediaViewer');if(!viewer){viewer=document.createElement('div');viewer.id='experienceMediaViewer';viewer.className='experience-media-viewer';viewer.innerHTML='<button type="button" class="experience-media-close" aria-label="Close image">×</button><img alt=""><div class="experience-media-caption"></div>';stage?.append(viewer);viewer.querySelector('.experience-media-close').onclick=()=>viewer.remove();}viewer.querySelector('img').src=src;viewer.querySelector('img').alt=img.alt;viewer.querySelector('.experience-media-caption').textContent=experienceRecord?.title||'3D media';});return b;}));
+    }
     const hotspotButtons=hotspotHost?hotspotHost.querySelectorAll('button[data-room]'):document.querySelectorAll('[data-room]');
     hotspotButtons.forEach(button=>button.addEventListener('click',()=>{
       const presets={Living:new Vector3(7,3,8),Kitchen:new Vector3(-7,3,5),Bedroom:new Vector3(-6,3,-6)};
