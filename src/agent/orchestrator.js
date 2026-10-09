@@ -36,21 +36,37 @@ async function collectSourceText(workspace){let out='';const walk=dir=>{if(!fs.e
 function scrubText(text){return String(text??'').slice(0,12000);}
 function writeManifest(workspace,data){const dir=path.join(workspace,'.codingvibes');fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,'run.json'),JSON.stringify(data,null,2)+'\n');}
 
+function safeWorkspaceRegularFile(workspace,relative){
+ const root=path.resolve(workspace),target=path.resolve(root,relative);
+ if(!target.startsWith(root+path.sep))return null;
+ let current=root;
+ const parts=path.relative(root,target).split(path.sep);
+ for(let index=0;index<parts.length;index++){
+  current=path.join(current,parts[index]);
+  let stat;try{stat=fs.lstatSync(current)}catch{return null;}
+  if(stat.isSymbolicLink())return null;
+  if(index<parts.length-1&&!stat.isDirectory())return null;
+  if(index===parts.length-1&&!stat.isFile())return null;
+ }
+ return target;
+}
 function applyProjectDesignSystem(workspace,spec){
  const css=designSystemCssForSpec(spec).trim();
  if(!css)return {applied:false,reason:'no-design-system'};
  const candidates=['public/styles.css','styles.css','style.css','src/styles.css','src/index.css','src/App.css','app/globals.css','src/app/globals.css','src/styles/globals.css'];
  for(const rel of candidates){
-  const file=path.join(workspace,rel);
-  if(!fs.existsSync(file)||!fs.statSync(file).isFile())continue;
+  const file=safeWorkspaceRegularFile(workspace,rel);
+  if(!file)continue;
   const before=fs.readFileSync(file,'utf8');
   if(before.includes(css))return {applied:true,mode:'already-present',file:rel};
   fs.writeFileSync(file,before+'\n'+css+'\n','utf8');
   return {applied:true,mode:'appended',file:rel};
  }
- const publicDir=path.join(workspace,'public');fs.mkdirSync(publicDir,{recursive:true});
- const relCss='public/build-vibe-design-system.css';
- fs.writeFileSync(path.join(workspace,relCss),css+'\n','utf8');
+ const publicDir=path.join(workspace,'public');
+ try{if(fs.existsSync(publicDir)){const publicStat=fs.lstatSync(publicDir);if(publicStat.isSymbolicLink()||!publicStat.isDirectory())return {applied:false,reason:'unsafe-public-directory'};}else fs.mkdirSync(publicDir,{recursive:false});}catch{return {applied:false,reason:'public-directory-unavailable'};}
+ const relCss='public/build-vibe-design-system.css',cssFile=path.join(workspace,relCss);
+ try{const existing=fs.lstatSync(cssFile);if(existing.isSymbolicLink()||!existing.isFile())return {applied:false,reason:'unsafe-design-stylesheet-path'};}catch{}
+ fs.writeFileSync(cssFile,css+'\n','utf8');
  const htmlFiles=[];
  const scan=(dir,depth=0)=>{
   if(depth>3||htmlFiles.length>=100)return;
