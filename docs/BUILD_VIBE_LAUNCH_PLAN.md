@@ -926,3 +926,19 @@ This checkpoint follows the required read order and keeps the original architect
 - Production release remains gated on real runner/toolchain, secrets, persistent storage and backup/restore, TLS/domain, monitoring, quotas and third-party credentials. A successful repository CI run is not proof of a live deployment or native binary.
 
 The source-side audit, module decisions and test changes do not mark unavailable OriginKit modules, live MiroFish simulations, cloud resources or deployment targets as complete.
+
+
+## 42. TDD checkpoint — bounded Tool Fabric pipeline composition (2026-10-09)
+
+**Scope:** Build Vibe's first composition primitive, extending the existing Tool Fabric rather than duplicating its 18 contracts.
+
+- Add `runToolPipeline({ steps })` with ordered local execution and explicit `$ref: "stepId.output.property"` input mapping.
+- Preflight every step and reference before execution; reject unknown/duplicate step IDs, forward/missing references, prototype-sensitive paths, and browser/network/high-risk adapters.
+- Enforce a maximum of 10 steps, a 1 MB pipeline request, a 1 MB resolved per-step input, and 2 MB cumulative serialized outputs.
+- Stop at the first non-`COMPLETED` step with the original failure status, and return `networkUsed: false`.
+- Expose the capability through authenticated, rate-limited `POST /api/tool-fabric/pipeline`; audit only bounded tool IDs, statuses, counts and duration, never input or output contents.
+- TDD history on PR #53: regression tests were committed first at `0efcf86`, and the missing executor was confirmed by the failing CI test before implementation. The pipeline executor and API route were then added in `e6973f2` and `c560810` respectively.
+
+**Verification status:** the latest full CI run is in progress as of this checkpoint. Do not call this capability verified until its test, coverage, syntax/static, E2E, browser, security and launch checks complete successfully. This PR remains open and separate from `main`; it is not a production deployment.
+
+**Next unfinished Tool Fabric work:** complete the local/browser adapters still explicitly marked `BROWSER_REQUIRED`, `NEEDS_BROWSER_METRICS`, or `NOT_CONFIGURED` only when a real governed adapter and its test environment exist; then add remaining P1 utilities from `docs/ZEE_TOOLS_ECOSYSTEM_PLAN.md`. Declared contracts alone are not evidence that a tool is executable.
