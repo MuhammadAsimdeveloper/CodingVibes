@@ -228,8 +228,12 @@ function performanceAudit(metrics) {
   if(clean.totalBytes>2000000) flag('page_heavy',10,'Transferred page bytes exceed 2 MB.');
   if(clean.jsBytes>600000) flag('javascript_heavy',10,'JavaScript bytes exceed 600 KB.');
   if(clean.imageBytes>1500000) flag('images_heavy',10,'Image bytes exceed 1.5 MB.');
-  if(!findings.length) findings.push({code:'metrics_within_thresholds',severity:'info',message:'Supplied metrics meet the configured baseline thresholds.'});
-  return {score:Math.max(0,score),findings,metrics:clean,scope:'Threshold assessment of supplied metrics, not a browser measurement.'};
+  const missingMetrics=keys.filter(key=>clean[key]===undefined);
+  if(!findings.length) {
+    if(missingMetrics.length) findings.push({code:'metrics_incomplete',severity:'info',message:'Metrics not supplied: '+missingMetrics.join(', ')+'. No complete performance pass can be inferred.'});
+    else findings.push({code:'metrics_within_thresholds',severity:'info',message:'Supplied metrics meet the configured baseline thresholds.'});
+  }
+  return {score:Math.max(0,score),findings,metrics:clean,complete:missingMetrics.length===0,missingMetrics,scope:'Threshold assessment of supplied metrics; browser measurement must come from a real runner.'};
 }
 function jsonInput(input) {
   if(typeof input.json==='string') { try{return JSON.parse(input.json);} catch {throw new ToolFailure('INVALID_INPUT','The JSON input is invalid.');} }

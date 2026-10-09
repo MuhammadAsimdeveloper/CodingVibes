@@ -108,3 +108,10 @@ Verification lives in `test/image-optimizer-ui.test.js`: it covers resize/output
 ### Browser E2E
 
 CI runs `npm run browser:image-optimizer` after installing Playwright Chromium. The test loads the real Studio module from a local-only HTTP harness, creates and downloads a 1x1 WebP preview from a valid PNG, rejects SVG input while preserving the previous preview, checks browser errors, and asserts that image processing made no API requests.
+
+
+## Browser performance evidence
+
+The Playwright browser smoke runner records real navigation timings, first-contentful paint, observed resource transfer sizes, JavaScript/image byte subtotals where resource timing is complete, render-blocking resource counts when the browser exposes them, Largest Contentful Paint and Cumulative Layout Shift when their observers return data. Cross-origin timing entries without readable size values are marked incomplete rather than treated as zero-byte resources.
+
+The runner deliberately does **not** label a navigation-only measurement as Interaction to Next Paint (INP). It records observed interaction duration for diagnostics, but INP remains missing unless a real interaction/Lighthouse measurement is supplied. The Tool Fabric threshold evaluator now returns `complete:false`, `missingMetrics` and a `metrics_incomplete` finding when metrics are absent instead of reporting a false full pass. Per-route browser verification includes the measured evidence and threshold assessment; this is not a Lighthouse score.
