@@ -15,7 +15,7 @@ process.env.CODINGVIBES_BILLING_REQUIRED='false';
 process.env.CODINGVIBES_OBJECT_BACKEND='local';
 process.env.CODINGVIBES_OBJECT_ROOT=path.join(root,'objects');
 
-const {server}=await import('../src/server.js?route-smoke');
+const {server,store}=await import('../src/server.js?route-smoke');
 let origin='';
 
 async function req(path,options={}){
@@ -129,8 +129,7 @@ test('server public and authenticated route smoke covers launch control plane',a
   assert.ok(asset.publicPath.startsWith('/assets/'));
   assert.equal(asset.size,png.length);
   assert.equal(asset.sha256.length,64);
-  assert.equal(asset.metadata.storage.provider,'local');
-  assert.ok(asset.metadata.storage.key.includes(pid));
+  assert.equal(asset.metadata.storage,undefined);
   const assets=await req('/api/projects/'+pid+'/assets',{headers:{cookie:sessionCookie}});
   assert.equal(assets.response.status,200);
   assert.ok(assets.body.assets.some(row=>row.id===asset.id));
@@ -138,6 +137,14 @@ test('server public and authenticated route smoke covers launch control plane',a
   assert.equal(preview.status,200);
   assert.equal(preview.headers.get('content-type'),'image/png');
   assert.equal((await preview.arrayBuffer()).byteLength,png.length);
+  const userId=signup.body.user?.id||signup.body.userId||signup.body.id;
+  const projectRow=store.getProject(pid,userId);
+  assert.ok(projectRow?.repo_path);
+  const localAssetPath=path.join(projectRow.repo_path,'public','assets',path.basename(asset.publicPath));
+  fs.rmSync(localAssetPath,{force:true});
+  const restoredPreview=await fetch(origin+'/api/projects/'+pid+'/assets/'+asset.id+'/preview',{headers:{cookie:sessionCookie}});
+  assert.equal(restoredPreview.status,200,'media should fall back to the persistent object store when the workspace file is absent');
+  assert.equal((await restoredPreview.arrayBuffer()).byteLength,png.length);
   const corrupt=await req('/api/projects/'+pid+'/assets',{method:'POST',headers:{cookie:sessionCookie,'content-type':'image/png','x-asset-name':'fake.png'},body:Buffer.from('<html>not an image</html>')});
   assert.equal(corrupt.response.status,400);
   assert.equal(corrupt.body.error,'asset_content_mismatch');
