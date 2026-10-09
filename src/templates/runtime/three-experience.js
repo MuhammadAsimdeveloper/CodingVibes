@@ -27,7 +27,7 @@ async function start(){
     const camera=new PerspectiveCamera(45,1,0.1,500);
     camera.position.set(12,7,14);
     const renderer=new WebGLRenderer({canvas,antialias:true});
-    let animationFrame=0,sceneVisible=true,disposed=false,sceneObserver=null,localVideoUrl=null;
+    let animationFrame=0,sceneVisible=true,disposed=false,sceneObserver=null,localVideoUrl=null,localImageUrl=null,recordingUrl=null;
     let scheduleRender=()=>{};
     renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
     const resize=()=>{
@@ -122,7 +122,8 @@ async function start(){
       recorder.ondataavailable=e=>e.data.size&&chunks.push(e.data);
       recorder.onstop=()=>{
         const blob=new Blob(chunks,{type:'video/webm'});
-        const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='codingvibes-3d-tour.webm';a.textContent='Download recorded tour';a.className='download-link';
+        if(recordingUrl)URL.revokeObjectURL(recordingUrl);recordingUrl=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=recordingUrl;a.download='build-vibe-3d-tour.webm';a.textContent='Download recorded tour';a.className='download-link';
         stage?.append(a);
       };
       recorder.start();
@@ -139,10 +140,26 @@ async function start(){
     document.querySelector('#viewZoomOut')?.addEventListener('click',()=>zoomView(1.15));
     document.querySelector('#viewZoomIn')?.addEventListener('click',()=>zoomView(.87));
     if(contentModel)loadModel(contentModel,featuredProduct?.title||featuredProperty?.title||featuredScene?.title||'site model');
-    document.querySelector('#modelInput')?.addEventListener('change',e=>e.target.files[0]&&loadModel(e.target.files[0],e.target.files[0].name));
+    document.querySelector('#modelInput')?.addEventListener('change',e=>{
+      const file=e.target.files?.[0];if(!file)return;
+      if(!/\\.(glb|gltf)$/i.test(file.name)||file.size>150*1024*1024){if(fallback)fallback.textContent='Choose a GLB/GLTF model smaller than 150 MB.';e.target.value='';return;}
+      if(/\\.gltf$/i.test(file.name)&&fallback)fallback.textContent='Loading GLTF. For models with companion textures, use a self-contained GLB file.';
+      loadModel(file,file.name);
+    });
+    document.querySelector('#experienceImageInput')?.addEventListener('change',e=>{
+      const file=e.target.files?.[0];if(!file)return;
+      const allowed=['image/png','image/jpeg','image/webp','image/avif','image/gif'];
+      if(!allowed.includes(file.type)||file.size>20*1024*1024){if(fallback)fallback.textContent='Choose a PNG, JPEG, WebP, AVIF or GIF image smaller than 20 MB.';e.target.value='';return;}
+      if(localImageUrl)URL.revokeObjectURL(localImageUrl);localImageUrl=URL.createObjectURL(file);
+      const img=document.querySelector('#experienceImage');if(img){img.src=localImageUrl;img.alt='Preview image: '+file.name;img.hidden=false;}
+      if(fallback)fallback.textContent='Image attached to the 3D experience: '+file.name;
+    });
     document.querySelector('#videoInput')?.addEventListener('change',e=>{
-      const file=e.target.files[0];if(!file)return;
-      const video=document.querySelector('#tourVideo');if(video){if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);localVideoUrl=URL.createObjectURL(file);video.src=localVideoUrl;video.load()}
+      const file=e.target.files?.[0];if(!file)return;
+      const validMime=['video/mp4','video/webm'].includes(file.type),validExt=/\\.(mp4|webm)$/i.test(file.name);
+      if((!validMime&&!validExt)||file.size>100*1024*1024){if(fallback)fallback.textContent='Choose an MP4/WebM video smaller than 100 MB.';e.target.value='';return;}
+      const video=document.querySelector('#tourVideo');if(video){if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);localVideoUrl=URL.createObjectURL(file);video.src=localVideoUrl;video.hidden=false;video.load();}
+      if(fallback)fallback.textContent='Video attached to the 3D experience: '+file.name;
     });
     const hotspotHost=document.querySelector('[data-experience-hotspots]');if(hotspotHost&&contentHotspots.length){hotspotHost.replaceChildren(...contentHotspots.slice(0,24).map(h=>{const b=document.createElement('button');b.type='button';b.dataset.room=h.room||h.label||'View';b.dataset.x=String(h.position?.x??0);b.dataset.y=String(h.position?.y??1.2);b.dataset.z=String(h.position?.z??0);b.textContent=h.label||h.room||'View';return b}));}
     const hotspotButtons=hotspotHost?hotspotHost.querySelectorAll('button[data-room]'):document.querySelectorAll('[data-room]');
@@ -178,11 +195,11 @@ async function start(){
     addEventListener('beforeunload',()=>{
       disposed=true;stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
       controls.removeEventListener('change',scheduleRender);document.removeEventListener('visibilitychange',handleVisibility);
-      removeEventListener('resize',resize);if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);
+      removeEventListener('resize',resize);if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);if(localImageUrl)URL.revokeObjectURL(localImageUrl);if(recordingUrl)URL.revokeObjectURL(recordingUrl);
       renderer.dispose();controls.dispose?.();
     },{once:true});
     scheduleRender();
-    if(contentVideo){const video=document.querySelector('#tourVideo');if(video){video.src=contentVideo;video.load();}}
+    if(contentVideo){const video=document.querySelector('#tourVideo');if(video){video.src=contentVideo;video.hidden=false;video.load();}}
     if(fallback)fallback.textContent=reducedMotion?'Interactive 3D ready · motion reduced':'Interactive 3D ready';
   }catch(e){
     if(fallback)fallback.textContent='3D unavailable. Responsive content remains usable.';
