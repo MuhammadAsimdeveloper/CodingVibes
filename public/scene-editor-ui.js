@@ -96,7 +96,7 @@ if (panel) {
       text.addEventListener('change', () => applyDirect('text', text.value, 'Updated text.'));
       root.append(field('Text', text));
     }
-    const hint = document.createElement('p'); hint.className = 'cv-muted'; hint.textContent = 'Edits are kept in this browser session until exported; renderer and project persistence are not connected yet.';
+    const hint = document.createElement('p'); hint.className = 'cv-muted'; hint.textContent = 'Edits update the live preview. Save to the active project to persist changes; export JSON for a portable backup.';
     root.append(hint);
   }
 
