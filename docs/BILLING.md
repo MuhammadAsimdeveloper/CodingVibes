@@ -44,3 +44,7 @@ For a new deployment, run the readiness/launch checks after configuring the sele
 
 
 Paddle's checkout payment link should target an approved page that includes Paddle.js. Build Vibe ships `/pay`; it accepts the transaction ID, opens the hosted checkout, and redirects back to the app after completion. Paddle customer-portal links are temporary and are created on demand, so the app never stores them.
+
+## Generation workloads and cost controls
+
+Use [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) when tuning budgets for richer design, motion or 3D generation. Keep model/token and run limits explicit, enforce the existing quotas, and report blocked or exhausted budgets truthfully. Never imply payment or provider setup exists without verified configuration.

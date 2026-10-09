@@ -37,3 +37,7 @@ When an Android emulator/device is attached to the device runner, codingVibes va
 The runner fleet adds bounded leases, explicit capability routing, digest-pinning policy for production images, safe dependency-network naming, dependency cache keys, secret-safe child environments, hard Docker timeouts, stronger artifact upload controls, stable failure codes, a fleet readiness API, a local `fleet:doctor` command, and checksum-aware Android device verification.
 
 See `docs/RUNNER_FLEET_SPEC.md` and `docs/RUNNER_FLEET_HARDENING.md` for the execution contract and production security/operations requirements.
+
+## Motion and 3D support by target
+
+Follow [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) when describing animated or 3D output across targets. Source generation is not proof of a successful native build; record runner/toolchain availability, target-specific checks, artifact integrity and actual smoke-test evidence.
