@@ -41,3 +41,12 @@ test('3D experience renders customer-provided labels as text rather than HTML', 
   assert.doesNotMatch(runtime, /\b(?:innerHTML|outerHTML)\s*=/);
   assert.doesNotMatch(runtime, /insertAdjacentHTML/);
 });
+
+
+test('walkthrough video uploads reject unsupported types and oversized local files before preview', () => {
+  assert.match(runtime, /const allowedWalkthroughVideoTypes=new Set\(\['video\/mp4','video\/webm','video\/ogg'\]\)/);
+  assert.match(runtime, /allowedWalkthroughVideoTypes\.has\(videoType\)/);
+  assert.match(runtime, /file\.size>250\*1024\*1024/);
+  assert.match(runtime, /video\.canPlayType\(videoType\)/);
+  assert.match(runtime, /URL\.createObjectURL\(new Blob\(\[file\],\{type:videoType\}\)\)/);
+});
