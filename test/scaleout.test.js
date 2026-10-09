@@ -91,3 +91,18 @@ test('outbox relay publishes and completes claimed work',async()=>{
  assert.equal(await relay.once(),1);
  assert.deepEqual(calls,[['enqueue','o1','build.verify'],['complete','o1']]);
 });
+
+test('production readiness does not treat configured scaleout PostgreSQL as the primary app store',()=>{
+ const previous={...process.env};
+ try{
+  process.env.NODE_ENV='production';
+  process.env.CODINGVIBES_DB_BACKEND='postgres';
+  process.env.DATABASE_URL='postgres://build-vibe:test-only@127.0.0.1:5432/build_vibe';
+  process.env.CODINGVIBES_SCALEOUT_REQUIRED='false';
+  const result=readiness({router:{getStatus:()=>({configured:false,provider:null})}});
+  assert.ok(result.blockers.includes('primary_postgres_store_not_wired'));
+ }finally{
+  for(const key of Object.keys(process.env))if(!(key in previous))delete process.env[key];
+  for(const [key,value] of Object.entries(previous))process.env[key]=value;
+ }
+});
