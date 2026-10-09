@@ -42,14 +42,13 @@ export function classifyAssistantRequest(request) {
   const selector = targetFor(lower);
   const operations = [];
 
-  for (const color of COLORS) {
-    if (hasPhrase(lower, color.names)) {
-      const css = hasPhrase(lower, ['background', 'page background', 'background color'])
-        ? { backgroundColor: color.value }
-        : { color: color.value };
-      addOperation(operations, selector, css, css.backgroundColor ? 'Set background color' : 'Set text color');
-      break;
-    }
+  const hexColor = lower.match(/#[0-9a-f]{3}(?:[0-9a-f]|[0-9a-f]{3}|[0-9a-f]{5})?\\b/i)?.[0];
+  const namedColor = COLORS.find(color => hasPhrase(lower, color.names));
+  const selectedColor = hexColor ? hexColor.toLowerCase() : namedColor?.value;
+  if (selectedColor) {
+    const paintTarget = hasPhrase(lower, ['background', 'page background', 'background color', 'button', 'buttons', 'card', 'cards', 'cta']);
+    const css = paintTarget ? { backgroundColor: selectedColor } : { color: selectedColor };
+    addOperation(operations, selector, css, paintTarget ? 'Set background color' : 'Set text color');
   }
 
   if (hasPhrase(lower, ['bigger', 'larger', 'increase size', 'make it large', 'make it larger', 'increase font'])) {
