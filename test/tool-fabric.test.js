@@ -34,6 +34,7 @@ test('SEO meta and Open Graph generators escape untrusted text', async () => {
   assert.equal(og.status, 'COMPLETED');
   assert.match(og.output.html, /og:title/);
   assert.match(og.output.html, /twitter:card/);
+  assert.match(og.output.html, /<meta name=\"twitter:card\"/);
 });
 
 test('sitemap generator deduplicates valid HTTP URLs and rejects script schemes', async () => {
