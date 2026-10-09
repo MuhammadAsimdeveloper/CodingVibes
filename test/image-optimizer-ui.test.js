@@ -81,7 +81,7 @@ test('Studio includes an accessible, local-only image optimizer and uses the can
   for (const id of ['imageOptimizeFile','imageOptimizeFormat','imageOptimizeQuality','imageOptimizeMaxWidth','imageOptimizeButton','imageOptimizeStatus','imageOptimizePreview','imageOptimizeDownload']) {
     assert.match(html,new RegExp('id="' + id + '"'));
   }
-  assert.match(html,/accept="image\\/png,image\\/jpeg,image\\/webp,image\\/gif,image\\/avif,image\\/bmp"/);
+  assert.match(html,/accept="image\/png,image\/jpeg,image\/webp,image\/gif,image\/avif,image\/bmp"/);
   assert.match(html,/aria-live="polite"/);
   assert.match(html,/Processed in this browser; the selected file is never uploaded\./);
   assert.match(studio,/import \{optimizeImageInBrowser\} from '\.\/tool-fabric-browser\.js'/);
