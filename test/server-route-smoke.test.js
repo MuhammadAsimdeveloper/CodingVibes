@@ -40,6 +40,9 @@ test('server public and authenticated route smoke covers launch control plane',a
   const unauthToolCatalog=await req('/api/tool-fabric/catalog');
   assert.equal(unauthToolCatalog.response.status,401);
 
+  const unauthToolPipeline=await req('/api/tool-fabric/pipeline',{method:'POST',body:JSON.stringify({steps:[{id:'format',tool:'json.format',input:{text:'{"ok":true}'}}]})});
+  assert.equal(unauthToolPipeline.response.status,401);
+
   const signup=await req('/api/auth/signup',{method:'POST',body:JSON.stringify({email:'smoke@example.com',password:'test-password-123'})});
   assert.equal(signup.response.status,201);
   const cookie=signup.response.headers.get('set-cookie');
@@ -72,6 +75,16 @@ test('server public and authenticated route smoke covers launch control plane',a
   assert.equal(blocked.response.status,200);
   assert.equal(blocked.body.result.status,'BLOCKED');
   assert.equal(blocked.body.result.networkUsed,false);
+
+  const pipeline=await req('/api/tool-fabric/pipeline',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({steps:[
+    {id:'format',tool:'json.format',input:{text:'{"ok":true}'}},
+    {id:'types',tool:'json.typescript',input:{json:{$ref:'format.output.formatted'},rootName:'Smoke'}}
+  ]})});
+  assert.equal(pipeline.response.status,200);
+  assert.equal(pipeline.body.result.status,'COMPLETED');
+  assert.equal(pipeline.body.result.networkUsed,false);
+  assert.equal(pipeline.body.result.stepCount,2);
+  assert.match(pipeline.body.result.results[1].output.typescript,/interface Smoke/);
 
   const project=await req('/api/projects',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({name:'Smoke Product'})});
   assert.equal(project.response.status,201);
