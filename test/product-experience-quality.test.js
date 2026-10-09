@@ -79,10 +79,14 @@ test('generated 3D website exposes accessible view controls and bounded renderin
   assert.match(html,/id="viewRight"[^>]+aria-label="Rotate 3D view right"/);
   assert.match(html,/id="viewZoomIn"[^>]+aria-label="Zoom in to 3D view"/);
   assert.match(html,/id="experienceImageInput"/);
+  assert.match(html,/id="applyExperienceTexture"/);
   assert.match(html,/id="videoInput"[^>]+accept="video\/mp4,video\/webm"/);
   assert.match(html,/id="experienceImage"[^>]+alt="Uploaded image preview for this 3D experience"/);
   assert.match(html,/id="experienceFallback"[^>]+role="status"[^>]+aria-live="polite"/);
   assert.ok(runtime.includes("prefers-reduced-motion: reduce"));
+  assert.ok(runtime.includes('new TextureLoader()'));
+  assert.ok(runtime.includes('applyTextureToObject(loadedModel,attachedTexture)'));
+  assert.ok(runtime.includes('restoreAppliedMaterials(loadedModel||group)'));
   assert.ok(runtime.includes('sceneObserver=new IntersectionObserver'));
   assert.ok(runtime.includes("document.addEventListener('visibilitychange',handleVisibility)"));
   assert.ok(runtime.includes("controls.addEventListener('change',scheduleRender)"));
