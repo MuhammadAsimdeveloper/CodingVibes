@@ -319,6 +319,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     try{body=await readJson(req,MAX_BODY)}catch(e){return sendJson(res,400,{ok:false,error:'invalid_json_body'})}
     const checked=validateSceneDocument(body.scene);
     if(!checked.ok)return sendJson(res,400,{ok:false,error:'invalid_scene_document',details:checked.errors});
+    if(checked.value.nodes.some(node=>typeof node.assetUrl==='string'&&node.assetUrl.startsWith('blob:')))return sendJson(res,400,{ok:false,error:'temporary_scene_asset_must_be_uploaded'});
     const expectedRevision=body.expectedRevision===undefined?null:body.expectedRevision;
     if(!Number.isInteger(expectedRevision)||expectedRevision<0)return sendJson(res,400,{ok:false,error:'expected_revision_must_be_nonnegative_integer'});
     try{
