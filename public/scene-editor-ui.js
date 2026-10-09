@@ -373,9 +373,14 @@ if (panel) {
         import('./scene/scene-preview-renderer.js'),
         import(THREE_URL)
       ]);
+      let GLTFLoader = null;
+      try {
+        ({ GLTFLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/loaders/GLTFLoader.js'));
+      } catch { /* Keep primitive and image/video scene editing available if the optional model loader fails. */ }
       previewRenderer = createScenePreviewRenderer({
         canvas,
         THREE,
+        GLTFLoader,
         onStatus: message => { if (statusNode) statusNode.textContent = message; }
       });
       renderAll();
