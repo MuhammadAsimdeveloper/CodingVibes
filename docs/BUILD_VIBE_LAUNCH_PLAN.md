@@ -975,3 +975,17 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - **Independent blocker unrelated to these four references:** the async PostgreSQL repository is not wired as the primary application store. Authentication/project/conversation route migration and end-to-end ownership/session tests remain required before primary PostgreSQL can be enabled.
 - **CI checkpoint:** commit `b222f4b1597436bf19a2fc32d57021beb3d0f0b5` failed `npm test` because a newly added repository test expected the `listSessions(limit: 0)` clamp to be 1 while implementation clamps it to 50. The implementation behavior is bounded; the test has been corrected to match the existing 50-item minimum. Re-run all workflows on the corrected head. CodeQL and Dependency Review passed on that commit, but CodeQL reported DOM text-to-HTML findings in `src/templates/runtime/three-experience.js`; triage/fix and verify those findings rather than assuming a green workflow means no alerts.
 - **Do not mark complete until:** all current tests/CI pass on the latest head, CodeQL findings are resolved or formally dispositioned, scene/media end-to-end flows are tested, and launch gates in section 35 still pass. Production launch additionally requires the infrastructure and external-provider gates already documented above.
+
+
+## 40. Scene document and safe scene-edit foundation (2026-10-09)
+
+**Implementation added on the reconstruction branch**
+- `src/scene/scene-document.js` defines schema version 1 for renderer-neutral scene documents and a bounded node vocabulary (`group`, `box`, `sphere`, `plane`, `text`, `image`, `video`, `model`, `light`).
+- Validation rejects unsupported root/node fields, duplicate or malformed IDs, invalid vectors/colors, unsafe non-HTTPS asset URLs (except explicitly local-session `blob:` previews), missing parent references, parent cycles, and more than 250 nodes.
+- `applySceneOperation` accepts only typed `set`/`unset` operations on allowlisted properties; it emits before/after change records and exact inverse operations, without mutating the source document or evaluating user text as code.
+- `test/scene-document.test.js` covers schema validation, graph integrity, resource limits, URL safety, typed edits, input immutability and undo behavior.
+
+**Scope and integration status**
+- This is a tested-contract implementation step, not yet the complete 3D editor. The generated Three.js runtime and assistant orchestration are not yet wired to this scene document; current media remains local-session unless passed through the existing authorized asset path.
+- Next: add prompt-to-scene intent mapping that emits only these typed operations; then connect a read-only scene hierarchy/inspector and preview/commit/undo UI. Persist revisions and asset references only after project ownership and durable-storage boundaries are integrated.
+- Required verification: run the full CI suite on the new head, including the Node test suite, coverage, lint/check, SEO, E2E, browser E2E, live PostgreSQL tests, CodeQL and Dependency Review. Do not claim completion from source-level tests alone.
