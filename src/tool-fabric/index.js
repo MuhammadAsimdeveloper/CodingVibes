@@ -370,4 +370,181 @@ export async function runTool(id, input = {}) {
   }
 }
 
+
+const PIPELINE_MAX_STEPS = 10;
+const PIPELINE_MAX_INPUT_BYTES = 1_000_000;
+const PIPELINE_MAX_OUTPUT_BYTES = 2_000_000;
+const PIPELINE_ID = /^[A-Za-z][A-Za-z0-9_-]{0,39}$/;
+const PIPELINE_UNSAFE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+function pipelineFailure(status, error, results = [], extra = {}) {
+  return {
+    ok: false,
+    status,
+    version: 1,
+    error: String(error || status).slice(0, 240),
+    ...extra,
+    results,
+    networkUsed: false,
+    provenance: {execution:'local', networkUsed:false}
+  };
+}
+
+function isPipelineRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function validatePipelineValue(value, earlierIds, depth = 0) {
+  if (depth > 32) return {status:'INVALID_PIPELINE', error:'Pipeline input nesting exceeds 32 levels.'};
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const problem = validatePipelineValue(item, earlierIds, depth + 1);
+      if (problem) return problem;
+    }
+    return null;
+  }
+  if (!value || typeof value !== 'object') return null;
+  if (!isPipelineRecord(value)) return {status:'INVALID_PIPELINE', error:'Pipeline values must be plain JSON objects and arrays.'};
+
+  const keys = Object.keys(value);
+  if (Object.prototype.hasOwnProperty.call(value, '$ref')) {
+    if (keys.length !== 1 || typeof value.$ref !== 'string') {
+      return {status:'INVALID_REFERENCE', error:'A reference must be an object containing only a string $ref property.'};
+    }
+    const parts = value.$ref.split('.');
+    if (parts.length < 2 || parts[1] !== 'output' || !PIPELINE_ID.test(parts[0]) ||
+        parts.slice(2).some(part => !part || !/^[A-Za-z0-9_$-]+$/.test(part) || PIPELINE_UNSAFE_KEYS.has(part))) {
+      return {status:'INVALID_REFERENCE', error:'References must use stepId.output[.property] and cannot address prototype properties.'};
+    }
+    if (!earlierIds.has(parts[0])) {
+      return {status:'INVALID_REFERENCE', error:'References must target a completed earlier step.'};
+    }
+    return null;
+  }
+
+  for (const key of keys) {
+    if (PIPELINE_UNSAFE_KEYS.has(key)) {
+      return {status:'INVALID_PIPELINE', error:'Pipeline inputs cannot contain prototype-sensitive object keys.'};
+    }
+    const problem = validatePipelineValue(value[key], earlierIds, depth + 1);
+    if (problem) return problem;
+  }
+  return null;
+}
+
+function resolvePipelineValue(value, completed, depth = 0) {
+  if (depth > 32) throw new ToolFailure('INVALID_PIPELINE', 'Resolved pipeline input exceeds 32 nesting levels.');
+  if (Array.isArray(value)) return value.map(item => resolvePipelineValue(item, completed, depth + 1));
+  if (!value || typeof value !== 'object') return value;
+
+  if (Object.prototype.hasOwnProperty.call(value, '$ref')) {
+    const parts = value.$ref.split('.');
+    let resolved = completed.get(parts[0]);
+    if (!resolved) throw new ToolFailure('INVALID_REFERENCE', 'Referenced step has not completed.');
+    resolved = resolved.output;
+    for (const part of parts.slice(2)) {
+      if (!resolved || typeof resolved !== 'object' || !Object.prototype.hasOwnProperty.call(resolved, part)) {
+        throw new ToolFailure('INVALID_REFERENCE', 'Referenced output property does not exist.');
+      }
+      resolved = resolved[part];
+    }
+    return structuredClone(resolved);
+  }
+
+  const result = Object.create(null);
+  for (const [key, child] of Object.entries(value)) {
+    if (PIPELINE_UNSAFE_KEYS.has(key)) throw new ToolFailure('INVALID_PIPELINE', 'Prototype-sensitive keys are not allowed in pipeline inputs.');
+    result[key] = resolvePipelineValue(child, completed, depth + 1);
+  }
+  return result;
+}
+
+/**
+ * Execute a short, deterministic pipeline of local tools. References use
+ * {$ref: "earlierStepId.output.property"} and may only target prior results.
+ * Network adapters and browser tools are rejected during preflight.
+ */
+export async function runToolPipeline(pipeline = {}) {
+  let serialized;
+  try { serialized = JSON.stringify(pipeline); }
+  catch { return pipelineFailure('INVALID_PIPELINE', 'Pipeline input must be JSON-compatible.'); }
+  if (!serialized || Buffer.byteLength(serialized, 'utf8') > PIPELINE_MAX_INPUT_BYTES) {
+    return pipelineFailure('INPUT_TOO_LARGE', 'Pipeline request exceeds the 1 MB input limit.');
+  }
+  if (!isPipelineRecord(pipeline) || !Array.isArray(pipeline.steps) ||
+      pipeline.steps.length < 1 || pipeline.steps.length > PIPELINE_MAX_STEPS) {
+    return pipelineFailure('INVALID_PIPELINE', 'Provide between 1 and 10 pipeline steps.');
+  }
+
+  const steps = [];
+  const earlierIds = new Map();
+  for (let index = 0; index < pipeline.steps.length; index++) {
+    const raw = pipeline.steps[index];
+    if (!isPipelineRecord(raw)) return pipelineFailure('INVALID_PIPELINE', 'Each pipeline step must be an object.', [], {failedStepIndex:index});
+    const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+    if (!PIPELINE_ID.test(id) || earlierIds.has(id)) {
+      return pipelineFailure('INVALID_PIPELINE', 'Step IDs must be unique and match the documented identifier format.', [], {failedStepIndex:index,failedStepId:id || undefined});
+    }
+    const contract = typeof raw.tool === 'string' ? getToolContract(raw.tool) : null;
+    if (!contract) return pipelineFailure('INVALID_PIPELINE', 'Every step must name a known Tool Fabric ID or alias.', [], {failedStepIndex:index,failedStepId:id});
+    if (contract.executionMode !== 'local' || contract.networkRequired || contract.confirmationRequired || contract.riskClass === 'high') {
+      return pipelineFailure('PIPELINE_BLOCKED', 'Pipelines may only contain low-risk local tools; browser and network adapters are not executed.', [], {failedStepIndex:index,failedStepId:id,blockedTool:contract.id});
+    }
+    const input = raw.input === undefined ? {} : raw.input;
+    if (!isPipelineRecord(input)) {
+      return pipelineFailure('INVALID_PIPELINE', 'Every step input must be a JSON object.', [], {failedStepIndex:index,failedStepId:id});
+    }
+    const problem = validatePipelineValue(input, earlierIds);
+    if (problem) return pipelineFailure(problem.status, problem.error, [], {failedStepIndex:index,failedStepId:id});
+    steps.push({id,contract,input});
+    earlierIds.set(id, index);
+  }
+
+  const completed = new Map();
+  const results = [];
+  let outputBytes = 0;
+  for (let index = 0; index < steps.length; index++) {
+    const step = steps[index];
+    let input;
+    try { input = resolvePipelineValue(step.input, completed); }
+    catch (error) {
+      return pipelineFailure(error.status || 'INVALID_REFERENCE', error.message, results, {failedStepIndex:index,failedStepId:step.id});
+    }
+    let inputBytes;
+    try { inputBytes = Buffer.byteLength(JSON.stringify(input), 'utf8'); }
+    catch { return pipelineFailure('INVALID_PIPELINE', 'Resolved step input is not JSON-compatible.', results, {failedStepIndex:index,failedStepId:step.id}); }
+    if (inputBytes > PIPELINE_MAX_INPUT_BYTES) {
+      return pipelineFailure('INPUT_TOO_LARGE', 'Resolved step input exceeds the 1 MB limit.', results, {failedStepIndex:index,failedStepId:step.id});
+    }
+
+    const result = await runTool(step.contract.id, input);
+    let resultBytes;
+    try { resultBytes = Buffer.byteLength(JSON.stringify(result.output ?? null), 'utf8'); }
+    catch { resultBytes = PIPELINE_MAX_OUTPUT_BYTES + 1; }
+    if (outputBytes + resultBytes > PIPELINE_MAX_OUTPUT_BYTES) {
+      return pipelineFailure('PIPELINE_OUTPUT_TOO_LARGE', 'Pipeline output exceeded the 2 MB cumulative limit.', results, {failedStepIndex:index,failedStepId:step.id});
+    }
+    outputBytes += resultBytes;
+    completed.set(step.id, result);
+    results.push({id:step.id,...result});
+    if (!result.ok || result.status !== 'COMPLETED') {
+      return pipelineFailure('STEP_FAILED', 'Pipeline stopped because a tool step did not complete successfully.', results, {
+        failedStepIndex:index, failedStepId:step.id, failedStatus:result.status
+      });
+    }
+  }
+
+  return {
+    ok:true,
+    status:'COMPLETED',
+    version:1,
+    stepCount:results.length,
+    results,
+    networkUsed:false,
+    provenance:{execution:'local',networkUsed:false}
+  };
+}
+
 export {TOOL_CONTRACTS, getToolContract, listToolContracts};
