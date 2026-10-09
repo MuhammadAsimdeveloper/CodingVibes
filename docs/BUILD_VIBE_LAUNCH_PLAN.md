@@ -1038,3 +1038,17 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Browser-served copies of the scene contract/session modules live under `public/scene/` because the static UI must not import private `src/` paths; the syntax-check script now checks these browser modules explicitly. Keep the browser-safe copies in sync with the source modules until a shared build/bundling step replaces duplication.
 - **Scope boundary:** this is currently a local browser-session scene-document editor with a starter scene, not a live Three.js renderer editor. It does not yet save scenes to authenticated project storage, persist uploaded assets, or change a generated site's running 3D scene. JSON export/import is the explicit portability bridge for this phase.
 - Acceptance gate: CI/browser E2E must confirm the panel loads, invalid imports are rejected, preview cancellation is non-mutating, confirm/undo/redo work, and exports validate on re-import. Continue with renderer binding and project-owned durable scene storage as separate phases.
+
+
+## Phase 46 — Live Three.js scene preview integration
+
+**Implemented on the reconstruction branch; verification is pending on the new head.**
+
+- Added `public/scene/scene-preview-renderer.js`, a renderer adapter that consumes the validated scene document rather than embedding renderer behavior in the schema/history layer.
+- Added an interactive Three.js viewport to the Design tab. Box, sphere, plane, group and text nodes are mapped into preview objects; hierarchy, visibility, transforms and colors are reflected when the editor session changes.
+- Added pointer-drag orbit and wheel zoom, resize-aware rendering, and resource cleanup for geometries, materials and generated text textures.
+- Moved the scene editor into the Design tab so it no longer appears in unrelated workspace tabs.
+- Added adapter lifecycle tests and syntax-check coverage.
+- Three.js is loaded from the existing pinned CDN version. If WebGL or network loading fails, scene editing and JSON export remain available with an explicit status message.
+
+**Scope boundary:** this is a local interactive preview of the renderer-neutral scene document. It does not yet patch the generated product's live Three.js runtime, persist the scene to a project revision, upload durable image/video/model assets, or prove cross-browser rendering. Those remain separate acceptance gates.
