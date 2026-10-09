@@ -283,13 +283,13 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     }catch(e){return sendJson(res,400,{ok:false,error:e.message});}
   }
   if(/^\/api\/projects\/[^/]+\/scene$/.test(u.pathname)&&method==='GET'){
-    const pid=pathParam(u.pathname,'/api/projects/').replace(/\\/scene$/,'');
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\/scene$/,'');
     try{requireProjectRole(pid,userId,'viewer')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
     const saved=store.getSceneDocument(pid,userId);
     return sendJson(res,200,{ok:true,scene:saved?.scene||null,revision:Number(saved?.revision||0),updatedAt:saved?.updated_at||null});
   }
   if(/^\/api\/projects\/[^/]+\/scene$/.test(u.pathname)&&method==='PUT'){
-    const pid=pathParam(u.pathname,'/api/projects/').replace(/\\/scene$/,'');
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\/scene$/,'');
     try{requireProjectRole(pid,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
     let body;
     try{body=await readJson(req,MAX_BODY)}catch(e){return sendJson(res,400,{ok:false,error:'invalid_json_body'})}
