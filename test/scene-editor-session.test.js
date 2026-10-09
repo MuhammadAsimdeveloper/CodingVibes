@@ -60,3 +60,16 @@ test('returned state is detached from internal pending preview and document snap
   assert.equal(session.document.nodes[0].color, '#ffffff');
   assert.equal(session.confirm().document.nodes[0].color, '#3b82f6');
 });
+
+test('direct inspector operations participate in undo and redo history', () => {
+  const session = new SceneEditorSession(scene());
+  const changed = session.applyOperation({ op: 'set', nodeId: 'hero', field: 'color', value: '#8b7dff' });
+  assert.equal(changed.ok, true);
+  assert.equal(session.document.nodes[0].color, '#8b7dff');
+  assert.equal(session.getState().canUndo, true);
+  assert.equal(session.undo().ok, true);
+  assert.equal(session.document.nodes[0].color, '#ffffff');
+  assert.equal(session.redo().ok, true);
+  assert.equal(session.document.nodes[0].color, '#8b7dff');
+  assert.equal(session.applyOperation({ op: 'set', nodeId: 'hero', field: 'dangerous', value: true }).ok, false);
+});
