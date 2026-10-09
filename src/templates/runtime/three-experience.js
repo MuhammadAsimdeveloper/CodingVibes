@@ -5,6 +5,7 @@ const GLTF_URL='https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/loaders/
 const canvas=document.querySelector('#experience3d');
 const stage=document.querySelector('.experience-stage');
 const fallback=document.querySelector('#experienceFallback');
+const allowedWalkthroughVideoTypes=new Set(['video/mp4','video/webm','video/ogg']);
 const motionQuery=window.matchMedia?.('(prefers-reduced-motion: reduce)');
 let reducedMotion=Boolean(motionQuery?.matches);
 
@@ -153,8 +154,27 @@ async function start(){
     if(contentModel)loadModel(contentModel,featuredProduct?.title||featuredProperty?.title||featuredScene?.title||'site model');
     document.querySelector('#modelInput')?.addEventListener('change',e=>{const file=e.target.files?.[0];if(file)loadModel(file,file.name);e.target.value='';});
     document.querySelector('#videoInput')?.addEventListener('change',e=>{
-      const file=e.target.files?.[0];if(!file)return;
-      const video=document.querySelector('#tourVideo');if(video){if(video.dataset.objectUrl)URL.revokeObjectURL(video.dataset.objectUrl);const objectUrl=URL.createObjectURL(file);video.dataset.objectUrl=objectUrl;video.src=objectUrl;video.load()}
+      const file=e.target.files?.[0];
+      if(!file){e.target.value='';return;}
+      const videoType=String(file.type||'').toLowerCase();
+      if(!allowedWalkthroughVideoTypes.has(videoType)||file.size===0||file.size>250*1024*1024){
+        if(fallback)fallback.textContent='Choose a non-empty MP4, WebM, or Ogg video smaller than 250 MB.';
+        e.target.value='';
+        return;
+      }
+      const video=document.querySelector('#tourVideo');
+      if(video){
+        if(!video.canPlayType(videoType)){
+          if(fallback)fallback.textContent='This browser cannot play the selected video format.';
+          e.target.value='';
+          return;
+        }
+        if(video.dataset.objectUrl)URL.revokeObjectURL(video.dataset.objectUrl);
+        const objectUrl=URL.createObjectURL(new Blob([file],{type:videoType}));
+        video.dataset.objectUrl=objectUrl;
+        video.src=objectUrl;
+        video.load();
+      }
       e.target.value='';
     });
     const hotspotHost=document.querySelector('[data-experience-hotspots]');if(hotspotHost&&contentHotspots.length){hotspotHost.replaceChildren(...contentHotspots.slice(0,24).map(h=>{const b=document.createElement('button');b.type='button';b.dataset.room=h.room||h.label||'View';b.dataset.x=String(h.position?.x??0);b.dataset.y=String(h.position?.y??1.2);b.dataset.z=String(h.position?.z??0);b.textContent=h.label||h.room||'View';return b}));}
