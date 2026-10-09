@@ -7,6 +7,7 @@ import {createLocalObjectStore} from '../src/storage/object-store.js';
 import {InMemoryJobQueue} from '../src/jobs/queue.js';
 import {postgresConfigStatus} from '../src/db/postgres.js';
 import {scaleOutConfig} from '../src/platform/scaleout.js';
+import {Store} from '../src/db/store.js';
 
 test('local object store writes, hashes, reads and deletes safely',async()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-object-'));
@@ -104,5 +105,16 @@ test('production readiness does not treat configured scaleout PostgreSQL as the 
  }finally{
   for(const key of Object.keys(process.env))if(!(key in previous))delete process.env[key];
   for(const [key,value] of Object.entries(previous))process.env[key]=value;
+ }
+});
+
+test('primary Store refuses PostgreSQL selection rather than silently opening SQLite',()=>{
+ const previousBackend=process.env.CODINGVIBES_DB_BACKEND;
+ try{
+  process.env.CODINGVIBES_DB_BACKEND='postgres';
+  assert.throws(()=>new Store(path.join(os.tmpdir(),'build-vibe-must-not-create-sqlite.db')),/primary_postgres_store_not_wired/);
+ }finally{
+  if(previousBackend===undefined)delete process.env.CODINGVIBES_DB_BACKEND;
+  else process.env.CODINGVIBES_DB_BACKEND=previousBackend;
  }
 });
