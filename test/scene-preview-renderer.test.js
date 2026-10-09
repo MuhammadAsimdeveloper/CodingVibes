@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createScenePreviewRenderer } from '../public/scene/scene-preview-renderer.js';
 
+function vector() { return { values: [0, 0, 0], set(...values) { this.values = values; }, length() { return Math.hypot(...this.values); } }; }
 class Object3D {
   constructor() {
     this.children = []; this.parent = null; this.visible = true; this.userData = {};
-    this.position = this.rotation = this.scale = { set: (...values) => { this.values = values; } };
+    this.position = vector(); this.rotation = vector(); this.scale = vector();
   }
   add(child) { child.parent?.remove?.(child); child.parent = this; this.children.push(child); }
   remove(child) { this.children = this.children.filter(item => item !== child); child.parent = null; }
