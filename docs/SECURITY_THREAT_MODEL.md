@@ -27,3 +27,6 @@ Security-relevant logs contain identifiers and outcomes, not raw credentials or 
 
 No runtime, artifact, native binary, deployment, research result or managed service connection is reported as verified merely because a code path returned without throwing. The corresponding infrastructure and evidence must exist.
 
+## Additional considerations for imported modules and generated visual assets
+
+The [reconstruction plan](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md) requires license/provenance validation and safe handling of imported source, prompts, textures, models and dependencies. Repository files and web-retrieved content are untrusted input. Do not execute arbitrary generated code inside the trusted application process; preserve sandbox isolation, file-path validation, dependency controls and resource limits.

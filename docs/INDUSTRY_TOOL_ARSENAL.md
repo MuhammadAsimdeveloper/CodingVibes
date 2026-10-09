@@ -309,3 +309,7 @@ Inspired by the production browser-agent pattern, but implemented as our own pro
 Do not compete on raw tool count. Compete on **coverage × reliability × privacy × composability × agent accessibility**.
 
 A utility is admitted to the canonical catalog only when it has a distinct user job, contract, tests, security/privacy classification, documentation and verification state.
+
+## Quality initiative integration rule
+
+Any tool or agent added for design, animation, 3D, browser QA or visual inspection must fit the existing contracts and the [reconstruction plan](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). Prefer a small, well-tested local capability over a duplicated catalog entry, and record permissions, costs, limitations and verification behavior.

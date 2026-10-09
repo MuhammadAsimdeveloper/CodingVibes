@@ -18,3 +18,7 @@
 A target can be **generated** without being **verified**. codingVibes deliberately keeps those states separate. Native/mobile targets will not be presented as verified simply because the source tree has the expected files.
 
 The current execution image has Node/npm plus Java/Swift, but does not have Gradle, Android `adb`, Flutter/Dart, Rust/Cargo, or Xcode. This is why the native rows are intentionally blocked rather than falsely marked successful.
+
+## Motion/3D target verification
+
+When mapping motion or 3D components to targets, follow [BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md](BUILD_VIBE_RECONSTRUCTION_MASTER_PLAN.md). Record browser/WebGL requirements, touch and keyboard support, reduced-motion behavior, performance constraints, runtime fallback and target-specific build evidence. Do not claim cross-platform parity without testing it.
