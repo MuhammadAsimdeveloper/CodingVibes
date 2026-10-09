@@ -104,3 +104,16 @@ test('browser QA covers phone tablet and desktop widths and fails on overflow',(
   assert.ok(source.includes('responsiveFailures:'));
   assert.ok(source.includes('ui.responsiveLayouts=responsive'));
 });
+
+test('saved design tokens are preserved and applied through symlink-safe project paths',()=>{
+  const orchestrator=fs.readFileSync('src/agent/orchestrator.js','utf8');
+  const generator=fs.readFileSync('src/agent/project-generator.js','utf8');
+  assert.ok(orchestrator.includes('let activeDesignSystem=store.getDesignSystem(project.id,userId)?.system||null'));
+  assert.ok(orchestrator.includes('spec.styling={...(spec.styling||{}),designSystem:activeDesignSystem}'));
+  assert.ok(!orchestrator.includes("store.upsertDesignSystem(project.id,userId,{name:'Build Vibe Design System',system:defaultDesignSystem(request)});"));
+  assert.ok(orchestrator.includes('function safeWorkspaceRegularFile(workspace,relative)'));
+  assert.ok(orchestrator.includes('fs.lstatSync(current)'));
+  assert.ok(orchestrator.includes('stat.isSymbolicLink()'));
+  assert.ok(orchestrator.includes('applyProjectDesignSystem(ws.worktree,spec)'));
+  assert.ok(generator.includes('export function designSystemCssForSpec(spec)'));
+});
