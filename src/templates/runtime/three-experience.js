@@ -10,7 +10,7 @@ async function start(){
   if(!canvas)return;
   try{
     const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    let siteContent=null;try{const response=await fetch('/content/site.json',{cache:'no-store'});if(response.ok)siteContent=await response.json()}catch{}
+    let siteContent=null,siteScene=null;try{const response=await fetch('/content/site.json',{cache:'no-store'});if(response.ok)siteContent=await response.json()}catch{}try{const response=await fetch('/content/scene.json',{cache:'no-store'});if(response.ok){const candidate=await response.json();if(candidate?.schemaVersion===1&&Array.isArray(candidate.nodes)&&candidate.nodes.length<=250)siteScene=candidate}}catch{}
     const featuredProduct=siteContent?.products?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.products?.find(p=>p.status!=='draft')||null;
     const featuredProperty=siteContent?.properties?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.properties?.find(p=>p.status!=='draft')||null;
     const featuredScene=siteContent?.scenes?.find(p=>p.status!=='draft'&&p.featured)||siteContent?.scenes?.find(p=>p.status!=='draft')||null;
@@ -56,6 +56,33 @@ async function start(){
     const group=new Group();
     scene.add(group);
     const makeMat=(color,roughness=.72)=>new MeshStandardMaterial({color,roughness});
+    const sceneObjects=new Map();
+    function validAssetUrl(value){try{const u=new URL(value,location.href);return u.protocol==='https:'&&!u.username&&!u.password}catch{return false}}
+    function buildSavedScene(documentData){
+      if(!documentData||!Array.isArray(documentData.nodes)||documentData.nodes.length>250)return false;
+      const roots=new Group();roots.name='build-vibe-saved-scene';scene.add(roots);
+      const pending=documentData.nodes.filter(n=>n&&typeof n.id==='string'&&typeof n.type==='string');
+      for(const node of pending){
+        let object;
+        if(node.type==='group')object=new Group();
+        else if(node.type==='box')object=new Mesh(new BoxGeometry(1,1,1),makeMat(node.color||'#a7b5ff'));
+        else if(node.type==='sphere')object=new Mesh(new SphereGeometry(.5,24,16),makeMat(node.color||'#a7b5ff'));
+        else if(node.type==='plane')object=new Mesh(new PlaneGeometry(1,1),makeMat(node.color||'#a7b5ff'));
+        else if(node.type==='text'){object=new Group();object.userData.buildVibeText=String(node.text||node.name||'');}
+        else if(node.type==='light')object=new PointLight(new Color(node.color||'#ffffff'),1.5,0,2);
+        else if(node.type==='image'||node.type==='video'){object=new Mesh(new PlaneGeometry(1,1),new MeshStandardMaterial({color:node.color||'#ffffff',side:2}));if(node.assetUrl&&validAssetUrl(node.assetUrl)){new TextureLoader().load(node.assetUrl,texture=>{if(disposed){texture.dispose();return}texture.colorSpace=SRGBColorSpace;object.material.map=texture;object.material.needsUpdate=true;scheduleRender()},undefined,()=>{if(fallback)fallback.textContent='A saved scene media asset could not be loaded.'})}}
+        else if(node.type==='model'){object=new Group();if(node.assetUrl&&validAssetUrl(node.assetUrl)){new GLTFLoader().load(node.assetUrl,gltf=>{if(disposed){disposeModelResources(gltf.scene);return}object.add(gltf.scene);scheduleRender()},undefined,()=>{if(fallback)fallback.textContent='A saved scene model could not be loaded.'})}}
+        else continue;
+        object.name=node.id;object.visible=node.visible!==false;
+        const vector=(value,defaults)=>Array.isArray(value)&&value.length===3&&value.every(Number.isFinite)?value:defaults;
+        const position=vector(node.position,[0,0,0]),rotation=vector(node.rotation,[0,0,0]),scale=vector(node.scale,[1,1,1]);
+        object.position.set(...position);object.rotation.set(...rotation);object.scale.set(...scale);
+        sceneObjects.set(node.id,object);
+      }
+      for(const node of pending){const object=sceneObjects.get(node.id);if(!object)continue;const parent=sceneObjects.get(node.parentId)||roots;parent.add(object);}
+      return pending.some(node=>sceneObjects.has(node.id));
+    }
+    if(siteScene&&buildSavedScene(siteScene)){group.visible=false;ground.visible=false;if(fallback)fallback.textContent='Loaded saved project 3D scene.'}
     const wall=makeMat(0xe8dfd0), roof=makeMat(0x4a392e), wood=makeMat(0x62432c), glass=makeMat(0x78afbf,.25);
     const box=(w,h,d,mat,x=0,y=h/2,z=0)=>{
       const mesh=new Mesh(new BoxGeometry(w,h,d),mat);
