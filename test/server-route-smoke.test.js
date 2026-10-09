@@ -122,7 +122,7 @@ test('server public and authenticated route smoke covers launch control plane',a
   assert.equal(ephemeralSave.response.status,400);
   assert.equal(ephemeralSave.body.error,'temporary_scene_asset_must_be_uploaded');
 
-  const png=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]);
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5ZsAAAAASUVORK5CYII=','base64');
   const upload=await req('/api/projects/'+pid+'/assets',{method:'POST',headers:{cookie:sessionCookie,'content-type':'image/png','x-asset-name':encodeURIComponent('hero.png'),'x-asset-role':'texture'},body:png});
   assert.equal(upload.response.status,201,JSON.stringify(upload.body));
   const asset=upload.body.asset;
