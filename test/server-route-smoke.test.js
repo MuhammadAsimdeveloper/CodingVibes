@@ -47,12 +47,28 @@ test('server public and authenticated route smoke covers launch control plane',a
     '/api/auth/me','/api/billing','/api/features','/api/workspaces','/api/cloud/catalog','/api/connectors',
     '/api/ai/providers','/api/model/status','/api/projects','/api/builder/research','/api/launch/status',
     '/api/deployment/providers','/api/targets/availability','/api/targets','/api/integrations','/api/ai/settings',
-    '/api/ai/tokens','/api/fleet'
+    '/api/ai/tokens','/api/fleet','/api/tool-fabric/catalog'
   ];
   for(const p of authPaths){
     const r=await req(p,{headers:{cookie:sessionCookie}});
     assert.notEqual(r.response.status,500,p);
   }
+
+  const catalog=await req('/api/tool-fabric/catalog',{headers:{cookie:sessionCookie}});
+  assert.equal(catalog.response.status,200);
+  assert.equal(catalog.body.tools.length,18);
+  assert.ok(catalog.body.tools.some(tool=>tool.id==='seo.meta.generate'));
+  assert.ok(catalog.body.tools.some(tool=>tool.id==='image.optimize'&&tool.executionMode==='browser'));
+
+  const formatted=await req('/api/tool-fabric/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({id:'json.format',input:{text:'{"ok":true}'}})});
+  assert.equal(formatted.response.status,200);
+  assert.equal(formatted.body.result.status,'COMPLETED');
+  assert.equal(formatted.body.result.output.formatted,'{\n  "ok": true\n}');
+
+  const blocked=await req('/api/tool-fabric/execute',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({id:'api.test',input:{url:'http://127.0.0.1:8080/admin',method:'GET'}})});
+  assert.equal(blocked.response.status,200);
+  assert.equal(blocked.body.result.status,'BLOCKED');
+  assert.equal(blocked.body.result.networkUsed,false);
 
   const project=await req('/api/projects',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({name:'Smoke Product'})});
   assert.equal(project.response.status,201);
