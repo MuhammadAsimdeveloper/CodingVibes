@@ -67,7 +67,7 @@ function codewords(text,spec) {
 export function generateQrMatrix(text) {
   const content=String(text||'');
   if(!content) throw new Error('QR text is required.');
-  if(/[^\\x00-\\x7f]/.test(content)) throw new Error('QR generator currently supports ASCII payloads only until explicit UTF-8 ECI support is implemented.');
+  if(/[^\x00-\x7f]/.test(content)) throw new Error('QR generator currently supports ASCII payloads only until explicit UTF-8 ECI support is implemented.');
   if(Buffer.byteLength(content,'utf8')>78) throw new Error('QR payload exceeds the supported 78 UTF-8 byte limit.');
   const spec=SPECS.find(item=>Buffer.byteLength(content,'utf8')<=item.maxBytes);
   const size=spec.size;

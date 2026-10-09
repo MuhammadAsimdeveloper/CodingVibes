@@ -214,7 +214,7 @@ function generateRobots(input) {
 function generateFavicon(input) {
   const bg=parseHex(input.background||'#111827').hex;
   const fg=parseHex(input.foreground||'#ffffff').hex;
-  const text=Array.from(String(input.text||'B').trim()).slice(0,2).join('')||'B';
+  const text=String(input.text||'B').trim().slice(0,32)||'B';
   return {svg:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="'+bg+'"/><text x="32" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" font-weight="700" fill="'+fg+'">'+esc(text)+'</text></svg>'};
 }
 function generateOg(input) {
