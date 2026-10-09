@@ -7,6 +7,7 @@ const WORKSPACE_ROLE_INTERNALS=['owner','admin','editor','reviewer','viewer'];
 
 export class Store{
   constructor(filename=process.env.DATABASE_PATH||'./data/codingvibes.db'){
+    if(String(process.env.CODINGVIBES_DB_BACKEND||'sqlite').toLowerCase()==='postgres')throw new Error('primary_postgres_store_not_wired: refusing to silently use SQLite; select sqlite or complete the PostgreSQL Store adapter');
     fs.mkdirSync(path.dirname(path.resolve(filename)),{recursive:true});
     this.db=new DatabaseSync(filename);
     this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
@@ -45,6 +46,7 @@ export class Store{
       CREATE TABLE IF NOT EXISTS dependency_requests(id TEXT PRIMARY KEY,run_id TEXT NOT NULL,dependencies_json TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',approved_at TEXT,approved_by TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(run_id) REFERENCES runs(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS media_jobs(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,status TEXT NOT NULL,prompt TEXT NOT NULL,model TEXT NOT NULL,ratio TEXT NOT NULL,duration INTEGER NOT NULL,runway_task_id TEXT,source_url TEXT,stored_path TEXT,size INTEGER DEFAULT 0,error TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS project_content(project_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,content_json TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+      CREATE TABLE IF NOT EXISTS scene_documents(project_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,scene_json TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS provider_connections(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,provider TEXT NOT NULL,secret_ciphertext TEXT NOT NULL,metadata_json TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(user_id,provider),FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS deployments(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,project_id TEXT NOT NULL,provider TEXT NOT NULL,status TEXT NOT NULL,deployment_id TEXT,url TEXT,branch TEXT,commit_sha TEXT,error TEXT,metadata_json TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS oauth_states(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,provider TEXT NOT NULL,state TEXT NOT NULL,expires_at TEXT NOT NULL,metadata_json TEXT,created_at TEXT NOT NULL,UNIQUE(provider,state),FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
@@ -144,6 +146,30 @@ export class Store{
     this.db.prepare('INSERT INTO project_content(project_id,user_id,content_json,updated_at) VALUES (?,?,?,?) ON CONFLICT(project_id) DO UPDATE SET user_id=excluded.user_id,content_json=excluded.content_json,updated_at=excluded.updated_at').run(projectId,userId,JSON.stringify(normalized),now);
     this.db.prepare('UPDATE projects SET updated_at=? WHERE id=?').run(now,projectId);
     return this.getProjectContent(projectId,userId);
+  }
+  getSceneDocument(projectId,userId){
+    const project=this.getProject(projectId,userId);if(!project)return null;
+    const row=this.db.prepare('SELECT project_id,user_id,scene_json,revision,created_at,updated_at FROM scene_documents WHERE project_id=?').get(projectId);
+    if(!row)return null;
+    try{return {...row,scene:JSON.parse(row.scene_json)}}catch{return null}
+  }
+  saveSceneDocument(projectId,userId,scene,{expectedRevision=null}={}){
+    if(!this.getProject(projectId,userId))throw new Error('Project not found');
+    const current=this.db.prepare('SELECT revision FROM scene_documents WHERE project_id=?').get(projectId);
+    const revision=Number(current?.revision||0);
+    if(expectedRevision!==null&&(!Number.isInteger(expectedRevision)||expectedRevision!==revision)){
+      const error=new Error('scene_revision_conflict');error.code='scene_revision_conflict';error.currentRevision=revision;throw error;
+    }
+    const now=this.now(),nextRevision=revision+1,json=JSON.stringify(scene);
+    if(current){
+      const result=this.db.prepare('UPDATE scene_documents SET user_id=?,scene_json=?,revision=?,updated_at=? WHERE project_id=? AND revision=?').run(userId,json,nextRevision,now,projectId,revision);
+      if(Number(result.changes||0)!==1){const error=new Error('scene_revision_conflict');error.code='scene_revision_conflict';error.currentRevision=Number(this.db.prepare('SELECT revision FROM scene_documents WHERE project_id=?').get(projectId)?.revision||0);throw error;}
+    }else{
+      try{this.db.prepare('INSERT INTO scene_documents(project_id,user_id,scene_json,revision,created_at,updated_at) VALUES (?,?,?,?,?,?)').run(projectId,userId,json,nextRevision,now,now)}
+      catch(error){if(String(error?.code||'').includes('CONSTRAINT')){const conflict=new Error('scene_revision_conflict');conflict.code='scene_revision_conflict';conflict.currentRevision=Number(this.db.prepare('SELECT revision FROM scene_documents WHERE project_id=?').get(projectId)?.revision||0);throw conflict;}throw error;}
+    }
+    this.db.prepare('UPDATE projects SET updated_at=? WHERE id=?').run(now,projectId);
+    return this.getSceneDocument(projectId,userId);
   }
   createSession(userId,projectId,title='New build'){const p=this.getProject(projectId,userId);if(!p)throw new Error('Project not found');const id=randomUUID(),now=this.now();this.db.prepare('INSERT INTO sessions VALUES (?,?,?,?,?,?)').run(id,projectId,userId,String(title).slice(0,120),now,now);return this.getSession(id,userId);}
   getSession(id,userId){return this.db.prepare("SELECT s.* FROM sessions s JOIN projects p ON p.id=s.project_id WHERE s.id=? AND (s.user_id=? OR p.user_id=? OR EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id=p.workspace_id AND wm.user_id=? AND wm.status='active'))").get(id,userId,userId,userId)||null;}

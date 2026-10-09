@@ -13,6 +13,9 @@ All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
 
+- Added durable project asset uploads, object-store recovery, authenticated media previews, 3D scene-editor media uploads and safe publication of registered scene assets.
+- Added the canonical 18-tool Fabric contract and four bounded local utilities: JSON formatting, JSON-to-TypeScript, Base64 and decode-only JWT inspection. Network-bound catalog entries remain explicitly planned.
+
 ### Phase 1
 - Added canonical release verification via `npm run release:check`.
 - Added Node version pinning with `.nvmrc`.

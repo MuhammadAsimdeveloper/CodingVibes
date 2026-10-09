@@ -40,3 +40,12 @@ T0 Contracts → T1 developer tools → T2 website foundation → T3 audits → 
 
 ## Definition of done
 All 18 tools have contracts, tests, Build Vibe implementations, Aira routing metadata, ownership documentation and truthful runtime status.
+
+
+## Implementation checkpoint — 2026-10-09
+
+The canonical catalog exposes 18 unique tool contracts with explicit owners, categories, input/output schemas, privacy/execution mode, network and confirmation flags, risk, timeouts/retries, audit event, fallback and implementation status.
+
+Executable locally today: dev.json.format, dev.json.typescript, dev.base64 and security.jwt.inspect. These adapters are bounded, run on the Build Vibe server without third-party egress and do not persist input or output payloads in audit events. JWT inspection is decode-only and does not verify a signature.
+
+Contract-only / not available: the remaining 14 tools are visible as planned; the local execution endpoint responds tool_not_available and does not improvise a network request. Network execution still requires an allowlisted outbound adapter, SSRF controls, explicit user consent, timeouts, response-size limits and audit/verification tests.

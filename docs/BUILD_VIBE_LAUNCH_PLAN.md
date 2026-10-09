@@ -911,3 +911,206 @@ Prefer official APIs over browser automation. Browser automation is a governed f
 Free-tool directories demonstrate distribution power: individual task pages + category hubs + instant browser execution. Open/client-side tool ecosystems demonstrate privacy and low infrastructure cost. Browser-agent infrastructure demonstrates that the next step is allowing agents to operate these capabilities and external websites, not merely presenting a catalog.
 
 Build Vibe should combine these into a **searchable, composable, agent-callable Tool Fabric** rather than a static collection.
+
+
+## 39. Creative 3D Web Stack Research — PeachWeb, Threlte, Theatre.js, Spline (2026-10-09)
+
+### Purpose and non-destructive rule
+This addendum extends the existing roadmap; it does not replace prior phases, features, commitments, or launch gates. Use the current design system, AppSpec, project generator, 3D runtime, motion engine, media/content model, verification runner and target registry as the canonical implementation. Do not create a second editor/runtime merely to imitate a competitor.
+
+### Research-backed capability map
+- **PeachWeb** — visual no-code/low-code WebGL/Three.js builder; drag-and-drop 3D scene editor, keyframe animation, custom interactions, responsive UI/layout and scroll effects, embedding/export, publishing/CDN and marketplace. Its feature page labels the node editor for custom interactions/shaders as “coming soon”; treat it as a direction, not an assumed available feature. Source: https://peachweb.io/features
+- **Threlte** — open-source, MIT-licensed Svelte integration for Three.js. Declarative/type-safe/reactive scene construction, component-level interaction/events, extras/plugins, GLTF-to-component tooling, Rapier physics, Theatre.js integration and XR support. It is a developer framework, not a turnkey no-code product builder. Sources: https://threlte.xyz/ and https://github.com/threlte/threlte
+- **Theatre.js** — web animation and motion-design toolkit with sequence editor, dope sheet, graph editor/easing presets, property editing and extensions; integrates with Three.js, React Three Fiber, HTML/CSS/SVG and custom JavaScript/WebGPU stacks. Best as an optional authored-timeline engine, not the whole 3D stack. Source: https://www.theatrejs.com/
+- **Spline** — closest end-user workflow benchmark: browser-based collaborative 2D/3D design, real-time editing, modeling/materials/lights/cameras, animation, particles/physics, states/events/game controls, AI scene/object/material generation, text/image-to-3D, textures, web embedding and platform exports. Its AI agent operates on editable scene objects and preserves undo/collaboration. AI features are credit-metered by plan; generated detailed meshes can affect runtime performance. Sources: https://docs.spline.design/basics/what-is-spline, https://docs.spline.design/, https://spline.design/solutions/ai-3d-generation
+
+### Product fit ranking for Build Vibe
+1. **Spline — best product/workflow benchmark** for the user's goal: natural-language 3D creation/editing, a visual scene editor, asset generation, interactivity, collaboration and publishing. Adopt original equivalents where they fit the roadmap; do not copy proprietary code, UI assets or branding.
+2. **PeachWeb — best reference for a streamlined no-code 3D website workflow**: scene assembly, responsive DOM overlays, scroll-linked effects, embed/publish handoff and optimization feedback.
+3. **Threlte — best optional implementation technology when the generated target is Svelte** and deeper typed, reactive 3D components or Rapier/XR features are needed. It is not the default for vanilla HTML projects.
+4. **Theatre.js — best specialized animation authoring layer** for timeline-based camera/object/property animation. Integrate only if an authored timeline/graph editor is needed and its serialization/runtime compatibility is proven.
+
+These rankings measure relevance to Build Vibe's product direction, not an absolute quality or performance benchmark.
+
+### Add to the existing plan: incremental implementation stages
+**Stage A — 3D AppSpec and asset contract**
+- Extend existing AppSpec/requirements with typed scene objects, GLTF/GLB assets, image textures, video media, materials, lights, camera, interaction triggers, scroll scenes, animation timelines, responsive breakpoints, physics/XR intent and publishing target.
+- Validate asset type, size, provenance, licensing metadata, texture dimensions, model complexity and safe URL policy. Persist durable assets only through the existing authorized asset/storage pipeline; local previews must remain clearly local-only.
+- Acceptance: schema/round-trip tests, malformed input tests, tenant ownership tests, and a deterministic non-WebGL fallback.
+
+**Stage B — prompt-to-scene and text-based iterative editing**
+- Translate requests such as “make the product metallic blue, rotate on hover, zoom on scroll, add my video” into explicit, typed, reviewable scene operations. Preserve scene IDs and unrelated edits. Use allowlists; never evaluate arbitrary user JavaScript or shader code in the control plane.
+- Support preview/diff, undo/redo, edit history, regeneration of only the targeted scene/property, and clear unsupported-operation responses.
+- Acceptance: deterministic intent fixtures, negative/security tests, persisted project-scoped scene history, and end-to-end edit/reload tests.
+
+**Stage C — visual scene editor**
+- Add scene hierarchy/layers, select/move/rotate/scale, camera/light/material controls, asset panel, viewport, properties inspector, responsive preview, and accessible non-canvas controls.
+- Keep UI state and scene document separate; serialize through a versioned scene format. Do not make an image-only mockup the implementation.
+- Acceptance: keyboard operation, touch/mobile behavior, save/reload, version migration, and Playwright tests for core edit flows.
+
+**Stage D — timeline and event graph**
+- First build a small native timeline contract for keyframes, easing, camera paths, scroll triggers, hover/click actions and reduced-motion alternatives. Evaluate Theatre.js as an optional authoring adapter after testing license, bundle/runtime cost, export/serialization and generated-project compatibility.
+- Keep the current motion engine for lightweight CSS/UI motion. Avoid shipping Theatre.js into every project by default.
+- Acceptance: deterministic playback, pause/resume, lifecycle cleanup, reduced-motion compliance and generated artifact tests.
+
+**Stage E — runtime and renderer strategy**
+- Keep the current Three.js runtime as the baseline for vanilla projects. Add a target-aware renderer adapter: vanilla Three.js by default; Threlte only for Svelte output when selected/justified; future renderers must implement the same scene contract.
+- Preserve WebGL failure fallback, visibility-aware rendering, disposal of geometry/material/texture/URL resources, lazy loading, context-loss recovery, and configurable quality tiers. Measure before adding physics/XR or a second renderer.
+- Acceptance: browser smoke with and without WebGL/CDN access, memory/resource lifecycle tests, low-end/mobile performance budgets and actual visual artifact review.
+
+**Stage F — publish/export and collaboration**
+- Provide an embed/publish handoff with origin allowlists, CSP guidance, responsive iframe sizing, asset integrity and clear local-vs-hosted asset states. Integrate with existing deployment adapters instead of inventing another deploy system.
+- Add scene versioning and collaboration only through existing project RBAC/audit/version infrastructure; define conflict behavior before real-time multiplayer editing.
+- Acceptance: embed security tests, authorized cross-user denial, reproducible export and publish rollback tests.
+
+### Phased delivery and dependencies
+- **Near term:** typed scene/asset contracts, text-to-scene operations, media persistence integration, safe preview and regression corpus.
+- **Next:** scene hierarchy/property inspector and timeline authoring; evaluate Theatre.js adapter in a separate proof of concept.
+- **Later/optional:** Threlte target adapter for Svelte-only projects; Rapier physics, XR and multiplayer collaboration after capability, performance, security and demand validation.
+- **Do not block basic website/app generation** on the 3D editor or optional libraries. Keep free/low-end paths lightweight and apply plan quotas through the existing billing/quota system, not hard-coded UI promises.
+
+### Completion status at this checkpoint (not a launch approval)
+- **Already implemented according to current source/audit documentation:** baseline Three.js generated experiences; GLTF model loading; local image/video/model inputs and previews; local image-to-mesh texture application; upload limits and URL/resource cleanup; reduced-motion-aware camera behavior; hidden/off-screen render pause; accessible view controls/status; deterministic fallback; responsive viewport checks; design tokens and allowlisted natural-language visual edits.
+- **Partially implemented / needs real-product integration:** media is local-session only rather than durable upload; text-based edits focus on basic CSS tokens and do not yet edit arbitrary scene graphs; there is no complete visual 3D scene editor or editable timeline/graph; no Theatre.js or Threlte adapter; no real-time scene collaboration; actual GPU/device performance and visual screenshot review remain unverified.
+- **Independent blocker unrelated to these four references:** the async PostgreSQL repository is not wired as the primary application store. Authentication/project/conversation route migration and end-to-end ownership/session tests remain required before primary PostgreSQL can be enabled.
+- **CI checkpoint:** commit `b222f4b1597436bf19a2fc32d57021beb3d0f0b5` failed `npm test` because a newly added repository test expected the `listSessions(limit: 0)` clamp to be 1 while implementation clamps it to 50. The implementation behavior is bounded; the test has been corrected to match the existing 50-item minimum. Re-run all workflows on the corrected head. CodeQL and Dependency Review passed on that commit, but CodeQL reported DOM text-to-HTML findings in `src/templates/runtime/three-experience.js`; triage/fix and verify those findings rather than assuming a green workflow means no alerts.
+- **Do not mark complete until:** all current tests/CI pass on the latest head, CodeQL findings are resolved or formally dispositioned, scene/media end-to-end flows are tested, and launch gates in section 35 still pass. Production launch additionally requires the infrastructure and external-provider gates already documented above.
+
+
+## 40. Scene document and safe scene-edit foundation (2026-10-09)
+
+**Implementation added on the reconstruction branch**
+- `src/scene/scene-document.js` defines schema version 1 for renderer-neutral scene documents and a bounded node vocabulary (`group`, `box`, `sphere`, `plane`, `text`, `image`, `video`, `model`, `light`).
+- Validation rejects unsupported root/node fields, duplicate or malformed IDs, invalid vectors/colors, unsafe non-HTTPS asset URLs (except explicitly local-session `blob:` previews), missing parent references, parent cycles, and more than 250 nodes.
+- `applySceneOperation` accepts only typed `set`/`unset` operations on allowlisted properties; it emits before/after change records and exact inverse operations, without mutating the source document or evaluating user text as code.
+- `test/scene-document.test.js` covers schema validation, graph integrity, resource limits, URL safety, typed edits, input immutability and undo behavior.
+
+**Scope and integration status**
+- This is a tested-contract implementation step, not yet the complete 3D editor. The generated Three.js runtime and assistant orchestration are not yet wired to this scene document; current media remains local-session unless passed through the existing authorized asset path.
+- Next: add prompt-to-scene intent mapping that emits only these typed operations; then connect a read-only scene hierarchy/inspector and preview/commit/undo UI. Persist revisions and asset references only after project ownership and durable-storage boundaries are integrated.
+- Required verification: run the full CI suite on the new head, including the Node test suite, coverage, lint/check, SEO, E2E, browser E2E, live PostgreSQL tests, CodeQL and Dependency Review. Do not claim completion from source-level tests alone.
+
+
+## 41. Prompt-to-scene typed operation mapping (2026-10-09)
+
+- Added `src/scene/prompt-operations.js` as a deliberately limited intent adapter: supported color, visibility, position and rename requests are translated into typed operations, never JavaScript or executable snippets.
+- Ambiguous multi-node requests and unsupported prompts return explicit `ok: false` responses instead of claiming the scene changed. The caller must show a preview/confirmation and pass accepted operations to `applySceneOperation`; this module does not mutate or persist a scene.
+- Added `test/scene-prompt-operations.test.js` to cover supported edits, ambiguous targeting, unsupported requests, input bounds and invalid scenes.
+- Next: run and repair full CI; connect a selected-node context from the visual editor; add a human-readable preview/diff and apply/cancel UX; only then connect operation application to the renderer and durable revision history.
+
+
+## 42. Scene edit preview, stale-state guard and reversible commit (2026-10-09)
+
+- Added `src/scene/scene-edit-transaction.js` to create an immutable before/after preview from the supported prompt parser and typed scene operations. Preview generation does not mutate or persist the live scene.
+- Applying a preview is guarded by a snapshot of the reviewed scene. If the scene changed, the preview belongs to another scene, or the proposed operations no longer match the parsed prompt, commit is rejected and the caller must regenerate the preview.
+- Successful commit returns a new document, change records and inverse operations in reverse application order, allowing callers to implement undo without executing user code.
+- Corrected a CI-discovered source-formatting defect in the scene contract and its tests, and corrected `unset` operation validation so removing a supported optional property can be undone.
+- Added `test/scene-edit-transaction.test.js` for non-mutating previews, guarded commit, stale previews, tampering, unsupported prompts and undo.
+- **Integration status:** this is a safe transaction boundary, not yet a UI or renderer integration. It is not wired into the live Three.js runtime, chat orchestration, database revisions, or a user-facing preview/confirm/cancel panel. Those require explicit integration and end-to-end coverage.
+- **Verification gate:** rerun the complete CI suite on the current branch after the repair. Do not mark this phase verified until CI is green. Existing PostgreSQL-primary-store, asset durability, renderer integration, security alert triage and production deployment gates remain open.
+
+
+## 43. Bounded scene edit undo/redo history (2026-10-09)
+
+- Added `src/scene/scene-edit-history.js`, a session-scoped history manager that accepts only validated preview commits and stores inverse/forward typed operations.
+- Supports undo, redo, branch invalidation after a new edit, explicit empty-history states, bounded history (default 50; maximum 500), and conflict checks before replaying inverse/forward operations.
+- Returned documents are cloned so callers cannot mutate the history's internal snapshot by editing a previously returned object.
+- Added `test/scene-edit-history.test.js` for commit/undo/redo, redo invalidation, empty states, bounded history and invalid inputs.
+- This history is currently in-memory for a single editor session. It is not yet connected to the live 3D renderer, UI controls, persistent revision store, multi-tab concurrency or cross-user collaboration. Do not present it as durable history.
+- Verification required: complete CI on this branch, then integrate controls and scene persistence through authenticated project ownership before considering this capability end-to-end complete.
+
+
+## 44. UI-facing scene edit session facade (2026-10-09)
+
+- Added `src/scene/scene-editor-session.js` to coordinate the existing scene contract, prompt mapper, guarded preview/commit transaction, and bounded undo/redo history behind one small UI-facing API.
+- Exposes `preview`, `confirm`, `cancel`, `undo`, `redo`, detached state snapshots, a session revision counter, and explicit pending-preview/confirmability state. A valid prompt does not change the active document until confirmation; unsupported prompts and cancelled previews do not mutate it.
+- Undo/redo clears any pending preview so the user cannot accidentally confirm an obsolete review. Every successful commit/undo/redo advances the session revision.
+- Added `test/scene-editor-session.test.js` for review-before-apply, cancel/unsupported intent, undo/redo lifecycle and snapshot isolation.
+- **Integration boundary:** this is a tested session/controller layer, not yet connected to the actual Three.js runtime, public studio UI, authenticated project persistence or durable revision history. It performs no DOM, renderer, network or database side effects. Those integrations remain separate acceptance gates.
+- Verification: the current-head CI was green for dependency review; Build Vibe CI and CodeQL were still running when this phase began. Re-run/inspect workflows on the resulting head and resolve any failures or security alerts before treating this phase as verified.
+
+
+## 45. Browser scene editor surface (2026-10-09)
+
+- Added a beta scene-editing panel to the Design tab with a node hierarchy, property inspector, text-to-edit preview, confirm/cancel, undo/redo, validated JSON import, JSON export and starter-scene reset.
+- The UI uses the scene document validator and the session controller; scene text is rendered with DOM text nodes/textContent and imported JSON is size-limited and schema-validated before use.
+- Prompt edits require an explicit preview and confirmation. Direct inspector changes are validated against the scene document contract. Unsupported prompt requests are shown as errors and do not apply.
+- Browser-served copies of the scene contract/session modules live under `public/scene/` because the static UI must not import private `src/` paths; the syntax-check script now checks these browser modules explicitly. Keep the browser-safe copies in sync with the source modules until a shared build/bundling step replaces duplication.
+- **Scope boundary:** this is currently a local browser-session scene-document editor with a starter scene, not a live Three.js renderer editor. It does not yet save scenes to authenticated project storage, persist uploaded assets, or change a generated site's running 3D scene. JSON export/import is the explicit portability bridge for this phase.
+- Acceptance gate: CI/browser E2E must confirm the panel loads, invalid imports are rejected, preview cancellation is non-mutating, confirm/undo/redo work, and exports validate on re-import. Continue with renderer binding and project-owned durable scene storage as separate phases.
+
+
+## Phase 46 — Live Three.js scene preview integration
+
+**Implemented on the reconstruction branch; verification is pending on the new head.**
+
+- Added `public/scene/scene-preview-renderer.js`, a renderer adapter that consumes the validated scene document rather than embedding renderer behavior in the schema/history layer.
+- Added an interactive Three.js viewport to the Design tab. Box, sphere, plane, group and text nodes are mapped into preview objects; hierarchy, visibility, transforms and colors are reflected when the editor session changes.
+- Added pointer-drag orbit and wheel zoom, resize-aware rendering, and resource cleanup for geometries, materials and generated text textures.
+- Moved the scene editor into the Design tab so it no longer appears in unrelated workspace tabs.
+- Added adapter lifecycle tests and syntax-check coverage.
+- Three.js is loaded from the existing pinned CDN version. If WebGL or network loading fails, scene editing and JSON export remain available with an explicit status message.
+
+**Scope boundary:** this is a local interactive preview of the renderer-neutral scene document. It does not yet patch the generated product's live Three.js runtime, persist the scene to a project revision, upload durable image/video/model assets, or prove cross-browser rendering. Those remain separate acceptance gates.
+
+
+## Phase 47 — Durable per-project scene documents
+
+**Implemented on the reconstruction branch; CI and API verification are pending on the new head.**
+
+- Added the `scene_documents` SQLite table with one validated JSON scene per project, a monotonic revision, and timestamps. Existing databases receive this table through the normal idempotent migration.
+- Added authenticated `GET /api/projects/:id/scene` and editor-authorized `PUT /api/projects/:id/scene` endpoints. Reads require project viewer access; writes require editor access.
+- Server writes validate every submitted scene against the renderer-neutral scene schema before storage. Writes can include `expectedRevision`; stale revisions return HTTP 409 rather than silently overwriting newer edits.
+- Added tests for persistence after reopening the database, monotonically increasing revisions, stale-write conflict protection, and project access boundaries.
+- Connected the Design Mode scene editor to the active project: it can load a saved scene and explicitly save to the project. Unsaved edits are tracked locally; revision conflicts require a reload before retrying.
+
+**Scope boundary:** scene document persistence is currently implemented on the SQLite Store. It does not mean the overall primary PostgreSQL Store has been migrated or wired. Scene data is not yet automatically injected into the generated site's `three-experience.js` runtime, and asset uploads remain a separate durable storage path. Those remain required before calling this a complete production scene workflow.
+
+
+## 48. Project scene API end-to-end regression coverage (2026-10-09)
+
+- Extended the authenticated server route smoke test to exercise the project scene API through HTTP, not just the SQLite Store.
+- Covers unauthenticated read denial, the empty-project revision contract, schema validation rejection, required optimistic-concurrency revision, successful save/load round-trip, and HTTP 409 on stale writes.
+- Verifies that a rejected stale write does not overwrite the current scene document.
+- Updated the scene inspector helper copy to match the implemented preview and project-save workflow.
+- **Verification gate:** the test has been committed on the reconstruction branch. Run and inspect all CI/security workflows on the new head before treating this integration as verified. This is not browser E2E coverage and does not connect the saved scene document to the generated public-site Three.js runtime. Durable uploaded assets and PostgreSQL-primary-store migration remain open.
+
+## 49. Scene preview media and lighting node support
+
+- Extended the browser Three.js preview adapter to map validated `image` nodes to asynchronously loaded texture maps, `video` nodes to muted inline video textures where browser support permits, and `light` nodes to point-light objects when available.
+- Preserves the renderer-neutral scene document as the source of truth; the renderer does not accept executable code or arbitrary material/shader properties.
+- Adds asset-load status feedback and cleans up video playback/source references and owned textures during rebuild/disposal.
+- Added adapter regression coverage for image, video, and light node documents using a lightweight Three.js test double.
+- **Limits:** this is still the local editor preview. It does not upload assets, make local blob URLs durable, load `model` nodes in this adapter, or inject the saved scene into the published site's `three-experience.js`. Browser-level visual verification and actual media CORS/playback checks remain open.
+- **Verification gate:** the new tests and syntax checks must pass on the latest head; inspect CodeQL and Dependency Review again. PostgreSQL-primary-store migration and deployment readiness remain incomplete.
+
+
+## 50. Publish saved scene documents to generated 3D sites
+
+- Deployment content synchronization now validates the project's saved scene document and writes it to `public/content/scene.json`, which is served as `/content/scene.json` by static-site hosts.
+- The generated Three.js runtime loads this document independently of the site's marketing/CMS content and renders supported group, box, sphere, plane, text, image, video, model and light nodes. If there is no valid scene document, the procedural experience remains as a fallback.
+- The runtime bounds the scene to 250 nodes, uses allowlisted node types and HTTPS media URLs, and disposes scene-owned textures and video sources during teardown.
+- Local `blob:` asset URLs are removed from the published copy rather than emitting broken session-local references. This is a guardrail, not a durable upload solution: users still need managed asset storage and URL rewriting for persistent media.
+- Added source-contract regression tests for deployment serialization, runtime node coverage and media cleanup.
+- **Open verification:** these source-contract tests do not replace real browser/WebGL tests. The published runtime still needs visual E2E checks, external media CORS validation, hierarchy/transform verification, actual GLTF model tests, and generated artifact smoke tests. SQLite remains the scene persistence backend; PostgreSQL-primary migration and full launch gates remain incomplete.
+
+
+## 51. Durable project assets and 3D scene media persistence — 2026-10-09
+
+This stage closes the gap between local-only scene previews and media that survives reload, workspace loss and deployment. It reuses the project asset table and existing local/S3 object-store adapter; it does not migrate the primary SQLite Store or claim that production object storage is configured.
+
+- Uploads require an authenticated project editor, bounded declared and actual body size, an allowlisted extension/MIME pair, metadata schema validation and format-aware content inspection. Asset names are normalized; paths are generated server-side; SHA-256 and size are checked against object storage.
+- Asset records are project-scoped. Internal storage keys are kept out of client-facing asset records and audit events never store media bytes or user payloads.
+- Authenticated file/preview endpoints enforce project access and integrity, and can restore a missing workspace copy from the configured object store. A missing workspace file must not block this fallback.
+- The scene editor can add/remove typed nodes, upload an image/video/model for a selected media node and keep the durable /assets/... URL in the saved scene; the editor uses an authenticated preview URL while editing. Saved scenes reject session-only blob: references.
+- Deployment sync merges assets instead of deleting the generated public assets directory; it verifies registered asset checksums and copies registered assets into the published workspace. The 3D runtime accepts only flat, allowlisted same-site asset paths or credential-free HTTPS URLs.
+- Acceptance: format/metadata tests, malformed and renamed-file rejection, scene path safety and inverse-operation tests, upload/list/preview/delete route tests, missing-workspace recovery, editor contract tests, runtime checks and CI/CodeQL/dependency review.
+
+## 52. Tool Fabric foundation and first local utilities — 2026-10-09
+
+This phase begins the canonical agent-callable utility layer; it does not claim all 18 utility contracts have executable adapters. The catalog records owner, schemas, privacy and execution mode, network requirement, risk, authentication/confirmation requirements, timeout/retry policy, audit event and truthful implementation state for all 18 utilities.
+
+- Implemented local adapters: JSON formatter/validator, sample-driven JSON-to-TypeScript, Base64 text encode/decode and JWT header/claim inspection. The JWT inspector explicitly reports that signatures are not verified and must not be used for authentication decisions.
+- Local adapters impose input/output/depth/complexity limits, reject unknown input keys and make no outbound network calls. Network tools remain planned and fail closed with tool_not_available; a catalog entry is not evidence that a tool is executable.
+- Authenticated GET /api/tools/catalog discovers the contract. POST /api/tools/:id/execute runs only implemented local utilities and records bounded audit metadata without storing payloads/results.
+- Acceptance: catalog metadata consistency and unique IDs, local execution and failure boundaries, body size and complexity limits, no-network contract, route authentication, audit behavior and full CI gates.

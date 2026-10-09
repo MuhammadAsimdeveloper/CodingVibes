@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { inferDesignSystem } from '../src/agent/design-system.js';
 import { listTemplates } from '../src/templates/catalog.js';
 import { analyzeRequirements } from '../src/agent/requirements.js';
@@ -65,4 +66,90 @@ test('deterministic mobile app fallback has a real product shell, not a placehol
   assert.match(app,/Get started/);
   assert.match(app,/Core experience/);
   assert.doesNotMatch(app,/Generated for mobile-expo/);
+});
+
+test('generated 3D website exposes accessible view controls and bounded rendering behavior',()=>{
+  const spec=analyzeRequirements('Create an immersive 3D product showroom with uploaded GLB models, interactive camera views, and video walkthroughs');
+  assert.equal(spec.experience?.threeD,true);
+  const plan=generateProject(spec);
+  const files=new Map(plan.files.map(f=>[f.path,f.content]));
+  const html=files.get('public/index.html')||'';
+  const runtime=files.get('public/experience.js')||'';
+  const threeModuleUrl=runtime.match(/^const THREE_URL=\'([^\']+)\';/m)?.[1];
+  assert.equal(threeModuleUrl,'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js');
+  const importMap=`<script type="importmap">{"imports":{"three":${JSON.stringify(threeModuleUrl)}}}</script>`;
+  assert.ok(html.includes(importMap),"generated 3D page must map the bare three specifier used by its add-on modules");
+  assert.ok(html.indexOf(importMap)<html.indexOf('src="/experience.js"'),"import map must appear before the runtime module");
+  assert.match(runtime,/three@0\.186\.1\/build\/three\.module\.js/);
+  assert.match(runtime,/three@0\.186\.1\/examples\/jsm\/controls\/OrbitControls\.js/);
+  assert.match(runtime,/three@0\.186\.1\/examples\/jsm\/loaders\/GLTFLoader\.js/);
+  for(const [filePath,pageHtml] of files){
+    if(!filePath.startsWith('public/')||!filePath.endsWith('.html')||!pageHtml.includes('src="/experience.js"'))continue;
+    assert.ok(pageHtml.includes(importMap),`${filePath} must declare the Three.js import map`);
+    assert.ok(pageHtml.indexOf(importMap)<pageHtml.indexOf('src="/experience.js"'),`${filePath} must declare the import map before the runtime`);
+  }
+  assert.match(html,/id="viewLeft"[^>]+aria-label="Rotate 3D view left"/);
+  assert.match(html,/id="viewRight"[^>]+aria-label="Rotate 3D view right"/);
+  assert.match(html,/id="viewZoomIn"[^>]+aria-label="Zoom in to 3D view"/);
+  assert.match(html,/id="experienceImageInput"/);
+  assert.match(html,/id="applyExperienceTexture"/);
+  assert.match(html,/id="videoInput"[^>]+accept="video\/mp4,video\/webm"/);
+  assert.match(html,/id="experienceImage"[^>]+alt="Uploaded image preview for this 3D experience"/);
+  assert.match(html,/id="experienceFallback"[^>]+role="status"[^>]+aria-live="polite"/);
+  assert.ok(runtime.includes("prefers-reduced-motion: reduce"));
+  assert.match(runtime,/catch\(e\)\{\s*if\(fallback\)fallback\.textContent='3D unavailable\. Responsive content remains usable\.'/,'remote module or WebGL failure must expose a usable content fallback');
+  assert.match(runtime,/const \[\{Scene,[\s\S]*?\]\s*=\s*await Promise\.all\(\[/,'Three.js and add-on module loading must remain inside the guarded startup path');
+  assert.match(runtime,/if\(!canvas\)return;/,'runtime must remain safe on pages without a 3D canvas');
+  assert.ok(runtime.includes('new TextureLoader()'));
+  assert.ok(runtime.includes('applyTextureToObject(loadedModel,attachedTexture)'));
+  assert.ok(runtime.includes('function disposeModelResources(root)'),'replaced GLTF resources should be disposed');
+  assert.ok(runtime.includes('function stopCameraMotion()'),'camera tours should expose a cancellable motion lifecycle');
+  assert.ok(runtime.includes('let activeRecorder=null,recordingTimer=null'),'tour recording should have a single managed lifecycle');
+  assert.ok(runtime.includes('stream.getTracks().forEach(track=>track.stop())'),'tour recording should release capture tracks');
+  assert.ok(runtime.includes('clearTimeout(recordingTimer)'),'tour recording timeout should be cancellable');
+  assert.ok(runtime.includes('stopCameraMotion();clearInterval(tourTimer)')||runtime.includes('clearInterval(tourTimer);stopCameraMotion()'),'camera animation must stop when the tab is hidden');
+  assert.ok(runtime.includes('attachedTexture=null,modelLoadGeneration=0'),'stale concurrent model loads should be invalidated');
+  assert.ok(runtime.includes('loadGeneration!==modelLoadGeneration'),'late model loads must not replace the latest selection');
+  assert.ok((runtime.includes('finally{')&&runtime.includes('URL.revokeObjectURL(ownedUrl)')),'temporary model URLs must be revoked on success and failure');
+  assert.ok(runtime.includes('restoreAppliedMaterials(loadedModel||group)'));
+  assert.ok(runtime.includes('sceneObserver=new IntersectionObserver'));
+  assert.ok(runtime.includes("document.addEventListener('visibilitychange',handleVisibility)"));
+  assert.ok(runtime.includes("controls.addEventListener('change',scheduleRender)"));
+  assert.ok(!runtime.includes('preserveDrawingBuffer:true'));
+  assert.match(runtime,/file\.size>20\*1024\*1024/);
+  assert.match(runtime,/file\.size>100\*1024\*1024/);
+  assert.match(runtime,/file\.size>150\*1024\*1024/);
+  assert.match(runtime,/URL\.revokeObjectURL\(localImageUrl\)/);
+  assert.match(files.get('public/styles.css')||'',/@media\(max-width:760px\)\{\.experience-stage/);
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-3d-'));
+  const runtimePath=path.join(root,'experience.js');
+  fs.writeFileSync(runtimePath,runtime,'utf8');
+  const checked=spawnSync(process.execPath,['--check',runtimePath],{encoding:'utf8'});
+  assert.equal(checked.status,0,checked.stderr||checked.stdout);
+});
+
+test('generated sites apply validated project design tokens and allowed text edits',()=>{
+  const spec=analyzeRequirements('Create a professional business website');
+  spec.styling={...(spec.styling||{}),designSystem:{
+    colors:{primary:'#123abc',accent:'#abcdef',background:'#101010',surface:'#202020',text:'#fefefe',muted:'#888888',border:'#333333'},
+    typography:{heading:'Georgia, serif',body:'Arial, sans-serif'},
+    layout:{maxWidth:1040},radius:{md:18},motion:{durationMs:500},
+    visualEdits:[
+      {selector:'h1, h2, h3',css:{color:'#ff00aa',fontWeight:'700'}},
+      {selector:'body',css:{backgroundColor:'#445566'}},
+      {selector:'body;body',css:{color:'red;display:none'}},
+      {selector:'body',css:{backgroundImage:'url(javascript:alert(1))',color:'url(javascript:alert(1))'}}
+    ]
+  }};
+  const plan=generateProject(spec);
+  const css=plan.files.find(file=>file.path==='public/styles.css').content;
+  assert.match(css,/--cv-color-primary:#123abc/);
+  assert.match(css,/--cv-font-heading:Georgia, serif/);
+  assert.match(css,/--cv-content-width:1040px/);
+  assert.match(css,/--cv-radius-md:18px/);
+  assert.match(css,/--cv-motion-duration:500ms/);
+  assert.ok(css.includes('h1, h2, h3{color:#ff00aa;font-weight:700}'));
+  assert.ok(css.includes('body{background-color:#445566}'));
+  assert.doesNotMatch(css,/body;body/);
+  assert.doesNotMatch(css,/javascript:alert/);
 });

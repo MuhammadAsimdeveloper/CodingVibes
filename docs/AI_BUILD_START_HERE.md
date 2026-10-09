@@ -25,6 +25,14 @@ Build Vibe owns canonical web/developer/creation implementations. Aira orchestra
 9. Do not mark a feature complete without implementation + tests + verification evidence.
 10. If external credentials/infrastructure are missing, build the adapter and tests, then record the exact blocker.
 
+## Reconstruction addendum (2026-10-09)
+
+- The project design system is a source of truth, not just a settings form. Preserve the saved `store.getDesignSystem(project.id,userId)` contract when building; pass it into `spec.styling.designSystem` and apply only validated tokens/allowlisted text edits to generated web CSS.
+- Design Mode's text editor uses the editor-authorized `POST /api/projects/:id/design/intent` route. It supports focused color, typography, alignment, radius, spacing and visibility edits; unsupported instructions should return an explicit response, not silently claim success. The UI tells the user that a rebuild applies the edit.
+- Generated-site visual selection is opt-in. It is enabled through `?visualEdit=1` or `Alt+Shift+E`, reports the selected element through a bounded custom-event contract, and must not execute arbitrary CSS, inject arbitrary selectors or mutate content silently.
+- For 3D experiences, preserve reduced-motion behavior, pause render scheduling when hidden/off-screen, bound media/model inputs and dispose object URLs/materials/textures. An uploaded image may be applied as a local-session texture. Image/video previews are not persistent uploads; durable user assets require the existing authorized asset/storage path.
+- Validate current changes with the repository's real scripts: `npm test`, `npm run check`, `npm run seo:check`, `npm run e2e`, `npm run browser:e2e` and the configured launch/ops checks. Report each CI commit SHA. Treat MiroFish/deployment as `NOT_CONFIGURED` unless the provider is actually connected and exercised.
+
 ## Priority order
 Tool/Agent Fabric → 18 Zee-derived utilities → Teamily-derived multi-agent/memory/automation/studio capabilities → integrations/MCP/OAuth → visual/product depth → cloud/operations → deployment/native → benchmarks/release.
 

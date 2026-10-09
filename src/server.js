@@ -6,6 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {Store} from './db/store.js';
 import {ModelRouter} from './ai/router.js';
+import {classifyAssistantRequest} from './assistant/intent.js';
 import {buildUserRouterForUser,providerConnectionInput,normalizeAiSettings,canonicalProvider} from './ai/user-router.js';
 import {encryptSecret,decryptSecret} from './security/vault.js';
 import {createApiToken,hashApiToken,verifyApiToken,isApiToken} from './security/api-tokens.js';
@@ -42,7 +43,7 @@ import {kitForKind,SITE_KITS} from './site/kits.js';
 import {deploymentCatalog,connectProvider,disconnectProvider,deployProject,prepareDeploymentArtifact,getDeploymentStatus,cancelDeployment} from './deployment/index.js';
 import {beginOAuth,completeOAuth,oauthConfigured} from './deployment/oauth.js';
 import {beginGoogleOAuth,completeGoogleOAuth,googleOAuthConfigured,readGoogleOAuthStateCookie,setGoogleOAuthStateCookie,clearGoogleOAuthStateCookieHeader} from './security/google-auth.js';
-import {assetType,safeAssetName,hashBuffer,makeAssetRecord,validateAssetUpload,MAX_ASSET_BYTES} from './assets/library.js';
+import {assetType,safeAssetName,hashBuffer,makeAssetRecord,validateAssetUpload,validateAssetContent,normalizeAssetMetadata,MAX_ASSET_BYTES} from './assets/library.js';
 import {baselinePath} from './verification/visual.js';
 import {WORKSPACE_ROLES,canRole,authorizeProjectRole,projectCapabilityMatrix,normalizeDesignSystem,designModeContract,researchWeb,provisionCloudService,CLOUD_SERVICE_CATALOG,domainVerificationInstructions,hashInviteToken,makeInviteToken} from './platform/feature-suite.js';
 import {auditDiscoverability,aeoSummary} from './verification/discoverability.js';
@@ -52,9 +53,40 @@ import {telemetry} from './ops/telemetry.js';
 import {sanitizeProductEvent,recordProductEvent} from './ops/product-analytics.js';
 import {normalizeFeatureFlag,evaluateFeatureFlag} from './ops/feature-flags.js';
 import {scaleOutConfig as scaleOutConfigSnapshot} from './platform/scaleout.js';
+import {validateSceneDocument} from './scene/scene-document.js';
+import {createObjectStore} from './storage/object-store.js';
+import {listToolDefinitions,executeLocalTool,TOOL_FABRIC_VERSION} from './tools/fabric.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));const publicDir=path.join(root,'..','public');const PUBLIC_SEO_ROUTES=listPublicSeoPages().map(x=>x.path);
 export const store=new Store();export const router=new ModelRouter();
+let assetObjectStorePromise=null;
+function getAssetObjectStore(){if(!assetObjectStorePromise)assetObjectStorePromise=createObjectStore().catch(error=>{assetObjectStorePromise=null;throw error});return assetObjectStorePromise;}
+function projectAssetFilename(publicPath){const value=String(publicPath||'');return /^\/assets\/[a-zA-Z0-9][a-zA-Z0-9._-]{0,240}$/.test(value)&&!value.includes('..')?value.slice('/assets/'.length):null;}
+async function readProjectAssetBuffer(project,asset){
+ const filename=projectAssetFilename(asset?.public_path);if(!filename)throw Object.assign(new Error('asset_public_path_invalid'),{status:409});
+ let body=null;
+ if(project?.repo_path){try{const localPath=resolveInside(project.repo_path,path.join('public','assets',filename));const stat=fs.lstatSync(localPath);if(stat.isFile()&&!stat.isSymbolicLink())body=fs.readFileSync(localPath)}catch{/* A missing or unsafe workspace path must not prevent durable object-store recovery. */}}
+ if(body&&body.length===Number(asset.size)&&hashBuffer(body)===asset.sha256)return body;
+ const storage=asset?.metadata?.storage;
+ if(storage?.key){
+  const objects=await getAssetObjectStore();
+  if(storage.provider&&storage.provider!==objects.provider)throw Object.assign(new Error('asset_storage_backend_mismatch'),{status:503});
+  const object=await objects.get({key:storage.key});
+  if(object&&object.body.length===Number(asset.size)&&hashBuffer(object.body)===asset.sha256)return object.body;
+ }
+ if(body)throw Object.assign(new Error('asset_integrity_check_failed'),{status:409});
+ return null;
+}
+function projectAssetApiRecord(record){
+ const metadata=record?.metadata&&typeof record.metadata==='object'&&!Array.isArray(record.metadata)?{...record.metadata}:{};
+ delete metadata.storage;
+ return makeAssetRecord({id:record.id,name:record.name,mime:record.mime,size:record.size,sha256:record.sha256,role:record.role,publicPath:record.public_path||record.publicPath,metadata});
+}
+function sendProjectAsset(res,asset,body,{inline=false}={}){
+ const filename=safeAssetName(asset.name||'asset');const headers={'content-type':String(asset.mime||'application/octet-stream').split(';')[0],'content-length':String(body.length),'content-disposition':(inline?'inline':'attachment')+'; filename="'+filename+'"','cache-control':'private, no-store','x-content-type-options':'nosniff'};
+ if(inline&&String(asset.mime||'').toLowerCase()==='image/svg+xml')headers['content-security-policy']="default-src 'none'; sandbox; img-src data:; style-src 'unsafe-inline'; base-uri 'none'";
+ res.writeHead(200,headers);res.end(body);
+}
 const HOST=process.env.HOST||'127.0.0.1';const PORT=Number(process.env.PORT||4400);const MAX_BODY=Number(process.env.CODINGVIBES_MAX_BODY_BYTES||2*1024*1024);const activeBuilds=new Map();const buckets=new Map();const authBuckets=new Map();
 function clientAddress(req){if(process.env.CODINGVIBES_TRUST_PROXY==='true'){const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();if(forwarded)return forwarded;}return req.socket.remoteAddress||'unknown';}
 function consumeRateLimit(bucketMap,key,limit,windowMs){const now=Date.now();if(bucketMap.size>10000){for(const [k,v] of bucketMap){if(now-v.start>windowMs)bucketMap.delete(k);}}const b=bucketMap.get(key)||{start:now,count:0};if(now-b.start>windowMs){b.start=now;b.count=0}b.count++;bucketMap.set(key,b);return b.count<=limit;}
@@ -89,7 +121,7 @@ function sameOrigin(req){const fetchSite=String(req.headers['sec-fetch-site']||'
 async function notifyIndexNow(deployedUrl,workspace){const key=String(process.env.CODINGVIBES_INDEXNOW_KEY||'').trim();if(!key||!deployedUrl)return {ok:false,skipped:true,reason:key?'deployment_url_missing':'indexnow_key_not_configured'};let pages=['/'];try{const specFile=path.join(workspace,'codingvibes.app.json');const spec=JSON.parse(fs.readFileSync(specFile,'utf8'));pages=Array.isArray(spec.pages)?spec.pages.filter(p=>!['/admin','/login'].includes(p)):pages}catch{}const base=String(deployedUrl).replace(/\/$/,'');const urls=[...new Set(pages.map(p=>base+(p||'/')))];try{return await submitIndexNow({urls,key,keyLocation:process.env.CODINGVIBES_INDEXNOW_KEY_LOCATION})}catch(e){return {ok:false,skipped:false,error:e.message}}}
 export function publicOrigin(req){const configured=String(process.env.CODINGVIBES_PUBLIC_URL||'').trim();if(configured)return configured.replace(/\/$/,'');const trustProxy=process.env.CODINGVIBES_TRUST_PROXY==='true';const proto=(trustProxy?String(req.headers['x-forwarded-proto']||''):((req.socket&&req.socket.encrypted)?'https':'http')).split(',')[0].trim()||'http';const host=(trustProxy?String(req.headers['x-forwarded-host']||''):String(req.headers.host||HOST)).split(',')[0].trim()||HOST;return `${proto}://${host}`.replace(/\/$/,'');}
 function normalizeReturnUrl(value,base){const raw=String(value||'').trim();if(!raw)return base;try{const parsed=new URL(raw,base),trusted=new URL(base);if(parsed.origin!==trusted.origin)throw Object.assign(new Error('cross_origin_redirect_url'),{status:400});return parsed.href;}catch(e){if(e?.status===400)throw e;throw Object.assign(new Error('invalid_redirect_url'),{status:400});}}
-async function serveStatic(req,res){let pathname=new URL(req.url,'http://localhost').pathname;if(pathname==='/')pathname='/landing.html';if(pathname==='/app')pathname='/index.html';if(pathname==='/terms')pathname='/terms.html';if(pathname==='/privacy')pathname='/privacy.html';let target;try{target=resolveInside(publicDir,pathname.slice(1));}catch{return false}if(!fs.existsSync(target)||!fs.statSync(target).isFile())return false;const type={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.txt':'text/plain; charset=utf-8'}[path.extname(target)]||'application/octet-stream';let body=fs.readFileSync(target);if(path.extname(target)==='.html'){body=body.toString('utf8').replaceAll('__SITE_URL__',publicOrigin(req));if(path.basename(target)==='pay.html'){body=body.replaceAll('__PADDLE_CLIENT_TOKEN__',String(process.env.PADDLE_CLIENT_TOKEN||''));}if(path.basename(target)==='landing.html'){const verification=[];if(process.env.CODINGVIBES_GOOGLE_SITE_VERIFICATION)verification.push('<meta name="google-site-verification" content="'+String(process.env.CODINGVIBES_GOOGLE_SITE_VERIFICATION).replace(/[^A-Za-z0-9_-]/g,'')+'">');if(process.env.CODINGVIBES_BING_SITE_VERIFICATION)verification.push('<meta name="msvalidate.01" content="'+String(process.env.CODINGVIBES_BING_SITE_VERIFICATION).replace(/[^A-Za-z0-9_-]/g,'')+'">');body=body.replace('<!--__SITE_VERIFICATION__-->',verification.join(''));}}sendText(res,200,body,type);return true;}
+async function serveStatic(req,res){let pathname=new URL(req.url,'http://localhost').pathname;if(pathname==='/')pathname='/landing.html';if(pathname==='/app')pathname='/index.html';if(pathname==='/terms')pathname='/terms.html';if(pathname==='/privacy')pathname='/privacy.html';let target;try{target=resolveInside(publicDir,pathname.slice(1));}catch{return false}if(!fs.existsSync(target)||!fs.statSync(target).isFile())return false;const type={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.avif':'image/avif','.ico':'image/x-icon','.mp4':'video/mp4','.webm':'video/webm','.mov':'video/quicktime','.mp3':'audio/mpeg','.wav':'audio/wav','.ogg':'audio/ogg','.glb':'model/gltf-binary','.gltf':'model/gltf+json','.obj':'text/plain','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf','.otf':'font/otf','.webmanifest':'application/manifest+json','.txt':'text/plain; charset=utf-8'}[path.extname(target).toLowerCase()]||'application/octet-stream';let body=fs.readFileSync(target);if(path.extname(target)==='.html'){body=body.toString('utf8').replaceAll('__SITE_URL__',publicOrigin(req));if(path.basename(target)==='pay.html'){body=body.replaceAll('__PADDLE_CLIENT_TOKEN__',String(process.env.PADDLE_CLIENT_TOKEN||''));}if(path.basename(target)==='landing.html'){const verification=[];if(process.env.CODINGVIBES_GOOGLE_SITE_VERIFICATION)verification.push('<meta name="google-site-verification" content="'+String(process.env.CODINGVIBES_GOOGLE_SITE_VERIFICATION).replace(/[^A-Za-z0-9_-]/g,'')+'">');if(process.env.CODINGVIBES_BING_SITE_VERIFICATION)verification.push('<meta name="msvalidate.01" content="'+String(process.env.CODINGVIBES_BING_SITE_VERIFICATION).replace(/[^A-Za-z0-9_-]/g,'')+'">');body=body.replace('<!--__SITE_VERIFICATION__-->',verification.join(''));}}sendText(res,200,body,type);return true;}
 async function readRawBuffer(req,max=MAX_BODY){return await new Promise((resolve,reject)=>{let chunks=[],size=0;req.on('data',chunk=>{size+=chunk.length;if(size>max){reject(Object.assign(new Error('body_too_large'),{status:413}));req.destroy();return;}chunks.push(Buffer.from(chunk))});req.on('end',()=>resolve(Buffer.concat(chunks)));req.on('error',reject)});}
 async function readRawBody(req,max=MAX_BODY){return await new Promise((resolve,reject)=>{let data='';let size=0;req.setEncoding('utf8');req.on('data',chunk=>{size+=Buffer.byteLength(chunk);if(size>max){reject(Object.assign(new Error('body_too_large'),{status:413}));req.destroy();return;}data+=chunk});req.on('end',()=>resolve(data));req.on('error',reject)});}
 function listFiles(dir){const out=[];const walk=(current,rel='')=>{for(const name of fs.readdirSync(current)){if(name==='.git'||name==='node_modules'||name==='.codingvibes')continue;const full=path.join(current,name),next=path.join(rel,name),st=fs.lstatSync(full);if(st.isSymbolicLink())continue;if(st.isDirectory())walk(full,next);else out.push(next.replaceAll('\\','/'));if(out.length>=1000)return;}};walk(dir);return out;}
@@ -247,6 +279,20 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(method==='GET'&&!u.pathname.startsWith('/api/')&&await serveStatic(req,res))return;
   if(method==='POST'&&u.pathname==='/api/analytics/events'){try{const b=await readJson(req,MAX_BODY),event=sanitizeProductEvent({userId,projectId:b.projectId||null,sessionId:b.sessionId||null,event:b.event,properties:b.properties});if(event.projectId&&!store.getProject(event.projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const saved=recordProductEvent(store,event);return sendJson(res,201,{ok:true,event:{id:saved.id,event:saved.event,created_at:saved.created_at}});}catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message});}}
   const a=requireAuth(req,res);if(!a)return;const userId=a.user_id;
+  if(method==='GET'&&u.pathname==='/api/tools/catalog')return sendJson(res,200,{ok:true,version:TOOL_FABRIC_VERSION,tools:listToolDefinitions()});
+  if(method==='POST'&&/^\/api\/tools\/[^/]+\/execute$/.test(u.pathname)){
+    const toolId=decodeURIComponent(u.pathname.split('/')[3]),started=Date.now();let input;
+    try{input=await readJson(req,MAX_BODY)}catch(error){return sendJson(res,error.status||400,{ok:false,error:'invalid_tool_request'});}
+    try{
+      const result=executeLocalTool(toolId,input);
+      store.addAuditLog({actorUserId:userId,action:'tool.executed',resourceType:'tool',resourceId:result.tool.id,metadata:{outcome:'success',mode:'local',networkRequired:false,durationMs:Date.now()-started,inputBytes:result.execution.inputBytes,outputBytes:result.execution.outputBytes}});
+      return sendJson(res,200,result);
+    }catch(error){
+      const status=error.status||422,code=error.code||'tool_execution_failed';
+      store.addAuditLog({actorUserId:userId,action:'tool.execution_failed',resourceType:'tool',resourceId:String(toolId).slice(0,100),metadata:{outcome:status===501?'blocked':'failed',code,durationMs:Date.now()-started}});
+      return sendJson(res,status,{ok:false,error:code,message:String(error.message||'Tool execution failed.').slice(0,240)});
+    }
+  }
   if(method==='GET'&&u.pathname==='/api/builder/research')return sendJson(res,200,{ok:true,research:builderResearch()});
   if(method==='GET'&&u.pathname==='/api/cloud/catalog')return sendJson(res,200,{ok:true,services:CLOUD_SERVICE_CATALOG});
   if(/^\/api\/projects\/[^/]+\/discoverability$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/discoverability$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(pid,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});const audit=auditDiscoverability(latest.workspace,{baseUrl:publicOrigin(req)});return sendJson(res,200,{ok:true,audit,aeo:aeoSummary(audit),verifiedRunId:latest.run.id});}
@@ -263,6 +309,49 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(/^\/api\/workspaces\/[^/]+\/approvals$/.test(u.pathname)&&method==='GET'){const wid=pathParam(u.pathname,'/api/workspaces/').replace(/\/approvals$/,'');if(!store.getWorkspace(wid,userId))return sendJson(res,404,{ok:false,error:'workspace_not_found'});return sendJson(res,200,{ok:true,approvals:store.listWorkspaceApprovals(wid,userId)});}
   if(/^\/api\/workspaces\/[^/]+\/approvals$/.test(u.pathname)&&method==='POST'){const wid=pathParam(u.pathname,'/api/workspaces/').replace(/\/approvals$/,'');const ws=store.getWorkspace(wid,userId);if(!ws||!canRole(ws.role,'editor'))return sendJson(res,403,{ok:false,error:'workspace_editor_required'});const b=await readJson(req,MAX_BODY);try{const approval=store.createWorkspaceApproval(wid,String(b.projectId||''),{runId:b.runId||null,kind:String(b.kind||'publish'),requestedBy:userId,comment:String(b.comment||'')});store.addAuditLog({actorUserId:userId,action:'workspace.approval.requested',resourceType:'approval',resourceId:approval.id,metadata:{workspaceId:wid,projectId:b.projectId,kind:b.kind||'publish'}});return sendJson(res,201,{ok:true,approval});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}}
   if(/^\/api\/approvals\/[^/]+\/decision$/.test(u.pathname)&&method==='POST'){const id=pathParam(u.pathname,'/api/approvals/').replace(/\/decision$/,'');const b=await readJson(req,MAX_BODY);try{const approval=store.decideWorkspaceApproval(id,userId,String(b.status||''),String(b.comment||''));store.addAuditLog({actorUserId:userId,action:'workspace.approval.decided',resourceType:'approval',resourceId:id,metadata:{status:b.status}});return sendJson(res,200,{ok:true,approval});}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message});}}
+  if(/^\/api\/projects\/[^/]+\/design\/intent$/.test(u.pathname)&&method==='POST'){
+    const pid=pathParam(u.pathname,'/api/projects/').replace('/design/intent','');
+    try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message});}
+    const body=await readJson(req,MAX_BODY),request=String(body?.request||'').trim().slice(0,2000);
+    if(!request)return sendJson(res,400,{ok:false,error:'visual_edit_request_required'});
+    const classified=classifyAssistantRequest(request);
+    if(!classified.operations.length)return sendJson(res,422,{ok:false,error:'unsupported_visual_edit',message:'Try a focused change such as “make the heading blue and centered” or “make cards more rounded”.'});
+    try{
+      const existing=store.getDesignSystem(pid,userId),baseSystem=existing?.system||normalizeDesignSystem({},request);
+      const additions=classified.operations.map(operation=>({selector:operation.selector,css:operation.css,reason:operation.reason,request:request.slice(0,240)}));
+      const visualEdits=[...(Array.isArray(baseSystem.visualEdits)?baseSystem.visualEdits:[]),...additions].slice(-24);
+      const system=normalizeDesignSystem({...baseSystem,visualEdits},request);
+      const designSystem=store.upsertDesignSystem(pid,userId,{name:existing?.name||'Build Vibe Design System',system});
+      store.addAuditLog({actorUserId:userId,action:'design_system.text_edit_applied',resourceType:'project',resourceId:pid,metadata:{operationCount:additions.length,operationTypes:additions.map(x=>x.reason)}});
+      return sendJson(res,200,{ok:true,applied:additions,designSystem,contract:designModeContract(designSystem.system),message:'Saved to this project. Rebuild to apply the visual changes.'});
+    }catch(e){return sendJson(res,400,{ok:false,error:e.message});}
+  }
+  if(/^\/api\/projects\/[^/]+\/scene$/.test(u.pathname)&&method==='GET'){
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\/scene$/,'');
+    try{requireProjectRole(pid,userId,'viewer')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
+    const saved=store.getSceneDocument(pid,userId);
+    return sendJson(res,200,{ok:true,scene:saved?.scene||null,revision:Number(saved?.revision||0),updatedAt:saved?.updated_at||null});
+  }
+  if(/^\/api\/projects\/[^/]+\/scene$/.test(u.pathname)&&method==='PUT'){
+    const pid=pathParam(u.pathname,'/api/projects/').replace(/\/scene$/,'');
+    try{requireProjectRole(pid,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
+    let body;
+    try{body=await readJson(req,MAX_BODY)}catch(e){return sendJson(res,400,{ok:false,error:'invalid_json_body'})}
+    const checked=validateSceneDocument(body.scene);
+    if(!checked.ok)return sendJson(res,400,{ok:false,error:'invalid_scene_document',details:checked.errors});
+    if(checked.value.nodes.some(node=>typeof node.assetUrl==='string'&&node.assetUrl.startsWith('blob:')))return sendJson(res,400,{ok:false,error:'temporary_scene_asset_must_be_uploaded'});
+    const expectedRevision=body.expectedRevision===undefined?null:body.expectedRevision;
+    if(!Number.isInteger(expectedRevision)||expectedRevision<0)return sendJson(res,400,{ok:false,error:'expected_revision_must_be_nonnegative_integer'});
+    try{
+      const saved=store.saveSceneDocument(pid,userId,checked.value,{expectedRevision});
+      store.addAuditLog({actorUserId:userId,action:'scene_document.saved',resourceType:'project',resourceId:pid,metadata:{revision:saved.revision,nodeCount:checked.value.nodes.length}});
+      return sendJson(res,200,{ok:true,scene:saved.scene,revision:saved.revision,updatedAt:saved.updated_at});
+    }catch(e){
+      if(e.code==='scene_revision_conflict')return sendJson(res,409,{ok:false,error:'scene_revision_conflict',currentRevision:e.currentRevision});
+      if(e.message==='Project not found')return sendJson(res,404,{ok:false,error:'project_not_found'});
+      return sendJson(res,400,{ok:false,error:e.message});
+    }
+  }
   if(/^\/api\/projects\/[^/]+\/design$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/design$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});let ds=store.getDesignSystem(pid,userId);if(!ds){ds=store.upsertDesignSystem(pid,userId,{system:normalizeDesignSystem({},'')});}return sendJson(res,200,{ok:true,designSystem:ds,contract:designModeContract(ds.system)});}
   if(/^\/api\/projects\/[^/]+\/design$/.test(u.pathname)&&method==='PUT'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/design$/,'');try{requireProjectRole(pid,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const b=await readJson(req,MAX_BODY);try{const ds=store.upsertDesignSystem(pid,userId,{name:String(b.name||'Build Vibe Design System'),system:normalizeDesignSystem(b.system||b.tokens||{},String(b.request||''))});store.addAuditLog({actorUserId:userId,action:'design_system.updated',resourceType:'project',resourceId:pid,metadata:{version:ds.version}});return sendJson(res,200,{ok:true,designSystem:ds,contract:designModeContract(ds.system)});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}}
   if(/^\/api\/projects\/[^/]+\/domains$/.test(u.pathname)&&method==='GET'){const pid=pathParam(u.pathname,'/api/projects/').replace(/\/domains$/,'');if(!store.getProject(pid,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});return sendJson(res,200,{ok:true,domains:store.listDomains(pid,userId)});}
@@ -377,7 +466,7 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
   if(/^\/api\/deployments\/[^/]+\/cancel$/.test(u.pathname)&&method==='POST'){const id=pathParam(u.pathname,'/api/deployments/').replace(/\/cancel$/,'');const row=store.getDeployment(id,userId);if(!row)return sendJson(res,404,{ok:false,error:'deployment_not_found'});try{requireProjectRole(row.project_id,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}try{return sendJson(res,200,{ok:true,result:await cancelDeployment({store,userId,deploymentId:id})})}catch(e){return sendJson(res,e.status||409,{ok:false,error:e.message})}}
   if(/^\/api\/projects\/[^/]+\/deployments$/.test(u.pathname)&&method==='GET'){const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});return sendJson(res,200,{ok:true,deployments:store.listDeployments(projectId,userId)})}
   if(/^\/api\/projects\/[^/]+\/artifact$/.test(u.pathname)&&method==='GET'){const projectId=pathParam(u.pathname,'/api/projects/');const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(projectId,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});try{const artifact=await prepareDeploymentArtifact({...project,repo_path:latest.workspace});return sendJson(res,200,{ok:true,artifact:{...artifact,root:undefined},verifiedRunId:latest.run.id})}catch(e){return sendJson(res,e.status||409,{ok:false,error:e.message})}}
-  if(/^\/api\/projects\/[^/]+\/deploy$/.test(u.pathname)&&method==='POST'){const projectId=pathParam(u.pathname,'/api/projects/');try{requireProjectRole(projectId,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(projectId,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});syncDeploymentContent(projectId,userId,latest.workspace);const b=await readJson(req,MAX_BODY),provider=String(b.provider||'');if(!provider)return sendJson(res,400,{ok:false,error:'provider_required'});try{const result=await deployProject({store,userId,project:{...project,repo_path:latest.workspace},provider,options:{...(b.options||{}),commitSha:b.commitSha||undefined,targetId:latest.run.target_id||'web-node',verification:{passed:true,scope:'verified-run',runId:latest.run.id}}});const indexNow=result.deployment.url?await notifyIndexNow(result.deployment.url,latest.workspace):{ok:false,skipped:true,reason:'deployment_url_missing'};store.addAuditLog({actorUserId:userId,action:'deployment.created',resourceType:'deployment',resourceId:result.deployment.id,metadata:{projectId:projectId,provider,status:result.deployment.status,indexNow:indexNow.ok?'submitted':(indexNow.reason||indexNow.error||'not_submitted')}});store.addEvidence(latest.run.id,'deployment',{provider,deploymentId:result.deployment.id,status:result.deployment.status,url:result.deployment.url,artifactFingerprint:result.deployment.metadata?.artifactFingerprint,indexNow:indexNow});return sendJson(res,200,{ok:true,deployment:result.deployment,indexNow,artifact:{framework:result.artifact.framework,packageManager:result.artifact.packageManager,buildCommand:result.artifact.buildCommand,outputDirectory:result.artifact.outputDirectory,serverRequired:result.artifact.deploymentMetadata.serverRequired},verifiedRunId:latest.run.id})}catch(e){return sendJson(res,e.status||409,{ok:false,error:e.message,deployment:{provider,status:'failed'}})}}
+  if(/^\/api\/projects\/[^/]+\/deploy$/.test(u.pathname)&&method==='POST'){const projectId=pathParam(u.pathname,'/api/projects/');try{requireProjectRole(projectId,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const latest=latestVerifiedWorkspace(projectId,userId);if(!latest)return sendJson(res,409,{ok:false,error:'verified_build_required'});await syncDeploymentContent(projectId,userId,latest.workspace);const b=await readJson(req,MAX_BODY),provider=String(b.provider||'');if(!provider)return sendJson(res,400,{ok:false,error:'provider_required'});try{const result=await deployProject({store,userId,project:{...project,repo_path:latest.workspace},provider,options:{...(b.options||{}),commitSha:b.commitSha||undefined,targetId:latest.run.target_id||'web-node',verification:{passed:true,scope:'verified-run',runId:latest.run.id}}});const indexNow=result.deployment.url?await notifyIndexNow(result.deployment.url,latest.workspace):{ok:false,skipped:true,reason:'deployment_url_missing'};store.addAuditLog({actorUserId:userId,action:'deployment.created',resourceType:'deployment',resourceId:result.deployment.id,metadata:{projectId:projectId,provider,status:result.deployment.status,indexNow:indexNow.ok?'submitted':(indexNow.reason||indexNow.error||'not_submitted')}});store.addEvidence(latest.run.id,'deployment',{provider,deploymentId:result.deployment.id,status:result.deployment.status,url:result.deployment.url,artifactFingerprint:result.deployment.metadata?.artifactFingerprint,indexNow:indexNow});return sendJson(res,200,{ok:true,deployment:result.deployment,indexNow,artifact:{framework:result.artifact.framework,packageManager:result.artifact.packageManager,buildCommand:result.artifact.buildCommand,outputDirectory:result.artifact.outputDirectory,serverRequired:result.artifact.deploymentMetadata.serverRequired},verifiedRunId:latest.run.id})}catch(e){return sendJson(res,e.status||409,{ok:false,error:e.message,deployment:{provider,status:'failed'}})}}
   if(/^\/api\/deployments\/[^/]+\/file$/.test(u.pathname)&&method==='GET'){const id=pathParam(u.pathname,'/api/deployments/').replace(/\/file$/,'');const d=store.getDeployment(id,userId);if(!d||d.provider!=='manual'||!d.deployment_id)return sendJson(res,404,{ok:false,error:'export_not_found'});const file=path.resolve(d.deployment_id),root=path.resolve(process.env.CODINGVIBES_EXPORT_ROOT||path.join(process.cwd(),'data','exports'));if(!(file===root||file.startsWith(root+path.sep))||!fs.existsSync(file))return sendJson(res,404,{ok:false,error:'export_file_not_found'});const stat=fs.statSync(file);res.writeHead(200,{'content-type':'application/zip','content-length':String(stat.size),'content-disposition':'attachment; filename="'+path.basename(file).replace(/[^a-zA-Z0-9._-]/g,'_')+'"','cache-control':'private, no-store'});fs.createReadStream(file).pipe(res);return}
   if(/^\/api\/projects\/[^/]+\/assets\/[^/]+\/attach$/.test(u.pathname)&&method==='POST'){
     const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5];try{requireProjectRole(projectId,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});const b=await readJson(req,MAX_BODY),collection=String(b.collection||''),recordId=String(b.recordId||''),mode=String(b.mode||asset.kind);let content=store.getProjectContent(projectId,userId);if(!content)return sendJson(res,409,{ok:false,error:'project_content_not_initialized'});let patch={};const ref={assetId:asset.id,url:asset.public_path,poster:'',alt:asset.name,scale:1};
@@ -388,21 +477,52 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     try{content=applyContentOperation(content,{type:'update',collection,id:recordId,patch},{kind:content.kit});content.meta={...(content.meta||{}),managed:true};content=store.upsertProjectContent(projectId,userId,content);syncProjectContent(projectId,userId,content);return sendJson(res,200,{ok:true,content,asset,attached:{collection,recordId,mode}});}catch(e){return sendJson(res,400,{ok:false,error:e.message});}
   }
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='GET'){
-    const projectId=pathParam(u.pathname,'/api/projects/');if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const kind=u.searchParams.get('kind')||'',role=u.searchParams.get('role')||'';const assets=store.listProjectAssets(projectId,userId).filter(a=>(!kind||a.kind===kind)&&(!role||a.role===role));return sendJson(res,200,{ok:true,assets});
+    const projectId=u.pathname.split('/')[3];if(!store.getProject(projectId,userId))return sendJson(res,404,{ok:false,error:'project_not_found'});const kind=u.searchParams.get('kind')||'',role=u.searchParams.get('role')||'';const assets=store.listProjectAssets(projectId,userId).filter(a=>(!kind||a.kind===kind)&&(!role||a.role===role)).map(projectAssetApiRecord);return sendJson(res,200,{ok:true,assets});
   }
   if(/^\/api\/projects\/[^/]+\/assets$/.test(u.pathname)&&method==='POST'){
-    const projectId=pathParam(u.pathname,'/api/projects/');try{requireProjectRole(projectId,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});
-    const name=String(req.headers['x-asset-name']||'asset'),mime=String(req.headers['content-type']||'application/octet-stream'),role=String(req.headers['x-asset-role']||'other');let metadata={};try{metadata=JSON.parse(String(req.headers['x-asset-meta']||'{}'))}catch{}
-    const sizeHeader=Number(req.headers['content-length']||0);if(!sizeHeader)return sendJson(res,400,{ok:false,error:'content_length_required'});const gate=validateAssetUpload({name,mime,size:sizeHeader});if(!gate.ok)return sendJson(res,gate.error==='asset_too_large'?413:400,{ok:false,error:gate.error});
-    const body=await readRawBuffer(req,MAX_ASSET_BYTES),size=body.length,finalGate=validateAssetUpload({name,mime,size});if(!finalGate.ok)return sendJson(res,finalGate.error==='asset_too_large'?413:400,{ok:false,error:finalGate.error});
-    const id=randomUUID(),safe=safeAssetName(name),filename=id+'-'+safe,absolute=resolveInside(project.repo_path,path.join('public','assets',filename),{forWrite:true});fs.mkdirSync(path.dirname(absolute),{recursive:true});fs.writeFileSync(absolute,body);const sha256=hashBuffer(body);const publicPath='/assets/'+filename;const record=store.createProjectAsset(projectId,userId,{id,name,mime,kind:assetType({name,mime}),role,size,sha256,publicPath,metadata});return sendJson(res,201,{ok:true,asset:makeAssetRecord({id:record.id,name:record.name,mime:record.mime,size:record.size,sha256:record.sha256,role:record.role,publicPath:record.public_path,metadata:record.metadata})});
-  }
+     const projectId=u.pathname.split('/')[3];try{requireProjectRole(projectId,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
+     const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});if(!project.repo_path)return sendJson(res,409,{ok:false,error:'project_workspace_missing'});
+     let name=String(req.headers['x-asset-name']||'asset');try{name=decodeURIComponent(name)}catch{}
+     const mime=String(req.headers['content-type']||'application/octet-stream'),role=String(req.headers['x-asset-role']||'other');
+     const metadataHeader=String(req.headers['x-asset-meta']||'{}');if(Buffer.byteLength(metadataHeader,'utf8')>8192)return sendJson(res,400,{ok:false,error:'asset_metadata_too_large'});
+     let rawMetadata;try{rawMetadata=JSON.parse(metadataHeader)}catch{return sendJson(res,400,{ok:false,error:'asset_metadata_invalid'})}
+     const checkedMetadata=normalizeAssetMetadata(rawMetadata);if(!checkedMetadata.ok)return sendJson(res,400,{ok:false,error:checkedMetadata.error});
+     const sizeHeader=Number(req.headers['content-length']||0);if(!Number.isSafeInteger(sizeHeader)||sizeHeader<=0)return sendJson(res,400,{ok:false,error:'content_length_required'});
+     const gate=validateAssetUpload({name,mime,size:sizeHeader,role});if(!gate.ok)return sendJson(res,gate.error==='asset_too_large'||gate.error==='svg_asset_too_large'?413:400,{ok:false,error:gate.error});
+     const body=await readRawBuffer(req,MAX_ASSET_BYTES),size=body.length,finalGate=validateAssetUpload({name,mime,size,role});if(!finalGate.ok)return sendJson(res,finalGate.error==='asset_too_large'||finalGate.error==='svg_asset_too_large'?413:400,{ok:false,error:finalGate.error});
+     const contentGate=validateAssetContent({name,mime,body});if(!contentGate.ok)return sendJson(res,400,{ok:false,error:contentGate.error});
+     const id=randomUUID(),safe=safeAssetName(name),filename=id+'-'+safe,publicPath='/assets/'+filename,absolute=resolveInside(project.repo_path,path.join('public','assets',filename),{forWrite:true}),sha256=hashBuffer(body),tempPath=absolute+'.tmp-'+randomUUID();
+     let objects=null,objectKey='projects/'+projectId+'/assets/'+id,localWritten=false,storedObject=false;
+     try{
+       objects=await getAssetObjectStore();
+       const stored=await objects.put({key:objectKey,body,contentType:finalGate.mime,metadata:{projectId,assetId:id,sha256}});
+       if(stored.sha256!==sha256||stored.size!==size)throw Object.assign(new Error('asset_storage_integrity_check_failed'),{status:503});
+       storedObject=true;fs.mkdirSync(path.dirname(absolute),{recursive:true});fs.writeFileSync(tempPath,body,{flag:'wx'});fs.renameSync(tempPath,absolute);localWritten=true;
+       const metadata={...checkedMetadata.value,storage:{provider:objects.provider,key:stored.key}};
+       const record=store.createProjectAsset(projectId,userId,{id,name:safe,mime:finalGate.mime,kind:finalGate.kind,role,size,sha256,publicPath,metadata});
+       store.addAuditLog({actorUserId:userId,action:'project.asset.uploaded',resourceType:'project_asset',resourceId:id,metadata:{projectId,kind:record.kind,role,size,sha256}});
+       return sendJson(res,201,{ok:true,asset:projectAssetApiRecord(record)});
+     }catch(error){
+       try{fs.rmSync(tempPath,{force:true})}catch{}
+       if(localWritten)try{fs.rmSync(absolute,{force:true})}catch{}
+       try{store.deleteProjectAsset(id,projectId,userId)}catch{}
+       if(storedObject&&objects)try{await objects.delete({key:objectKey})}catch{}
+       throw error;
+     }
+   }
   if(/^\/api\/projects\/[^/]+\/assets\/[^/]+$/.test(u.pathname)&&method==='DELETE'){
-    const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5];try{requireProjectRole(projectId,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const asset=store.deleteProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});const file=resolveInside(project.repo_path,path.join('public','assets',path.basename(asset.public_path)));try{if(fs.existsSync(file))fs.unlinkSync(file)}catch{}return sendJson(res,200,{ok:true,asset});
-  }
-  if(/^\/api\/projects\/[^/]+\/assets\/[^/]+\/file$/.test(u.pathname)&&method==='GET'){
-    const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5];const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});const file=path.resolve(project.repo_path,'public','assets',path.basename(asset.public_path));const assetRoot=path.resolve(project.repo_path,'public','assets');if(!(file===assetRoot||file.startsWith(assetRoot+path.sep))||!fs.existsSync(file))return sendJson(res,404,{ok:false,error:'asset_file_not_found'});const stat=fs.statSync(file);if(stat.size!==asset.size)return sendJson(res,409,{ok:false,error:'asset_size_changed'});res.writeHead(200,{'content-type':asset.mime,'content-length':String(stat.size),'content-disposition':'attachment; filename="'+safeAssetName(asset.name)+'"','cache-control':'private, no-store'});fs.createReadStream(file).pipe(res);return;
-  }
+     const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5];try{requireProjectRole(projectId,userId,'editor')}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}
+     const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});
+     const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});
+     if(asset.metadata?.storage?.key){try{const objects=await getAssetObjectStore();if(asset.metadata.storage.provider&&asset.metadata.storage.provider!==objects.provider)return sendJson(res,503,{ok:false,error:'asset_storage_backend_mismatch'});await objects.delete({key:asset.metadata.storage.key})}catch(e){return sendJson(res,e.status||503,{ok:false,error:'asset_storage_delete_failed'})}}
+     const filename=projectAssetFilename(asset.public_path);if(filename&&project.repo_path){try{const file=resolveInside(project.repo_path,path.join('public','assets',filename));fs.rmSync(file,{force:true})}catch{}}
+     store.deleteProjectAsset(assetId,projectId,userId);store.addAuditLog({actorUserId:userId,action:'project.asset.deleted',resourceType:'project_asset',resourceId:assetId,metadata:{projectId}});
+     return sendJson(res,200,{ok:true,asset:projectAssetApiRecord(asset)});
+   }
+  if(/^\/api\/projects\/[^/]+\/assets\/[^/]+\/(?:file|preview)$/.test(u.pathname)&&method==='GET'){
+     const parts=u.pathname.split('/'),projectId=parts[3],assetId=parts[5],inline=parts[6]==='preview';const project=store.getProject(projectId,userId);if(!project)return sendJson(res,404,{ok:false,error:'project_not_found'});const asset=store.getProjectAsset(assetId,projectId,userId);if(!asset)return sendJson(res,404,{ok:false,error:'asset_not_found'});
+     try{const body=await readProjectAssetBuffer(project,asset);if(!body)return sendJson(res,404,{ok:false,error:'asset_file_not_found'});sendProjectAsset(res,asset,body,{inline});return}catch(e){return sendJson(res,e.status||503,{ok:false,error:e.message})}
+   }
   if(/^\/api\/runs\/[^/]+\/visual-baseline$/.test(u.pathname)&&method==='POST'){
     const runId=pathParam(u.pathname,'/api/runs/').replace(/\/visual-baseline$/,'');const run=store.getRun(runId,userId);if(!run)return sendJson(res,404,{ok:false,error:'not_found'});const runSession=store.getSession(run.session_id,userId);if(!runSession)return sendJson(res,404,{ok:false,error:'session_not_found'});try{requireProjectRole(runSession.project_id,userId,'editor');}catch(e){return sendJson(res,e.status||403,{ok:false,error:e.message})}const b=await readJson(req,MAX_BODY);if(!b.confirmed)return sendJson(res,400,{ok:false,error:'explicit_confirmation_required'});const session=store.getSession(run.session_id,userId),projectId=session?.project_id;if(!projectId)return sendJson(res,409,{ok:false,error:'project_not_found'});const verification=store.listEvidence(runId).filter(x=>x.type==='verification').at(-1)?.payload;const results=verification?.browser?.results||[];if(!results.length)return sendJson(res,409,{ok:false,error:'no_visual_results'});
     const root=path.resolve(process.env.CODINGVIBES_VISUAL_BASELINE_ROOT||path.join(process.cwd(),'data','visual-baselines'),projectId);fs.mkdirSync(root,{recursive:true});const saved=[];
@@ -517,11 +637,31 @@ function latestVerifiedWorkspace(projectId,userId){
   }
   return null;
 }
-function syncDeploymentContent(projectId,userId,workspace){
+async function syncDeploymentContent(projectId,userId,workspace){
   const project=store.getProject(projectId,userId);if(!project||!workspace)return;
   const content=store.getProjectContent(projectId,userId);if(content)writeProjectContentFile({...project,repo_path:workspace},content);
   const src=path.join(project.repo_path||'','public','assets'),dst=path.join(workspace,'public','assets');
-  if(fs.existsSync(src)){fs.rmSync(dst,{recursive:true,force:true});fs.cpSync(src,dst,{recursive:true})}
+  fs.mkdirSync(dst,{recursive:true});
+  if(fs.existsSync(src)&&path.resolve(src)!==path.resolve(dst))fs.cpSync(src,dst,{recursive:true,force:true});
+  for(const asset of store.listProjectAssets(projectId,userId)){
+    const filename=projectAssetFilename(asset.public_path);if(!filename)throw new Error('asset_public_path_invalid:'+asset.id);
+    const destination=resolveInside(workspace,path.join('public','assets',filename),{forWrite:true});
+    const desired=await readProjectAssetBuffer(project,asset);
+    if(!desired)throw new Error('project_asset_missing:'+asset.id);
+    let current=null;try{current=fs.readFileSync(destination)}catch{}
+    if(!current||current.length!==asset.size||hashBuffer(current)!==asset.sha256){fs.mkdirSync(path.dirname(destination),{recursive:true});fs.writeFileSync(destination,desired)}
+  }
+  const scenePath=path.join(workspace,'public','content','scene.json');
+  const saved=store.getSceneDocument(projectId,userId);
+  if(saved?.scene){
+    const checked=validateSceneDocument(saved.scene);
+    if(checked.ok){
+      const published=structuredClone(checked.value);
+      for(const node of published.nodes)if(typeof node.assetUrl==='string'&&node.assetUrl.startsWith('blob:'))delete node.assetUrl;
+      fs.mkdirSync(path.dirname(scenePath),{recursive:true});
+      fs.writeFileSync(scenePath,JSON.stringify(published,null,2),'utf8');
+    }else fs.rmSync(scenePath,{force:true});
+  }else fs.rmSync(scenePath,{force:true});
 }
 
 export const server=createAppServer();
