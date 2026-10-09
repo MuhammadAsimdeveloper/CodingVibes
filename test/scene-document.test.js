@@ -45,7 +45,7 @@ test('applies a typed edit and emits a reversible change record without mutating
   assert.equal(result.document.nodes[1].color, '#3b82f6');
   assert.equal(result.change.before, '#ffffff');
   assert.equal(result.undo.value, '#ffffff');
-  assert.equal(original.nodes[1].color, '#ffffff');
+  assert.equal(original.nodes[1].color, '#ffffff');\n  const withNewField = applySceneOperation(original, { op: 'set', nodeId: 'hero', field: 'text', value: 'Hello' });\n  assert.equal(withNewField.ok, true);\n  const undone = applySceneOperation(withNewField.document, withNewField.undo);\n  assert.equal(undone.ok, true);\n  assert.equal(Object.hasOwn(undone.document.nodes[1], 'text'), false);
 });
 
 test('rejects arbitrary operation paths, script-like values, and unknown nodes', () => {
