@@ -77,8 +77,26 @@ async function start(){
       const hero=new Mesh(new BoxGeometry(4,4,4),makeMat(0x6a7dff,.38));hero.position.y=2;group.add(hero);
     }
 
-    let loadedModel=null,attachedTexture=null;
+    let loadedModel=null,attachedTexture=null,modelLoadGeneration=0;
     const originalMaterials=new WeakMap(),appliedMaterials=new WeakMap();
+    function disposeModelResources(root){
+      if(!root)return;
+      const geometries=new Set(),materials=new Set(),textures=new Set();
+      root.traverse(node=>{
+        if(node.geometry)geometries.add(node.geometry);
+        const list=Array.isArray(node.material)?node.material:(node.material?[node.material]:[]);
+        for(const material of list){
+          if(!material||materials.has(material))continue;
+          materials.add(material);
+          for(const value of Object.values(material)){
+            if(value?.isTexture&&value!==attachedTexture)textures.add(value);
+          }
+        }
+      });
+      for(const texture of textures)texture.dispose?.();
+      for(const material of materials)material.dispose?.();
+      for(const geometry of geometries)geometry.dispose?.();
+    }
     function restoreAppliedMaterials(root){
       root?.traverse(node=>{
         if(!node.isMesh||!appliedMaterials.has(node))return;
@@ -122,15 +140,28 @@ async function start(){
       },undefined,()=>{if(fallback)fallback.textContent='Image texture could not be loaded. Try a PNG, JPEG or WebP image.';});
     }
     async function loadModel(source,label='model'){
+      const loadGeneration=++modelLoadGeneration;
+      const ownedUrl=typeof source==='string'?'':URL.createObjectURL(source);
+      const url=ownedUrl||source;
       try{
-        restoreAppliedMaterials(loadedModel||group);
-        const url=typeof source==='string'?source:URL.createObjectURL(source);const object=await new GLTFLoader().loadAsync(url);if(typeof source!=='string')setTimeout(()=>URL.revokeObjectURL(url),0);
-        if(loadedModel)scene.remove(loadedModel);loadedModel=object.scene;loadedModel.position.y=0;
+        const object=await new GLTFLoader().loadAsync(url);
+        if(disposed||loadGeneration!==modelLoadGeneration){disposeModelResources(object.scene);return;}
+        if(loadedModel){
+          restoreAppliedMaterials(loadedModel);
+          scene.remove(loadedModel);
+          disposeModelResources(loadedModel);
+        }
+        loadedModel=object.scene;loadedModel.position.y=0;
         const box3=new Box3().setFromObject(loadedModel);const size=box3.getSize(new Vector3()),maxSide=Math.max(size.x,size.y,size.z)||1;loadedModel.scale.setScalar(6/maxSide);loadedModel.position.y=Math.max(0,-box3.min.y*loadedModel.scale.y);scene.add(loadedModel);
         if(attachedTexture)applyTextureToObject(loadedModel,attachedTexture);
         if(fallback)fallback.textContent='Loaded '+label;
         scheduleRender();
-      }catch(e){if(fallback)fallback.textContent='Model load failed; showing procedural fallback.';console.error(e)}
+      }catch(e){
+        if(!disposed&&loadGeneration===modelLoadGeneration&&fallback)fallback.textContent='Model load failed; showing procedural fallback.';
+        if(!disposed&&loadGeneration===modelLoadGeneration)console.error(e);
+      }finally{
+        if(ownedUrl)URL.revokeObjectURL(ownedUrl);
+      }
     }
 
     let tourTimer=null;
@@ -246,7 +277,7 @@ async function start(){
       disposed=true;stopRender();clearInterval(tourTimer);sceneObserver?.disconnect();
       controls.removeEventListener('change',scheduleRender);document.removeEventListener('visibilitychange',handleVisibility);
       removeEventListener('resize',resize);if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);if(localImageUrl)URL.revokeObjectURL(localImageUrl);if(recordingUrl)URL.revokeObjectURL(recordingUrl);
-      restoreAppliedMaterials(loadedModel||group);if(attachedTexture)attachedTexture.dispose();
+      restoreAppliedMaterials(loadedModel||group);if(loadedModel){scene.remove(loadedModel);disposeModelResources(loadedModel);loadedModel=null;}if(attachedTexture)attachedTexture.dispose();
       renderer.dispose();controls.dispose?.();
     },{once:true});
     scheduleRender();
