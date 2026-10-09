@@ -98,3 +98,29 @@ test('generated 3D website exposes accessible view controls and bounded renderin
   const checked=spawnSync(process.execPath,['--check',runtimePath],{encoding:'utf8'});
   assert.equal(checked.status,0,checked.stderr||checked.stdout);
 });
+
+test('generated sites apply validated project design tokens and allowed text edits',()=>{
+  const spec=analyzeRequirements('Create a professional business website');
+  spec.styling={...(spec.styling||{}),designSystem:{
+    colors:{primary:'#123abc',accent:'#abcdef',background:'#101010',surface:'#202020',text:'#fefefe',muted:'#888888',border:'#333333'},
+    typography:{heading:'Georgia, serif',body:'Arial, sans-serif'},
+    layout:{maxWidth:1040},radius:{md:18},motion:{durationMs:500},
+    visualEdits:[
+      {selector:'h1, h2, h3',css:{color:'#ff00aa',fontWeight:'700'}},
+      {selector:'body',css:{backgroundColor:'#445566'}},
+      {selector:'body;body',css:{color:'red;display:none'}},
+      {selector:'body',css:{backgroundImage:'url(javascript:alert(1))',color:'url(javascript:alert(1))'}}
+    ]
+  }};
+  const plan=generateProject(spec);
+  const css=plan.files.find(file=>file.path==='public/styles.css').content;
+  assert.match(css,/--cv-color-primary:#123abc/);
+  assert.match(css,/--cv-font-heading:Georgia, serif/);
+  assert.match(css,/--cv-content-width:1040px/);
+  assert.match(css,/--cv-radius-md:18px/);
+  assert.match(css,/--cv-motion-duration:500ms/);
+  assert.match(css,/h1, h2, h3\\{color:#ff00aa;font-weight:700\\}/);
+  assert.match(css,/body\\{background-color:#445566\\}/);
+  assert.doesNotMatch(css,/body;body/);
+  assert.doesNotMatch(css,/javascript:alert/);
+});
