@@ -59,3 +59,12 @@ No local npm command was executed in this session because the repository is acce
 - Live target-specific deployment/browser/native artifact evidence for each advertised target.
 - Live third-party credentials for enabled payment/deployment/provider integrations.
 - Three.js CDN reliance for exported 3D products remains a portability/performance improvement item.
+
+
+## Follow-up checkpoint — Three.js walkthrough upload security (2026-10-10)
+
+The earlier audit was written against c4949625 and must not be read as the current head. The current implementation branch adds a test-first upload validation fix to src/templates/runtime/three-experience.js: only video/mp4, video/webm and video/ogg are accepted; empty or over-250-MiB files are rejected; browser playback support is checked; and the preview Blob uses the validated MIME type. The regression test in test/three-experience-runtime.test.js was committed before the implementation and failed on the pre-fix source.
+
+The implementation commit fab79897aca9ed55992635e61d01b3ea7ec252ef passed Build Vibe CI, CodeQL and Dependency Review. CI covered unit tests, coverage, static/release checks, SEO, server and browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security preflight, scaleout and launch readiness. The diagnostic CodeQL workflow succeeded without disabling findings. A green CodeQL workflow run is not a guarantee that every historical alert in the repository alert history has been dismissed.
+
+The PR remains open and unmerged. Repository CI does not prove production deployment, native binaries, live MiroFish, managed database/storage/backup services, production secrets, domain/TLS or live third-party credentials. The next engineering priority remains a real governed Tool Fabric browser adapter or a concrete unfinished P1 utility, chosen only after checking the canonical contracts and available test runtime.
