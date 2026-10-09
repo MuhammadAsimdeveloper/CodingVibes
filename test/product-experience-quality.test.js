@@ -98,7 +98,7 @@ test('generated 3D website exposes accessible view controls and bounded renderin
   assert.match(html,/id="experienceFallback"[^>]+role="status"[^>]+aria-live="polite"/);
   assert.ok(runtime.includes("prefers-reduced-motion: reduce"));
   assert.match(runtime,/catch\(e\)\{\s*if\(fallback\)fallback\.textContent='3D unavailable\. Responsive content remains usable\.'/,'remote module or WebGL failure must expose a usable content fallback');
-  assert.match(runtime,/const \[\{Scene,[\s\S]*?\]= await Promise\.all\(\[/,'Three.js and add-on module loading must remain inside the guarded startup path');
+  assert.match(runtime,/const \[\{Scene,[\s\S]*?\]\s*=\s*await Promise\.all\(\[/,'Three.js and add-on module loading must remain inside the guarded startup path');
   assert.match(runtime,/if\(!canvas\)return;/,'runtime must remain safe on pages without a 3D canvas');
   assert.ok(runtime.includes('new TextureLoader()'));
   assert.ok(runtime.includes('applyTextureToObject(loadedModel,attachedTexture)'));
