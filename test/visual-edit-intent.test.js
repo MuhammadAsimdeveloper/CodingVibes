@@ -10,3 +10,9 @@ test('targeted design language parses common visual edits',()=>{
  assert.ok(r.operations.some(x=>x.css?.fontWeight==='700'));
  assert.ok(r.operations.some(x=>x.css?.borderRadius));
 });
+
+test('visual edits target background safely and reject unsupported requests',()=>{
+ const background=classifyAssistantRequest('make the page background blue');
+ assert.ok(background.operations.some(x=>x.css?.backgroundColor==='#3b82f6'));
+ assert.equal(classifyAssistantRequest('write a newsletter').intent,'unclassified');
+});
