@@ -566,6 +566,17 @@ function syncDeploymentContent(projectId,userId,workspace){
   const content=store.getProjectContent(projectId,userId);if(content)writeProjectContentFile({...project,repo_path:workspace},content);
   const src=path.join(project.repo_path||'','public','assets'),dst=path.join(workspace,'public','assets');
   if(fs.existsSync(src)){fs.rmSync(dst,{recursive:true,force:true});fs.cpSync(src,dst,{recursive:true})}
+  const scenePath=path.join(workspace,'public','content','scene.json');
+  const saved=store.getSceneDocument(projectId,userId);
+  if(saved?.scene){
+    const checked=validateSceneDocument(saved.scene);
+    if(checked.ok){
+      const published=structuredClone(checked.value);
+      for(const node of published.nodes)if(typeof node.assetUrl==='string'&&node.assetUrl.startsWith('blob:'))delete node.assetUrl;
+      fs.mkdirSync(path.dirname(scenePath),{recursive:true});
+      fs.writeFileSync(scenePath,JSON.stringify(published,null,2),'utf8');
+    }else fs.rmSync(scenePath,{force:true});
+  }else fs.rmSync(scenePath,{force:true});
 }
 
 export const server=createAppServer();
