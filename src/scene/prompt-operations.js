@@ -53,7 +53,7 @@ function resolveTarget(text, nodes) {
     const matches = nodes.filter(node => node.name?.toLowerCase() === name || node.id.toLowerCase() === name);
     return matches.length === 1 ? matches[0] : null;
   }
-  const named = nodes.filter(node => node.name && new RegExp(`\\\\b${escapeRegExp(node.name.toLowerCase())}\\\\b`).test(text));
+  const named = nodes.filter(node => node.name && new RegExp(`\\b${escapeRegExp(node.name.toLowerCase())}\\b`).test(text));
   if (named.length === 1) return named[0];
   if (named.length > 1) return null;
   if (/\b(selected|this|it)\b/.test(text) && nodes.length === 1) return nodes[0];
