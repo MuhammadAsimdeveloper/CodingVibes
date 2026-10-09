@@ -44,7 +44,7 @@ test('server public and authenticated route smoke covers launch control plane',a
   const sessionCookie=cookie.split(';')[0];
 
   const authPaths=[
-    '/api/auth/me','/api/billing','/api/features','/api/workspaces','/api/cloud/catalog','/api/connectors',
+    '/api/auth/me','/api/billing','/api/features','/api/builder/ai-studio','/api/workspaces','/api/cloud/catalog','/api/connectors',
     '/api/ai/providers','/api/model/status','/api/projects','/api/builder/research','/api/launch/status',
     '/api/deployment/providers','/api/targets/availability','/api/targets','/api/integrations','/api/ai/settings',
     '/api/ai/tokens','/api/fleet'
@@ -53,6 +53,13 @@ test('server public and authenticated route smoke covers launch control plane',a
     const r=await req(p,{headers:{cookie:sessionCookie}});
     assert.notEqual(r.response.status,500,p);
   }
+
+  const billing=await req('/api/billing',{headers:{cookie:sessionCookie}});
+  assert.deepEqual(billing.body.plan.websiteQuotas,{basic:3,threeD:1,animated:1});
+  assert.equal(billing.body.plan.nativeApps,false);
+  const aiStudio=await req('/api/builder/ai-studio',{headers:{cookie:sessionCookie}});
+  assert.equal(aiStudio.response.status,200);
+  assert.ok((aiStudio.body.features||[]).some(x=>x.id==='annotation_mode'));
 
   const project=await req('/api/projects',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({name:'Smoke Product'})});
   assert.equal(project.response.status,201);

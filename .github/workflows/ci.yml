@@ -1,7 +1,7 @@
 name: Build Vibe CI
 on:
   push:
-    branches: [main, master, codex/launch-verify-final, codex/final-source-13]
+    branches: [main, master, codex/launch-verify-final, codex/final-source-13, phase-14-ai-studio-postgres]
   pull_request:
     branches: [main, master]
 permissions:
@@ -15,6 +15,20 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: buildvibe
+          POSTGRES_PASSWORD: buildvibe
+          POSTGRES_DB: buildvibe
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U buildvibe -d buildvibe"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -44,6 +58,13 @@ jobs:
       - run: CODINGVIBES_RETENTION_DRY_RUN=true npm run ops:retention
       - run: npm run security:check
       - run: npm run scaleout:doctor
+      - name: Verify PostgreSQL bootstrap
+        env:
+          NODE_ENV: test
+          CODINGVIBES_DB_BACKEND: postgres
+          DATABASE_URL: postgresql://buildvibe:buildvibe@127.0.0.1:5432/buildvibe
+          CODINGVIBES_PG_SSL_MODE: disable
+        run: npm run postgres:setup
       - name: Run launch readiness
         env:
           NODE_ENV: development

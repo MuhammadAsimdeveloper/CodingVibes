@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
+import {buildQuotaUsage} from '../billing/build-quota.js';
 
 const WORKSPACE_ROLE_INTERNALS=['owner','admin','editor','reviewer','viewer'];
 
@@ -87,7 +88,8 @@ export class Store{
   getMediaJob(id,userId){return this.db.prepare('SELECT * FROM media_jobs WHERE id=? AND user_id=?').get(id,userId)||null;}
   updateMediaJob(id,userId,patch={}){const current=this.getMediaJob(id,userId);if(!current)throw new Error('Media job not found');const allowed=['status','runway_task_id','source_url','stored_path','size','error'];const fields=[],vals=[];for(const k of allowed)if(k in patch){fields.push(`${k}=?`);vals.push(patch[k]);}if(!fields.length)return current;fields.push('updated_at=?');vals.push(this.now(),id,userId);this.db.prepare(`UPDATE media_jobs SET ${fields.join(',')} WHERE id=? AND user_id=?`).run(...vals);return this.getMediaJob(id,userId);}
   monthlyUsage(userId,period){const key=String(period);const rows=this.db.prepare("SELECT COUNT(*) runs FROM runs WHERE user_id=? AND substr(created_at,1,7)=?").get(userId,key);const tokens=this.db.prepare("SELECT COALESCE(SUM(input_tokens+output_tokens),0) tokens FROM usage_events WHERE user_id=? AND substr(created_at,1,7)=?").get(userId,key);return {period:key,runs:Number(rows?.runs||0),tokens:Number(tokens?.tokens||0)};}
-  createAuthSession(userId,days=7){const id=randomUUID(),now=this.now(),expires=new Date(Date.now()+days*864e5).toISOString();this.db.prepare('DELETE FROM auth_sessions WHERE expires_at<=?').run(now);this.db.prepare('INSERT INTO auth_sessions VALUES (?,?,?,?)').run(id,userId,expires,now);return {id,expiresAt:expires};}
+     monthlyBuildQuotaUsage(userId,period){const key=String(period);const rows=this.db.prepare("SELECT request,target_id FROM runs WHERE user_id=? AND substr(created_at,1,7)=?").all(userId,key);return buildQuotaUsage(rows);}
+createAuthSession(userId,days=7){const id=randomUUID(),now=this.now(),expires=new Date(Date.now()+days*864e5).toISOString();this.db.prepare('DELETE FROM auth_sessions WHERE expires_at<=?').run(now);this.db.prepare('INSERT INTO auth_sessions VALUES (?,?,?,?)').run(id,userId,expires,now);return {id,expiresAt:expires};}
   getAuthSession(id){return this.db.prepare('SELECT a.*,u.email FROM auth_sessions a JOIN users u ON u.id=a.user_id WHERE a.id=? AND a.expires_at>?').get(id,this.now())||null;}
   deleteAuthSession(id){this.db.prepare('DELETE FROM auth_sessions WHERE id=?').run(id);}
   createProject(userId,{name}){const id=randomUUID(),now=this.now(),slug=`${String(name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50)||'project'}-${id.slice(0,8)}`,workspace=this.ensurePersonalWorkspace(userId,String(name));this.db.prepare('INSERT INTO projects(id,user_id,name,slug,repo_path,workspace_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)').run(id,userId,String(name),slug,null,workspace.id,now,now);return this.getProject(id,userId);}
