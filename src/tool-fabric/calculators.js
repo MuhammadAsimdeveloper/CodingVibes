@@ -94,8 +94,10 @@ function breakEven(input) {
   const variableCostPerUnit = number(input, 'variableCostPerUnit', {min:0,max:1e9});
   if (pricePerUnit <= variableCostPerUnit) invalid('Price per unit must be greater than variable cost per unit.');
   const contributionMargin = money(pricePerUnit - variableCostPerUnit);
-  const exactUnitsToBreakEven = rounded(fixedCosts / contributionMargin, 6);
-  return {fixedCosts,pricePerUnit,variableCostPerUnit,contributionMargin,exactUnitsToBreakEven,unitsToBreakEven:Math.ceil(exactUnitsToBreakEven - 1e-12)};
+  const rawUnitsToBreakEven = fixedCosts / contributionMargin;
+  const exactUnitsToBreakEven = rounded(rawUnitsToBreakEven, 6);
+  const roundingTolerance = Number.EPSILON * Math.max(1, Math.abs(rawUnitsToBreakEven)) * 8;
+  return {fixedCosts,pricePerUnit,variableCostPerUnit,contributionMargin,exactUnitsToBreakEven,unitsToBreakEven:Math.ceil(rawUnitsToBreakEven - roundingTolerance)};
 }
 
 function compoundInterest(input) {
