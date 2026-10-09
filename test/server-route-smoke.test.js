@@ -143,8 +143,9 @@ test('server public and authenticated route smoke covers launch control plane',a
   const localAssetPath=path.join(projectRow.repo_path,'public','assets',path.basename(asset.publicPath));
   fs.rmSync(localAssetPath,{force:true});
   const restoredPreview=await fetch(origin+'/api/projects/'+pid+'/assets/'+asset.id+'/preview',{headers:{cookie:sessionCookie}});
-  assert.equal(restoredPreview.status,200,'media should fall back to the persistent object store when the workspace file is absent');
-  assert.equal((await restoredPreview.arrayBuffer()).byteLength,png.length);
+  const restoredBytes=Buffer.from(await restoredPreview.arrayBuffer());
+  assert.equal(restoredPreview.status,200,'media should fall back to the persistent object store when the workspace file is absent: '+restoredBytes.toString('utf8'));
+  assert.equal(restoredBytes.byteLength,png.length);
   const corrupt=await req('/api/projects/'+pid+'/assets',{method:'POST',headers:{cookie:sessionCookie,'content-type':'image/png','x-asset-name':'fake.png'},body:Buffer.from('<html>not an image</html>')});
   assert.equal(corrupt.response.status,400);
   assert.equal(corrupt.body.error,'asset_content_mismatch');
