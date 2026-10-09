@@ -267,3 +267,109 @@ test('accessibility audit does not treat script-only button content as an access
   assert.ok(result.output.findings.some(item => item.code === 'button_name_missing'),
     'script-only content must not count as visible button text');
 });
+
+
+test('P1 local text utilities publish explicit contracts before execution is enabled', () => {
+  const expected = [
+    'text.count',
+    'text.case.convert',
+    'text.lines.sort',
+    'text.duplicates.remove',
+    'text.replace',
+    'text.diff',
+    'text.whitespace.clean',
+    'text.slug.generate',
+    'text.unicode.inspect'
+  ];
+  const contracts = listToolContracts();
+  for (const id of expected) {
+    assert.ok(getToolContract(id), 'missing contract: ' + id);
+    assert.ok(contracts.find(contract => contract.id === id), 'missing catalog entry: ' + id);
+    const contract = getToolContract(id);
+    assert.equal(contract.executionMode, 'local');
+    assert.equal(contract.networkRequired, false);
+    assert.equal(contract.riskClass, 'low');
+  }
+});
+
+test('text.count counts Unicode code points, UTF-8 bytes, words, lines and paragraphs', async () => {
+  const result = await runTool('text.count', {text:'Build 🌱\\nVibe'});
+  assert.equal(result.status, 'COMPLETED');
+  assert.deepEqual(result.output, {
+    characters: 11,
+    utf16CodeUnits: 12,
+    utf8Bytes: 15,
+    words: 3,
+    lines: 2,
+    paragraphs: 2
+  });
+  assert.equal((await runTool('text.count', {text:''})).output.words, 0);
+});
+
+test('text.case.convert supports deterministic named casing modes', async () => {
+  const source='Build Vibe — ready, fast!';
+  assert.equal((await runTool('text.case.convert',{text:source,mode:'kebab'})).output.text,'build-vibe-ready-fast');
+  assert.equal((await runTool('text.case.convert',{text:'hello brave world',mode:'camel'})).output.text,'helloBraveWorld');
+  assert.equal((await runTool('text.case.convert',{text:'hello brave world',mode:'pascal'})).output.text,'HelloBraveWorld');
+  assert.equal((await runTool('text.case.convert',{text:'hello brave world',mode:'constant'})).output.text,'HELLO_BRAVE_WORLD');
+  assert.equal((await runTool('text.case.convert',{text:'hELLO WORLD',mode:'title'})).output.text,'Hello World');
+  assert.equal((await runTool('text.case.convert',{text:source,mode:'unsupported'})).status,'INVALID_INPUT');
+});
+
+test('text.lines.sort and text.duplicates.remove preserve documented order and comparison rules', async () => {
+  const sorted=await runTool('text.lines.sort',{text:'beta\\nAlpha\\ngamma',order:'asc',caseSensitive:false});
+  assert.equal(sorted.status,'COMPLETED');
+  assert.equal(sorted.output.text,'Alpha\\nbeta\\ngamma');
+  const unique=await runTool('text.duplicates.remove',{text:'Apple\\napple\\nPear\\nApple',caseSensitive:false});
+  assert.equal(unique.status,'COMPLETED');
+  assert.equal(unique.output.text,'Apple\\nPear');
+  assert.equal(unique.output.removedCount,2);
+  assert.equal(unique.output.lineCount,2);
+});
+
+test('text.replace treats the search text literally and caps the resulting output', async () => {
+  const result=await runTool('text.replace',{text:'a.*b a.*b AxxB',search:'.*',replace:'[literal]'});
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.text,'a[literal]b a[literal]b AxxB');
+  assert.equal(result.output.replacements,2);
+  assert.equal((await runTool('text.replace',{text:'abc',search:'',replace:'x'})).status,'INVALID_INPUT');
+});
+
+test('text.diff returns a bounded line diff without interpreting content as code', async () => {
+  const result=await runTool('text.diff',{before:'one\\ntwo\\n<script>alert(1)</script>',after:'one\\nthree\\n<script>alert(1)</script>\\nfour'});
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.additions,2);
+  assert.equal(result.output.removals,1);
+  assert.match(result.output.diff,/\\+ three/);
+  assert.match(result.output.diff,/\\- two/);
+  assert.match(result.output.diff,/\\+ four/);
+  const tooLarge=await runTool('text.diff',{before:Array(501).fill('a').join('\\n'),after:'small'});
+  assert.equal(tooLarge.status,'INPUT_TOO_LARGE');
+});
+
+test('text.whitespace.clean and text.slug.generate normalize content with explicit modes', async () => {
+  const cleaned=await runTool('text.whitespace.clean',{text:'  Hello  \\r\\n\\r\\n\\r\\n  world  \\r\\n',mode:'normalize'});
+  assert.equal(cleaned.status,'COMPLETED');
+  assert.equal(cleaned.output.text,'Hello\\n\\nworld');
+  assert.equal((await runTool('text.whitespace.clean',{text:'a   b\\t c',mode:'collapse'})).output.text,'a b c');
+  assert.equal((await runTool('text.slug.generate',{text:'Crème Brûlée & Build Vibe!'})).output.slug,'creme-brulee-build-vibe');
+  assert.equal((await runTool('text.slug.generate',{text:'!!!'})).status,'INVALID_INPUT');
+});
+
+test('text.unicode.inspect reports Unicode scalar values and UTF-16 offsets safely', async () => {
+  const result=await runTool('text.unicode.inspect',{text:'A🌱é'});
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.codePointCount,3);
+  assert.equal(result.output.utf16CodeUnits,4);
+  assert.equal(result.output.utf8Bytes,7);
+  assert.deepEqual(result.output.codePoints.map(point=>point.codePoint),['U+0041','U+1F331','U+00E9']);
+  assert.deepEqual(result.output.codePoints.map(point=>point.utf16Offset),[0,1,3]);
+});
+
+test('text utilities reject non-string input and never mark external execution', async () => {
+  const invalid=await runTool('text.count',{text:123});
+  assert.equal(invalid.status,'INVALID_INPUT');
+  assert.equal(invalid.networkUsed,false);
+  const valid=await runTool('text.slug.generate',{text:'Build Vibe'});
+  assert.equal(valid.provenance.networkUsed,false);
+});
