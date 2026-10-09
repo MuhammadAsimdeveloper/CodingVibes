@@ -90,10 +90,9 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
       let object;
       if (node.type === 'group') object = new Group();
       else if (node.type === 'light') {
-        const intensity = Math.max(0, Math.min(10, Number(node.intensity ?? 1.5)));
-        object = node.lightType === 'spot' && typeof SpotLight === 'function'
-          ? new SpotLight(node.color || '#ffffff', intensity)
-          : typeof PointLight === 'function' ? new PointLight(node.color || '#ffffff', intensity) : new Group();
+        object = typeof PointLight === 'function'
+          ? new PointLight(node.color || '#ffffff', 1.5)
+          : typeof SpotLight === 'function' ? new SpotLight(node.color || '#ffffff', 1.5) : new Group();
       } else {
         const mediaNode = node.type === 'image' || node.type === 'video';
         const material = new MeshStandardMaterial({
@@ -105,8 +104,8 @@ export function createScenePreviewRenderer({ canvas, THREE, onStatus = () => {} 
         });
         object = new Mesh(node.type === 'text' ? new PlaneGeometry(2.8, 0.7) : geometryFor(node), material);
         if (node.type === 'image') attachAssetTexture(node, material);
-        if (node.type === 'video' && node.assetUrl && typeof document.createElement === 'function' && typeof VideoTexture === 'function') {
-          const video = document.createElement('video');
+        if (node.type === 'video' && node.assetUrl && typeof globalThis.document?.createElement === 'function' && typeof VideoTexture === 'function') {
+          const video = globalThis.document.createElement('video');
           video.crossOrigin = 'anonymous'; video.muted = true; video.loop = true; video.playsInline = true; video.preload = 'metadata'; video.src = node.assetUrl;
           mediaElements.add(video);
           const texture = new VideoTexture(video);
