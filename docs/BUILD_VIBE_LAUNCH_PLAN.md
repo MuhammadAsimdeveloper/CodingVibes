@@ -1052,3 +1052,16 @@ These rankings measure relevance to Build Vibe's product direction, not an absol
 - Three.js is loaded from the existing pinned CDN version. If WebGL or network loading fails, scene editing and JSON export remain available with an explicit status message.
 
 **Scope boundary:** this is a local interactive preview of the renderer-neutral scene document. It does not yet patch the generated product's live Three.js runtime, persist the scene to a project revision, upload durable image/video/model assets, or prove cross-browser rendering. Those remain separate acceptance gates.
+
+
+## Phase 47 — Durable per-project scene documents
+
+**Implemented on the reconstruction branch; CI and API verification are pending on the new head.**
+
+- Added the `scene_documents` SQLite table with one validated JSON scene per project, a monotonic revision, and timestamps. Existing databases receive this table through the normal idempotent migration.
+- Added authenticated `GET /api/projects/:id/scene` and editor-authorized `PUT /api/projects/:id/scene` endpoints. Reads require project viewer access; writes require editor access.
+- Server writes validate every submitted scene against the renderer-neutral scene schema before storage. Writes can include `expectedRevision`; stale revisions return HTTP 409 rather than silently overwriting newer edits.
+- Added tests for persistence after reopening the database, monotonically increasing revisions, stale-write conflict protection, and project access boundaries.
+- Connected the Design Mode scene editor to the active project: it can load a saved scene and explicitly save to the project. Unsaved edits are tracked locally; revision conflicts require a reload before retrying.
+
+**Scope boundary:** scene document persistence is currently implemented on the SQLite Store. It does not mean the overall primary PostgreSQL Store has been migrated or wired. Scene data is not yet automatically injected into the generated site's `three-experience.js` runtime, and asset uploads remain a separate durable storage path. Those remain required before calling this a complete production scene workflow.
