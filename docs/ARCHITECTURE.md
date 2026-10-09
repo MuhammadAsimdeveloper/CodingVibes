@@ -82,3 +82,8 @@ Generated immersive pages include an import map resolving the bare module specif
 The Three.js runtime uses a live prefers-reduced-motion media query. Under reduced motion, it avoids continuous animation-frame scheduling, disables control damping, makes camera selection non-animated and pauses automated tour recording. When the page becomes hidden, active frames and camera/tour work stop; when visible again, the renderer paints once and restarts continuous rendering only when motion is permitted. This does not replace physical-device browser QA.
 
 Three.js, OrbitControls and GLTFLoader are currently loaded from jsDelivr. The import map repairs module resolution but does not make those dependencies offline or self-contained. Projects that must run without network access need the 3D assets bundled or vendored as part of their dependency/package strategy.
+
+
+## Uploaded 3D asset lifecycle
+
+The generated 3D runtime owns and releases temporary object URLs: uploaded GLB/GLTF URLs are revoked in a `finally` block even when GLTF parsing fails, and replaced walkthrough video URLs are revoked before a new URL is assigned. File input values reset after selection so users can select the same file again. Empty camera-path data falls back to a built-in safe shot sequence. Full browser/WebGL and physical-device asset testing remains part of the release gate.

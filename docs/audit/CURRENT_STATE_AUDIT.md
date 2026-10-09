@@ -9,7 +9,7 @@ Active reconstruction candidate: codex/tool-fabric-ci-recovery-2026-10-09, PR #5
 
 The repository has a substantial existing application, not an empty scaffold. Its architecture includes multi-file generation, model routing with deterministic fallback, project persistence and Git workspaces, verification/repair, native target and runner contracts, authentication, billing, deployment adapters, route-level SEO, a design system, motion recipes, 3D templates and product QA. A greenfield rewrite would discard meaningful functionality and contradict the authoritative launch plan.
 
-The current work should be incremental. Build Vibe CI, CodeQL and Dependency Review passed on f33576ea045b4c82711b7eabdb5d121da34a6146 and passed again on 1bc89f191c85748cf3dc9d439edc89cafb2d9cd0 after the reduced-motion fix. The import-map regression test was committed first on 93f90183229382a4a4be9054f576603138bc7365; its Build Vibe CI failed at npm test as expected because the generated page did not declare the map. The follow-up implementation commit still needs fresh CI.
+The current work should be incremental. Build Vibe CI, CodeQL and Dependency Review passed on 61456e50aad2d39bdf17a048f31465623ba53d19, including the reduced-motion and import-map fixes. The asset-lifecycle tests were committed first on 080831a68234f2c2df63f2625acaee7c70670391; its Build Vibe CI failed at npm test as expected because the runtime had not yet fixed object-URL cleanup and empty camera-path fallback. The next implementation commit must obtain fresh CI before the new changes are considered verified.
 
 ## Requirement-to-implementation map
 
@@ -21,6 +21,7 @@ The current work should be incremental. Build Vibe CI, CodeQL and Dependency Rev
 | Local tool contracts | New feature PR #53 adds 18 local tools, catalog/execution routes and tests | IMPLEMENTED ON FEATURE BRANCH; CI GREEN AT PRIOR HEAD | New commit must run through same CI. Live outbound API testing is intentionally NOT_CONFIGURED. |
 | Design system / motion | src/agent/design-system.js, experience-recipes.js, experience-quality.js and motion tests | IMPLEMENTED FOUNDATION | Improve generated aesthetics and test responsive/reduced-motion runtime behavior, not just CSS token presence. |
 | 3D experiences | src/templates/runtime/three-experience.js, experience recipes and real-estate/product templates. The CDN addon modules require a browser import map for the bare specifier three. | IMPLEMENTED FOUNDATION; HARDENED THIS CHECKPOINT | Respect reduced-motion and visibility lifecycle, and generate the import map before the experience module. CDN self-containment remains open. |
+| 3D uploaded asset lifecycle | Three.js runtime permits GLB/GLTF/video input; browser object URL cleanup and empty camera-path fallback are under explicit regression tests. | IMPLEMENTATION COMMIT PENDING CI | Release model/video object URLs and fall back to built-in viewpoints when camera-path input is empty. CDN self-containment remains open. |
 | SEO/discoverability | src/seo/*, discoverability verification, generated metadata, sitemap/robots, seo:check | IMPLEMENTED BASELINE | Keep public/private indexability correct; rankings/indexing are not guaranteed. |
 | Authentication/security | src/security/*, server route checks, safe-path/runtime sandbox boundaries, CodeQL/dependency review | IMPLEMENTED FOUNDATION | Production secret/session/provider policies need actual environment configuration; keep generated code isolated. |
 | Export/deployment/native | src/deployment/*, src/targets/*, src/runners/*, preflight scripts | ADAPTERS PRESENT; ENVIRONMENT-DEPENDENT | Verify actual per-target artifact builds and deploy smoke tests only where runners/credentials exist. |
@@ -41,10 +42,11 @@ The current work should be incremental. Build Vibe CI, CodeQL and Dependency Rev
 ## Implemented in this checkpoint
 
 1. Added test-first regression coverage for reduced-motion preference, camera-tour/recording policy and renderer lifecycle.
-2. Updated the Three.js runtime to use the live reduced-motion preference, stop continuous rendering when motion should be reduced, pause camera transitions and tours as appropriate, and suspend animation work for hidden documents.
-3. Added a generated-page import map for the Three.js bare specifier before module loading; the regression test first exposed the omission, and the generator fix is pending CI.
-4. Added repository inventory, module reuse matrix and current-state audit under docs/audit, including inspected agency, Atlas, Auto-Vid and Asim-OS repositories.
-5. Appended this checkpoint to the authoritative roadmap without deleting historical decisions.
+2. Updated the Three.js runtime to use the live reduced-motion preference, pause tours as appropriate, and stop rendering/camera work when motion is reduced or the tab is hidden.
+3. Added the tested Three.js import map to generated immersive pages before module loading.
+4. Added test-first regression coverage for uploaded media object URL cleanup and empty camera-path fallback; the runtime fix is awaiting CI.
+5. Added the three requested audit documents and recorded OriginKit unavailability plus reuse choices for accessible related repositories, including Website Inspector.
+6. Appended this checkpoint to the authoritative roadmap without deleting historical decisions.
 
 ## Test and release truth
 

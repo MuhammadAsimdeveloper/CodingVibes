@@ -78,12 +78,14 @@ async function start(){
 
     let loadedModel=null;
     async function loadModel(source,label='model'){
+      let objectUrl=null;
       try{
-        const url=typeof source==='string'?source:URL.createObjectURL(source);const object=await new GLTFLoader().loadAsync(url);if(typeof source!=='string')setTimeout(()=>URL.revokeObjectURL(url),0);
+        const url=typeof source==='string'?source:(objectUrl=URL.createObjectURL(source));const object=await new GLTFLoader().loadAsync(url);
         if(loadedModel)scene.remove(loadedModel);loadedModel=object.scene;loadedModel.position.y=0;
         const box3=new Box3().setFromObject(loadedModel);const size=box3.getSize(new Vector3()),maxSide=Math.max(size.x,size.y,size.z)||1;loadedModel.scale.setScalar(6/maxSide);loadedModel.position.y=Math.max(0,-box3.min.y*loadedModel.scale.y);scene.add(loadedModel);
         if(fallback)fallback.textContent='Loaded '+label;
       }catch(e){if(fallback)fallback.textContent='Model load failed; showing procedural fallback.';console.error(e)}
+      finally{if(objectUrl)URL.revokeObjectURL(objectUrl);}
     }
 
     let tourTimer=null;
@@ -114,7 +116,8 @@ async function start(){
 
     function playTour(){
       const fallbackShots=[new Vector3(12,6,14),new Vector3(-12,5,10),new Vector3(-10,4,-10),new Vector3(10,5,-12),new Vector3(7,3,8)];
-      const shots=contentCameraPath?.map(p=>new Vector3(Number(p.x)||0,Number(p.y)||0,Number(p.z)||0)).filter(v=>Number.isFinite(v.x)&&Number.isFinite(v.y)&&Number.isFinite(v.z))||fallbackShots;
+      const requestedShots=contentCameraPath?.map(p=>new Vector3(Number(p.x)||0,Number(p.y)||0,Number(p.z)||0)).filter(v=>Number.isFinite(v.x)&&Number.isFinite(v.y)&&Number.isFinite(v.z))||[];
+      const shots=requestedShots.length?requestedShots:fallbackShots;
       const durations=contentCameraPath?.map(p=>Math.max(.5,Number(p.duration)||2.2))||[];
       clearInterval(tourTimer);tourTimer=null;
       if(reducedMotion){
@@ -148,10 +151,11 @@ async function start(){
     document.querySelector('#tourPlay')?.addEventListener('click',playTour);
     document.querySelector('#tourRecord')?.addEventListener('click',recordTour);
     if(contentModel)loadModel(contentModel,featuredProduct?.title||featuredProperty?.title||featuredScene?.title||'site model');
-    document.querySelector('#modelInput')?.addEventListener('change',e=>e.target.files[0]&&loadModel(e.target.files[0],e.target.files[0].name));
+    document.querySelector('#modelInput')?.addEventListener('change',e=>{const file=e.target.files?.[0];if(file)loadModel(file,file.name);e.target.value='';});
     document.querySelector('#videoInput')?.addEventListener('change',e=>{
-      const file=e.target.files[0];if(!file)return;
-      const video=document.querySelector('#tourVideo');if(video){video.src=URL.createObjectURL(file);video.load()}
+      const file=e.target.files?.[0];if(!file)return;
+      const video=document.querySelector('#tourVideo');if(video){if(video.dataset.objectUrl)URL.revokeObjectURL(video.dataset.objectUrl);const objectUrl=URL.createObjectURL(file);video.dataset.objectUrl=objectUrl;video.src=objectUrl;video.load()}
+      e.target.value='';
     });
     const hotspotHost=document.querySelector('[data-experience-hotspots]');if(hotspotHost&&contentHotspots.length){hotspotHost.replaceChildren(...contentHotspots.slice(0,24).map(h=>{const b=document.createElement('button');b.type='button';b.dataset.room=h.room||h.label||'View';b.dataset.x=String(h.position?.x??0);b.dataset.y=String(h.position?.y??1.2);b.dataset.z=String(h.position?.z??0);b.textContent=h.label||h.room||'View';return b}));}
     const hotspotButtons=hotspotHost?hotspotHost.querySelectorAll('button[data-room]'):document.querySelectorAll('[data-room]');
