@@ -135,15 +135,8 @@ if (panel) {
     const { applySceneOperation } = window.__unusedSceneDocument || {};
     // Direct inspector edits are translated to the same allowlisted scene contract via a one-operation preview path.
     try {
-      const current = session.document;
-      const updated = structuredClone(current);
-      const target = updated.nodes.find(item => item.id === node.id);
-      if (position) target.position = nextValue;
-      else target[field] = nextValue;
-      const checked = validateSceneDocument(updated);
-      if (!checked.ok) throw new Error(checked.errors.join('; '));
-      const replacement = new SceneEditorSession(checked.value);
-      session = replacement;
+      const result = session.applyOperation(op);
+      if (!result.ok) throw new Error(result.errors.join('; '));
       status(message, 'success');
       renderAll();
     } catch (error) { status(error.message, 'error'); renderInspector(); }
