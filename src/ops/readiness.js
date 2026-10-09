@@ -55,6 +55,7 @@ export function readiness({router,store}={}) {
   const backupRoot=process.env.CODINGVIBES_BACKUP_ROOT||'./data/backups';
   try{fs.mkdirSync(backupRoot,{recursive:true});fs.accessSync(backupRoot,fs.constants.R_OK|fs.constants.W_OK);}catch{if(production)blockers.push('backup_directory_not_writable');else warnings.push('backup_directory_not_writable');}
   const scaleout=scaleOutConfig();
+  if(production&&scaleout.database.backend==='postgres')blockers.push('primary_postgres_store_not_wired');
   if(production&&String(process.env.CODINGVIBES_SCALEOUT_REQUIRED||'false')==='true'&&!scaleout.ready)blockers.push(...scaleout.blockers.map(x=>'scaleout_'+x));
   else if(!scaleout.ready)warnings.push(...scaleout.blockers.map(x=>'scaleout_'+x));
   if(!process.env.GITHUB_TOKEN)warnings.push('server_github_token_not_configured');
