@@ -45,12 +45,12 @@ function applyProjectDesignSystem(workspace,spec){
   if(!fs.existsSync(file)||!fs.statSync(file).isFile())continue;
   const before=fs.readFileSync(file,'utf8');
   if(before.includes(css))return {applied:true,mode:'already-present',file:rel};
-  fs.writeFileSync(file,before+'\\n'+css+'\\n','utf8');
+  fs.writeFileSync(file,before+'\n'+css+'\n','utf8');
   return {applied:true,mode:'appended',file:rel};
  }
  const publicDir=path.join(workspace,'public');fs.mkdirSync(publicDir,{recursive:true});
  const relCss='public/build-vibe-design-system.css';
- fs.writeFileSync(path.join(workspace,relCss),css+'\\n','utf8');
+ fs.writeFileSync(path.join(workspace,relCss),css+'\n','utf8');
  const htmlFiles=[];
  const scan=(dir,depth=0)=>{
   if(depth>3||htmlFiles.length>=100)return;
