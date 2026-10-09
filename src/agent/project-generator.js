@@ -31,7 +31,7 @@ function experienceMarkup(spec){
  '<div class="hotspots" data-experience-hotspots>'+ (property?'<button type="button" data-room="Living">Living room</button><button type="button" data-room="Kitchen">Kitchen</button><button type="button" data-room="Bedroom">Bedroom</button>':'') +'</div>'+
  '</div>'+
  (property?'<div class="tour-media"><div><h3>Video walkthrough</h3><p class="muted">Add an MP4/WebM tour or use the camera-tour recording.</p><label class="file-button" for="videoInput">Load walkthrough video</label><input id="videoInput" type="file" accept="video/mp4,video/webm" aria-label="Upload walkthrough video"></div><video id="tourVideo" controls playsinline preload="metadata"></video></div>':'')+
- '</section><script type="module" src="/experience.js"></script>';
+ '</section><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script><script type="module" src="/experience.js"></script>';
 }
 function contentSections(spec){
  const kind=spec.siteKind||spec.contentModel?.kit||'business';

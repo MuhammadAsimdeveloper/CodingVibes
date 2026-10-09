@@ -73,3 +73,12 @@ A commercial production launch requires a green /ready response. The gate checks
 ## Intentional deferrals
 
 Multi-agent swarms, credit packs and a fully managed Coding Vibe hosting control plane remain later scale features. The current deployment and runner abstractions are already used by the verified build workflow.
+
+
+## Generated 3D module and motion boundary
+
+Generated immersive pages include an import map resolving the bare module specifier three to the same versioned ES module URL used by the generated experience runtime. It is emitted before the experience module and other module scripts so OrbitControls and GLTFLoader can resolve their imports in a browser. A generator regression test checks map ordering and URL.
+
+The Three.js runtime uses a live prefers-reduced-motion media query. Under reduced motion, it avoids continuous animation-frame scheduling, disables control damping, makes camera selection non-animated and pauses automated tour recording. When the page becomes hidden, active frames and camera/tour work stop; when visible again, the renderer paints once and restarts continuous rendering only when motion is permitted. This does not replace physical-device browser QA.
+
+Three.js, OrbitControls and GLTFLoader are currently loaded from jsDelivr. The import map repairs module resolution but does not make those dependencies offline or self-contained. Projects that must run without network access need the 3D assets bundled or vendored as part of their dependency/package strategy.
