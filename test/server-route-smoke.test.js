@@ -12,6 +12,8 @@ process.env.CODINGVIBES_PUBLIC_URL='http://127.0.0.1:0';
 process.env.CODINGVIBES_ALLOWED_ORIGINS='http://127.0.0.1:0';
 process.env.CODINGVIBES_ENFORCE_QUOTAS='false';
 process.env.CODINGVIBES_BILLING_REQUIRED='false';
+process.env.CODINGVIBES_OBJECT_BACKEND='local';
+process.env.CODINGVIBES_OBJECT_ROOT=path.join(root,'objects');
 
 const {server}=await import('../src/server.js?route-smoke');
 let origin='';
@@ -114,6 +116,35 @@ test('server public and authenticated route smoke covers launch control plane',a
 
   const sceneAfterConflict=await req(scenePath,{headers:{cookie:sessionCookie}});
   assert.equal(sceneAfterConflict.body.scene.nodes[0].color,'#8b7dff');
+
+  const ephemeralScene=structuredClone(scene);ephemeralScene.nodes[0].type='image';ephemeralScene.nodes[0].assetUrl='blob:http://localhost/session-only';
+  const ephemeralSave=await req(scenePath,{method:'PUT',headers:{cookie:sessionCookie},body:JSON.stringify({scene:ephemeralScene,expectedRevision:1})});
+  assert.equal(ephemeralSave.response.status,400);
+  assert.equal(ephemeralSave.body.error,'temporary_scene_asset_must_be_uploaded');
+
+  const png=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]);
+  const upload=await req('/api/projects/'+pid+'/assets',{method:'POST',headers:{cookie:sessionCookie,'content-type':'image/png','x-asset-name':encodeURIComponent('hero.png'),'x-asset-role':'texture'},body:png});
+  assert.equal(upload.response.status,201,JSON.stringify(upload.body));
+  const asset=upload.body.asset;
+  assert.ok(asset.publicPath.startsWith('/assets/'));
+  assert.equal(asset.size,png.length);
+  assert.equal(asset.sha256.length,64);
+  assert.equal(asset.metadata.storage.provider,'local');
+  assert.ok(asset.metadata.storage.key.includes(pid));
+  const assets=await req('/api/projects/'+pid+'/assets',{headers:{cookie:sessionCookie}});
+  assert.equal(assets.response.status,200);
+  assert.ok(assets.body.assets.some(row=>row.id===asset.id));
+  const preview=await fetch(origin+'/api/projects/'+pid+'/assets/'+asset.id+'/preview',{headers:{cookie:sessionCookie}});
+  assert.equal(preview.status,200);
+  assert.equal(preview.headers.get('content-type'),'image/png');
+  assert.equal((await preview.arrayBuffer()).byteLength,png.length);
+  const corrupt=await req('/api/projects/'+pid+'/assets',{method:'POST',headers:{cookie:sessionCookie,'content-type':'image/png','x-asset-name':'fake.png'},body:Buffer.from('<html>not an image</html>')});
+  assert.equal(corrupt.response.status,400);
+  assert.equal(corrupt.body.error,'asset_content_mismatch');
+  const deleteAsset=await req('/api/projects/'+pid+'/assets/'+asset.id,{method:'DELETE',headers:{cookie:sessionCookie}});
+  assert.equal(deleteAsset.response.status,200);
+  const assetsAfterDelete=await req('/api/projects/'+pid+'/assets',{headers:{cookie:sessionCookie}});
+  assert.equal(assetsAfterDelete.body.assets.some(row=>row.id===asset.id),false);
 
   const designEdit=await req('/api/projects/'+pid+'/design/intent',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({request:'make the heading blue, bigger, centered and bold'})});
   assert.equal(designEdit.response.status,200);
