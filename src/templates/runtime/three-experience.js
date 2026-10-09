@@ -142,8 +142,8 @@ async function start(){
     if(contentModel)loadModel(contentModel,featuredProduct?.title||featuredProperty?.title||featuredScene?.title||'site model');
     document.querySelector('#modelInput')?.addEventListener('change',e=>{
       const file=e.target.files?.[0];if(!file)return;
-      if(!/\\.(glb|gltf)$/i.test(file.name)||file.size>150*1024*1024){if(fallback)fallback.textContent='Choose a GLB/GLTF model smaller than 150 MB.';e.target.value='';return;}
-      if(/\\.gltf$/i.test(file.name)&&fallback)fallback.textContent='Loading GLTF. For models with companion textures, use a self-contained GLB file.';
+      if(!/\.(glb|gltf)$/i.test(file.name)||file.size>150*1024*1024){if(fallback)fallback.textContent='Choose a GLB/GLTF model smaller than 150 MB.';e.target.value='';return;}
+      if(/\.gltf$/i.test(file.name)&&fallback)fallback.textContent='Loading GLTF. For models with companion textures, use a self-contained GLB file.';
       loadModel(file,file.name);
     });
     document.querySelector('#experienceImageInput')?.addEventListener('change',e=>{
@@ -156,7 +156,7 @@ async function start(){
     });
     document.querySelector('#videoInput')?.addEventListener('change',e=>{
       const file=e.target.files?.[0];if(!file)return;
-      const validMime=['video/mp4','video/webm'].includes(file.type),validExt=/\\.(mp4|webm)$/i.test(file.name);
+      const validMime=['video/mp4','video/webm'].includes(file.type),validExt=/\.(mp4|webm)$/i.test(file.name);
       if((!validMime&&!validExt)||file.size>100*1024*1024){if(fallback)fallback.textContent='Choose an MP4/WebM video smaller than 100 MB.';e.target.value='';return;}
       const video=document.querySelector('#tourVideo');if(video){if(localVideoUrl)URL.revokeObjectURL(localVideoUrl);localVideoUrl=URL.createObjectURL(file);video.src=localVideoUrl;video.hidden=false;video.load();}
       if(fallback)fallback.textContent='Video attached to the 3D experience: '+file.name;
