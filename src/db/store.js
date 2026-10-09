@@ -7,6 +7,7 @@ const WORKSPACE_ROLE_INTERNALS=['owner','admin','editor','reviewer','viewer'];
 
 export class Store{
   constructor(filename=process.env.DATABASE_PATH||'./data/codingvibes.db'){
+    if(String(process.env.CODINGVIBES_DB_BACKEND||'sqlite').toLowerCase()==='postgres')throw new Error('primary_postgres_store_not_wired: refusing to silently use SQLite; select sqlite or complete the PostgreSQL Store adapter');
     fs.mkdirSync(path.dirname(path.resolve(filename)),{recursive:true});
     this.db=new DatabaseSync(filename);
     this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
