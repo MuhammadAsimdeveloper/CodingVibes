@@ -30,7 +30,7 @@ function experienceMarkup(spec){
  '<div class="hotspots" data-experience-hotspots>'+ (property?'<button type="button" data-room="Living">Living room</button><button type="button" data-room="Kitchen">Kitchen</button><button type="button" data-room="Bedroom">Bedroom</button>':'') +'</div>'+
  '</div>'+
  '<div class="tour-media"><div><h3>'+(property?'Property media':'Product & scene media')+'</h3><p class="muted">'+(property?'Add reference images and a walkthrough video.':'Attach reference images and an MP4/WebM video to enrich this 3D experience.')+'</p><label class="file-button" for="experienceImageInput">Load image</label><input id="experienceImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" aria-label="Upload 3D experience image"><button id="applyExperienceTexture" class="file-button" type="button" disabled aria-label="Apply the selected image as a texture to the 3D model">Apply image texture</button><label class="file-button" for="videoInput">Load video</label><input id="videoInput" type="file" accept="video/mp4,video/webm" aria-label="Upload 3D experience video"></div><div class="experience-media-preview"><img id="experienceImage" alt="Uploaded image preview for this 3D experience" hidden><video id="tourVideo" controls playsinline preload="metadata" hidden></video></div></div>'+
- '</section><script type="module" src="/experience.js"></script>';
+ '</section><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script><script type="module" src="/experience.js"></script>';
 }
 function contentSections(spec){
  const kind=spec.siteKind||spec.contentModel?.kit||'business';
