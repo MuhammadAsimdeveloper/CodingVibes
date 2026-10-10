@@ -106,3 +106,10 @@ For every generated project, emit a versioned machine-readable and human-readabl
 - Tests cover real generated output and runtime behavior, not just helper functions or string presence.
 - The report accurately distinguishes code present, test coverage, configured services, and verified production behavior.
 - Existing working functionality and user changes remain intact.
+
+
+### Integration status update (2026-10-10)
+
+The generated-site report is now attached to the existing `auditProductExperience()` result for web targets as `generatedSiteQuality`, so it travels with the platform's product-quality evidence. The standalone CLI remains available for a generated project directory. Full CI passed at `af6adf6ff6e480bcac351745b0a40a9e17068231`.
+
+This is **evidence integration, not publish enforcement**: `verifyContract` and deployment still do not reject projects based on the new 20-point report. Keep the publish-gate task open until status handling, user-input exceptions, runtime evidence, and blocking behavior have regression tests.
