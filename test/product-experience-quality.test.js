@@ -57,6 +57,15 @@ test('motion enhancement never installs cursor-following handlers or looping sce
   fs.rmSync(root,{recursive:true,force:true});
 });
 
+test('deterministic generated products have no pointer-following handlers or looping default animation',async()=>{
+  const {generateProject}=await import('../src/agent/project-generator.js');
+  const spec=analyzeRequirements('Create a professional business website with services, contact and an accessible responsive layout');
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  assert.doesNotMatch(files.get('public/motion.js')||'',/pointermove|--mx|--my/);
+  assert.doesNotMatch(files.get('public/styles.css')||'',/cvSceneFloat|cvOrbFloat|cvGlowDrift|cvSpringIn|--mx|--my/);
+  assert.match(files.get('public/styles.css')||'',/--motion-duration-base:240ms/);
+});
+
 test('experience quality pass upgrades model-generated HTML without replacing its design',()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-quality-'));
   fs.mkdirSync(path.join(root,'public'),{recursive:true});
