@@ -43,5 +43,8 @@
     "@aws-sdk/client-s3": "3.1146.0",
     "ioredis": "6.0.0",
     "pg": "8.23.1"
+  },
+  "dependencies": {
+    "pdf-lib": "1.17.1"
   }
 }
