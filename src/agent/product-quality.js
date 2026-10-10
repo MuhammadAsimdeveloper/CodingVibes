@@ -1,3 +1,4 @@
+import {getDesignGuidance} from './design-guidance.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -9,7 +10,9 @@ const BASE_FEATURES=[
   'SEO metadata and canonical URL',
   'local assets/runtime',
   'local content/data editing',
-  'owner admin surface'
+  'owner admin surface',
+  'favicon and substantive privacy/terms pages',
+  'truthful, evidence-backed customer proof'
 ];
 
 function walk(root,out=[]){
@@ -62,6 +65,7 @@ function defaultSurfaces(kind='business',behavior={}){
 export function buildQualityContract(spec={}){
   const kind=String(spec.siteKind||spec.contentModel?.kit||'business');
   const behavior=spec.behavior||{};
+  const designGuidance=getDesignGuidance({productType:spec.experience?.threeD?'3d-showcase':kind,style:spec.styling?.visual?.style||spec.style||'modern',stack:spec.experience?.threeD?'3d-web':(spec.target?.id||'web-node'),intent:spec.request||''});
   const requiredSurfaces=unique([...(Array.isArray(spec.pages)?spec.pages:[]),...defaultSurfaces(kind,behavior)]);
   const requiredFeatures=[...BASE_FEATURES];
   if(behavior.search)requiredFeatures.push('search and filtering');
@@ -84,13 +88,20 @@ export function buildQualityContract(spec={}){
     requiredSurfaces,
     requiredStates:BASE_STATES,
     requiredFeatures:unique(requiredFeatures),
+    designGuidance,
     hardRules:[
       'Core runtime does not require a remote script, stylesheet or external API',
       'Core interactions remain usable when optional effects or providers fail',
       'Forms expose labels and actionable errors',
       'Images expose alternatives unless decorative',
       'Public pages expose semantic metadata',
-      'Responsive and reduced-motion behavior are explicit'
+      'Responsive and reduced-motion behavior are explicit',
+      'Never publish unsupported metrics or fabricated reviews, customer identities, ratings or logos',
+      'Never show Made with AI attribution on published user products',
+      'Never add Build Vibe branding or builder attribution to published user products',
+      'Never use purple gradients, unwanted AI attribution, emoji icons or pill-shaped buttons',
+      'Never add cursor-following animations or excessive scroll-linked motion',
+      'Avoid vague marketing copy and em-dash punctuation'
     ]
   };
 }
@@ -136,6 +147,53 @@ function nativeEntrypointExists(target,names){
   return checks[target]!==false;
 }
 
+function purpleHueFromHex(raw){
+  let hex=String(raw||'').replace(/^#/,'');
+  if(hex.length===3)hex=hex.split('').map(ch=>ch+ch).join('');
+  if(!/^[0-9a-f]{6}$/i.test(hex))return null;
+  const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255);
+  const max=Math.max(...rgb),min=Math.min(...rgb),delta=max-min;
+  if(delta===0)return{hue:0,saturation:0};
+  let hue;
+  if(max===rgb[0])hue=60*(((rgb[1]-rgb[2])/delta)%6);
+  else if(max===rgb[1])hue=60*((rgb[2]-rgb[0])/delta+2);
+  else hue=60*((rgb[0]-rgb[1])/delta+4);
+  if(hue<0)hue+=360;
+  const saturation=max===0?0:delta/max;
+  return{hue,saturation};
+}
+
+function hasPurpleGradient(source){
+  const text=String(source||'');
+  if(/\b(?:from|via|to)-(?:purple|violet|fuchsia)-\d{2,3}\b/i.test(text))return true;
+  const gradients=text.match(/(?:linear|radial|conic)-gradient\s*\([^)]{0,1000}\)/gi)||[];
+  return gradients.some(gradient=>{
+    if(/\b(?:purple|violet|fuchsia)\b/i.test(gradient))return true;
+    const colors=[...gradient.matchAll(/#([0-9a-f]{3}|[0-9a-f]{6})\b/gi)];
+    return colors.some(match=>{
+      const value=purpleHueFromHex(match[1]);
+      return Boolean(value&&value.hue>=250&&value.hue<=320&&value.saturation>=0.25);
+    });
+  });
+}
+
+function socialProofClaims(source){
+  const text=String(source||'');
+  const patterns=[
+    /\b(?:trusted by|loved by)\s+(?:over\s+)?[\d,.]+\s*(?:\+|k|m|thousand|million)?\s*(?:users|customers|teams|businesses|companies)\b/gi,
+    /\b[\d,.]+\s*(?:k|m|thousand|million)?\s*(?:happy customers|five[- ]star reviews|5[- ]star reviews)\b/gi,
+    /\b(?:fake|sample|placeholder|demo)\s+(?:customer\s+)?(?:review|testimonial|rating)s?\b/gi,
+    /\b(?:Jane Doe|John Smith)\b/gi
+  ];
+  const claims=[];
+  for(const pattern of patterns)for(const match of text.matchAll(pattern))claims.push(match[0]);
+  return unique(claims);
+}
+
+function hasEmojiIcon(html){
+  return /<(?:button|a)\b[^>]*>(?:(?!<\/(?:button|a)>)[\s\S]){0,240}?\p{Extended_Pictographic}[\s\S]{0,120}?<\/(?:button|a)>/iu.test(String(html||''));
+}
+
 export function auditProductExperience(workspace,spec={}){
   const root=path.resolve(workspace);
   const files=walk(root);
@@ -175,9 +233,24 @@ export function auditProductExperience(workspace,spec={}){
     addCheck('form_label_missing','form control labels',unlabeled.length===0,true,unlabeled.length?String(unlabeled.length):'');
     const badImages=[...html.matchAll(/<img\b([^>]*)>/gi)].filter(match=>!(/\balt\s*=\s*["'][^"']*["']/i.test(match[1])||/\brole\s*=\s*["']presentation["']/i.test(match[1])));
     addCheck('image_alt_missing','image alternative text',badImages.length===0,true,badImages.length?String(badImages.length):'');
+    const placeholderMedia=/(?:placehold\.co|placeholder\.com|picsum\.photos|loremflickr\.com|source\.unsplash\.com|randomuser\.me|pravatar\.cc|thispersondoesnotexist\.com|generated\.photos)/i.test(html);
+    addCheck('placeholder_media','no random placeholder or fake-avatar media endpoints',!placeholderMedia,true);
     const remoteRuntime=[...source.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']https?:\/\/[^"']+["'][^>]*>/gi)];
     addCheck('remote_runtime_dependency','provider-independent runtime',remoteRuntime.length===0&&remoteImportCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
     addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']));
+    const faviconAsset=names.some(name=>/(?:^|\/)favicon(?:-[a-z0-9_-]+)?\.(?:ico|svg|png|webp)$/i.test(name));
+    const faviconLinked=/<link\b[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=/i.test(html);
+    addCheck('favicon_asset','favicon asset is present and linked',faviconAsset&&faviconLinked,true);
+    const privacyFile=files.find(file=>/(?:^|[\\/])(?:privacy|privacy-policy)\.html$/i.test(file)||/(?:^|[\\/])(?:privacy|privacy-policy)[\\/]index\.html$/i.test(file));
+    const termsFile=files.find(file=>/(?:^|[\\/])(?:terms|terms-and-conditions|terms-of-service)\.html$/i.test(file)||/(?:^|[\\/])(?:terms|terms-and-conditions|terms-of-service)[\\/]index\.html$/i.test(file));
+    const privacyCopy=privacyFile?fs.readFileSync(privacyFile,'utf8').toLowerCase():'';
+    const termsCopy=termsFile?fs.readFileSync(termsFile,'utf8').toLowerCase():'';
+    const legalPlaceholder=/(explain what information|configure production providers before launch|replace this launch-ready outline|replace with your final|lorem ipsum|todo:)/i;
+    const privacyComplete=Boolean(privacyFile)&&!legalPlaceholder.test(privacyCopy)&&['contact form submissions','retention','third-party analytics','deletion','cookies'].every(term=>privacyCopy.includes(term));
+    const termsComplete=Boolean(termsFile)&&!legalPlaceholder.test(termsCopy)&&['acceptable use','user content','liability','applicable law','contact page'].every(term=>termsCopy.includes(term));
+    addCheck('privacy_policy_quality','privacy policy describes actual default data handling',privacyComplete,true);
+    addCheck('terms_conditions_quality','terms and conditions cover use and legal basics',termsComplete,true);
+
     addCheck('placeholder_content','no obvious placeholder copy',!/(lorem ipsum|todo:|coming soon|replace this text)/i.test(html));
     brokenLinks=linkIntegrity(html,spec,files);
     addCheck('internal_links','internal links resolve',brokenLinks.length===0,false,brokenLinks.slice(0,12).join(', '));
@@ -195,6 +268,21 @@ export function auditProductExperience(workspace,spec={}){
     addCheck('app_navigation','application navigation shell',hasAny(source,['Home','Explore','Profile','Settings','Calendar','NavigationBar','TabView','nav']));
     addCheck('app_action_state','application action/state feedback',hasAny(source,['Get started','Saved locally','Saved','Loading','Error','empty']));
   }
+
+  const approvedClaims=new Set((Array.isArray(spec.verifiedSocialProof)?spec.verifiedSocialProof:[]).map(value=>String(value).trim().toLowerCase()));
+  const claims=socialProofClaims(html);
+  const unverifiedClaims=claims.filter(claim=>!approvedClaims.has(claim.toLowerCase()));
+  addCheck('unwanted_ai_attribution','no unwanted AI attribution',!(/made\s+with\s+(?:generative\s+)?ai/i.test(html)),true);
+    addCheck('builder_attribution','no builder branding on published products',!(/(?:built|made|powered)\s+with\s+build\s*vibe/i.test(html)),true);
+  addCheck('purple_gradient','no purple gradients',!hasPurpleGradient(source),true);
+  addCheck('fabricated_social_proof','customer proof has evidence',unverifiedClaims.length===0,true,unverifiedClaims.slice(0,5).join('; '));
+  addCheck('emoji_ui_icon','no emoji used as interface icons',!hasEmojiIcon(html),true);
+  addCheck('em_dash_copy','copy avoids em dashes',!html.includes('\u2014'),true);
+  addCheck('pill_button_style','buttons are not forced into pill shapes',!(/<(?:button|Button)\b[^>]*(?:rounded-full|rounded-pill|pill-button)[^>]*>/i.test(source)||/button\s*\{[^}]*border-radius\s*:\s*(?:9999?px|50%)/i.test(source)),true);
+  addCheck('custom_cursor_animation','no cursor-following animation',!(/pointermove|\.cursor[-_ ]?(?:follower|trail|glow)\b|cursor[-_ ]?(?:follower|trail)\b|customCursor|cursorFollower/i.test(source)),true);
+  addCheck('excessive_scroll_motion','scroll motion is restrained',!(/ScrollTrigger|scroll-timeline|data-scroll-(?:speed|position)|camera-story|scroll\s*:\s*['"]story['"]|parallax\s*:\s*true/i.test(source)),true);
+  addCheck('vague_marketing_copy','copy is specific rather than vague',!(/revolutioniz(?:e|es|ing)|cutting.edge|world.class|seamless experience|next.level solution|game.changing/i.test(html)),true);
+  addCheck('placeholder_copy','no template placeholder instructions',!(/replace (?:the )?(?:sample|placeholder|final) copy|replace with your real|proof and team details|built around your story|lorem ipsum|insert (?:testimonial|review|company name)|your (?:awesome )?(?:company|brand|tagline|slogan|product name)|coming soon|\b(?:todo|tbd)\b/i.test(html)),true);
 
   const required=contract.requiredFeatures;
   if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));

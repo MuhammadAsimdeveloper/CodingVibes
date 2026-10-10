@@ -32,3 +32,12 @@ Tool/Agent Fabric → 18 Zee-derived utilities → Teamily-derived multi-agent/m
 Code exists, tests prove behavior, security boundaries are enforced, docs describe reality, and the launch matrix says PASS only when evidence exists.
 
 Start building immediately after reading the authority files; do not ask the user to restate this plan.
+
+## Permanent generated-product quality rules
+
+Before a feature or template is released, follow `docs/GENERATED_PRODUCT_QUALITY_STANDARD.md`. Design and content quality checks must run in the normal generation/verification pipeline. Do not rely only on prompt wording, and do not weaken the gate to pass an existing fixture. Upstream design guidance is managed according to `docs/UI_UX_PRO_MAX_ADOPTION.md`; user edits and design tokens must survive template updates.
+
+
+## Generated-site launch essentials
+
+Every generated web project must include a valid linked favicon, a substantive Privacy Policy and Terms and Conditions page, and no placeholder legal copy. The quality audit checks these files and blocks the build when they are absent or incomplete. Legal text must match the generated app's real data behavior and be reviewed when the owner configures external providers or jurisdiction-specific terms.

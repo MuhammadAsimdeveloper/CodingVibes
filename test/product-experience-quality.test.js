@@ -43,6 +43,29 @@ test('deterministic generated websites ship a local dependency-free motion runti
   assert.match(files.get('public/styles.css'),/motion-item/);
 });
 
+test('motion enhancement never installs cursor-following handlers or looping scene animation',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-motion-safe-'));
+  fs.mkdirSync(path.join(root,'public'),{recursive:true});
+  fs.writeFileSync(path.join(root,'public','index.html'),'<!doctype html><html><head></head><body><main><section><h1>Product</h1></section></main></body></html>','utf8');
+  applyExperienceQuality(root,{kind:'business',mode:'smooth'});
+  const css=fs.readFileSync(path.join(root,'public','build-vibe-motion.css'),'utf8');
+  const js=fs.readFileSync(path.join(root,'public','build-vibe-motion.js'),'utf8');
+  assert.doesNotMatch(css,/--mx|--my|bv-scene-float|animation:[^;]*infinite/);
+  assert.doesNotMatch(js,/pointermove|setProperty\('--mx'|setProperty\('--my'/);
+  assert.match(css,/prefers-reduced-motion:reduce/);
+  assert.match(css,/--bv-motion-duration:240ms/);
+  fs.rmSync(root,{recursive:true,force:true});
+});
+
+test('deterministic generated products have no pointer-following handlers or looping default animation',async()=>{
+  const {generateProject}=await import('../src/agent/project-generator.js');
+  const spec=analyzeRequirements('Create a professional business website with services, contact and an accessible responsive layout');
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  assert.doesNotMatch(files.get('public/motion.js')||'',/pointermove|--mx|--my/);
+  assert.doesNotMatch(files.get('public/styles.css')||'',/cvSceneFloat|cvOrbFloat|cvGlowDrift|cvSpringIn|--mx|--my/);
+  assert.match(files.get('public/styles.css')||'',/--motion-duration-base:240ms/);
+});
+
 test('experience quality pass upgrades model-generated HTML without replacing its design',()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-quality-'));
   fs.mkdirSync(path.join(root,'public'),{recursive:true});
