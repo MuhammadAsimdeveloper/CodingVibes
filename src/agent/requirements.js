@@ -21,7 +21,8 @@ export function completeSpec(raw={}){
  if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments');behavior.booking=true;}
  const requestText=String(spec.request||'');
  const addressMatch=requestText.match(/(?:business|contact|office)?\s*address\s*(?:is|:)\s*([^.;\n]{8,120})/i);
- const contactAddress=String(spec.contactAddress||spec.businessAddress||spec.business?.address||addressMatch?.[1]||'').trim()||undefined;
+ const rawContactAddress=String(spec.contactAddress||spec.businessAddress||spec.business?.address||addressMatch?.[1]||'').trim();
+ const contactAddress=/^(?:tbd|todo|n\/a|none|unknown|required|please provide|not provided|your address|placeholder)(?:\b|$)/i.test(rawContactAddress)?undefined:rawContactAddress||undefined;
  const productKinds=Array.isArray(spec.productKinds)?spec.productKinds:[];
  const saasLike=/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(requestText)||productKinds.includes('saas');
  if(saasLike){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');addPage('/settings');behavior.authentication=true;behavior.publicLogin=true;behavior.providerOptional=true;behavior.localFirstAuth=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup');}
