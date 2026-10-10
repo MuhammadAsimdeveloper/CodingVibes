@@ -1034,3 +1034,17 @@ The existing Tool Fabric now defines four bounded local PDF tools: `pdf.info`, `
 - **Source verification: PASS** on implementation head `34893530713427c21fb6ec703fc3fddf9e91d8ff`: Build Vibe CI, CodeQL and Dependency Review all passed, including tests, coverage, syntax/release, SEO, server and browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security, scaleout and launch readiness. The documentation follow-up requires its own fresh CI run before merge.
 
 **Limits:** This tranche does not implement PDF compression, raster rendering, image-to-PDF conversion, text extraction, OCR, redaction or decryption. Resource-isolated worker execution remains recommended before accepting high-volume untrusted PDFs.
+
+
+## 51. TDD checkpoint — bounded PNG/JPEG image-to-PDF conversion (2026-10-10)
+
+**Roadmap phase:** P1 local document and asset utilities, extending the canonical PDF adapter on PR #59.
+
+- Added the `image.to_pdf` contract to the existing Tool Fabric, routed through the same `runTool()` executor. It accepts 1–20 PNG/JPEG images and creates one portrait/landscape A4 page per image, preserving aspect ratio and applying a 24-point margin.
+- Added failing contract/behavior tests before the executor: a real PNG/JPEG mixed-format conversion must produce a valid multi-page PDF readable by `pdf.info`; malformed Base64, invalid signatures, MIME mismatches, unsupported formats, excessive dimensions and excessive image counts must fail closed.
+- Enforced a 1 MB per-image and aggregate input limit, 10,000-pixel maximum edge, 20-megapixel per-image ceiling, supported MIME/signature/header checks, and the existing 2 MB output cap. Processing makes no network requests and reports `networkUsed:false`.
+- The real JPEG regression caught a byte-offset issue at the `pdf-lib` boundary. JPEG bytes are now normalized to a zero-offset `Uint8Array` before embedding; the valid JPEG fixture passes without weakening input validation.
+- Updated `docs/PDF_TOOLS.md`, `docs/TOOL_FABRIC.md`, the canonical contract catalog and tool-count assertions. The full CI run on implementation head `8e3063f3c55011c179357303f6e7ee7232ff0141` passed Build Vibe CI, CodeQL and Dependency Review. This documentation follow-up needs a fresh CI result on its own head before merge.
+
+**Limits:** PDF compression, PDF-to-image rendering, text extraction, OCR, redaction and decryption remain unimplemented. A PDF that is merely re-saved must not be described as compressed. High-volume processing of untrusted documents still needs a resource-isolated worker with hard time and memory limits.
+
