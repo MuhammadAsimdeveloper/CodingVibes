@@ -23,6 +23,8 @@ export function completeSpec(raw={}){
  const addressMatch=requestText.match(/(?:business|contact|office)?\s*address\s*(?:is|:)\s*([^.;\n]{8,120})/i);
  const rawContactAddress=String(spec.contactAddress||spec.businessAddress||spec.business?.address||addressMatch?.[1]||'').trim();
  const contactAddress=/^(?:tbd|todo|n\/a|none|unknown|required|please provide|not provided|your address|placeholder)(?:\b|$)/i.test(rawContactAddress)?undefined:rawContactAddress||undefined;
+ const analyticsId=requestText.match(/\bG-[A-Z0-9]{6,20}\b/i)?.[0]?.toUpperCase();
+ const analytics=spec.analytics||(analyticsId&&/\bgoogle analytics\b/i.test(requestText)?{provider:'google-analytics',measurementId:analyticsId}:undefined);
  const productKinds=Array.isArray(spec.productKinds)?spec.productKinds:[];
  const saasLike=/\b(saas|subscription|customer portal|client portal|member portal)\b/i.test(requestText)||productKinds.includes('saas');
  if(saasLike){addPage('/pricing');addPage('/signup');addPage('/login');addPage('/dashboard');addPage('/settings');behavior.authentication=true;behavior.publicLogin=true;behavior.providerOptional=true;behavior.localFirstAuth=true;addApi('GET','/api/auth/session');addApi('POST','/api/auth/signup');}
@@ -36,7 +38,7 @@ export function completeSpec(raw={}){
  behavior.legalPages=true; behavior.launchReadyDefaults=true; behavior.localFirstRuntime=true; behavior.externalProvidersOptional=true;
  const autoCompleted=[...new Set([...(Array.isArray(spec.autoCompleted)?spec.autoCompleted:[]),'responsive UI','accessible focus and form states','loading/empty/error/success states','contact/conversion path','privacy and terms pages','SEO metadata and sitemap','owner admin surface','provider-independent runtime'])];
  const qualityContract=buildQualityContract({...spec,pages,behavior});
- return {...spec,contactAddress,pages,apis,behavior,qualityContract,autoCompleted};
+ return {...spec,contactAddress,analytics,pages,apis,behavior,qualityContract,autoCompleted};
 }
 
 export function analyzeRequirements(request,{targetId='auto'}={}){
