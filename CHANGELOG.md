@@ -60,3 +60,15 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 
 
 - Follow-up: attached the 20-point generated-site report to product-quality evidence for web targets; it remains informational until publish-gate integration is implemented and tested.
+
+
+## [Unreleased] — generated-site conversion and privacy controls (2026-10-10)
+
+- Added a branded custom 404 page with correct HTTP 404 behavior for unknown public routes.
+- Added default web app manifest generation for all web targets.
+- Added an accessible cookie preference interface with accept/reject, analytics/marketing preferences, persistence, reopening, and consent-change events. Accept/reject controls use equal visual prominence.
+- Added a dismissible mobile-only contact CTA with session-level dismissal.
+- Improved contact form feedback with disabled/loading state, accessible error/status regions, network/server failure handling, and redirect to a noindex thank-you route only after a successful API response.
+- Excluded the thank-you route from navigation, llms.txt, and the sitemap.
+- Attached the 20-point generated-site audit report to web product-quality evidence; publishing is not yet blocked by this report.
+- Full CI passed at `bcb4288036d0ac45b4a045e83531d406d99a85c6`.
