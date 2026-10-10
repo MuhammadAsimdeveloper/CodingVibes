@@ -136,3 +136,11 @@ Still open: real contact details from site owners, customer analytics setup with
 - [x] Browser smoke verifies the analytics consent path and asserts that a configured, fully evidenced generated site passes the critical quality gate.
 - [ ] Add polished project-settings fields for analytics and address, including preview and validation.
 - [ ] Complete platform-specific icon sizes and integrate image compression into generated export.
+
+
+## Project-scoped launch settings (2026-10-10)
+
+- [x] Add business contact address input with per-project persistence and safe generated-page rendering.
+- [x] Add optional Google Analytics ID input with validation, consent-gated script loading, and revocation handling.
+- [x] Verify missing business address and unverified configured analytics as production quality-gate blockers.
+- [ ] Complete platform-specific icon sizes and generated raster image optimization.
