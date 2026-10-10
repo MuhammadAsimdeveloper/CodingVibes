@@ -197,3 +197,16 @@ test('customer analytics is optional and its script loads only after explicit an
   assert.equal(window['ga-disable-G-ABCDEF1234'],true,'revocation disables collection');
   assert.ok(window.dataLayer.some(entry=>entry[0]==='consent'&&entry[1]==='update'&&entry[2]?.analytics_storage==='denied'),'revocation must update consent to denied');
 });
+
+test('owner-provided contact address is rendered safely and never fabricated',()=>{
+  const base=analyzeRequirements('Build a professional local plumbing business website with a contact form');
+  const withoutAddress=new Map(generateProject(completeSpec(base)).files.map(file=>[file.path,file.content]));
+  assert.doesNotMatch(withoutAddress.get('public/contact.html'),/\b123 Main Street\b|\b555-0100\b/);
+  const spec=completeSpec({...base,contactAddress:'18 Market Road, Lahore, Punjab, Pakistan'});
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  assert.match(files.get('public/contact.html'),/18 Market Road, Lahore, Punjab, Pakistan/);
+  const unsafe=completeSpec({...base,contactAddress:'<script>alert(1)</script>, Lahore'});
+  const unsafeFiles=new Map(generateProject(unsafe).files.map(file=>[file.path,file.content]));
+  assert.match(unsafeFiles.get('public/contact.html'),/&lt;script&gt;alert\(1\)&lt;\/script&gt;, Lahore/);
+  assert.doesNotMatch(unsafeFiles.get('public/contact.html'),/<script>alert\(1\)<\/script>/);
+});
