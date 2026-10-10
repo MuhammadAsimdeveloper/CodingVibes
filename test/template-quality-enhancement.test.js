@@ -12,6 +12,15 @@ test('every template exposes a reusable quality contract and capability map',()=
   }
 });
 
+test('template prompts preserve no-fabrication and restrained-motion rules for every template',async()=>{
+  const {templatePrompt}=await import('../src/templates/catalog.js');
+  const templates=listTemplates();
+  for(const template of templates){
+    const prompt=templatePrompt(template.id).toLowerCase();
+    for(const phrase of ['never fabricate customer identities','user supplies verifiable evidence','purple gradients','pill-shaped buttons','cursor-following effects','made with ai']) assert.ok(prompt.includes(phrase),template.id+': '+phrase);
+  }
+});
+
 test('template search ranks relevant templates ahead of generic substring matches',()=>{
   const results=searchTemplates('3d property', {limit:5});
   assert.ok(results.length>0);
