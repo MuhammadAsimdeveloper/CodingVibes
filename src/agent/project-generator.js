@@ -6,6 +6,7 @@ import {CODINGVIBES_VERSION} from '../version.js';
 import {PUBLIC_ROBOTS,cleanTitle,cleanDescription,absoluteUrl,jsonLdGraph,websiteSchema,breadcrumbSchema} from '../seo/metadata.js';
 import {createDefaultSiteContent} from '../site/content.js';
 import {createAppIconPng} from '../site/icons.js';
+import {optimizePngBuffer} from '../assets/png-optimizer.js';
 import {contentRuntimeJs} from '../site/runtime.js';
 import {kitForKind} from '../site/kits.js';
 import {designModeContract,defaultDesignSystem} from '../platform/feature-suite.js';
@@ -147,6 +148,15 @@ export function generateProject(spec){
 files.push({path:'public/styles.css',content:styles(spec)});
  for(const route of spec.pages){if(route==='/admin'||route==='/login')continue;files.push({path:route==='/'?'public/index.html':`public/${route.slice(1).replace(/[^a-zA-Z0-9_-]/g,'-')}.html`,content:pageMarkup(route,spec)});}
  files.push({path:'public/404.html',content:'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escHtml(pageSeoTitle('/404',spec))+'</title><meta name="description" content="'+escHtml(pageSeoDescription('/404',spec,pageSeoTitle('/404',spec)))+'"><link rel="icon" href="/favicon.svg"><link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="stylesheet" href="/styles.css"></head><body><main class="container"><p>404</p><h1>Page not found</h1><p>The page you requested could not be found.</p><a class="primary-cta" href="/">Return home</a></main></body></html>'});files.push({path:'public/manifest.webmanifest',content:JSON.stringify({name:spec.siteTemplateLabel||spec.appName||'Build Vibe app',short_name:String(spec.siteTemplateLabel||spec.appName||'Build Vibe').slice(0,12),start_url:'/',display:spec.target?.id==='web-pwa'?'standalone':'browser',background_color:'#0b1020',theme_color:'#0b1020',icons:[{src:'/favicon.svg',sizes:'any',type:'image/svg+xml',purpose:'any'},{src:'/icon-192.png',sizes:'192x192',type:'image/png',purpose:'any'},{src:'/icon-512.png',sizes:'512x512',type:'image/png',purpose:'any maskable'}]},null,2)+'\n'});files.push({path:'test/acceptance.test.js',content:acceptance(spec)});if(spec.target?.id==='web-pwa'){files.push({path:'public/sw.js',content:`self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});\n`});}files.push({path:'README.md',content:`# Generated Build Vibe app\n\nThis application was generated from a structured requirements contract and verified before commit.\n\n## Contract\n\n- Pages: ${spec.pages.join(', ')}\n- APIs: ${spec.apis.map(x=>`${x.method} ${x.path}`).join(', ')||'none'}\n- Data entities: ${spec.dataModel.map(x=>x.name).join(', ')||'none'}\n\n## Content architecture\n\nThe visual template reads editable records from public/content/site.json. Products, variants, collections and other site-kit records can be updated without rewriting the presentation layer.\\n\\n## Owner admin\\n\\nEvery generated site includes /admin. Configure CV_OWNER_EMAIL, CV_OWNER_PASSWORD and CV_SESSION_SECRET. A public /login page is generated only when requested.\\n\\n## Deployment\\n\\nThe project is portable. Download the ZIP for compatible cPanel/shared hosting, push the same source to GitHub, or publish the same verified artifact through a configured deployment adapter. Provider credentials are never written into the source tree.\\n`});
- return {files,summary:`Generate ${spec.pages.length} pages and ${spec.apis.length} API routes`,manifestHash:hash(files.map(x=>({path:x.path,content:x.content})))};
+ let optimizedPngCount=0,optimizedPngBytes=0;
+ files=files.map(file=>{
+  if(!Buffer.isBuffer(file.content))return file;
+  const result=optimizePngBuffer(file.content);
+  if(!result.supported)return file;
+  optimizedPngCount++;
+  optimizedPngBytes+=result.bytesSaved;
+  return {...file,content:result.buffer};
+ });
+ return {files,summary:`Generate ${spec.pages.length} pages and ${spec.apis.length} API routes`,assetOptimization:{pngFilesChecked:optimizedPngCount,bytesSaved:optimizedPngBytes},manifestHash:hash(files.map(x=>({path:x.path,content:x.content})))};
 }
 export function materializeProject(plan,root){for(const file of plan.files){const rel=normalizeRelative(file.path);const target=path.resolve(root,rel);if(!target.startsWith(path.resolve(root)+path.sep))throw new Error('Generated file escapes root');fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,file.content);}}
