@@ -38,6 +38,7 @@ const tagContent = (html, pattern) => { const flags=pattern.flags.includes('g')?
 function resolveAsset(files, url, baseUrl) {
   const raw=String(url||'').trim();
   if(!raw || /^data:/i.test(raw)) return null;
+  if(/^__SITE_URL__\//.test(raw)){const pathname=raw.replace(/^__SITE_URL__\//,'');return files.get('public/'+pathname)||files.get(pathname)||null;}
   if(/^https?:\/\//i.test(raw)) {
     if(!baseUrl || !raw.startsWith(baseUrl.replace(/\/$/,''))) return null;
     try { return files.get('public/'+new URL(raw).pathname.replace(/^\//,''))||files.get(new URL(raw).pathname.replace(/^\//,''))||null; } catch { return null; }
@@ -63,10 +64,12 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const allTitlesPresent=publicHtml.length>0&&publicHtml.every(page=>page.title.length>0);
   const uniqueTitles=new Set(titles).size===titles.length;
   const allDescriptions=publicHtml.length>0&&publicHtml.every(page=>page.description.length>=50&&page.description.length<=170);
-  const allHtml=pageData.map(page=>page.html).join('\n');
-  const allFilesText=fileEntries.map(([name,value])=>name+'\n'+contentOf(value)).join('\n');
-  const robots=read('public/robots.txt')||read('robots.txt');
-  const sitemap=read('public/sitemap.xml')||read('sitemap.xml');
+  const configuredBase=String(baseUrl||'').replace(/\/$/,'');
+  const tokenized=value=>String(value||'').replaceAll('__SITE_URL__',configuredBase||'__SITE_URL__');
+  const allHtml=tokenized(pageData.map(page=>page.html).join('\n'));
+  const allFilesText=tokenized(fileEntries.map(([name,value])=>name+'\n'+contentOf(value)).join('\n'));
+  const robots=tokenized(read('public/robots.txt')||read('robots.txt'));
+  const sitemap=tokenized(read('public/sitemap.xml')||read('sitemap.xml'));
   const iconFiles=fileEntries.filter(([name])=>/favicon\.(svg|ico|png)$/i.test(name)||/apple-touch-icon.*\.(png|webp)$/i.test(name)||/icon-\d+.*\.(png|webp)$/i.test(name));
   const manifest=read('public/site.webmanifest')||read('public/manifest.webmanifest')||read('public/manifest.json')||read('site.webmanifest');
   let manifestData=null;try{manifestData=JSON.parse(manifest)}catch{}
@@ -82,7 +85,8 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const imageAssets=fileEntries.filter(([name,value])=>/\.(png|jpe?g|webp|avif)$/i.test(name)&&value&&typeof value==='object');
   const socialUrl=tagContent(allHtml,/<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["']([^"']+)["'][^>]*>/i)[0]||'';
   const socialAsset=resolveAsset(fileMap,socialUrl,baseUrl);
-  const socialMetaOk=!!socialUrl&&(/^(https?:\/\/|\/)/i.test(socialUrl));
+  const socialUrlTemplate=/^__SITE_URL__\//.test(socialUrl);
+  const socialMetaOk=!!socialUrl&&(/^(https?:\/\/|\/)/i.test(socialUrl)||socialUrlTemplate);
   const socialAssetText=contentOf(socialAsset);
   const socialDimensions=Boolean(socialAsset&&((typeof socialAsset==='object'&&socialAsset.width>=1200&&socialAsset.height>=600)||(/<svg\b/i.test(socialAssetText)&&/width=[\"']1200[\"']/i.test(socialAssetText)&&/height=[\"']630[\"']/i.test(socialAssetText))));
   const hasPrivacy=pageData.some(page=>/^\/(privacy|privacy-policy)$/.test(page.route));
@@ -100,9 +104,9 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
     result('meta-description',allDescriptions?'PASS':'FAIL',['Routes with descriptions of 50–170 characters: '+publicHtml.filter(page=>page.description.length>=50&&page.description.length<=170).length+'/'+publicHtml.length],'Add a useful route-specific description of approximately 50–160 characters.'),
     result('primary-cta',config.ctaAboveFoldVerified===true?'PASS':noCtaNeeded?'NOT_APPLICABLE':ctaEvidence.length?'NEEDS_INPUT':'FAIL',['Pages with recognizable primary CTA: '+ctaEvidence.length,config.ctaAboveFoldVerified===true?'Viewport placement verified':'Above-the-fold placement not verified'],'Verify the primary action is visible without scrolling at target desktop and mobile viewport sizes.'),
     result('favicon-set',iconFiles.length&&manifestHasIcons?'PASS':'FAIL',['Icon assets found: '+iconFiles.length,manifest?'Web app manifest exists':'No web app manifest found',manifestHasIcons?'Manifest contains icon references':'Manifest icon references missing or invalid'],'Provide favicon plus a valid manifest with suitable app icons for supported platforms.'),
-    result('robots-txt',/^User-agent:/im.test(robots)&&/Sitemap:\s*https?:\/\//i.test(robots)?'PASS':'FAIL',[robots?'robots.txt exists':'robots.txt missing',/Sitemap:\s*https?:\/\//i.test(robots)?'Absolute sitemap URL found':'Absolute sitemap URL missing'],'Add a valid robots.txt and absolute sitemap URL for the production host.'),
-    result('sitemap-xml',/<urlset\b/i.test(sitemap)&&/<loc>https?:\/\//i.test(sitemap)?'PASS':'FAIL',[sitemap?'sitemap.xml exists':'sitemap.xml missing','Public route count: '+publicHtml.length],'Generate valid XML containing absolute URLs for all public, indexable routes and excluding private routes.'),
-    result('open-graph-image',socialMetaOk&&(socialDimensions||config.openGraphImageVerified===true)?'PASS':socialMetaOk?'NEEDS_INPUT':'FAIL',[socialUrl?'Open Graph image URL found':'Open Graph image URL missing',socialDimensions?'Image dimensions meet 1200×600 minimum':config.openGraphImageVerified===true?'Image response verified':'Image response/dimensions not verified'],'Provide a reachable, branded social preview image and verify its response and dimensions.'),
+    result('robots-txt',/^User-agent:/im.test(robots)&&/Sitemap:\s*https?:\/\//i.test(robots)?'PASS':/^User-agent:/im.test(robots)&&/Sitemap:\s*__SITE_URL__\//i.test(robots)?'NEEDS_INPUT':'FAIL',[robots?'robots.txt exists':'robots.txt missing',/Sitemap:\s*https?:\/\//i.test(robots)?'Absolute sitemap URL found':/Sitemap:\s*__SITE_URL__\//i.test(robots)?'Production host placeholder remains':'Absolute sitemap URL missing'],'Set the production base URL and validate robots.txt before publishing.'),
+    result('sitemap-xml',/<urlset\b/i.test(sitemap)&&/<loc>https?:\/\//i.test(sitemap)?'PASS':/<urlset\b/i.test(sitemap)&&/<loc>__SITE_URL__\//i.test(sitemap)?'NEEDS_INPUT':'FAIL',[sitemap?'sitemap.xml exists':'sitemap.xml missing','Public route count: '+publicHtml.length],'Set the production base URL and generate absolute URLs for public, indexable routes only.'),
+    result('open-graph-image',socialMetaOk&&!socialUrlTemplate&&(socialDimensions||config.openGraphImageVerified===true)?'PASS':socialMetaOk?'NEEDS_INPUT':'FAIL',[socialUrl?'Open Graph image URL found':'Open Graph image URL missing',socialDimensions?'Image dimensions meet 1200×600 minimum':config.openGraphImageVerified===true?'Image response verified':'Production image response/dimensions not verified'],'Set the production base URL and verify the branded social image response and dimensions.'),
     result('image-alt',images.length===0?'NOT_APPLICABLE':missingAlt.length===0?'PASS':'FAIL',['Images: '+images.length,'Images missing explicit alt attribute: '+missingAlt.length],'Add useful alt text to meaningful images; use alt="" only for decorative images.'),
     result('mobile-breakpoints',/@media\s*\([^)]*(?:max|min)-width\s*:/i.test(cssText)?'PASS':'FAIL',[cssText?'CSS files found':'No CSS files found'],'Add and browser-test responsive breakpoints and verify there is no horizontal overflow.'),
     result('sticky-mobile-cta',noCtaNeeded?'NOT_APPLICABLE':config.stickyMobileCtaImplemented===true?'PASS':'NEEDS_INPUT',[config.stickyMobileCtaImplemented===true?'Sticky CTA explicitly confirmed':'No verified sticky mobile CTA'],'If appropriate for the site goal, add a keyboard-accessible, dismissible sticky CTA that does not obscure content.'),
