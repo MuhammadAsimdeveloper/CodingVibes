@@ -14,7 +14,7 @@ test('data.json.csv is a canonical local contract and converts object rows with 
   assert.equal(result.status,'COMPLETED');
   assert.equal(result.output.rowCount,2);
   assert.deepEqual(result.output.columns,['name','age','active','city']);
-  assert.equal(result.output.csv,'name,age,active,city\nAda,36,true,\nGrace,,false,New York');
+  assert.equal(result.output.csv,'name,age,active,city\r\nAda,36,true,\r\nGrace,,false,New York');
   assert.equal(result.networkUsed,false);
 });
 
@@ -24,7 +24,7 @@ test('data.json.csv quotes commas, quotes and newlines and serializes nested val
     {text:'next\nline',quote:'',nested:null,tags:[]}
   ]});
   assert.equal(result.status,'COMPLETED');
-  assert.equal(result.output.csv,'text,quote,nested,tags\n"line 1, line 2","She said ""yes""","{""ok"":true}","[""a"",""b""]"\n"next\nline",,,"[]"');
+  assert.equal(result.output.csv,'text,quote,nested,tags\r\n"line 1, line 2","She said ""yes""","{""ok"":true}","[""a"",""b""]"\r\n"next\nline",,,"[]"');
 });
 
 test('data.json.csv prevents spreadsheet formula injection in string cells but preserves numeric cells',async()=>{
