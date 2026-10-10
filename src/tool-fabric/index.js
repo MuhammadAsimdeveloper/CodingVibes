@@ -502,6 +502,7 @@ export async function runTool(id, input = {}) {
         output=runCalculatorTool(contract.id,input);break;
       case 'dev.hash.generate':
       case 'security.checksum.verify':
+      case 'security.password.generate':
       case 'dev.uuid.generate':
       case 'dev.url.encode':
       case 'dev.timestamp.convert':
