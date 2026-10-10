@@ -13,7 +13,7 @@ This standard applies to every website, app, 3D product page, and animated exper
 - Never ship cursor-following animations, pointer trails, or decorative cursor glow.
 - Avoid excessive scroll-linked animation, looping decorative motion, magnetic buttons, and long staggered entrance choreography.
 - Respect `prefers-reduced-motion`. Keep essential content visible and usable without animation.
-- Use authentic user-provided, licensed, or clearly identified illustrative media. Never portray synthetic imagery as a real customer, team, product, place, or event.
+- Use authentic user-provided, licensed, or clearly identified illustrative media. Never use random placeholder-photo endpoints or fake-avatar services, and never portray synthetic imagery as a real customer, team, product, place, or event. Static checks can flag known placeholder providers but cannot prove whether an arbitrary image was AI-generated.
 - Do not invent legal claims or present boilerplate as a reviewed policy.
 
 ## Social proof evidence contract
