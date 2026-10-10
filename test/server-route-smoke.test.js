@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {analyzeRequirements} from '../src/agent/requirements.js';
+import {generateProject,materializeProject} from '../src/agent/project-generator.js';
 
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-server-'));
 process.env.NODE_ENV='test';
@@ -12,6 +14,7 @@ process.env.CODINGVIBES_PUBLIC_URL='http://127.0.0.1:0';
 process.env.CODINGVIBES_ALLOWED_ORIGINS='http://127.0.0.1:0';
 process.env.CODINGVIBES_ENFORCE_QUOTAS='false';
 process.env.CODINGVIBES_BILLING_REQUIRED='false';
+process.env.CODINGVIBES_EXPORT_ROOT=path.join(root,'exports');
 
 const {server}=await import('../src/server.js?route-smoke');
 const {Store}=await import('../src/db/store.js');
@@ -94,6 +97,20 @@ test('server public and authenticated route smoke covers launch control plane',a
   const me=await req('/api/auth/me',{headers:{cookie:sessionCookie}});
   const userId=me.body.user?.id||me.body.id;
   assert.ok(userId,'authenticated user id should be available');
+
+  const exportSession=smokeStore.createSession(userId,pid,'Verified export smoke');
+  const exportRun=smokeStore.createRun(userId,exportSession.id,'verified export endpoint smoke');
+  const exportWorkspace=fs.mkdtempSync(path.join(root,'export-workspace-'));
+  materializeProject(generateProject(analyzeRequirements('Build a professional local service website with a contact form.')),exportWorkspace);
+  smokeStore.updateRun(exportRun.id,userId,{workspace:exportWorkspace,status:'verified'});
+  const exported=await req('/api/projects/'+pid+'/export',{headers:{cookie:sessionCookie}});
+  assert.equal(exported.response.status,200,'verified projects should export a ZIP');
+  assert.match(exported.body.downloadUrl,/^\\/api\\/deployments\\/[^/]+\\/file$/);
+  assert.ok(exported.body.downloadName.endsWith('.zip'));
+  const zipDownload=await req(exported.body.downloadUrl,{headers:{cookie:sessionCookie}});
+  assert.equal(zipDownload.response.status,200,'the generated export URL should download the ZIP');
+  assert.match(zipDownload.response.headers.get('content-type')||'','application/zip');
+
   const assetSession=smokeStore.createSession(userId,pid,'Image asset smoke');
   const assetRun=smokeStore.createRun(userId,assetSession.id,'optimized image upload smoke');
   const assetWorkspace=fs.mkdtempSync(path.join(root,'asset-workspace-'));
