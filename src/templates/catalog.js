@@ -1,3 +1,4 @@
+import {getDesignGuidance,renderDesignGuidance} from '../agent/design-guidance.js';
 const TEMPLATES=[
 {id:'aurora-saas',label:'Aurora SaaS',category:'SaaS',kind:'business',tier:'free',style:'futuristic',experience:'motion',featured:true,tags:['saas','ai','b2b'],prompt:'Create a polished SaaS landing site with pricing, product benefits, testimonials, FAQ, signup CTA and responsive sections.',features:[]},
 {id:'studio-agency',label:'Studio Agency',category:'Agency',kind:'agency',tier:'free',style:'editorial',experience:'motion',featured:true,tags:['agency','portfolio','case studies'],prompt:'Create a premium creative agency site with case studies, services, process, team and contact CTA.',features:[]},
@@ -105,6 +106,7 @@ function templateQuality(t){
     requiredSurfaces:[...new Set(surfaces)],
     requiredFeatures:[...new Set(requiredFeatures)],
     motion:t.motion?.mode||null,
+    designGuidance:getDesignGuidance({productType:t.kind,style:t.style,stack:t.experience==='3d'?'3d-web':'web-node',intent:t.prompt}),
     webglFallback:Boolean(t.experience==='3d'),
     localRuntime:true
   };
@@ -165,5 +167,5 @@ export function templatePrompt(id){
   const t=TEMPLATES.find(t=>t.id===String(id));
   if(!t)return '';
   const quality=templateQuality({...t,motion:motionProfile(t)});
-  return t.prompt+'\n\nQuality contract: '+quality.requiredFeatures.join(', ')+'. Core runtime must remain provider-independent and degrade gracefully when optional integrations are unavailable. Never use fabricated reviews or customer identities, testimonials, ratings, logos, user counts, growth figures or performance metrics. Use social proof only when the user supplies verifiable evidence; otherwise omit it and use specific product benefits, real work samples or useful FAQs. Do not use purple gradients, pill-shaped buttons, emoji icons, cursor-following effects, excessive scroll animation, vague filler copy, em dashes or unwanted “Made with AI” attribution.';
+  return t.prompt+'\n\n'+renderDesignGuidance(quality.designGuidance)+'\n\nQuality contract: '+quality.requiredFeatures.join(', ')+'. Core runtime must remain provider-independent and degrade gracefully when optional integrations are unavailable. Never use fabricated reviews or customer identities, testimonials, ratings, logos, user counts, growth figures or performance metrics. Use social proof only when the user supplies verifiable evidence; otherwise omit it and use specific product benefits, real work samples or useful FAQs. Do not use purple gradients, pill-shaped buttons, emoji icons, cursor-following effects, excessive scroll animation, vague filler copy, em dashes or unwanted “Made with AI” attribution.';
 }
