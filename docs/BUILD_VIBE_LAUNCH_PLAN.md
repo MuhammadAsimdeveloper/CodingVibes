@@ -1110,3 +1110,10 @@ Implemented and CI-verified at `bcb4288036d0ac45b4a045e83531d406d99a85c6`:
 - Contact form loading/error feedback and noindex thank-you route; only successful submissions redirect to confirmation.
 
 **Still not complete:** the new 20-point report does not yet block generation/publishing; the consent/form/CTA features need browser-level interaction coverage; full icon sizes, customer analytics installation, owner-supplied contact details, and image optimization remain open. See [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md) for the authoritative matrix. Do not mark the product launch-ready from these changes alone.
+
+
+## Production quality gate integration (2026-10-10)
+
+The 20-point report is now attached to web product-quality evidence. HTTP smoke verifies unknown-route 404, and Playwright smoke exercises primary CTA placement, cookie consent preferences, mobile sticky CTA dismissal, contact error/retry/loading, and successful thank-you redirect. The verification contract blocks critical report gaps in production (`NODE_ENV=production`) or when `CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true`; local development remains informational by default. Full CI passed at `962d5006ed239ff39476aeefe3d43cb05d4d51a9`.
+
+Remaining launch work includes owner-provided contact data, customer analytics configuration and tracking consent integration, platform-specific icon sets, automatic image optimization in generated exports, broader viewport/accessibility checks, and production infrastructure/credentials. Do not mark the platform launch-ready until these are closed and independently verified.
