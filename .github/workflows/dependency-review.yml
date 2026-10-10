@@ -22,7 +22,7 @@ jobs:
         run: npm audit --omit=optional --audit-level=high
       - name: GitHub dependency review (best effort)
         continue-on-error: true
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
       - name: Dependency review fallback note
