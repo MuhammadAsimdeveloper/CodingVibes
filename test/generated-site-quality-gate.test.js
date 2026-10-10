@@ -9,7 +9,7 @@ import { auditGeneratedSite, GENERATED_SITE_REQUIREMENTS } from '../src/verifica
 const goodHtml = ({title='Home',description='A useful description for this public website route that explains the value to its intended visitors.', extra='' }={}) => `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><meta name="description" content="${description}"><link rel="canonical" href="https://example.test/"><link rel="icon" href="/favicon.svg"><meta property="og:image" content="https://example.test/social.png"></head><body><main><h1>Welcome</h1><a class="primary-cta" href="/contact">Get started</a><img src="/hero.webp" alt="A team collaborating"><form><label for="email">Email</label><input id="email" type="email" required><button type="submit">Send</button><p role="alert"></p></form>${extra}</main></body></html>`;
 
 test('exports a stable, complete list of the 20 launch requirements',()=>{
-  assert.equal(GENERATED_SITE_REQUIREMENTS.length,20);
+  assert.equal(GENERATED_SITE_REQUIREMENTS.length,21);
   assert.equal(new Set(GENERATED_SITE_REQUIREMENTS.map(item=>item.id)).size,20);
   assert.ok(GENERATED_SITE_REQUIREMENTS.every(item=>item.id&&item.label&&item.severity));
 });
@@ -32,8 +32,8 @@ test('reports verifiable public SEO, image and form evidence without overclaimin
     baseUrl:'https://example.test',
     config:{contactAddress:'owner supplied address',analyticsConfigured:true,analyticsConsentAware:true,cookieConsentImplemented:true,thankYouRoute:'/thank-you',stickyMobileCtaImplemented:true,ctaAboveFoldVerified:true}
   });
-  assert.equal(report.requirements.length,20);
-  assert.equal(report.summary.total,20);
+  assert.equal(report.requirements.length,21);
+  assert.equal(report.summary.total,21);
   assert.ok(['PASS','FAIL','NEEDS_INPUT','NOT_APPLICABLE'].includes(report.requirements.find(item=>item.id==='meta-title').status));
   assert.equal(report.requirements.find(item=>item.id==='meta-title').status,'PASS');
   assert.equal(report.requirements.find(item=>item.id==='meta-description').status,'PASS');
