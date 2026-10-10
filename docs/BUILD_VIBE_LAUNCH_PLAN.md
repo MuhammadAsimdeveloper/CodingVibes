@@ -1081,3 +1081,10 @@ Status meanings: IMPLEMENTED FOUNDATION means supporting code exists but every g
 ## Generated website quality gate — required follow-up (2026-10-10)
 
 Before claiming every generated website is launch-ready, implement and enforce the 20-point checklist in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Current source includes SEO metadata/structured-data helpers, robots/sitemap checks, discoverability auditing, a product-quality contract, reduced-motion support, and privacy/terms templates. These are foundations, not proof that each generated site has a correct 404, above-the-fold CTA, complete icon set, sticky mobile CTA, working form confirmation/error paths, consent banner, customer-site analytics, real contact address, and optimized image assets. Keep unconfirmed items explicitly marked until runtime evidence exists. Require per-project artifact + HTTP + browser checks, a machine-readable 20-point report, and publish blocking for critical failures. Preserve the existing architecture and never weaken verification gates.
+
+
+## Implementation update — generated-site quality gate (2026-10-10)
+
+Completed and CI-verified: `src/verification/generated-site-quality.js` defines the 20-check contract and report statuses; `scripts/generated-site-quality-check.mjs` exposes `npm run site:quality`; generated projects now receive a branded `public/404.html`; unknown public routes return HTTP 404. Tests cover audit reporting and real generated-server 404 behavior. CI passed at `dd1bd2662125db43634ccdca4055b58b8bb852c3`.
+
+**Still incomplete:** the audit CLI is not yet invoked automatically by generation/publish, so critical findings do not yet block customer publishing through this new gate. Next priority is integration into the existing verification/publish workflow, followed by remaining checklist gaps in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Do not label the full checklist complete.
