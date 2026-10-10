@@ -56,3 +56,25 @@ test('generated sites include a branded 404 artifact and unknown paths return HT
   assert.match(files.get('public/404.html'),/Page not found|page could not be found/i);
   assert.match(files.get('app/server.js'),/send\(res,404/,'unknown public routes must return HTTP 404');
 });
+
+test('generated websites ship an accessible, persistent, opt-in cookie preference manager',()=>{
+  const spec=completeSpec(analyzeRequirements('Build a modern local plumbing business website with a contact form'));
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  const home=files.get('public/index.html')||'';
+  const consent=files.get('public/cookie-consent.js')||'';
+  const css=files.get('public/styles.css')||'';
+  const pkg=JSON.parse(files.get('package.json'));
+  assert.match(home,/data-cookie-consent/);
+  assert.match(home,/data-cookie-accept/);
+  assert.match(home,/data-cookie-reject/);
+  assert.match(home,/data-cookie-settings/);
+  assert.match(home,/data-cookie-reopen/);
+  assert.match(home,/cookie-consent\.js/);
+  assert.match(consent,/localStorage\.setItem/);
+  assert.match(consent,/buildvibe:consentchange/);
+  assert.match(consent,/analytics:Boolean\(analytics\)/);
+  assert.match(consent,/marketing:Boolean\(marketing\)/);
+  assert.match(css,/\.cookie-consent/);
+  assert.match(css,/@media\(max-width:640px\)/);
+  assert.match(pkg.scripts.check,/node --check public\/cookie-consent\.js/);
+});
