@@ -138,3 +138,9 @@ Remaining: broader accessibility budgets, icon sets for platform-specific instal
 Generated-site artifacts now include 180×180 Apple touch, 192×192 PWA and 512×512 maskable PNG icons, retain the SVG fallback, and expose correct icon links in public, 404, admin and sign-in pages. Browser E2E confirms each PNG endpoint returns HTTP 200 with `image/png` and the expected dimensions. Full CI passed on revision `588156e398bd643c7ed3bd7a5a17979983bea329` ([run](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750)).
 
 Remaining: automatic generated-export raster optimization, broader accessibility budgets, and real production infrastructure evidence.
+
+### Generated PNG export optimization (2026-10-11)
+
+Added a lossless PNG export optimizer for binary PNG assets. It validates chunk CRCs, recompresses the IDAT stream, preserves non-IDAT chunks, and falls back to the original bytes on malformed/unsupported input. Project generation applies it before manifest hashing and reports checked PNG count and bytes saved. Tests cover lossless decoded-pixel equality, malformed-input fallback and generated-icon integration.
+
+Scope note: this is not yet a general JPEG/WebP transcoder and does not replace the existing browser-local optimizer. CI status for this checkpoint must be linked to the exact implementation revision before marking verified.
