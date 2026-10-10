@@ -68,8 +68,8 @@ const TEMPLATES=[
 {id:'subscription-commerce',label:'Subscription Commerce',category:'Commerce',kind:'ecommerce',tier:'free',style:'luxury',experience:'motion',tags:['subscription','commerce','recurring','bundles'],prompt:'Create a subscription commerce site with plans, product bundles, recurring billing UI, account area, product catalog, checkout CTA, FAQs and owner content management.',features:[]},
 {id:'real-estate-rentals',label:'Real Estate Rentals',category:'Real Estate',kind:'realEstate',tier:'free',style:'modern',experience:'motion',tags:['rentals','apartments','property','search'],prompt:'Create a rental property marketplace with availability filters, listing detail pages, neighborhood content, inquiry flow, landlord profiles, saved listings and an owner admin portal.',features:[]},];
 
-const MOTION_BY_STYLE={luxury:{mode:'luxury',scroll:'cinematic-reveal',reveal:'soft-clip',hover:'magnetic',transition:'shared-layout'},editorial:{mode:'editorial',scroll:'chapter',reveal:'split-and-clip',hover:'underline-lift',transition:'shared-layout'},futuristic:{mode:'cinematic',scroll:'depth',reveal:'glow-and-scale',hover:'magnetic',transition:'shared-layer'},playful:{mode:'playful',scroll:'story',reveal:'spring',hover:'tilt',transition:'shared-layout'},minimal:{mode:'smooth',scroll:'subtle',reveal:'fade-up',hover:'lift',transition:'shared-layout'},bold:{mode:'snappy',scroll:'snap-story',reveal:'wipe',hover:'magnetic',transition:'shared-layout'},retro:{mode:'playful',scroll:'chapter',reveal:'wipe',hover:'tilt',transition:'shared-layout'},brutalist:{mode:'snappy',scroll:'hard-cut',reveal:'hard-cut',hover:'contrast',transition:'instant'},modern:{mode:'smooth',scroll:'story',reveal:'clip-and-fade',hover:'magnetic',transition:'shared-layout'}};
-function motionProfile(t){const base=MOTION_BY_STYLE[t.style]||MOTION_BY_STYLE.modern;const immersive=t.experience==='3d';return immersive?{...base,mode:'cinematic',scroll:'camera-story',reveal:'depth',hover:'focus',transition:'shared-camera',scene:true,webglFallback:true}:{...base,scene:false,webglFallback:false};}
+const MOTION_BY_STYLE={luxury:{mode:'luxury',scroll:'reveal',reveal:'fade-up',hover:'lift',transition:'shared-layout'},editorial:{mode:'editorial',scroll:'reveal',reveal:'fade-up',hover:'underline-lift',transition:'shared-layout'},futuristic:{mode:'cinematic',scroll:'reveal',reveal:'fade-up',hover:'magnetic',transition:'shared-layer'},playful:{mode:'playful',scroll:'reveal',reveal:'fade-up',hover:'tilt',transition:'shared-layout'},minimal:{mode:'smooth',scroll:'subtle',reveal:'fade-up',hover:'lift',transition:'shared-layout'},bold:{mode:'snappy',scroll:'reveal',reveal:'fade-up',hover:'magnetic',transition:'shared-layout'},retro:{mode:'playful',scroll:'chapter',reveal:'wipe',hover:'tilt',transition:'shared-layout'},brutalist:{mode:'snappy',scroll:'reveal',reveal:'fade-up',hover:'contrast',transition:'instant'},modern:{mode:'smooth',scroll:'story',reveal:'clip-and-fade',hover:'magnetic',transition:'shared-layout'}};
+function motionProfile(t){const base=MOTION_BY_STYLE[t.style]||MOTION_BY_STYLE.modern;const immersive=t.experience==='3d';return immersive?{...base,mode:'cinematic',scroll:'reveal',reveal:'depth',hover:'focus',transition:'shared-camera',scene:true,webglFallback:true}:{...base,scene:false,webglFallback:false};}
 
 const QUALITY_BY_KIND={
   ecommerce:['catalog/product states','cart and checkout','inventory/availability','search and filtering'],
@@ -81,7 +81,7 @@ const QUALITY_BY_KIND={
   content:['draft/publish content workflow','search and filtering','reading accessibility'],
   portfolio:['case-study storytelling','media fallbacks','contact/conversion path'],
   agency:['services/case studies','lead/contact flow','team/content states'],
-  local:['service-area content','quote/booking flow','review/testimonial states'],
+  local:['service-area content','quote/booking flow','evidence-backed customer feedback only when supplied'],
   immersive:['user-controlled immersive interactions','WebGL fallback','media fallbacks'],
   business:['service/content states','lead/contact flow','owner admin surface']
 };
@@ -165,5 +165,5 @@ export function templatePrompt(id){
   const t=TEMPLATES.find(t=>t.id===String(id));
   if(!t)return '';
   const quality=templateQuality({...t,motion:motionProfile(t)});
-  return t.prompt+'\n\nQuality contract: '+quality.requiredFeatures.join(', ')+'. Core runtime must remain provider-independent and degrade gracefully when optional integrations are unavailable.';
+  return t.prompt+'\n\nQuality contract: '+quality.requiredFeatures.join(', ')+'. Core runtime must remain provider-independent and degrade gracefully when optional integrations are unavailable. Never fabricate customer identities, testimonials, reviews, ratings, logos, user counts, growth figures or performance metrics. Use social proof only when the user supplies verifiable evidence; otherwise omit it and use specific product benefits, real work samples or useful FAQs. Do not use purple gradients, pill-shaped buttons, emoji icons, cursor-following effects, excessive scroll animation, vague filler copy, em dashes or unwanted “Made with AI” attribution.';
 }
