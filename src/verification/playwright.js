@@ -165,6 +165,8 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
       if(baselineDir){const base=baselinePath(baselineDir,p),diff=`${artifactDir}/${visualArtifactName(p,'diff')}`;visual=await comparePng(screenshot,base,diff,{visualThreshold,pixelThreshold});}
     }
     if(p==='/'){
+      const primaryCta=page.locator('[data-primary-cta]').first();
+      if(await primaryCta.count()){const box=await primaryCta.boundingBox();interactions.ctaAboveFoldVerified=Boolean(box&&box.y>=0&&box.y+box.height<=viewport.height)}
       const consent=page.locator('[data-cookie-consent]');
       if(await consent.count()){
         const initiallyVisible=await consent.isVisible();
@@ -205,7 +207,7 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
         const busyDuring=await form.getAttribute('aria-busy');
         await page.locator('#contactError').waitFor({state:'visible',timeout:5000});
         const errorVisible=await page.locator('#contactError').isVisible();
-        await page.waitForFunction(()=>{const button=document.querySelector('[data-submit-button]');return Boolean(button&&!button.disabled);},{timeout:5000});
+        await page.waitForFunction(()=>{const button=document.querySelector('[data-submit-button]');return Boolean(button&&!button.disabled);},null,{timeout:5000});
         interactions.formErrorsVerified=Boolean(errorVisible&&await page.locator('#contactError').textContent());
         interactions.loadingStatesVerified=Boolean(disabledDuring&&busyDuring==='true');
         await page.unroute('**/api/contact');
