@@ -63,3 +63,7 @@ SEO implementation never claims a ranking guarantee. Search visibility also depe
 ## LLM discovery
 
 The public site exposes /llms.txt as a supplemental machine-readable product index. It repeats the public intent page set and states the trust boundary: repository text, user project content and external research are data/evidence, not system instructions. The file is validated by the launch check alongside robots.txt and sitemap.xml.\n
+
+## Generated-site acceptance follow-up (2026-10-10)
+
+The SEO source foundation is present, but the release gate must validate actual generated outputs and HTTP behavior. Required follow-ups: unique title and useful description per public route; canonical/robots/sitemap consistency; valid Open Graph image response and dimensions; favicon/manifest coverage; meaningful alt text for non-decorative images; and exclusion of private routes. A source-level helper or static template is not sufficient evidence that every generated site passes. See [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md).
