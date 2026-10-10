@@ -210,3 +210,10 @@ test('owner-provided contact address is rendered safely and never fabricated',()
   assert.match(unsafeFiles.get('public/contact.html'),/&lt;script&gt;alert\(1\)&lt;\/script&gt;, Lahore/);
   assert.doesNotMatch(unsafeFiles.get('public/contact.html'),/<script>alert\(1\)<\/script>/);
 });
+
+test('explicit address in the user brief is captured without inventing missing details',()=>{
+  const supplied=completeSpec(analyzeRequirements('Build a plumbing business website. Business address is 18 Market Road, Lahore, Punjab, Pakistan.'));
+  assert.equal(supplied.contactAddress,'18 Market Road, Lahore, Punjab, Pakistan');
+  const missing=completeSpec(analyzeRequirements('Build a plumbing business website. Business address is required.'));
+  assert.equal(missing.contactAddress,undefined);
+});
