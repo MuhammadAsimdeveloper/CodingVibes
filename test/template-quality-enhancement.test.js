@@ -34,6 +34,17 @@ test('every template inherits the shared quality baseline and launch essentials'
   }
 });
 
+test('raw template briefs do not request fabricated social proof or excessive motion',async()=>{
+  for(const template of listTemplates()){
+    const prompt=templatePrompt(template.id).split('\n\nDesign guidance version')[0].toLowerCase();
+    assert.doesNotMatch(prompt,/testimonials?|social proof|scroll-driven|camera choreography|magnetic interactions|parallax|cinematic transitions/,template.id);
+    if(template.id==='business-directory'){
+      assert.match(prompt,/real submitted reviews/);
+      assert.match(prompt,/never seed invented reviews/);
+    }else assert.doesNotMatch(prompt,/\breviews?\b/,template.id);
+  }
+});
+
 test('template search ranks relevant templates ahead of generic substring matches',()=>{
   const results=searchTemplates('3d property', {limit:5});
   assert.ok(results.length>0);
