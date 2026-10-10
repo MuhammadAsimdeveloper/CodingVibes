@@ -11,6 +11,13 @@
 
 All notable Build Vibe changes are recorded here.
 
+## [Unreleased] — platform-specific generated app icons (2026-10-11)
+
+- Generated projects now include real 180px Apple touch, 192px PWA, and 512px maskable PNG icons plus the existing scalable SVG fallback.
+- Added correct HTML icon links for public pages, the 404 page, owner admin and sign-in; the web manifest now has a single canonical emission.
+- Added deterministic PNG generation, structural tests and browser HTTP/content-type/dimension verification.
+- Full Build Vibe CI passed on [588156e398bd643c7ed3bd7a5a17979983bea329](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750).
+
 ## [Unreleased] — responsive generated-site QA (2026-10-11)
 
 - Added real mobile/tablet/desktop browser viewport sweeps to generated-site verification, with measured horizontal-overflow failures and element diagnostics.

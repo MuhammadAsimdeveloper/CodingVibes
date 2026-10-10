@@ -45,3 +45,12 @@ Before implementing or changing website generation, read [`GENERATED_WEBSITE_QUA
 - Fixed the generated owner-admin page's long configuration hint overflow. Full CI passed on `29f57ebea72a9725e3ac62cc73ea035d3f45732f`: https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604.
 - Next priorities: platform-specific favicon/app icon sizes; optimize generated raster assets as part of export rather than only in the browser-local optimizer; extend accessibility and responsive budgets; keep real provider credentials, monitoring, backup/recovery and deployment evidence explicit.
 - Continue TDD from the first unfinished item. Do not mark launch-ready based only on source presence or CI; verify configured production services separately.
+
+
+## Latest implementation checkpoint — platform icons (2026-10-11)
+
+- Added deterministic PNG generation for Apple touch (180×180), PWA (192×192), and maskable PWA (512×512) assets, keeping the SVG favicon as a fallback.
+- Generated public pages, custom 404, admin and sign-in now reference the icon set; the manifest is emitted once and contains the two PNG install sizes.
+- Tests verify PNG dimensions/decompression, generated output, manifest entries, MIME type and served asset dimensions.
+- Full CI passed on `588156e398bd643c7ed3bd7a5a17979983bea329`: https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750.
+- Continue from the next unfinished roadmap item: generated-export raster optimization. Do not confuse the existing browser-local image optimizer with automatic optimization during export. Keep accessibility budgets and production environment/credentials/monitoring/recovery open until evidenced.

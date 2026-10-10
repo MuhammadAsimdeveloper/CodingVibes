@@ -131,3 +131,10 @@ The production verification contract blocks a web build when critical report che
 Generated-site Playwright smoke now checks every route at 375px, 768px and 1440px viewport widths and reports actual document/body width measurements. More than 2px of horizontal overflow fails the browser quality result; diagnostics include the first overflowing elements. The new check caught and helped fix an owner-admin hint overflow on mobile. Browser E2E and full CI passed on revision `29f57ebea72a9725e3ac62cc73ea035d3f45732f` ([run](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604)).
 
 Remaining: broader accessibility budgets, icon sets for platform-specific installs, generated-export raster optimization, and production infrastructure evidence.
+
+
+### Platform icon implementation update (2026-10-11)
+
+Generated-site artifacts now include 180×180 Apple touch, 192×192 PWA and 512×512 maskable PNG icons, retain the SVG fallback, and expose correct icon links in public, 404, admin and sign-in pages. Browser E2E confirms each PNG endpoint returns HTTP 200 with `image/png` and the expected dimensions. Full CI passed on revision `588156e398bd643c7ed3bd7a5a17979983bea329` ([run](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750)).
+
+Remaining: automatic generated-export raster optimization, broader accessibility budgets, and real production infrastructure evidence.
