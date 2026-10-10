@@ -282,6 +282,7 @@ export function auditProductExperience(workspace,spec={}){
   addCheck('custom_cursor_animation','no cursor-following animation',!(/pointermove|\.cursor[-_ ]?(?:follower|trail|glow)\b|cursor[-_ ]?(?:follower|trail)\b|customCursor|cursorFollower/i.test(source)),true);
   addCheck('excessive_scroll_motion','scroll motion is restrained',!(/ScrollTrigger|scroll-timeline|data-scroll-(?:speed|position)|camera-story|scroll\s*:\s*['"]story['"]|parallax\s*:\s*true/i.test(source)),true);
   addCheck('vague_marketing_copy','copy is specific rather than vague',!(/revolutioniz(?:e|es|ing)|cutting.edge|world.class|seamless experience|next.level solution|game.changing/i.test(html)),true);
+  addCheck('placeholder_copy','no template placeholder instructions',!(/replace (?:the )?(?:sample|placeholder|final) copy|replace with your real|proof and team details|built around your story|lorem ipsum|insert (?:testimonial|review|company name)|your (?:awesome )?(?:company|brand|tagline|slogan|product name)|coming soon|\b(?:todo|tbd)\b/i.test(html)),true);
 
   const required=contract.requiredFeatures;
   if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
