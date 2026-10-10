@@ -87,6 +87,60 @@ function verifyChecksum(input) {
   };
 }
 
+
+const ISO_INSTANT = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,3}))?(Z|[+-]\\d{2}:\\d{2})$/;
+
+function parseIsoInstant(value) {
+  if (typeof value !== 'string' || value.length > 40) invalid('value must be a strict ISO-8601 instant with an explicit UTC offset.');
+  const match = ISO_INSTANT.exec(value);
+  if (!match) invalid('value must include a full date/time and an explicit Z or ±HH:MM offset.');
+  const [,yearText,monthText,dayText,hourText,minuteText,secondText,fraction='',offset] = match;
+  const year=Number(yearText), month=Number(monthText), day=Number(dayText);
+  const hour=Number(hourText), minute=Number(minuteText), second=Number(secondText);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month-1] ||
+      hour > 23 || minute > 59 || second > 59) {
+    invalid('value contains an impossible calendar date or time.');
+  }
+  if (offset !== 'Z') {
+    const offsetHour=Number(offset.slice(1,3)), offsetMinute=Number(offset.slice(4,6));
+    if (offsetHour > 23 || offsetMinute > 59) invalid('value contains an invalid UTC offset.');
+  }
+  const milliseconds=Date.parse(value);
+  if (!Number.isFinite(milliseconds) || Math.abs(milliseconds) > 8.64e15) invalid('value is outside the supported JavaScript date range.');
+  return milliseconds;
+}
+
+function convertTimestamp(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input) ||
+      Object.keys(input).some(key => key !== 'value' && key !== 'mode')) {
+    invalid('Input must contain only value and mode.');
+  }
+  const modes=new Set(['iso-to-unix-seconds','iso-to-unix-milliseconds','unix-seconds-to-iso','unix-milliseconds-to-iso']);
+  if (typeof input.mode !== 'string' || !modes.has(input.mode)) {
+    invalid('mode must be iso-to-unix-seconds, iso-to-unix-milliseconds, unix-seconds-to-iso or unix-milliseconds-to-iso.');
+  }
+  let milliseconds;
+  if (input.mode.startsWith('iso-to-')) {
+    milliseconds=parseIsoInstant(input.value);
+  } else if (input.mode === 'unix-seconds-to-iso') {
+    if (typeof input.value !== 'number' || !Number.isFinite(input.value) || Math.abs(input.value) > 8.64e12) {
+      invalid('value must be a finite Unix-seconds number within the supported date range.');
+    }
+    milliseconds=Math.round(input.value*1000);
+  } else {
+    if (typeof input.value !== 'number' || !Number.isSafeInteger(input.value) || Math.abs(input.value) > 8.64e15) {
+      invalid('value must be a safe integer Unix-milliseconds number within the supported date range.');
+    }
+    milliseconds=input.value;
+  }
+  const date=new Date(milliseconds);
+  if (!Number.isFinite(date.getTime())) invalid('timestamp is outside the supported date range.');
+  const iso=date.toISOString();
+  return {output:{mode:input.mode,iso,unixMilliseconds:milliseconds,unixSeconds:milliseconds/1000},warnings:[]};
+}
+
 function makeUuid() {
   return {output:{uuid:randomUUID(),version:4},warnings:[]};
 }
@@ -116,6 +170,7 @@ export function runDeveloperTool(id,input={}) {
     case 'security.checksum.verify': return verifyChecksum(input);
     case 'dev.uuid.generate': return makeUuid();
     case 'dev.url.encode': return encodeUrl(input);
+    case 'dev.timestamp.convert': return convertTimestamp(input);
     default: invalid('No developer utility executor is registered for this id.');
   }
 }
