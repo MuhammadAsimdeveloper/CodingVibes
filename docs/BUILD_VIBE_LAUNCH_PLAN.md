@@ -1016,3 +1016,8 @@ Extended the existing Playwright browser smoke runner to collect measured naviga
 - **Verification: PASS on implementation revision `b65c87d61dab2abc873f8765084c2255240cdf1c`.** Build Vibe CI [37988776436](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776436) passed 314/314 tests, 0 failures and 0 skipped, along with coverage, syntax/release, SEO, server/browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security, scale-out doctor and launch readiness. CodeQL [37988776447](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776447) and Dependency Review [37988776485](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776485) passed on the same revision. A fresh run is required for the updated documentation head.
 
 **Launch boundary remains:** production runners/toolchains, provider/payment secrets, persistent backup/restore, TLS/DNS, monitoring and quota enforcement require real environment configuration and deployed evidence. Source CI does not provision these services.
+
+
+## PDF utilities implementation checkpoint — October 2026
+
+The existing Tool Fabric now defines four bounded local PDF tools: `pdf.info`, `pdf.merge`, `pdf.split`, and `pdf.rotate`. They use `pdf-lib`, validate Base64 and page selections, reject malformed or encrypted PDFs, and enforce explicit input, output, document-count, and page-count limits. They do not claim OCR, text extraction, compression, redaction, or decryption. This checkpoint is complete only after the PR's full CI, coverage, browser, security, launch, and operations gates pass on the exact head SHA.
