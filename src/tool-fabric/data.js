@@ -117,6 +117,73 @@ export function jsonToCsv(input = {}) {
 
 const MAX_CSV_BYTES = 500_000;
 
+
+function yamlInline(value) {
+  if (typeof value === 'string') return JSON.stringify(value);
+  if (value === null) return 'null';
+  if (typeof value === 'boolean' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.length ? null : '[]';
+  if (value && typeof value === 'object') return Object.keys(value).length ? null : '{}';
+  invalid('Only JSON-compatible YAML values are supported.');
+}
+
+function yamlNode(value,indent = 0) {
+  const pad = ' '.repeat(indent);
+  if (Array.isArray(value)) {
+    if (!value.length) return pad + '[]';
+    return value.map(item => {
+      const nested = item !== null && typeof item === 'object' &&
+        (Array.isArray(item) ? item.length > 0 : Object.keys(item).length > 0);
+      return nested ? pad + '-\\n' + yamlNode(item,indent+2) : pad + '- ' + yamlInline(item);
+    }).join('\\n');
+  }
+  if (value !== null && typeof value === 'object') {
+    const keys = Object.keys(value);
+    if (!keys.length) return pad + '{}';
+    return keys.map(key => {
+      const child = value[key];
+      const nested = child !== null && typeof child === 'object' &&
+        (Array.isArray(child) ? child.length > 0 : Object.keys(child).length > 0);
+      return nested
+        ? pad + JSON.stringify(key) + ':\\n' + yamlNode(child,indent+2)
+        : pad + JSON.stringify(key) + ': ' + yamlInline(child);
+    }).join('\\n');
+  }
+  return pad + yamlInline(value);
+}
+
+function countNodes(value,depth = 0,state = {count:0}) {
+  if (depth > 20) invalid('Nested JSON values may not exceed 20 levels.');
+  state.count++;
+  if (state.count > 100_000) invalid('JSON-to-YAML conversion is limited to 100000 values.');
+  if (Array.isArray(value)) for (const child of value) countNodes(child,depth+1,state);
+  else if (value && typeof value === 'object') for (const key of Object.keys(value)) countNodes(value[key],depth+1,state);
+  return state.count;
+}
+
+function jsonToYaml(input = {}) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) invalid('Input must be an object.');
+  if (Object.keys(input).some(key => key !== 'json')) invalid('Only the json input field is supported.');
+  if (typeof input.json !== 'string') invalid('json must be a JSON text string.');
+  if (Buffer.byteLength(input.json,'utf8') > MAX_INPUT_BYTES) {
+    const error = new Error('JSON input exceeds the 500 KB limit.');
+    error.status = 'INPUT_TOO_LARGE';
+    throw error;
+  }
+  let parsed;
+  try { parsed = JSON.parse(input.json); } catch { invalid('The JSON input is invalid.'); }
+  const value = stableValue(parsed);
+  const nodeCount = countNodes(value);
+  const yaml = yamlNode(value);
+  const byteLength = Buffer.byteLength(yaml,'utf8');
+  if (byteLength > MAX_OUTPUT_BYTES) {
+    const error = new Error('Generated YAML exceeds the 1 MB output limit.');
+    error.status = 'INPUT_TOO_LARGE';
+    throw error;
+  }
+  return {output:{yaml,nodeCount,byteLength},warnings:[]};
+}
+
 function parseCsvRows(source) {
   const text = source.charCodeAt(0) === 0xfeff ? source.slice(1) : source;
   if (!text.length) invalid('CSV input must not be empty.');
@@ -229,5 +296,6 @@ function csvToJson(input = {}) {
 export function runDataTool(id,input = {}) {
   if (id === 'data.json.csv') return jsonToCsv(input);
   if (id === 'data.csv.json') return csvToJson(input);
+  if (id === 'data.json.yaml') return jsonToYaml(input);
   invalid('No data conversion executor is registered for this id.');
 }
