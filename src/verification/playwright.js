@@ -118,7 +118,7 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
    page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());if(m.type()==='warning')consoleWarnings.push(m.text());});
    page.on('requestfailed',r=>requestFailures.push({url:r.url(),failure:r.failure()?.errorText||'request failed'}));
    page.on('response',r=>{if(r.status()>=500)responseFailures.push({url:r.url(),status:r.status()});});
-   let status=0,error=null,ui={},screenshot=null,domSnapshot=null,visual=null,performance={},performanceAudit=null,accessibility={};
+   let status=0,error=null,ui={},screenshot=null,domSnapshot=null,visual=null,performance={},performanceAudit=null,accessibility={},interactions={};
    try{
     const response=await page.goto(new URL(p,baseUrl).toString(),{waitUntil:'networkidle',timeout:15000});
     status=response?.status()||0;
@@ -164,8 +164,60 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
       await page.screenshot({path:screenshot,fullPage:true});fs.writeFileSync(domSnapshot,await page.content(),'utf8');
       if(baselineDir){const base=baselinePath(baselineDir,p),diff=`${artifactDir}/${visualArtifactName(p,'diff')}`;visual=await comparePng(screenshot,base,diff,{visualThreshold,pixelThreshold});}
     }
+    if(p==='/'){
+      const consent=page.locator('[data-cookie-consent]');
+      if(await consent.count()){
+        const initiallyVisible=await consent.isVisible();
+        if(initiallyVisible)await page.locator('[data-cookie-reject]').click();
+        await consent.waitFor({state:'hidden',timeout:3000});
+        const rejected=await page.evaluate(()=>JSON.parse(localStorage.getItem('build-vibe-cookie-preferences-v1')||'null'));
+        await page.locator('[data-cookie-reopen]').click();
+        await consent.waitFor({state:'visible',timeout:3000});
+        await page.locator('[data-cookie-settings]').click();
+        await page.locator('[data-cookie-preferences]').waitFor({state:'visible',timeout:3000});
+        await page.locator('[data-cookie-preferences] input[name="analytics"]').check();
+        await page.locator('[data-cookie-preferences] button[type="submit"]').click();
+        await consent.waitFor({state:'hidden',timeout:3000});
+        const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('build-vibe-cookie-preferences-v1')||'null'));
+        interactions.cookieConsentVerified=Boolean(initiallyVisible&&rejected?.analytics===false&&rejected?.marketing===false&&saved?.analytics===true&&saved?.marketing===false);
+      }
+      await page.setViewportSize({width:390,height:844});
+      const sticky=page.locator('[data-sticky-cta]');
+      if(await sticky.count()){
+        const visible=await sticky.isVisible();
+        if(visible)await sticky.locator('[data-dismiss-sticky-cta]').click();
+        const dismissed=await page.evaluate(()=>sessionStorage.getItem('build-vibe-sticky-cta-dismissed')==='1');
+        interactions.stickyMobileCtaVerified=Boolean(visible&&dismissed&&await sticky.isHidden());
+      }
+    }
+    if(p==='/contact'){
+      const form=page.locator('#contactForm');
+      if(await form.count()){
+        const consent=page.locator('[data-cookie-consent]');
+        if(await consent.isVisible().catch(()=>false))await page.locator('[data-cookie-reject]').click();
+        await form.locator('[name="name"]').fill('Build Vibe QA');
+        await form.locator('[name="email"]').fill('qa@example.test');
+        await form.locator('[name="message"]').fill('Automated verification test message');
+        await page.route('**/api/contact',async route=>{await new Promise(resolve=>setTimeout(resolve,120));await route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'Simulated verification failure'})});});
+        const submit=form.locator('[data-submit-button]');
+        await submit.click();
+        const disabledDuring=await submit.isDisabled();
+        const busyDuring=await form.getAttribute('aria-busy');
+        await page.locator('#contactError').waitFor({state:'visible',timeout:5000});
+        const errorVisible=await page.locator('#contactError').isVisible();
+        await page.waitForFunction(()=>{const button=document.querySelector('[data-submit-button]');return Boolean(button&&!button.disabled);},{timeout:5000});
+        interactions.formErrorsVerified=Boolean(errorVisible&&await page.locator('#contactError').textContent());
+        interactions.loadingStatesVerified=Boolean(disabledDuring&&busyDuring==='true');
+        await page.unroute('**/api/contact');
+        await page.route('**/api/contact',route=>route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({ok:true})}));
+        await submit.click();
+        await page.waitForURL(url=>new URL(url).pathname==='/thank-you',{timeout:5000});
+        const robots=await page.locator('meta[name="robots"]').getAttribute('content');
+        interactions.thankYouRuntimeVerified=new URL(page.url()).pathname==='/thank-you'&&robots==='noindex,nofollow';
+      }
+    }
     const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures,visual,performance,accessibility},{maxLoadMs,maxTransferBytes});
-    results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures,screenshot,domSnapshot,visual,performance,performanceAudit,accessibility,quality,ok:quality.ok});
+    results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures,screenshot,domSnapshot,visual,performance,performanceAudit,accessibility,interactions,quality,ok:quality.ok});
    }catch(e){error=e.message;const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures:[]},{maxLoadMs,maxTransferBytes});results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures:[],screenshot,domSnapshot,visual,performance,performanceAudit,accessibility,quality,ok:false});}
    await page.close();
   }
