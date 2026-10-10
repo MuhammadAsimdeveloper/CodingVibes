@@ -154,3 +154,17 @@ test('generated contact flow has accessible loading/error states and a noindex t
   assert.match(app,/window\.location\.assign\('\/thank-you'\)/);
   assert.doesNotMatch(sitemap,/__SITE_URL__\/thank-you/);
 });
+
+test('generated customer pages provide a dismissible mobile-only primary contact CTA',()=>{
+  const spec=completeSpec(analyzeRequirements('Build a professional local plumbing business website with a contact form'));
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  const home=files.get('public/index.html')||'';
+  const app=files.get('public/app.js')||'';
+  const css=files.get('public/styles.css')||'';
+  assert.match(home,/data-sticky-cta/);
+  assert.match(home,/href="\/contact"[^>]*>[^<]*<strong>Let's talk<\/strong>/);
+  assert.match(home,/data-dismiss-sticky-cta/);
+  assert.match(app,/build-vibe-sticky-cta-dismissed/);
+  assert.match(css,/\.sticky-mobile-cta/);
+  assert.match(css,/@media\(max-width:640px\)[\s\S]*\.sticky-mobile-cta/);
+});
