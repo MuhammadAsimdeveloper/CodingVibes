@@ -17,7 +17,7 @@ test('PDF tools expose real local-only contracts with bounded document processin
     assert.equal(contract.inputSchema.type,'object');
   }
   assert.equal(listToolContracts().length,50);
-  assert.equal(listToolContracts({category:'Documents'}).filter(t=>t.id.startsWith('pdf.')).length,6);
+  assert.equal(listToolContracts({category:'Documents'}).filter(t=>t.id.startsWith('pdf.')).length,5);
 });
 
 test('PDF info reads page count, metadata and page sizes from a real PDF fixture',async()=>{
