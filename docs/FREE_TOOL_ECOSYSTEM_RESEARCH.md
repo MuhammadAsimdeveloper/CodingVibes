@@ -293,3 +293,7 @@ The P1 data-conversion suite now also includes `data.json.csv`, a local bounded 
 ## P1 JSON-to-YAML implementation status — 2026-10-10
 
 The P1 data-conversion suite now includes `data.json.yaml`, a bounded JSON-text to conservative YAML serializer. It quotes all strings and keys, preserves JSON scalar types, supports nested arrays/objects, and rejects unsafe keys, invalid JSON and over-budget input. YAML-to-JSON remains unfinished.
+
+## P1 timestamp conversion status — 2026-10-10
+
+The canonical developer utility `dev.timestamp.convert` supports strict ISO-8601 instants with explicit offsets and Unix seconds/milliseconds in both directions. Calendar and time fields are validated, conversions are bounded, and ambiguous local-time strings are rejected. See `docs/TOOL_FABRIC.md` for the exact modes and limits.
