@@ -217,3 +217,10 @@ test('explicit address in the user brief is captured without inventing missing d
   const missing=completeSpec(analyzeRequirements('Build a plumbing business website. Business address is required.'));
   assert.equal(missing.contactAddress,undefined);
 });
+
+test('Google Analytics is configured only when the owner explicitly provides a measurement ID',()=>{
+  const requested=completeSpec(analyzeRequirements('Build a website and install Google Analytics G-ABCDEF1234 after consent.'));
+  assert.deepEqual(requested.analytics,{provider:'google-analytics',measurementId:'G-ABCDEF1234'});
+  const vague=completeSpec(analyzeRequirements('Build a website and install analytics.'));
+  assert.equal(vague.analytics,undefined);
+});
