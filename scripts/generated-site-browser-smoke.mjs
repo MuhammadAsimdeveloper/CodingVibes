@@ -39,7 +39,7 @@ try {
   for(const [iconPath,size] of [['/apple-touch-icon.png',180],['/icon-192.png',192],['/icon-512.png',512]]){
     const response=await fetch(baseUrl+iconPath);
     assert.equal(response.status,200,iconPath+' should be served');
-    assert.match(response.headers.get('content-type')||'',/image\\/png/i,iconPath+' should have image/png content type');
+    assert.ok((response.headers.get('content-type')||'').toLowerCase().includes('image/png'),iconPath+' should have image/png content type');
     const png=Buffer.from(await response.arrayBuffer());
     assert.equal(png.toString('hex',0,8),'89504e470d0a1a0a',iconPath+' should be a PNG');
     assert.equal(png.readUInt32BE(16),size,iconPath+' width should match its platform size');
