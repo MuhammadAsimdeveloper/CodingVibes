@@ -14,6 +14,7 @@ All notable Build Vibe changes are recorded here.
 ## [Unreleased]
 
 - Added `data.json.csv`, a bounded local JSON-object-array to CSV converter with proper quoting, stable columns, spreadsheet formula-injection neutralization and resource-limit tests.
+- Added `data.csv.json`, a strict local CSV parser with BOM/quoted-field support, safe unique headers, row-width validation and resource-limit tests.
 
 - Added `image.to_pdf`, a bounded local PNG/JPEG-to-PDF conversion tool with MIME/signature validation, dimension and byte limits, mixed-format fixture tests and no network side effects.
 
