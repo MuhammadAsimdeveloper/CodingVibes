@@ -51,6 +51,18 @@ test('product audit blocks AI attribution, purple gradients, fabricated proof, e
   fs.rmSync(root,{recursive:true,force:true});
 });
 
+test('product audit blocks missing favicon assets and placeholder legal pages',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-legal-gate-'));
+  fs.mkdirSync(path.join(root,'public'),{recursive:true});
+  fs.writeFileSync(path.join(root,'public','index.html'),'<html lang="en"><head><meta name="viewport" content="width=device-width"><meta name="description" content="A specific service"><link rel="canonical" href="https://example.com"><meta property="og:title" content="Example"></head><body><nav><a href="/">Home</a></nav><main><h1>Service</h1></main></body></html>','utf8');
+  fs.writeFileSync(path.join(root,'public','privacy.html'),'<html lang="en"><head></head><body><main><h1>Privacy</h1><p>Explain what information this product collects. Configure production providers before launch.</p></main></body></html>','utf8');
+  fs.writeFileSync(path.join(root,'public','terms.html'),'<html lang="en"><head></head><body><main><h1>Terms</h1><p>Replace this launch-ready outline before publishing.</p></main></body></html>','utf8');
+  const audit=auditProductExperience(root,{siteKind:'business',target:{id:'web-node'},experience:{threeD:false}});
+  const ids=new Set(audit.checks.filter(x=>!x.passed).map(x=>x.id));
+  for(const id of ['favicon_asset','privacy_policy_quality','terms_conditions_quality']) assert.ok(ids.has(id),id);
+  fs.rmSync(root,{recursive:true,force:true});
+});
+
 test('deterministic native and desktop fallbacks provide real navigation shells instead of a placeholder screen',async()=>{
   const {generateTargetFallback}=await import('../src/targets/generator.js');
   const {getTarget}=await import('../src/targets/registry.js');
