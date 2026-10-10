@@ -226,3 +226,21 @@ test('Google Analytics is configured only when the owner explicitly provides a m
   const vague=completeSpec(analyzeRequirements('Build a website and install analytics.'));
   assert.equal(vague.analytics,undefined);
 });
+
+test('generated website exports platform-specific PNG icons and links them correctly',()=>{
+  const spec=completeSpec(analyzeRequirements('Build a professional local service website'));
+  const files=generateProject(spec).files;
+  const byPath=new Map(files.map(file=>[file.path,file.content]));
+  for(const [path,size] of [['public/apple-touch-icon.png',180],['public/icon-192.png',192],['public/icon-512.png',512]]){
+    const icon=byPath.get(path);
+    assert.ok(Buffer.isBuffer(icon),path+' should be generated as binary PNG data');
+    assert.equal(icon.toString('hex',0,8),'89504e470d0a1a0a');
+    assert.equal(icon.readUInt32BE(16),size);
+    assert.equal(icon.readUInt32BE(20),size);
+  }
+  const manifest=JSON.parse(byPath.get('public/manifest.webmanifest'));
+  assert.deepEqual(manifest.icons.map(icon=>icon.sizes),['192x192','512x512']);
+  assert.ok(manifest.icons.every(icon=>icon.type==='image/png'));
+  assert.match(byPath.get('public/index.html'),/rel="apple-touch-icon"[^>]+href="\/apple-touch-icon\.png"/);
+  assert.match(byPath.get('public/index.html'),/rel="icon" type="image\/png" sizes="192x192" href="\/icon-192\.png"/);
+});
