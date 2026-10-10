@@ -38,6 +38,8 @@ test('generated products include a real favicon and substantive privacy and term
   assert.doesNotMatch(files.get('public/index.html'),/Built with Build Vibe|Made with AI/i);
   assert.doesNotMatch(files.get('public/og-default.svg'),/BUILD VIBE|AI-generated websites and products/i);
   assert.doesNotMatch(files.get('public/manifest.webmanifest'),/Build Vibe/i);
+  const generatedHtml=[...files.entries()].filter(([name])=>name.endsWith('.html')).map(([,content])=>content).join('\n');
+  assert.doesNotMatch(generatedHtml,/Replace the sample copy|proof and team details|Built around your story/i);
   assert.match(files.get('public/index.html'),/<link rel="icon" href="\/favicon\.svg">/);
   const privacy=files.get('public/privacy.html')||'';
   const terms=files.get('public/terms.html')||'';
