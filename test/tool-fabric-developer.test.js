@@ -7,6 +7,7 @@ const EXPECTED_TOOLS = [
   'security.checksum.verify',
   'dev.uuid.generate',
   'dev.url.encode',
+  'dev.timestamp.convert',
 ];
 
 test('local hash, checksum, UUID and URL tools expose canonical no-network contracts', () => {
@@ -21,8 +22,8 @@ test('local hash, checksum, UUID and URL tools expose canonical no-network contr
     assert.ok(contract.auditEvent);
     assert.ok(contract.provenance);
   }
-  assert.equal(listToolContracts().length, 53);
-  assert.equal(listToolContracts({category:'Developer'}).filter(x => x.id.startsWith('dev.')).length, 3);
+  assert.equal(listToolContracts().length, 54);
+  assert.equal(listToolContracts({category:'Developer'}).filter(x => x.id.startsWith('dev.')).length, 4);
   assert.equal(listToolContracts({category:'Security'}).filter(x => x.id === 'security.checksum.verify').length, 1);
 });
 
