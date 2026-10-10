@@ -13,6 +13,8 @@ All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
 
+- Added `data.json.csv`, a bounded local JSON-object-array to CSV converter with proper quoting, stable columns, spreadsheet formula-injection neutralization and resource-limit tests.
+
 - Added `image.to_pdf`, a bounded local PNG/JPEG-to-PDF conversion tool with MIME/signature validation, dimension and byte limits, mixed-format fixture tests and no network side effects.
 
 - Added `pdf.reorder` as a bounded local Tool Fabric operation with complete one-based page-permutation validation, metadata preservation, real PDF fixture tests and no network side effects.
