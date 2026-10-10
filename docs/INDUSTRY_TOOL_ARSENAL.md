@@ -313,7 +313,7 @@ A utility is admitted to the canonical catalog only when it has a distinct user 
 
 ## P1 JSON-to-CSV implementation status — 2026-10-10
 
-The canonical Tool Fabric now implements `data.json.csv` through `src/tool-fabric/data.js`. It converts bounded arrays of JSON objects to CSV, handles quoting and sparse rows, preserves first-seen columns, neutralizes formula-like string cells and rejects invalid or over-budget input. See `docs/TOOL_FABRIC.md`; CSV-to-JSON is not implied.
+The canonical Tool Fabric now implements `data.json.csv` through `src/tool-fabric/data.js`. It converts bounded arrays of JSON objects to CSV, handles quoting and sparse rows, preserves first-seen columns, neutralizes formula-like string cells and rejects invalid or over-budget input. See `docs/TOOL_FABRIC.md`; `data.csv.json` is now also implemented with strict RFC-style parsing, safe unique headers, consistent row widths and explicit resource limits. Values remain strings; inferred data typing is not claimed.
 
 ## P1 PDF tool implementation status — 2026-10-10
 
