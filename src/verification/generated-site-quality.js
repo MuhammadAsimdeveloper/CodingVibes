@@ -101,7 +101,7 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const cookieConsentReady=config.cookieConsentImplemented===true||(cookieMarkupPresent&&cookieRuntimePresent);
   const stickyMarkupPresent=/data-sticky-cta/.test(allHtml)&&/data-dismiss-sticky-cta/.test(allHtml);
   const stickyRuntimePresent=/build-vibe-sticky-cta-dismissed/.test(allFilesText);
-  const stickyCssPresent=/\\.sticky-mobile-cta/.test(cssText)&&/@media\\s*\\([^)]*max-width\\s*:/i.test(cssText);
+  const stickyCssPresent=/\.sticky-mobile-cta/.test(cssText)&&/@media\s*\([^)]*max-width\s*:/i.test(cssText);
   const stickyCtaReady=config.stickyMobileCtaImplemented===true||(stickyMarkupPresent&&stickyRuntimePresent&&stickyCssPresent);
   const checks=[
     result('custom-404',!has404?'FAIL':config.http404Verified===true?'PASS':'NEEDS_INPUT',[has404?'404 artifact exists':'No 404 artifact found',config.http404Verified===true?'Runtime HTTP 404 verified':'Runtime 404 status not verified'],'Generate a branded 404 page and verify unknown routes return HTTP 404, not HTTP 200.'),
