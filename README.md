@@ -179,3 +179,6 @@ The 2026-10-10 repository audit mapped the 20-point website launch checklist aga
 ### Generated website quality checks
 
 Build Vibe includes a versioned 20-point generated-site audit and local CLI: `npm run site:quality [-- <generated-project-directory> [config.json]]`. The current milestone also generates a custom 404 page and tests that unknown routes return HTTP 404. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md) for implementation status and remaining work. The audit is not yet an automatically enforced publish gate.
+
+
+Generated websites now include a custom 404 route, a web app manifest, a consent preference manager, an optional dismissible mobile CTA, and contact form error/loading feedback with a noindex thank-you route. Run `npm run site:quality -- <generated-project-directory> [config.json]` to produce the 20-point audit report. The report is included in web product-quality evidence but is not yet a publish-blocking gate. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md).
