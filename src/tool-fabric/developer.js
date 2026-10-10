@@ -88,7 +88,7 @@ function verifyChecksum(input) {
 }
 
 
-const ISO_INSTANT = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,3}))?(Z|[+-]\\d{2}:\\d{2})$/;
+const ISO_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(Z|[+-]\d{2}:\d{2})$/;
 
 function parseIsoInstant(value) {
   if (typeof value !== 'string' || value.length > 40) invalid('value must be a strict ISO-8601 instant with an explicit UTC offset.');
