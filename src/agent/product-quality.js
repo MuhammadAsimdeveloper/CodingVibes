@@ -91,7 +91,7 @@ export function buildQualityContract(spec={}){
       'Images expose alternatives unless decorative',
       'Public pages expose semantic metadata',
       'Responsive and reduced-motion behavior are explicit',
-      'Never use fabricated reviews, customer identities, ratings, logos or business metrics',
+      'Never publish unsupported metrics or fabricated reviews, customer identities, ratings or logos',
       'Never use purple gradients, unwanted AI attribution, emoji icons or pill-shaped buttons',
       'Never add cursor-following animations or excessive scroll-linked motion',
       'Avoid vague marketing copy and em-dash punctuation'
