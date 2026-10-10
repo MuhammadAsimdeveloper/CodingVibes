@@ -192,3 +192,6 @@ The generated-site 20-point quality report is included in web product-quality ev
 ### Analytics and business contact details
 
 Customer-site Google Analytics is optional and requires an owner-supplied measurement ID. It is loaded only after analytics consent and disabled when consent is withdrawn. Business sites must provide a real contact address explicitly; Build Vibe does not invent addresses, and missing required addresses block production verification. The generated-site browser gate covers these flows. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md).
+
+
+The builder now exposes project-scoped fields for a real business contact address and optional Google Analytics measurement ID. Values persist per project in the browser, are validated before building, and feed the generated-site quality gate. Analytics remains consent-gated; missing business addresses block production verification. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md).
