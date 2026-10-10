@@ -13,3 +13,10 @@ test('discoverability audit checks SEO and AEO contract',()=>{
  assert.equal(audit.ok,true);assert.equal(audit.score,100);assert.equal(aeoSummary(audit).answerEngineReady,true);
  fs.rmSync(dir,{recursive:true,force:true});
 });
+
+test('discoverability audit resolves nested HTML pages from their actual paths',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cv-aeo-nested-'));
+ fs.mkdirSync(path.join(dir,'public'),{recursive:true});
+ fs.writeFileSync(path.join(dir,'public','index.html'),'<!doctype html><html lang="en"><head><title>Nested public page</title><meta name="description" content="A sufficiently descriptive public page for nested path testing and discoverability behavior."></head><body><main><h1>Nested</h1></main></body></html>');
+ assert.doesNotThrow(()=>auditDiscoverability(dir));
+});
