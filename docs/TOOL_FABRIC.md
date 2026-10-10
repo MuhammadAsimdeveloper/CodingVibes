@@ -54,6 +54,7 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `data.size.convert` | local | Decimal SI and binary IEC byte units with safe-integer limits |
 | `data.json.csv` | local | Converts bounded arrays of JSON objects to RFC-style CSV with stable first-seen columns, quoted nested values and spreadsheet-formula string neutralization |
 | `data.csv.json` | local | Parses bounded RFC-style CSV with strict quoting, safe unique headers, consistent record widths and JSON output limits |
+| `data.json.yaml` | local | Serializes bounded JSON text to conservative YAML with quoted strings, safe keys, nesting/node caps and output-size checks |
 | `dev.hash.generate` | local | SHA-256/SHA-384/SHA-512 text digests in hex or Base64; not for password storage |
 | `security.checksum.verify` | local | Validates supplied digest encoding and compares fixed-size digests in constant time |
 | `dev.uuid.generate` | local | Cryptographically secure UUID v4 generation using Node crypto |
@@ -83,6 +84,12 @@ The `data.json.csv` contract converts an array of JSON objects to CSV without ne
 The converter is bounded to 10,000 rows, 200 columns, 500 KB serialized input, 100 KB per cell and 1 MB output. It rejects invalid row shapes, unsupported values, circular structures, excessive nesting, prototype-sensitive keys and unrecognized options. String cells and headers that begin with spreadsheet formula markers are prefixed with an apostrophe; numeric values remain numeric text. The result reports the columns, row count, byte length and number of sanitized cells, and emits a warning when formula-like text was neutralized.
 
 Focused regression tests live in `test/tool-fabric-data-conversion.test.js`, including quotes/newlines, sparse columns, nested values, formula-injection handling, invalid input and resource limits.
+
+## Local JSON-to-YAML conversion
+
+The `data.json.yaml` contract accepts JSON text and emits conservative YAML 1.2-compatible block notation. Every string scalar and mapping key is double-quoted using JSON-compatible escaping, avoiding YAML's ambiguous plain-string forms (such as `yes`, `null`, values with colons, or leading special characters). Booleans, finite numbers and null remain typed scalars. Nested objects and arrays are emitted as indented block mappings/sequences; empty containers use `{}` and `[]`.
+
+Input is limited to 500 KB, nesting to 20 levels, total values to 100,000, and YAML output to 1 MB. Invalid JSON, prototype-sensitive keys, unsupported values and unknown options fail explicitly. No YAML parser dependency or network request is used. Tests in `test/tool-fabric-data-conversion.test.js` cover nested output, ambiguous strings, scalar types, unsafe keys and resource limits.
 
 The reverse `data.csv.json` contract parses RFC-style quoted fields, doubled quotes, CRLF/LF record separators, BOM-prefixed files, multiline cells and trailing empty cells. It returns string-valued row objects and a compact JSON string. Headers must be non-empty, unique and not prototype-sensitive; every record must match the header width. It rejects malformed quoting, lone CR separators, unsupported options and over-budget rows, columns, cells, input or output. Empty cells remain empty strings; the converter does not guess number, date or boolean types. Regression coverage for this path is in the same test file.
 
