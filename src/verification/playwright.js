@@ -114,8 +114,8 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
        observer.observe({type:'event',buffered:true,durationThreshold:16});
      }catch{}
    });
-   const consoleErrors=[],consoleWarnings=[],requestFailures=[],responseFailures=[];
-   page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());if(m.type()==='warning')consoleWarnings.push(m.text());});
+   const consoleErrors=[],consoleWarnings=[],requestFailures=[],responseFailures=[];let expectedContactFailureResponse=false;
+   page.on('console',m=>{if(m.type()==='error'&&!(expectedContactFailureResponse&&/status of 400/i.test(m.text())))consoleErrors.push(m.text());if(m.type()==='warning')consoleWarnings.push(m.text());});
    page.on('requestfailed',r=>requestFailures.push({url:r.url(),failure:r.failure()?.errorText||'request failed'}));
    page.on('response',r=>{if(r.status()>=500)responseFailures.push({url:r.url(),status:r.status()});});
    let status=0,error=null,ui={},screenshot=null,domSnapshot=null,visual=null,performance={},performanceAudit=null,accessibility={},interactions={};
@@ -201,6 +201,7 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
         await form.locator('[name="email"]').fill('qa@example.test');
         await form.locator('[name="message"]').fill('Automated verification test message');
         await page.route('**/api/contact',async route=>{await new Promise(resolve=>setTimeout(resolve,120));await route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'Simulated verification failure'})});});
+        expectedContactFailureResponse=true;
         const submit=form.locator('[data-submit-button]');
         await submit.click();
         const disabledDuring=await submit.isDisabled();
@@ -210,6 +211,7 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
         await page.waitForFunction(()=>{const button=document.querySelector('[data-submit-button]');return Boolean(button&&!button.disabled);},null,{timeout:5000});
         interactions.formErrorsVerified=Boolean(errorVisible&&await page.locator('#contactError').textContent());
         interactions.loadingStatesVerified=Boolean(disabledDuring&&busyDuring==='true');
+        expectedContactFailureResponse=false;
         await page.unroute('**/api/contact');
         await page.route('**/api/contact',route=>route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({ok:true})}));
         await submit.click();
