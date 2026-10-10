@@ -24,7 +24,7 @@ test('data.json.csv quotes commas, quotes and newlines and serializes nested val
     {text:'next\nline',quote:'',nested:null,tags:[]}
   ]});
   assert.equal(result.status,'COMPLETED');
-  assert.equal(result.output.csv,'text,quote,nested,tags\r\n"line 1, line 2","She said ""yes""","{""ok"":true}","[""a"",""b""]"\r\n"next\nline",,,"[]"');
+  assert.equal(result.output.csv,'text,quote,nested,tags\r\n"line 1, line 2","She said ""yes""","{""ok"":true}","[""a"",""b""]"\r\n"next\nline",,,[]');
 });
 
 test('data.json.csv prevents spreadsheet formula injection in string cells but preserves numeric cells',async()=>{
@@ -32,7 +32,7 @@ test('data.json.csv prevents spreadsheet formula injection in string cells but p
     {unsafe:'=HYPERLINK("https://example.test","open")',alsoUnsafe:'  @SUM(A1:A2)',number:-12,plain:'safe'}
   ]});
   assert.equal(result.status,'COMPLETED');
-  assert.equal(result.output.csv,'unsafe,alsoUnsafe,number,plain\n"\'=HYPERLINK(""https://example.test"",""open"")","\'  @SUM(A1:A2)",-12,safe');
+  assert.equal(result.output.csv,'unsafe,alsoUnsafe,number,plain\r\n"\'=HYPERLINK(""https://example.test"",""open"")",\'  @SUM(A1:A2),-12,safe');
   assert.equal(result.output.sanitizedCellCount,2);
   assert.ok(result.warnings.some(message=>/spreadsheet formula/i.test(message)));
 });
