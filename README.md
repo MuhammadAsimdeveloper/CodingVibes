@@ -174,3 +174,8 @@ AI agents should begin with [`docs/AI_BUILD_START_HERE.md`](docs/AI_BUILD_START_
 ## Generated website launch quality gate
 
 The 2026-10-10 repository audit mapped the 20-point website launch checklist against current source evidence and identified items that still require implementation or generated-project verification. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md) for the full status matrix, implementation order, and acceptance criteria. Do not equate source-level foundations with a verified production website.
+
+
+### Generated website quality checks
+
+Build Vibe includes a versioned 20-point generated-site audit and local CLI: `npm run site:quality [-- <generated-project-directory> [config.json]]`. The current milestone also generates a custom 404 page and tests that unknown routes return HTTP 404. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md) for implementation status and remaining work. The audit is not yet an automatically enforced publish gate.
