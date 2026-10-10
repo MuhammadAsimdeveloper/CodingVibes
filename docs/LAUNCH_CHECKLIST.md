@@ -113,3 +113,10 @@ Status meanings: IMPLEMENTED FOUNDATION means supporting code exists but every g
 ## Generated website quality gate (added 2026-10-10)
 
 Before a customer-generated project is published, run the checks in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Verify all 20 requirements against actual output. The source already provides SEO/discoverability helpers, product-quality state contracts, motion/reduced-motion support, and legal page templates; this is not proof that all generated projects pass. Require correct 404 status, tested form failure/success, responsive CTA visibility, favicon/manifest and OG assets, meaningful alt text, consent-aware customer analytics, owner-supplied contact details, and image budgets. Emit per-item evidence and block publication on critical failures. Do not mark NEEDS_INPUT as PASS.
+
+
+## Generated-site checklist implementation update (2026-10-10)
+
+Implemented: custom 404 with HTTP 404 for unknown routes; default web manifest; cookie preference manager; dismissible mobile contact CTA; contact form loading/error states; noindex thank-you route excluded from sitemap and navigation; versioned 20-point quality report surfaced in web product-quality evidence. Full CI passed at `bcb4288036d0ac45b4a045e83531d406d99a85c6`.
+
+Still open: wire critical audit statuses into publish blocking, browser-test actual consent/form/CTA interactions, complete device-specific icons, configure customer-site analytics only with owner consent/configuration, request real contact details, and verify generated-image optimization.
