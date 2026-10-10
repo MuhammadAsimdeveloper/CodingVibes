@@ -101,3 +101,9 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 - Added `dev.cron.inspect` as a local canonical tool for the five-field numeric cron subset.
 - Validates ranges/lists/steps, evaluates next occurrences in UTC, caps search at 366 days and documents day-of-month/day-of-week OR semantics.
 - Rejects named fields, aliases and unsupported dialect syntax; it inspects schedules but does not run jobs or make network calls.
+
+## Secure password generation — 2026-10-10
+
+- Added `security.password.generate` to the canonical Security category and routed it through the existing local developer executor.
+- Uses cryptographic random selection/shuffling, mandatory 12–128 length, selected-class inclusion, ambiguous-character exclusion by default and rejects unsupported options.
+- Returns the secret once to the caller, does not persist it and makes no network calls. Tests cover policy and invalid-input boundaries.
