@@ -4,7 +4,7 @@ import {getToolContract, listToolContracts, runTool} from '../src/tool-fabric/in
 
 test('canonical Tool Fabric publishes 27 unique contracts with auditable safety metadata', () => {
   const contracts = listToolContracts();
-  assert.equal(contracts.length, 53);
+  assert.equal(contracts.length, 54);
   assert.equal(new Set(contracts.map(contract => contract.id)).size, contracts.length);
   for (const contract of contracts) {
     assert.equal(contract.owner, 'build-vibe');
