@@ -1074,3 +1074,15 @@ The existing Tool Fabric now defines four bounded local PDF tools: `pdf.info`, `
 
 **Next P1 data conversion:** review JSON-to-YAML / XML formatting or another distinct utility against the roadmap. Do not broaden this parser by guessing schemas or coercing CSV text values.
 
+## 54. TDD checkpoint — bounded JSON-to-YAML serialization (2026-10-10)
+
+**Roadmap phase:** P1 local data-conversion utilities, adding JSON-to-YAML without a runtime dependency.
+
+- Added the regression suite before the implementation. The test-only commit failed because `data.json.yaml` was not registered; implementation then added its contract, executor and canonical Tool Fabric route.
+- Accepts JSON text and emits conservative YAML 1.2-compatible block mappings/sequences. String values and mapping keys are always double-quoted with JSON-compatible escaping, preventing ambiguous plain scalar interpretation. Null, booleans and finite numbers remain typed values; nested and empty containers are supported.
+- Rejects malformed JSON, unknown options, prototype-sensitive keys and excessive nesting. Enforces a 500 KB input cap, 20-level nesting cap, 100,000-value cap and 1 MB output cap. Processing is local and dependency-free.
+- Updated catalog assertions from 52 to 53. Regression tests cover exact nested serialization, ambiguous strings, scalar types, invalid JSON, unsafe keys and size limits.
+- **Verification: PASS on implementation head `aae431481637873c8c185bbf54ad22387b98e619`.** Build Vibe CI [38043863213](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043863213), CodeQL [38043863210](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043863210) and Dependency Review [38043863200](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043863200) all passed. Documentation-inclusive changes need a fresh verification run.
+
+**Remaining data-conversion work:** JSON↔CSV and JSON→YAML are now present; XML formatting/validation, YAML input parsing and SQL/HTML/CSS/JS format/minify utilities remain separate backlog items.
+
