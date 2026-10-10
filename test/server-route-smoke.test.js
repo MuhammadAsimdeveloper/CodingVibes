@@ -7,7 +7,7 @@ import path from 'node:path';
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-server-'));
 process.env.NODE_ENV='test';
 process.env.DATABASE_PATH=path.join(root,'server.db');
-process.env.CODINGVIBES_SESSION_SECRET='test-session-secret-'.padEnd(48,'x');
+process.env.CODINGVIBES_SESSION_SECRET='test-session-secret-'.padEnd(49,'x');
 process.env.CODINGVIBES_PUBLIC_URL='http://127.0.0.1:0';
 process.env.CODINGVIBES_ALLOWED_ORIGINS='http://127.0.0.1:0';
 process.env.CODINGVIBES_ENFORCE_QUOTAS='false';
@@ -62,7 +62,7 @@ test('server public and authenticated route smoke covers launch control plane',a
 
   const catalog=await req('/api/tool-fabric/catalog',{headers:{cookie:sessionCookie}});
   assert.equal(catalog.response.status,200);
-  assert.equal(catalog.body.tools.length,48);
+  assert.equal(catalog.body.tools.length,49);
   assert.ok(catalog.body.tools.some(tool=>tool.id==='seo.meta.generate'));
   assert.ok(catalog.body.tools.some(tool=>tool.id==='image.optimize'&&tool.executionMode==='browser'));
 
