@@ -31,7 +31,7 @@ const RECIPES={
   modelInputs:['GLB','GLTF'],
   controls:['orbit','zoom','camera-path'],
   recording:{browser:'MediaRecorder',format:'webm',maxSeconds:30},
-  motion:{...BASE_MOTION,scroll:'camera-story',hover:'depth-shift',transition:'camera-dolly'},
+  motion:{...BASE_MOTION,scroll:'reveal',hover:'depth-shift',transition:'camera-dolly'},
   performance:{lazyLoad:true,preferReducedMotion:true,webglFallback:true,devicePixelRatioCap:1.75},
  }
 };
