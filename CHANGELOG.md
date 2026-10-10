@@ -13,6 +13,9 @@ All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
 
+- Removed Build Vibe attribution from generated-site footers, generated Open Graph images, and PWA short names; generated favicons now use the product's own initial.
+- Added a quality check that blocks builder attribution in published user products.
+
 - Replaced placeholder generated Privacy Policy and Terms pages with substantive default-data-practice disclosures, acceptable-use rules, user-content terms, third-party service notes, liability language, and contact routes.
 - Added release-blocking checks for favicon asset/link presence and substantive Privacy Policy and Terms content.
 
