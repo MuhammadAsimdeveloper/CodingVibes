@@ -113,3 +113,10 @@ Status meanings: IMPLEMENTED FOUNDATION means supporting code exists but every g
 ## Next milestone — generated website quality gate (added 2026-10-10)
 
 Use [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md) as the authoritative 20-point implementation/status matrix. Prioritize P0 correctness and trust (real 404 responses, robust forms and confirmation, accurate legal copy, no invented contact details), then P1 responsive/CTA/SEO/consent-aware analytics, then P2 image and performance budgets. Each generated project must receive a versioned PASS/FAIL/NEEDS_INPUT/NOT_APPLICABLE report. Critical failures block publishing. The status in the plan is based on source inspection, not a fresh end-to-end run.
+
+
+## Milestone update — generated website quality gate (2026-10-10)
+
+Completed: the versioned 20-point audit engine and CLI; product-quality evidence integration; generated 404 with HTTP 404 verification; app manifest; consent preferences; sticky mobile CTA; accessible contact loading/error/retry and noindex thank-you flow; runtime HTTP/Playwright evidence; and production-mode blocking for critical quality gaps. CI passed at `962d5006ed239ff39476aeefe3d43cb05d4d51a9`.
+
+Next: finish owner-input flows for contact details and analytics, add platform-specific icon sizes, integrate automatic image optimization into export, widen mobile/tablet/accessibility coverage, and verify production deployment credentials, monitoring, and recovery. See [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md).
