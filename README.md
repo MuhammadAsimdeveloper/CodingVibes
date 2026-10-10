@@ -195,3 +195,6 @@ Customer-site Google Analytics is optional and requires an owner-supplied measur
 
 
 The builder now exposes project-scoped fields for a real business contact address and optional Google Analytics measurement ID. Values persist per project in the browser, are validated before building, and feed the generated-site quality gate. Analytics remains consent-gated; missing business addresses block production verification. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md).
+
+
+Owner launch settings persist per project in the builder browser and are restored when switching projects or reloading. They are included in the build brief only when supplied by the owner.
