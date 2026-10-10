@@ -1048,3 +1048,16 @@ The existing Tool Fabric now defines four bounded local PDF tools: `pdf.info`, `
 
 **Limits:** PDF compression, PDF-to-image rendering, text extraction, OCR, redaction and decryption remain unimplemented. A PDF that is merely re-saved must not be described as compressed. High-volume processing of untrusted documents still needs a resource-isolated worker with hard time and memory limits.
 
+## 52. TDD checkpoint — safe local JSON-to-CSV conversion (2026-10-10)
+
+**Roadmap phase:** P1 local data-conversion utilities, extending the canonical Tool Fabric rather than creating a second registry.
+
+- Added a failing test suite first. The test-only CI run failed because `data.json.csv` had no contract/executor; the implementation then added one canonical contract, `src/tool-fabric/data.js`, and routing through `runTool()`.
+- Converts arrays of JSON object rows to CSV with stable first-seen columns, correct comma/quote/newline escaping, CRLF record separators, compact nested JSON cells and empty cells for missing/null values.
+- Security policy prefixes string cells and headers that look like spreadsheet formulas with an apostrophe while leaving actual numeric values unchanged. The test cycle caught and fixed both formula-sanitization behavior and CSV quoting expectations.
+- Limits: 10,000 rows, 200 columns, 500 KB serialized input, 100 KB per cell, 20 nested levels and 1 MB output. Invalid shapes, non-finite/unsupported values, circular structures, prototype-sensitive keys and unknown options fail explicitly. The tool makes no network requests.
+- Added the new module to syntax checks and updated canonical catalog-count assertions from 50 to 51. Tests cover sparse columns, nested data, quoting/newlines, formula-injection neutralization and invalid/resource-limit inputs.
+- **Verification: PASS on implementation head `7ccebbe92c2a9775122df9f7d034193dc634ecef`.** Build Vibe CI run [38043213261](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043213261), CodeQL run [38043213189](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043213189) and Dependency Review run [38043213277](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043213277) all passed on that implementation head. The documentation-inclusive head requires fresh CI before merge.
+
+**Next P1 data-conversion gap:** add CSV-to-JSON as a separate contract with explicit header/duplicate-header, quoting and size policies; do not silently infer it from the reverse conversion.
+
