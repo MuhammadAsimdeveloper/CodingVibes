@@ -100,3 +100,45 @@ test('developer utility inputs are bounded and unsupported algorithms/modes fail
     assert.equal(result.networkUsed,false);
   }
 });
+
+test('dev.timestamp.convert performs explicit ISO-8601 and Unix second/millisecond conversions',async()=>{
+  const contract=getToolContract('dev.timestamp.convert');
+  assert.ok(contract);
+  assert.equal(contract.executionMode,'local');
+  assert.equal(contract.networkRequired,false);
+
+  const seconds=await runTool('dev.timestamp.convert',{value:'1970-01-01T00:00:01.250Z',mode:'iso-to-unix-seconds'});
+  assert.equal(seconds.status,'COMPLETED');
+  assert.equal(seconds.output.unixSeconds,1.25);
+  assert.equal(seconds.output.unixMilliseconds,1250);
+
+  const milliseconds=await runTool('dev.timestamp.convert',{value:'1970-01-01T00:00:01.250Z',mode:'iso-to-unix-milliseconds'});
+  assert.equal(milliseconds.output.unixMilliseconds,1250);
+
+  const fromSeconds=await runTool('dev.timestamp.convert',{value:1.25,mode:'unix-seconds-to-iso'});
+  assert.equal(fromSeconds.status,'COMPLETED');
+  assert.equal(fromSeconds.output.iso,'1970-01-01T00:00:01.250Z');
+
+  const fromMilliseconds=await runTool('dev.timestamp.convert',{value:0,mode:'unix-milliseconds-to-iso'});
+  assert.equal(fromMilliseconds.output.iso,'1970-01-01T00:00:00.000Z');
+  assert.equal(fromMilliseconds.networkUsed,false);
+});
+
+test('dev.timestamp.convert rejects ambiguous dates, missing offsets, invalid modes and out-of-range timestamps',async()=>{
+  for(const input of [
+    {},
+    {value:'2026-02-30T10:00:00Z',mode:'iso-to-unix-seconds'},
+    {value:'2026-01-01T10:00:00',mode:'iso-to-unix-seconds'},
+    {value:'2026-01-01T25:00:00Z',mode:'iso-to-unix-seconds'},
+    {value:1,mode:'iso-to-unix-seconds'},
+    {value:'1',mode:'unix-seconds-to-iso'},
+    {value:1,mode:'guess'},
+    {value:1e20,mode:'unix-milliseconds-to-iso'},
+    {value:1e20,mode:'unix-seconds-to-iso'}
+  ]){
+    const result=await runTool('dev.timestamp.convert',input);
+    assert.notEqual(result.status,'COMPLETED',JSON.stringify(input));
+    assert.equal(result.networkUsed,false);
+  }
+});
+
