@@ -322,3 +322,7 @@ The existing Build Vibe Tool Fabric implements `pdf.info`, `pdf.merge`, `pdf.spl
 ## P1 timestamp conversion — 2026-10-10
 
 `dev.timestamp.convert` is now implemented through the canonical developer executor with four explicit ISO/Unix modes, strict offset/calendar validation, range limits and no network use. This does not claim a cron-expression inspector or other date/time tools are implemented.
+
+## P1 cron inspection — 2026-10-10
+
+`dev.cron.inspect` is implemented through the canonical developer executor. It parses a documented five-field subset, returns up to five upcoming UTC runs within 366 days, and rejects unsupported dialect extensions. It is not a general-purpose scheduler or job runner.
