@@ -120,3 +120,10 @@ Before a customer-generated project is published, run the checks in [`GENERATED_
 Implemented: custom 404 with HTTP 404 for unknown routes; default web manifest; cookie preference manager; dismissible mobile contact CTA; contact form loading/error states; noindex thank-you route excluded from sitemap and navigation; versioned 20-point quality report surfaced in web product-quality evidence. Full CI passed at `bcb4288036d0ac45b4a045e83531d406d99a85c6`.
 
 Still open: wire critical audit statuses into publish blocking, browser-test actual consent/form/CTA interactions, complete device-specific icons, configure customer-site analytics only with owner consent/configuration, request real contact details, and verify generated-image optimization.
+
+
+## Production quality-gate enforcement (2026-10-10)
+
+The 20-point report now receives HTTP/browser runtime evidence and is attached to web product-quality results. Production verification blocks critical gaps under `NODE_ENV=production` or `CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true`. Browser smoke exercises CTA placement, consent preferences, sticky CTA dismissal, form error/retry/loading, and successful thank-you redirect. Full CI passed at `962d5006ed239ff39476aeefe3d43cb05d4d51a9`.
+
+Still open: real contact details from site owners, customer analytics setup with consent, complete platform-specific icons, generated image compression, broader viewport and accessibility testing, and production deployment configuration.
