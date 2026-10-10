@@ -1136,3 +1136,16 @@ Remaining: complete platform-specific icon sizes, automatic raster image optimiz
 
 
 Follow-up: address and analytics settings now persist per project in browser localStorage and are restored when projects are switched or the builder is reloaded. The build request is composed from the base prompt plus explicitly supplied settings; the visible prompt log avoids echoing those settings.
+
+
+## 50. TDD checkpoint — responsive viewport quality gate (2026-10-11)
+
+**Roadmap phase:** generated website launch quality, responsive layout and browser verification.
+
+- Added `assessResponsiveLayout()`, which validates real viewport/document/body width measurements, tolerates at most 2px of browser rounding, and reports measured horizontal overflow with element diagnostics.
+- Browser smoke now checks every requested route at mobile (375×812), tablet (768×1024), and desktop (1440×900) sizes, restores the caller's viewport afterward, and includes responsive failures in the normal quality result.
+- Generated-site browser E2E asserts all three viewport measurements exist and pass for every route.
+- The new gate exposed a real 15px mobile overflow on the generated `/admin` page. The owner-configuration hint could exceed its container; admin inputs/editors now have bounded widths, the editor grid collapses to one column on narrow screens, and long owner configuration text wraps safely.
+- **Verification: PASS on revision `29f57ebea72a9725e3ac62cc73ea035d3f45732f`.** Build Vibe CI [38080632604](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604) passed all configured checks, including tests, coverage, syntax/release checks, SEO, server E2E, Playwright/browser E2E, image optimizer E2E, load/recovery, deployment preflight, benchmark, security, scale-out and launch readiness.
+
+**Next unfinished stages:** platform-specific icon sizes, automatic optimization of generated raster assets during export (distinct from the browser-local optimizer), broader accessibility/viewport budgets, and real production credentials/monitoring/recovery. Keep these open until each has implementation and independent evidence.

@@ -36,3 +36,12 @@ Start building immediately after reading the authority files; do not ask the use
 ## Mandatory generated-site checklist context (2026-10-10)
 
 Before implementing or changing website generation, read [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). It is the current source-inspection status and development plan for the 20-point generated-site checklist. Preserve existing SEO helpers, discoverability audit, product-quality contracts, motion/accessibility baseline, and verification gates. Do not claim universal support from source-level presence; implement artifact/HTTP/browser tests and update the status only when evidence exists. Critical generated-site failures must block publishing. Never invent owner contact data, analytics configuration, or legal facts.
+
+
+## Latest verified checkpoint (2026-10-11)
+
+- Repository recovery confirmed newer commits had already completed the previously visible contact/analytics and image-optimizer work; do not replay those commits.
+- Generated-site browser verification now measures each route at 375px mobile, 768px tablet and 1440px desktop widths. Horizontal overflow fails the browser quality result and includes diagnostics.
+- Fixed the generated owner-admin page's long configuration hint overflow. Full CI passed on `29f57ebea72a9725e3ac62cc73ea035d3f45732f`: https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604.
+- Next priorities: platform-specific favicon/app icon sizes; optimize generated raster assets as part of export rather than only in the browser-local optimizer; extend accessibility and responsive budgets; keep real provider credentials, monitoring, backup/recovery and deployment evidence explicit.
+- Continue TDD from the first unfinished item. Do not mark launch-ready based only on source presence or CI; verify configured production services separately.

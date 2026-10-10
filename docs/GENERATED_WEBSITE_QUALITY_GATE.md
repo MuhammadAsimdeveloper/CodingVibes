@@ -124,3 +124,10 @@ For every generated project, emit a versioned machine-readable and human-readabl
 The generated-site report is now attached to the existing `auditProductExperience()` result for web targets as `generatedSiteQuality`, so it travels with the platform's product-quality evidence. The standalone CLI remains available for a generated project directory. Full GitHub Actions CI passed at `bcb4288036d0ac45b4a045e83531d406d99a85c6` (including tests, coverage, static checks, browser E2E, security checks, and launch readiness).
 
 The production verification contract blocks a web build when critical report checks are not PASS or NOT_APPLICABLE. The browser fixture also tests owner-configured Google Analytics load/revocation and the business-address blocker. HTTP smoke verifies unknown-route 404; Playwright smoke exercises primary CTA, consent choices, sticky mobile CTA, form failure/retry, and successful thank-you redirect. In development the report remains informational unless CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true is set. The project-scoped analytics/address settings UI is implemented and browser/test covered. Remaining work: full platform-specific icons, automatic image optimization, and broader responsive/accessibility budgets.
+
+
+### Responsive viewport verification update (2026-10-11)
+
+Generated-site Playwright smoke now checks every route at 375px, 768px and 1440px viewport widths and reports actual document/body width measurements. More than 2px of horizontal overflow fails the browser quality result; diagnostics include the first overflowing elements. The new check caught and helped fix an owner-admin hint overflow on mobile. Browser E2E and full CI passed on revision `29f57ebea72a9725e3ac62cc73ea035d3f45732f` ([run](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604)).
+
+Remaining: broader accessibility budgets, icon sets for platform-specific installs, generated-export raster optimization, and production infrastructure evidence.

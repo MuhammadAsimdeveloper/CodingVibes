@@ -11,6 +11,13 @@
 
 All notable Build Vibe changes are recorded here.
 
+## [Unreleased] — responsive generated-site QA (2026-10-11)
+
+- Added real mobile/tablet/desktop browser viewport sweeps to generated-site verification, with measured horizontal-overflow failures and element diagnostics.
+- Fixed long owner configuration text and admin editor layout that overflowed on narrow mobile screens.
+- Generated-site browser E2E now requires passing evidence at 375px, 768px and 1440px for each tested route.
+- Full Build Vibe CI passed at [29f57ebea72a9725e3ac62cc73ea035d3f45732f](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604).
+
 ## [Unreleased]
 
 - Added measured browser performance evidence (navigation/FCP/TTFB/resource sizes/LCP/CLS where available) and made incomplete performance audits report missing metrics instead of a full-pass result.
