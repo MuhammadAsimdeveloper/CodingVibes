@@ -1088,3 +1088,10 @@ Before claiming every generated website is launch-ready, implement and enforce t
 Completed and CI-verified: `src/verification/generated-site-quality.js` defines the 20-check contract and report statuses; `scripts/generated-site-quality-check.mjs` exposes `npm run site:quality`; generated projects now receive a branded `public/404.html`; unknown public routes return HTTP 404. Tests cover audit reporting and real generated-server 404 behavior. CI passed at `dd1bd2662125db43634ccdca4055b58b8bb852c3`.
 
 **Still incomplete:** the audit CLI is not yet invoked automatically by generation/publish, so critical findings do not yet block customer publishing through this new gate. Next priority is integration into the existing verification/publish workflow, followed by remaining checklist gaps in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Do not label the full checklist complete.
+
+
+### Follow-up implementation update (2026-10-10)
+
+`auditProductExperience()` now attaches the generated-site 20-point report under `generatedSiteQuality` for web targets. The report is therefore included in existing product-quality evidence and can be inspected alongside other verification findings. The standalone `npm run site:quality` CLI remains available. Full CI passed at `af6adf6ff6e480bcac351745b0a40a9e17068231`.
+
+The new report does not yet block the publish/deployment transaction. Next, define runtime evidence for unknown-route 404, form submission states, consent, and analytics; then connect critical statuses to the existing contract/publish gate with tests that prove both rejection and legitimate NOT_APPLICABLE cases.
