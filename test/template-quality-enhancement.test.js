@@ -17,7 +17,7 @@ test('template prompts preserve no-fabrication and restrained-motion rules for e
   const templates=listTemplates();
   for(const template of templates){
     const prompt=templatePrompt(template.id).toLowerCase();
-    for(const phrase of ['never fabricate customer identities','user supplies verifiable evidence','purple gradients','pill-shaped buttons','cursor-following effects','made with ai']) assert.ok(prompt.includes(phrase),template.id+': '+phrase);
+    for(const phrase of ['never use fabricated reviews or customer identities','user supplies verifiable evidence','purple gradients','pill-shaped buttons','cursor-following effects','made with ai']) assert.ok(prompt.includes(phrase),template.id+': '+phrase);
   }
 });
 
