@@ -59,7 +59,11 @@ export const TOOL_CONTRACTS = Object.freeze([
   create('security.checksum.verify','Security',['checksum-verifier'],['text','expected'],{properties:{text:{type:'string'},expected:{type:'string'},algorithm:{type:'string'},encoding:{type:'string'}},provenance:'Local fixed-size constant-time digest comparison for supplied data; integrity only, not password authentication.'}),
   create('dev.uuid.generate','Developer',['uuid-generator'],[],{properties:{},provenance:'Cryptographically secure version-4 UUID generation from the Node runtime.'}),
   create('dev.url.encode','Developer',['url-encoder','url-decoder'],['value','operation'],{properties:{value:{type:'string'},operation:{type:'string'}},provenance:'Local encodeURI/encodeURIComponent and matching decode helpers; no navigation or network request.'}),
-  create('qr.generate','Generators',['qr-generator'],['text'],{properties:{text:{type:'string'}},provenance:'Dependency-free QR Code Model 2 byte mode, error correction level L, versions 1–4'})
+  create('qr.generate','Generators',['qr-generator'],['text'],{properties:{text:{type:'string'}},provenance:'Dependency-free QR Code Model 2 byte mode, error correction level L, versions 1–4'}),
+  create('pdf.info','Documents',['pdf-info','pdf-metadata'],['pdfBase64'],{timeoutMs:15000,properties:{pdfBase64:{type:'string'}},provenance:'Local PDF metadata/page inspection using pdf-lib; input size and page count are bounded.'}),
+  create('pdf.merge','Documents',['pdf-merge','merge-pdf'],['documents'],{timeoutMs:20000,properties:{documents:{type:'array',minItems:2,maxItems:10,items:{type:'object'}}},provenance:'Local PDF page merge using pdf-lib; source count, pages and total bytes are bounded.'}),
+  create('pdf.split','Documents',['pdf-split','split-pdf'],['pdfBase64','pages'],{timeoutMs:20000,properties:{pdfBase64:{type:'string'},pages:{type:'array',minItems:1,maxItems:200,items:{type:'integer',minimum:1}}},provenance:'Local one-based page extraction using pdf-lib; output count and bytes are bounded.'}),
+  create('pdf.rotate','Documents',['pdf-rotate','rotate-pdf'],['pdfBase64','angle'],{timeoutMs:15000,properties:{pdfBase64:{type:'string'},angle:{type:'integer',enum:[-270,-180,-90,90,180,270]},pages:{type:'array',items:{type:'integer',minimum:1}}},provenance:'Local right-angle page rotation using pdf-lib; selected page numbers are one-based.'})
 ]);
 
 const BY_ID = new Map();
