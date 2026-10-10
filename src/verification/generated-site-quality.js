@@ -19,6 +19,7 @@ export const GENERATED_SITE_REQUIREMENTS = Object.freeze([
   {id:'analytics',label:'Configured, consent-aware customer-site analytics',severity:'medium'},
   {id:'contact-address',label:'Owner-provided real contact address',severity:'high'},
   {id:'compressed-images',label:'Optimized generated image assets',severity:'medium'},
+  {id:'accessibility-basics',label:'Accessible document language, main landmark and form names',severity:'high'},
 ]);
 
 const STATUSES = new Set(['PASS','FAIL','NEEDS_INPUT','NOT_APPLICABLE']);
@@ -79,6 +80,29 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const missingAlt=images.filter(tag=>!/\balt\s*=\s*["'][^"']*["']/i.test(tag));
   const cssText=fileEntries.filter(([name])=>/\.css$/i.test(name)).map(([,value])=>contentOf(value)).join('\n');
   const formPresent=/<form\b/i.test(allHtml);
+  const accessibilityEvidence=[];
+  const missingLanguage=publicHtml.filter(page=>!/<html\\b[^>]*\\blang\\s*=\\s*["'][^"']+["']/i.test(page.html));
+  const missingMain=publicHtml.filter(page=>!/<main\\b/i.test(page.html));
+  let unnamedControls=0;
+  for(const page of publicHtml){
+    const html=page.html;
+    const controls=[...html.matchAll(/<(input|select|textarea)\\b[^>]*>/gi)].map(match=>match[0]);
+    for(const tag of controls){
+      const type=tag.match(/\\btype\\s*=\\s*["']?([^\\s"'>]+)/i)?.[1]?.toLowerCase()||'';
+      if(type==='hidden')continue;
+      const id=tag.match(/\\bid\\s*=\\s*["']([^"']+)["']/i)?.[1]||'';
+      const explicitlyNamed=/\\baria-label\\s*=\\s*["'][^"']+["']/i.test(tag)||/\\baria-labelledby\\s*=\\s*["'][^"']+["']/i.test(tag);
+      const escapedId=id.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&');
+      const associatedLabel=Boolean(id&&new RegExp('<label\\b[^>]*\\bfor\\s*=\\s*["\\']'+escapedId+'["\\']','i').test(html));
+      const wrappedLabel=new RegExp('<label\\b[^>]*>[\\s\\S]*?'+tag.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')+'[\\s\\S]*?<\\/label>','i').test(html);
+      const buttonLike=['submit','button','reset'].includes(type)&&/\\bvalue\\s*=\\s*["'][^"']+["']/i.test(tag);
+      if(!explicitlyNamed&&!associatedLabel&&!wrappedLabel&&!buttonLike)unnamedControls++;
+    }
+  }
+  if(missingLanguage.length)accessibilityEvidence.push('Public pages missing document language: '+missingLanguage.length);
+  if(missingMain.length)accessibilityEvidence.push('Public pages missing a main landmark: '+missingMain.length);
+  if(unnamedControls)accessibilityEvidence.push('Form controls without an accessible name: '+unnamedControls);
+  if(!accessibilityEvidence.length)accessibilityEvidence.push('Public document language, main landmarks and form control names are present');
   const alertOrError=/(role=["']alert["']|aria-invalid|aria-describedby|field-error|form-error)/i.test(allHtml+'\n'+allFilesText);
   const loadingPresent=/(aria-busy|loading(?:state|State|\.\.\.)|data-loading|role=["']status["'])/i.test(allHtml+'\n'+allFilesText);
   const contactAddress=text(config.contactAddress).trim();
@@ -128,6 +152,7 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
     result('analytics',analyticsDisabled?'NOT_APPLICABLE':analyticsReady?'PASS':'NEEDS_INPUT',[analyticsConfigured?'Analytics provider/measurement ID configured':'Customer-site analytics configuration not supplied',analyticsConsentAware?'Consent-aware runtime found':'Consent-aware tracking not confirmed',config.analyticsDeliveryVerified===true?'Browser event delivery verified':'Browser event delivery not verified'],'Ask the owner to configure analytics; verify events and consent behavior. Never infer customer analytics from platform analytics.'),
     result('contact-address',config.requireContactAddress===false?'NOT_APPLICABLE':contactAddressValid?'PASS':'NEEDS_INPUT',[contactAddressValid?'Owner-supplied contact address present':contactAddress?'Contact address looks like a placeholder':'Real contact address required from site owner'],'Request a real business address from the owner. Never invent an address.'),
     result('compressed-images',images.length===0&&!/background-image\s*:\s*url\(/i.test(cssText)?'NOT_APPLICABLE':imageAssets.length>0&&imageAssets.every(([,asset])=>asset.sizeBytes>0&&asset.sizeBytes<=300000&&(/image\/(?:avif|webp)/i.test(asset.contentType||'')||/\.(?:avif|webp)$/i.test(asset.name||'')))?'PASS':'NEEDS_INPUT',['Image elements: '+images.length,'Image assets with measurable metadata: '+imageAssets.length,'Optimization requires byte-size and format evidence'],'Integrate image optimization into generation/export and verify formats, dimensions, byte budgets, and visual quality.'),
+    result('accessibility-basics',accessibilityEvidence.some(item=>/missing|without an accessible name/i.test(item))?'FAIL':'PASS',accessibilityEvidence,'Set lang on each public HTML document, include a main landmark, and associate each form control with a visible label or accessible name.'),
   ];
   const normalized=checks.map(check=>({...check,status:STATUSES.has(check.status)?check.status:'FAIL',severity:(check.id==='analytics'&&config.analyticsEnabled===true)||(check.id==='contact-address'&&config.requireContactAddress===true)?'critical':GENERATED_SITE_REQUIREMENTS.find(item=>item.id===check.id)?.severity||'medium'}));
   const summary={total:normalized.length,pass:normalized.filter(x=>x.status==='PASS').length,fail:normalized.filter(x=>x.status==='FAIL').length,needsInput:normalized.filter(x=>x.status==='NEEDS_INPUT').length,notApplicable:normalized.filter(x=>x.status==='NOT_APPLICABLE').length};
