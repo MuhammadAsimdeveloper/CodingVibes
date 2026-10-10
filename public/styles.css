@@ -63,3 +63,7 @@
 .design-form{display:grid;grid-template-columns:1fr 1fr;gap:7px}.design-form label{display:flex;flex-direction:column;gap:4px;color:#8d9ab3;font-size:10px}
 .cv-research-item{padding:8px 10px;border:1px solid #1d2c46;background:#09111d;border-radius:8px;margin-top:6px}.cv-research-item a{color:#b8c4ff;font-size:11px}.cv-research-item p{margin:4px 0 0;color:#8492aa;font-size:10px;line-height:1.4}
 @media(max-width:640px){.suite-form{grid-template-columns:1fr}.design-form{grid-template-columns:1fr}}
+
+
+/* Build Vibe project-specific launch settings */
+.cv-build-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.cv-build-options label{display:grid;align-content:start;gap:6px;min-width:0;font-size:.85rem;font-weight:650}.cv-build-options label span{font-size:.75rem;line-height:1.45;font-weight:400;color:var(--muted,#9ca9c4)}.cv-build-options input{box-sizing:border-box;width:100%;min-width:0;padding:10px 12px;border:1px solid var(--border,#35405a);border-radius:10px;background:var(--surface,#111827);color:inherit;font:inherit}.cv-build-options input:focus-visible{outline:2px solid var(--accent,#9ce6c4);outline-offset:2px}@media(max-width:680px){.cv-build-options{grid-template-columns:minmax(0,1fr)}}
