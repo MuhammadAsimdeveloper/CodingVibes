@@ -67,17 +67,21 @@ test('product-quality evidence includes the generated-site report for web target
   const pub=path.join(root,'public');
   fs.mkdirSync(pub,{recursive:true});
   try {
-    fs.writeFileSync(path.join(pub,'index.html'),goodHtml());
+    fs.writeFileSync(path.join(pub,'index.html'),goodHtml({extra:'<aside data-cookie-consent><button data-cookie-accept>Accept</button><button data-cookie-reject>Reject</button><button data-cookie-settings>Preferences</button></aside>'}));
     fs.writeFileSync(path.join(pub,'404.html'),goodHtml({title:'Page not found'}));
     fs.writeFileSync(path.join(pub,'privacy.html'),goodHtml({title:'Privacy'}));
     fs.writeFileSync(path.join(pub,'terms.html'),goodHtml({title:'Terms'}));
     fs.writeFileSync(path.join(pub,'styles.css'),'@media (max-width: 640px) { main { padding: 1rem; } }');
     fs.writeFileSync(path.join(pub,'favicon.svg'),'<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+    fs.writeFileSync(path.join(pub,'manifest.webmanifest'),JSON.stringify({icons:[{src:'/favicon.svg',sizes:'any',type:'image/svg+xml'}]}));
+    fs.writeFileSync(path.join(pub,'cookie-consent.js'),"localStorage.setItem('build-vibe-cookie-preferences-v1','{}');document.dispatchEvent(new CustomEvent('buildvibe:consentchange'));");
     fs.writeFileSync(path.join(pub,'robots.txt'),'User-agent: *\nAllow: /\nSitemap: https://example.test/sitemap.xml');
     fs.writeFileSync(path.join(pub,'sitemap.xml'),'<urlset><url><loc>https://example.test/</loc></url></urlset>');
     const quality=auditProductExperience(root,{target:{id:'web-node'},siteKind:'business',pages:['/']});
     assert.equal(quality.generatedSiteQuality.version,'generated-site-quality.v1');
     assert.equal(quality.generatedSiteQuality.summary.total,20);
+    assert.equal(quality.generatedSiteQuality.requirements.find(item=>item.id==='cookie-consent').status,'PASS');
+    assert.equal(quality.generatedSiteQuality.requirements.find(item=>item.id==='favicon-set').status,'PASS');
   } finally {
     fs.rmSync(root,{recursive:true,force:true});
   }
