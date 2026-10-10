@@ -505,6 +505,7 @@ export async function runTool(id, input = {}) {
       case 'dev.uuid.generate':
       case 'dev.url.encode':
       case 'dev.timestamp.convert':
+      case 'dev.cron.inspect':
         {
           const result=runDeveloperTool(contract.id,input);
           output=result.output;
