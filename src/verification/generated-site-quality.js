@@ -98,11 +98,11 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const analyticsDisabled=config.analyticsEnabled===false;
   const cookieMarkupPresent=/data-cookie-consent/.test(allHtml)&&/data-cookie-accept/.test(allHtml)&&/data-cookie-reject/.test(allHtml)&&/data-cookie-settings/.test(allHtml);
   const cookieRuntimePresent=/localStorage\.setItem/.test(allFilesText)&&/build-vibe-cookie-preferences-v1/.test(allFilesText)&&/buildvibe:consentchange/.test(allFilesText);
-  const cookieConsentReady=config.cookieConsentImplemented===true||(cookieMarkupPresent&&cookieRuntimePresent);
+  const cookieConsentReady=config.cookieConsentImplemented===false?false:config.cookieConsentImplemented===true||(cookieMarkupPresent&&cookieRuntimePresent);
   const stickyMarkupPresent=/data-sticky-cta/.test(allHtml)&&/data-dismiss-sticky-cta/.test(allHtml);
   const stickyRuntimePresent=/build-vibe-sticky-cta-dismissed/.test(allFilesText);
   const stickyCssPresent=/\.sticky-mobile-cta/.test(cssText)&&/@media\s*\([^)]*max-width\s*:/i.test(cssText);
-  const stickyCtaReady=config.stickyMobileCtaImplemented===true||(stickyMarkupPresent&&stickyRuntimePresent&&stickyCssPresent);
+  const stickyCtaReady=config.stickyMobileCtaImplemented===false?false:config.stickyMobileCtaImplemented===true||(stickyMarkupPresent&&stickyRuntimePresent&&stickyCssPresent);
   const checks=[
     result('custom-404',!has404?'FAIL':config.http404Verified===true?'PASS':'NEEDS_INPUT',[has404?'404 artifact exists':'No 404 artifact found',config.http404Verified===true?'Runtime HTTP 404 verified':'Runtime 404 status not verified'],'Generate a branded 404 page and verify unknown routes return HTTP 404, not HTTP 200.'),
     result('meta-title',allTitlesPresent&&uniqueTitles?'PASS':'FAIL',['Public HTML routes: '+publicHtml.length,'Titles present: '+publicHtml.filter(page=>page.title).length,'Unique title count: '+new Set(titles).size],'Give every public route a useful, distinct title.'),
