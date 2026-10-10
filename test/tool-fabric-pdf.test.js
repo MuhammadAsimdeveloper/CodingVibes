@@ -72,7 +72,7 @@ test('PDF tools reject malformed inputs, invalid page ranges and over-budget doc
   assert.equal((await runTool('pdf.split',{pdfBase64:PDF_BETA,pages:[1,1]})).status,'INVALID_INPUT');
   assert.equal((await runTool('pdf.rotate',{pdfBase64:PDF_BETA,angle:45})).status,'INVALID_INPUT');
   assert.equal((await runTool('pdf.rotate',{pdfBase64:PDF_BETA,angle:90,pages:[3]})).status,'INVALID_INPUT');
-  assert.equal((await runTool('pdf.info',{pdfBase64:PDF_ALPHA.repeat(1000)})).status,'INVALID_INPUT');
+  assert.equal((await runTool('pdf.info',{pdfBase64:PDF_ALPHA.repeat(1000)})).status,'INPUT_TOO_LARGE');
   for(const id of REQUIRED_TOOLS){
     const result=await runTool(id,{});
     assert.notEqual(result.status,'COMPLETED',id+' must validate its required input');
