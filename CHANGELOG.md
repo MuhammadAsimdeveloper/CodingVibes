@@ -121,4 +121,4 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 - Added a dependency-free lossless PNG optimizer for generated binary assets, with chunk checksum validation, IDAT recompression and safe fallback for malformed input.
 - Integrated optimization into project generation before manifest hashing and surfaced PNG counts/byte savings in generation metadata.
 - Added tests for lossless output and integration of platform icon assets; added optimizer syntax validation.
-- Verified on `e5adebef5aa005a7e7804b9cbc0f8ad919695fa4`; [Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081376190), Dependency Review, and CodeQL passed.
+- Verified on `e6ba5c7ab50738a4fa486f2014084cebf203bf52`; [Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38085906711), Dependency Review, and CodeQL passed.
