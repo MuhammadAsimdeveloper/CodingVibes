@@ -471,6 +471,12 @@ export async function runTool(id, input = {}) {
         warnings.push(...(result.warnings||[]));
         break;
       }
+      case 'data.json.yaml': {
+        const result=runDataTool(contract.id,input);
+        output=result.output;
+        warnings.push(...(result.warnings||[]));
+        break;
+      }
       case 'regex.test': output=regexTest(input);break;
       case 'jwt.inspect': {
         output=inspectJwt(input);
