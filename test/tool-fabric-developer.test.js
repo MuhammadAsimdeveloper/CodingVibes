@@ -7,6 +7,8 @@ const EXPECTED_TOOLS = [
   'security.checksum.verify',
   'dev.uuid.generate',
   'dev.url.encode',
+  'dev.timestamp.convert',
+  'dev.cron.inspect',
 ];
 
 test('local hash, checksum, UUID and URL tools expose canonical no-network contracts', () => {
@@ -21,8 +23,8 @@ test('local hash, checksum, UUID and URL tools expose canonical no-network contr
     assert.ok(contract.auditEvent);
     assert.ok(contract.provenance);
   }
-  assert.equal(listToolContracts().length, 44);
-  assert.equal(listToolContracts({category:'Developer'}).filter(x => x.id.startsWith('dev.')).length, 3);
+  assert.equal(listToolContracts().length, 56);
+  assert.equal(listToolContracts({category:'Developer'}).filter(x => x.id.startsWith('dev.')).length, 5);
   assert.equal(listToolContracts({category:'Security'}).filter(x => x.id === 'security.checksum.verify').length, 1);
 });
 
@@ -100,3 +102,153 @@ test('developer utility inputs are bounded and unsupported algorithms/modes fail
     assert.equal(result.networkUsed,false);
   }
 });
+
+test('dev.timestamp.convert performs explicit ISO-8601 and Unix second/millisecond conversions',async()=>{
+  const contract=getToolContract('dev.timestamp.convert');
+  assert.ok(contract);
+  assert.equal(contract.executionMode,'local');
+  assert.equal(contract.networkRequired,false);
+
+  const seconds=await runTool('dev.timestamp.convert',{value:'1970-01-01T00:00:01.250Z',mode:'iso-to-unix-seconds'});
+  assert.equal(seconds.status,'COMPLETED');
+  assert.equal(seconds.output.unixSeconds,1.25);
+  assert.equal(seconds.output.unixMilliseconds,1250);
+
+  const milliseconds=await runTool('dev.timestamp.convert',{value:'1970-01-01T00:00:01.250Z',mode:'iso-to-unix-milliseconds'});
+  assert.equal(milliseconds.output.unixMilliseconds,1250);
+
+  const fromSeconds=await runTool('dev.timestamp.convert',{value:1.25,mode:'unix-seconds-to-iso'});
+  assert.equal(fromSeconds.status,'COMPLETED');
+  assert.equal(fromSeconds.output.iso,'1970-01-01T00:00:01.250Z');
+
+  const fromMilliseconds=await runTool('dev.timestamp.convert',{value:0,mode:'unix-milliseconds-to-iso'});
+  assert.equal(fromMilliseconds.output.iso,'1970-01-01T00:00:00.000Z');
+  assert.equal(fromMilliseconds.networkUsed,false);
+});
+
+test('dev.timestamp.convert rejects ambiguous dates, missing offsets, invalid modes and out-of-range timestamps',async()=>{
+  for(const input of [
+    {},
+    {value:'2026-02-30T10:00:00Z',mode:'iso-to-unix-seconds'},
+    {value:'2026-01-01T10:00:00',mode:'iso-to-unix-seconds'},
+    {value:'2026-01-01T25:00:00Z',mode:'iso-to-unix-seconds'},
+    {value:1,mode:'iso-to-unix-seconds'},
+    {value:'1',mode:'unix-seconds-to-iso'},
+    {value:1,mode:'guess'},
+    {value:1e20,mode:'unix-milliseconds-to-iso'},
+    {value:1e20,mode:'unix-seconds-to-iso'}
+  ]){
+    const result=await runTool('dev.timestamp.convert',input);
+    assert.notEqual(result.status,'COMPLETED',JSON.stringify(input));
+    assert.equal(result.networkUsed,false);
+  }
+});
+
+test('dev.cron.inspect validates five-field cron syntax and returns bounded UTC occurrences',async()=>{
+  const contract=getToolContract('dev.cron.inspect');
+  assert.ok(contract);
+  assert.equal(contract.executionMode,'local');
+  assert.equal(contract.networkRequired,false);
+  const result=await runTool('dev.cron.inspect',{
+    expression:'*/15 9-10 * * 1-5',
+    after:'2026-10-05T08:59:00Z'
+  });
+  assert.equal(result.status,'COMPLETED');
+  assert.deepEqual(result.output.nextRuns,[
+    '2026-10-05T09:00:00.000Z',
+    '2026-10-05T09:15:00.000Z',
+    '2026-10-05T09:30:00.000Z',
+    '2026-10-05T09:45:00.000Z',
+    '2026-10-05T10:00:00.000Z'
+  ]);
+  assert.equal(result.output.timeZone,'UTC');
+  assert.equal(result.networkUsed,false);
+});
+
+test('dev.cron.inspect applies documented OR semantics when both day fields are restricted',async()=>{
+  const result=await runTool('dev.cron.inspect',{
+    expression:'0 9 1 * 1',
+    after:'2026-10-02T10:00:00Z'
+  });
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.dayMatchPolicy,'day-of-month OR day-of-week when both are restricted');
+  assert.deepEqual(result.output.nextRuns.slice(0,2),[
+    '2026-10-05T09:00:00.000Z',
+    '2026-10-12T09:00:00.000Z'
+  ]);
+});
+
+test('dev.cron.inspect rejects unsupported cron syntax, invalid offsets and extra options',async()=>{
+  for(const input of [
+    {},
+    {expression:'* * * *'},
+    {expression:'60 * * * *'},
+    {expression:'*/0 * * * *'},
+    {expression:'10-2 * * * *'},
+    {expression:'a b c d e'},
+    {expression:'* * * * *',after:'2026-10-01T00:00:00'},
+    {expression:'* * * * *',after:'2026-02-30T00:00:00Z'},
+    {expression:'* * * * *',after:'2026-10-01T00:00:00Z',timeZone:'America/New_York'}
+  ]){
+    const result=await runTool('dev.cron.inspect',input);
+    assert.notEqual(result.status,'COMPLETED',JSON.stringify(input));
+    assert.equal(result.networkUsed,false);
+  }
+});
+
+test('dev.cron.inspect reports valid schedules with no match inside its bounded search window',async()=>{
+  const result=await runTool('dev.cron.inspect',{
+    expression:'0 0 31 2 *',
+    after:'2026-01-01T00:00:00Z'
+  });
+  assert.equal(result.status,'COMPLETED');
+  assert.deepEqual(result.output.nextRuns,[]);
+  assert.equal(result.output.searchWindowDays,366);
+  assert.ok(result.warnings.some(message=>/no occurrence/i.test(message)));
+});
+
+test('security.password.generate creates a cryptographically random password satisfying selected character classes',async()=>{
+  const contract=getToolContract('security.password.generate');
+  assert.ok(contract);
+  assert.equal(contract.executionMode,'local');
+  assert.equal(contract.networkRequired,false);
+  const result=await runTool('security.password.generate',{length:32});
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.password.length,32);
+  assert.ok(/[a-z]/.test(result.output.password));
+  assert.ok(/[A-Z]/.test(result.output.password));
+  assert.ok(/[0-9]/.test(result.output.password));
+  assert.ok(/[!@#$%^&*()\-_=+\[\]{}:,.?]/.test(result.output.password));
+  assert.equal(result.output.cryptographicallySecure,true);
+  assert.equal(result.output.length,32);
+  assert.equal(result.networkUsed,false);
+});
+
+test('security.password.generate supports a restricted character policy and excludes ambiguous characters by default',async()=>{
+  const result=await runTool('security.password.generate',{
+    length:24,lowercase:true,uppercase:false,digits:true,symbols:false
+  });
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.password.length,24);
+  assert.match(result.output.password,/^[a-z2-9]+$/);
+  assert.ok(!/[ilo01]/i.test(result.output.password));
+  assert.deepEqual(result.output.selectedClasses,['lowercase','digits']);
+  assert.equal(result.networkUsed,false);
+});
+
+test('security.password.generate rejects weak lengths, invalid options and an empty character policy',async()=>{
+  for(const input of [
+    {},
+    {length:11},
+    {length:129},
+    {length:12.5},
+    {length:20,lowercase:false,uppercase:false,digits:false,symbols:false},
+    {length:20,lowercase:'yes'},
+    {length:20,unknownOption:true}
+  ]){
+    const result=await runTool('security.password.generate',input);
+    assert.notEqual(result.status,'COMPLETED',JSON.stringify(input));
+    assert.equal(result.networkUsed,false);
+  }
+});
+

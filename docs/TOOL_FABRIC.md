@@ -52,10 +52,22 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `time.age` | local | Calendar age between strict YYYY-MM-DD dates; leap-day policy is explicit |
 | `time.timezone` | local | Converts a supplied ISO-8601 instant with explicit offset between IANA zones |
 | `data.size.convert` | local | Decimal SI and binary IEC byte units with safe-integer limits |
+| `data.json.csv` | local | Converts bounded arrays of JSON objects to RFC-style CSV with stable first-seen columns, quoted nested values and spreadsheet-formula string neutralization |
+| `data.csv.json` | local | Parses bounded RFC-style CSV with strict quoting, safe unique headers, consistent record widths and JSON output limits |
+| `data.json.yaml` | local | Serializes bounded JSON text to conservative YAML with quoted strings, safe keys, nesting/node caps and output-size checks |
 | `dev.hash.generate` | local | SHA-256/SHA-384/SHA-512 text digests in hex or Base64; not for password storage |
 | `security.checksum.verify` | local | Validates supplied digest encoding and compares fixed-size digests in constant time |
+| `security.password.generate` | local | Generates a 12–128 character password with cryptographic randomness, selectable character classes and ambiguous-character exclusion |
 | `dev.uuid.generate` | local | Cryptographically secure UUID v4 generation using Node crypto |
 | `dev.url.encode` | local | Explicit encode/decode URI and component modes; does not navigate or fetch URLs |
+| `dev.timestamp.convert` | local | Converts strict ISO-8601 instants with explicit offsets to Unix seconds/milliseconds and back, validating calendar fields and timestamp bounds |
+| `dev.cron.inspect` | local | Validates five-field cron syntax and returns up to five upcoming UTC occurrences within a 366-day search window |
+| `pdf.info` | local | Bounded PDF metadata, page count, dimensions and rotations from supplied Base64; rejects malformed/encrypted PDFs |
+| `pdf.merge` | local | Merges 2–10 PDFs in order, capped at 1 MB combined input, 200 pages and 2 MB output |
+| `pdf.split` | local | Extracts selected one-based pages into separate one-page PDFs; bounded aggregate outputs |
+| `pdf.rotate` | local | Rotates all or selected pages by validated right-angle multiples |
+| `pdf.reorder` | local | Reorders all pages by a complete unique one-based permutation; preserves page-level rotation/dimensions and basic metadata |
+| `image.to_pdf` | local | Converts 1–20 bounded PNG/JPEG images into one A4 PDF page per image; validates Base64, MIME/signature, dimensions and total bytes before embedding |
 
 
 ## Local calculator, converter and date/time tools
@@ -68,9 +80,35 @@ No tool reads financial accounts, contacts a lender, performs market lookup, wri
 
 **Verification record:** implementation revision `4b796eb615ce77d734a66230995c57d353406bb9` passed Build Vibe CI run [37987930669](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930669), 309/309 tests, coverage, syntax/release checks, SEO, server/browser E2E and launch-gate steps. CodeQL [37987930550](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930550) and Dependency Review [37987930570](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930570) passed on the same source revision. Results are arithmetic estimates from the supplied inputs, not financial, tax or lending advice. Regression tests live in `test/tool-fabric-calculators.test.js`.
 
+## Local JSON-to-CSV conversion
+
+The `data.json.csv` contract converts an array of JSON objects to CSV without network calls or external dependencies. Columns are the first-seen union of row keys; missing and null values become empty cells, booleans and finite numbers use their JSON text forms, and nested arrays/objects are serialized as compact JSON. CSV fields containing commas, quotes or newlines are quoted and embedded quotes are doubled. Records use CRLF separators.
+
+The converter is bounded to 10,000 rows, 200 columns, 500 KB serialized input, 100 KB per cell and 1 MB output. It rejects invalid row shapes, unsupported values, circular structures, excessive nesting, prototype-sensitive keys and unrecognized options. String cells and headers that begin with spreadsheet formula markers are prefixed with an apostrophe; numeric values remain numeric text. The result reports the columns, row count, byte length and number of sanitized cells, and emits a warning when formula-like text was neutralized.
+
+Focused regression tests live in `test/tool-fabric-data-conversion.test.js`, including quotes/newlines, sparse columns, nested values, formula-injection handling, invalid input and resource limits.
+
+## Local JSON-to-YAML conversion
+
+The `data.json.yaml` contract accepts JSON text and emits conservative YAML 1.2-compatible block notation. Every string scalar and mapping key is double-quoted using JSON-compatible escaping, avoiding YAML's ambiguous plain-string forms (such as `yes`, `null`, values with colons, or leading special characters). Booleans, finite numbers and null remain typed scalars. Nested objects and arrays are emitted as indented block mappings/sequences; empty containers use `{}` and `[]`.
+
+Input is limited to 500 KB, nesting to 20 levels, total values to 100,000, and YAML output to 1 MB. Invalid JSON, prototype-sensitive keys, unsupported values and unknown options fail explicitly. No YAML parser dependency or network request is used. Tests in `test/tool-fabric-data-conversion.test.js` cover nested output, ambiguous strings, scalar types, unsafe keys and resource limits.
+
+The reverse `data.csv.json` contract parses RFC-style quoted fields, doubled quotes, CRLF/LF record separators, BOM-prefixed files, multiline cells and trailing empty cells. It returns string-valued row objects and a compact JSON string. Headers must be non-empty, unique and not prototype-sensitive; every record must match the header width. It rejects malformed quoting, lone CR separators, unsupported options and over-budget rows, columns, cells, input or output. Empty cells remain empty strings; the converter does not guess number, date or boolean types. Regression coverage for this path is in the same test file.
+
+## Local secure password generation
+
+`security.password.generate` uses Node's cryptographic `randomInt` for class selection, pool sampling and Fisher-Yates shuffling. Length is mandatory and bounded to 12–128 characters. Lowercase, uppercase, digits and symbols are selectable; at least one enabled class must be selected, and at least one character from every selected class is guaranteed. Ambiguous characters are excluded by default from letters/digits. The result is returned once to the caller, is not stored by the tool, and makes no network request. The output includes selected classes and policy metadata, not an unsubstantiated strength score.
+
+Treat the result as a secret: copy it to a trusted password manager and do not put it into prompts, source code or logs.
+
 ## Local hash, checksum, UUID and URL tools
 
 The developer-utility tranche adds `dev.hash.generate`, `security.checksum.verify`, `dev.uuid.generate`, and `dev.url.encode`. Hash generation permits only SHA-256, SHA-384 and SHA-512 and supports hex/Base64 output. Checksum verification parses a supplied digest strictly, rejects unsupported encodings and digest lengths before comparison, and uses Node's fixed-size `timingSafeEqual`. UUID v4 uses the cryptographic random generator. URL operations require an explicit mode (`encode-component`, `decode-component`, `encode-uri`, or `decode-uri`) and malformed inputs return `INVALID_INPUT`.
+
+Cron inspection supports exactly five fields: minute, hour, day-of-month, month and day-of-week. Numeric values, comma lists, non-wrapping ranges, `*` and positive `/step` forms are supported; named months/days, aliases and scheduler-specific extensions are rejected. Occurrences are evaluated in UTC, at minute precision, and search is capped at 366 days. When both day-of-month and day-of-week are restricted, the inspector uses the documented cron OR rule. It returns at most five next occurrences and warns when no occurrence is found in the search window.
+
+Timestamp conversion requires an explicit mode. ISO inputs must include `Z` or a numeric `±HH:MM` offset, validate the actual calendar date and time, and are limited to millisecond precision. Unix-seconds input may be fractional to millisecond precision; Unix-milliseconds input must be a safe integer. Unsupported modes and out-of-range dates fail explicitly.
 
 These helpers process only user-supplied strings and make no network calls. Hashes and checksums are for integrity verification; they are **not password storage or password authentication**. No URL is opened or fetched by the encoder.
 
@@ -151,3 +189,10 @@ CI runs `npm run browser:image-optimizer` after installing Playwright Chromium. 
 The Playwright browser smoke runner records real navigation timings, first-contentful paint, observed resource transfer sizes, JavaScript/image byte subtotals where resource timing is complete, render-blocking resource counts when the browser exposes them, Largest Contentful Paint and Cumulative Layout Shift when their observers return data. Cross-origin timing entries without readable size values are marked incomplete rather than treated as zero-byte resources.
 
 The runner deliberately does **not** label a navigation-only measurement as Interaction to Next Paint (INP). It records observed interaction duration for diagnostics, but INP remains missing unless a real interaction/Lighthouse measurement is supplied. The Tool Fabric threshold evaluator now returns `complete:false`, `missingMetrics` and a `metrics_incomplete` finding when metrics are absent instead of reporting a false full pass. Per-route browser verification includes the measured evidence and threshold assessment; this is not a Lighthouse score.
+
+
+## Bounded local PDF suite
+
+The canonical local document adapter lives in `src/tool-fabric/pdf.js` and is registered through the existing `contracts.js` and `runTool()` executor. The implemented operations are `pdf.info`, `pdf.merge`, `pdf.split`, `pdf.rotate`, `pdf.reorder` and `image.to_pdf`. PDF inputs must be canonical Base64 with a PDF signature; each source is limited to 1 MB, merge inputs total no more than 1 MB, documents are limited to 200 pages, output to 2 MB, and merge accepts 2–10 documents. Malformed or encrypted PDFs are rejected. Reorder accepts only a full permutation of every page exactly once, expressed as 1-based page numbers. Image-to-PDF accepts 1–20 PNG/JPEG images, 1 MB per image and combined, 10,000-pixel maximum edge and 20 megapixels per image. Images are aspect-fit to portrait or landscape A4 pages with a 24-point margin. Every operation is local-only and returns `networkUsed:false`.
+
+PDF compression, PDF-to-image rendering, text extraction, OCR, redaction and decryption are not implemented by this suite. Do not mark these functions ready or route them to the current adapter until each has a bounded implementation, real fixtures, parser/rendering limits and security tests. High-volume processing of untrusted PDFs should move to a resource-isolated worker before production exposure.

@@ -309,3 +309,24 @@ Inspired by the production browser-agent pattern, but implemented as our own pro
 Do not compete on raw tool count. Compete on **coverage × reliability × privacy × composability × agent accessibility**.
 
 A utility is admitted to the canonical catalog only when it has a distinct user job, contract, tests, security/privacy classification, documentation and verification state.
+
+
+## P1 JSON-to-CSV implementation status — 2026-10-10
+
+The canonical Tool Fabric now implements `data.json.csv` through `src/tool-fabric/data.js`. It converts bounded arrays of JSON objects to CSV, handles quoting and sparse rows, preserves first-seen columns, neutralizes formula-like string cells and rejects invalid or over-budget input. See `docs/TOOL_FABRIC.md`; `data.csv.json` is now also implemented with strict RFC-style parsing, safe unique headers, consistent row widths and explicit resource limits. Values remain strings; inferred data typing is not claimed. The companion `data.json.yaml` serializer emits conservative YAML block structures from JSON text, quotes string scalars/keys, preserves scalar types, and enforces depth/node/byte limits. YAML input parsing is not implemented.
+
+## P1 PDF tool implementation status — 2026-10-10
+
+The existing Build Vibe Tool Fabric implements `pdf.info`, `pdf.merge`, `pdf.split`, `pdf.rotate` and `pdf.reorder` locally via the governed `pdf-lib` adapter on PR #59, plus `image.to_pdf` for bounded PNG/JPEG-to-A4-PDF conversion. Real fixtures cover PDF page operations and mixed PNG/JPEG conversion, with explicit input/output/page, MIME/signature, dimensions and image-count limits. Compression, PDF-to-image rendering, text extraction and OCR are not marked complete. Keep canonical ownership in Build Vibe and expose capabilities to Aira only through tool contracts.
+
+## P1 timestamp conversion — 2026-10-10
+
+`dev.timestamp.convert` is now implemented through the canonical developer executor with four explicit ISO/Unix modes, strict offset/calendar validation, range limits and no network use. This does not claim a cron-expression inspector or other date/time tools are implemented.
+
+## P1 cron inspection — 2026-10-10
+
+`dev.cron.inspect` is implemented through the canonical developer executor. It parses a documented five-field subset, returns up to five upcoming UTC runs within 366 days, and rejects unsupported dialect extensions. It is not a general-purpose scheduler or job runner.
+
+## P1 password generator — 2026-10-10
+
+The canonical Tool Fabric now includes `security.password.generate`, using Node cryptographic randomness, explicit class/length policy, ambiguous-character exclusion by default and no persistence/network use. This does not imply that PII redaction, certificate inspection or every listed security utility is complete.

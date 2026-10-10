@@ -1,4 +1,4 @@
-import {createHash, randomUUID, timingSafeEqual} from 'node:crypto';
+import {createHash, randomInt, randomUUID, timingSafeEqual} from 'node:crypto';
 
 const ALGORITHMS = Object.freeze({
   sha256:'sha256',
@@ -87,6 +87,180 @@ function verifyChecksum(input) {
   };
 }
 
+
+const ISO_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(Z|[+-]\d{2}:\d{2})$/;
+
+function parseIsoInstant(value) {
+  if (typeof value !== 'string' || value.length > 40) invalid('value must be a strict ISO-8601 instant with an explicit UTC offset.');
+  const match = ISO_INSTANT.exec(value);
+  if (!match) invalid('value must include a full date/time and an explicit Z or ±HH:MM offset.');
+  const [,yearText,monthText,dayText,hourText,minuteText,secondText,fraction='',offset] = match;
+  const year=Number(yearText), month=Number(monthText), day=Number(dayText);
+  const hour=Number(hourText), minute=Number(minuteText), second=Number(secondText);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month-1] ||
+      hour > 23 || minute > 59 || second > 59) {
+    invalid('value contains an impossible calendar date or time.');
+  }
+  if (offset !== 'Z') {
+    const offsetHour=Number(offset.slice(1,3)), offsetMinute=Number(offset.slice(4,6));
+    if (offsetHour > 23 || offsetMinute > 59) invalid('value contains an invalid UTC offset.');
+  }
+  const milliseconds=Date.parse(value);
+  if (!Number.isFinite(milliseconds) || Math.abs(milliseconds) > 8.64e15) invalid('value is outside the supported JavaScript date range.');
+  return milliseconds;
+}
+
+function convertTimestamp(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input) ||
+      Object.keys(input).some(key => key !== 'value' && key !== 'mode')) {
+    invalid('Input must contain only value and mode.');
+  }
+  const modes=new Set(['iso-to-unix-seconds','iso-to-unix-milliseconds','unix-seconds-to-iso','unix-milliseconds-to-iso']);
+  if (typeof input.mode !== 'string' || !modes.has(input.mode)) {
+    invalid('mode must be iso-to-unix-seconds, iso-to-unix-milliseconds, unix-seconds-to-iso or unix-milliseconds-to-iso.');
+  }
+  let milliseconds;
+  if (input.mode.startsWith('iso-to-')) {
+    milliseconds=parseIsoInstant(input.value);
+  } else if (input.mode === 'unix-seconds-to-iso') {
+    if (typeof input.value !== 'number' || !Number.isFinite(input.value) || Math.abs(input.value) > 8.64e12) {
+      invalid('value must be a finite Unix-seconds number within the supported date range.');
+    }
+    milliseconds=Math.round(input.value*1000);
+  } else {
+    if (typeof input.value !== 'number' || !Number.isSafeInteger(input.value) || Math.abs(input.value) > 8.64e15) {
+      invalid('value must be a safe integer Unix-milliseconds number within the supported date range.');
+    }
+    milliseconds=input.value;
+  }
+  const date=new Date(milliseconds);
+  if (!Number.isFinite(date.getTime())) invalid('timestamp is outside the supported date range.');
+  const iso=date.toISOString();
+  return {output:{mode:input.mode,iso,unixMilliseconds:milliseconds,unixSeconds:milliseconds/1000},warnings:[]};
+}
+
+
+const CRON_FIELDS = Object.freeze([
+  {name:'minute',min:0,max:59},
+  {name:'hour',min:0,max:23},
+  {name:'dayOfMonth',min:1,max:31},
+  {name:'month',min:1,max:12},
+  {name:'dayOfWeek',min:0,max:7},
+]);
+
+function parseCronField(source,field) {
+  const values=new Set();
+  const wildcard=source === '*';
+  const segments=source.split(',');
+  if (!source || segments.length > 100) invalid('Cron fields must contain a bounded list of values.');
+  for (const segment of segments) {
+    if (!segment) invalid('Cron lists may not contain empty items.');
+    const slash=segment.split('/');
+    if (slash.length > 2) invalid('Cron steps must use one slash.');
+    let step=1;
+    if (slash.length===2) {
+      if (!/^\d+$/.test(slash[1])) invalid('Cron step must be a positive integer.');
+      step=Number(slash[1]);
+      if (step < 1 || step > field.max-field.min+1) invalid('Cron step is outside the supported range.');
+    }
+    const base=slash[0];
+    let start,end;
+    if (base==='*') { start=field.min; end=field.max; }
+    else if (base.includes('-')) {
+      const parts=base.split('-');
+      if (parts.length!==2 || !/^\d+$/.test(parts[0]) || !/^\d+$/.test(parts[1])) invalid('Cron ranges must use numeric start-end values.');
+      start=Number(parts[0]); end=Number(parts[1]);
+      if (start>end) invalid('Cron ranges may not wrap around.');
+    } else {
+      if (!/^\d+$/.test(base)) invalid('Cron fields support numbers, lists, ranges, wildcards and steps only.');
+      start=Number(base);
+      end=slash.length===2 ? field.max : start;
+    }
+    if (start<field.min || start>field.max || end<field.min || end>field.max) invalid('Cron field value is outside the allowed range for '+field.name+'.');
+    for(let value=start;value<=end;value+=step) values.add(field.name==='dayOfWeek' && value===7 ? 0 : value);
+  }
+  if (!values.size) invalid('Cron field did not select any values.');
+  return {values,wildcard};
+}
+
+function inspectCron(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input) ||
+      Object.keys(input).some(key=>key!=='expression'&&key!=='after')) {
+    invalid('Input must contain only expression and optional after.');
+  }
+  if (typeof input.expression!=='string' || input.expression.length>100) invalid('expression must be a five-field cron string of at most 100 characters.');
+  const parts=input.expression.trim().split(/\s+/);
+  if (parts.length!==5) invalid('Only five-field cron syntax is supported: minute hour day-of-month month day-of-week.');
+  const fields=parts.map((part,index)=>parseCronField(part,CRON_FIELDS[index]));
+  const afterMs=input.after===undefined ? Date.now() : parseIsoInstant(input.after);
+  const startMinute=Math.floor(afterMs/60_000)*60_000+60_000;
+  const endMinute=startMinute+366*24*60*60_000;
+  const nextRuns=[];
+  for(let timestamp=startMinute;timestamp<endMinute&&nextRuns.length<5;timestamp+=60_000){
+    const date=new Date(timestamp);
+    const minuteMatch=fields[0].values.has(date.getUTCMinutes());
+    const hourMatch=fields[1].values.has(date.getUTCHours());
+    const domMatch=fields[2].values.has(date.getUTCDate());
+    const monthMatch=fields[3].values.has(date.getUTCMonth()+1);
+    const dowMatch=fields[4].values.has(date.getUTCDay());
+    const dayMatch=fields[2].wildcard ? dowMatch : fields[4].wildcard ? domMatch : domMatch||dowMatch;
+    if(minuteMatch&&hourMatch&&monthMatch&&dayMatch) nextRuns.push(date.toISOString());
+  }
+  const warnings=nextRuns.length?[]:['No occurrence was found within the bounded 366-day search window.'];
+  return {
+    output:{
+      expression:parts.join(' '),
+      fields:Object.fromEntries(CRON_FIELDS.map((field,index)=>[field.name,[...fields[index].values].sort((a,b)=>a-b)])),
+      timeZone:'UTC',
+      dayMatchPolicy:'day-of-month OR day-of-week when both are restricted',
+      searchWindowDays:366,
+      nextRuns
+    },
+    warnings
+  };
+}
+
+
+function generatePassword(input={}) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) invalid('Input must be an options object.');
+  const allowed=new Set(['length','lowercase','uppercase','digits','symbols','excludeAmbiguous']);
+  if (Object.keys(input).some(key=>!allowed.has(key))) invalid('Password options contain an unsupported field.');
+  const length=input.length;
+  if (!Number.isInteger(length) || length<12 || length>128) invalid('length must be an integer from 12 to 128.');
+  const options={lowercase:true,uppercase:true,digits:true,symbols:true,excludeAmbiguous:true,...input};
+  for(const key of ['lowercase','uppercase','digits','symbols','excludeAmbiguous']) {
+    if(typeof options[key]!=='boolean') invalid(key+' must be a boolean.');
+  }
+  const classes=[
+    {name:'lowercase',full:'abcdefghijklmnopqrstuvwxyz',safe:'abcdefghjkmnpqrstuvwxyz',enabled:options.lowercase},
+    {name:'uppercase',full:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',safe:'ABCDEFGHJKLMNPQRSTUVWXYZ',enabled:options.uppercase},
+    {name:'digits',full:'0123456789',safe:'23456789',enabled:options.digits},
+    {name:'symbols',full:'!@#$%^&*()-_=+[]{}:,.?',safe:'!@#$%^&*()-_=+[]{}:,.?',enabled:options.symbols},
+  ].filter(group=>group.enabled).map(group=>({...group,characters:options.excludeAmbiguous?group.safe:group.full}));
+  if(!classes.length) invalid('At least one character class must be enabled.');
+  const pool=[...new Set(classes.flatMap(group=>[...group.characters]))].join('');
+  const chars=classes.map(group=>group.characters[randomInt(group.characters.length)]);
+  while(chars.length<length) chars.push(pool[randomInt(pool.length)]);
+  for(let i=chars.length-1;i>0;i--) {
+    const j=randomInt(i+1);
+    [chars[i],chars[j]]=[chars[j],chars[i]];
+  }
+  return {
+    output:{
+      password:chars.join(''),
+      length,
+      characterPoolSize:pool.length,
+      selectedClasses:classes.map(group=>group.name),
+      excludeAmbiguous:options.excludeAmbiguous,
+      cryptographicallySecure:true,
+      stored:false
+    },
+    warnings:['The generated password is returned once in this tool result; copy it to a trusted password manager and do not share it in prompts or logs.']
+  };
+}
+
 function makeUuid() {
   return {output:{uuid:randomUUID(),version:4},warnings:[]};
 }
@@ -114,8 +288,11 @@ export function runDeveloperTool(id,input={}) {
   switch (id) {
     case 'dev.hash.generate': return generateHash(input);
     case 'security.checksum.verify': return verifyChecksum(input);
+    case 'security.password.generate': return generatePassword(input);
     case 'dev.uuid.generate': return makeUuid();
     case 'dev.url.encode': return encodeUrl(input);
+    case 'dev.timestamp.convert': return convertTimestamp(input);
+    case 'dev.cron.inspect': return inspectCron(input);
     default: invalid('No developer utility executor is registered for this id.');
   }
 }

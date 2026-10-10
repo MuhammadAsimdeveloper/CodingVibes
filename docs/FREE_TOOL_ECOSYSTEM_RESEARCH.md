@@ -283,3 +283,25 @@ Do not:
 ## Definition of done
 
 A new tool is complete only when its contract, implementation, tests, security policy, UX, documentation, privacy mode and verification state exist.
+
+## P1 PDF implementation status — 2026-10-10
+
+The canonical Tool Fabric implements five bounded PDF operations on PR #59: metadata inspection (`pdf.info`), merge (`pdf.merge`), page extraction into separate documents (`pdf.split`), right-angle rotation (`pdf.rotate`) and full page reordering (`pdf.reorder`). The same adapter now also implements `image.to_pdf`, which converts bounded PNG/JPEG inputs into A4 PDF pages. Real fixtures, canonical Base64/signature validation, MIME checks, dimension/count/byte bounds and no-network assertions cover the conversion path. PDF compression, PDF-to-image rendering, text extraction, OCR, redaction and decryption remain separate future work. See `docs/PDF_TOOLS.md` and `docs/TOOL_FABRIC.md` for the contract and limits.
+
+The P1 data-conversion suite now also includes `data.json.csv`, a local bounded JSON-object-array to CSV converter. It preserves first-seen columns, quotes CSV correctly, serializes nested values as JSON, neutralizes spreadsheet-formula-like strings and enforces row/column/input/cell/output limits. The companion `data.csv.json` parser now completes the reverse conversion with strict quoting, safe headers, consistent row widths and bounded input/output. CSV fields remain strings by design; type inference is intentionally excluded.
+
+## P1 JSON-to-YAML implementation status — 2026-10-10
+
+The P1 data-conversion suite now includes `data.json.yaml`, a bounded JSON-text to conservative YAML serializer. It quotes all strings and keys, preserves JSON scalar types, supports nested arrays/objects, and rejects unsafe keys, invalid JSON and over-budget input. YAML-to-JSON remains unfinished.
+
+## P1 timestamp conversion status — 2026-10-10
+
+The canonical developer utility `dev.timestamp.convert` supports strict ISO-8601 instants with explicit offsets and Unix seconds/milliseconds in both directions. Calendar and time fields are validated, conversions are bounded, and ambiguous local-time strings are rejected. See `docs/TOOL_FABRIC.md` for the exact modes and limits.
+
+## P1 cron inspection status — 2026-10-10
+
+The local `dev.cron.inspect` utility supports five-field numeric cron syntax, lists, ranges, wildcards and positive steps, with a 366-day UTC search cap and up to five upcoming occurrences. Named fields, aliases and vendor-specific extensions are rejected. The day-of-month/day-of-week OR policy is documented in `docs/TOOL_FABRIC.md`.
+
+## P1 password generation status — 2026-10-10
+
+`security.password.generate` is a local cryptographic generator with mandatory 12–128 length, selected character classes, guaranteed class inclusion, ambiguous-character exclusion by default and no persistence/network use. Results are secrets; the tool emits no strength score and advises storage in a trusted password manager.

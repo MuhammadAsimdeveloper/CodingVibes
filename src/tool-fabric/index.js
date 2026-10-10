@@ -3,6 +3,8 @@ import {generateQrSvg} from './qr.js';
 import {runTextTool} from './text.js';
 import {runCalculatorTool} from './calculators.js';
 import {runDeveloperTool} from './developer.js';
+import {runDataTool} from './data.js';
+import {runPdfTool} from './pdf.js';
 
 class ToolFailure extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -13,7 +15,7 @@ function fail(status, tool, error, output) {
   return result;
 }
 function done(tool, output, warnings = []) {
-  return {ok:true,status:'COMPLETED',tool,version:1,output,warnings,provenance:{execution:'local',networkUsed:false}};
+  return {ok:true,status:'COMPLETED',tool,version:1,output,warnings,networkUsed:false,provenance:{execution:'local',networkUsed:false}};
 }
 function esc(value) {
   return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -457,6 +459,24 @@ export async function runTool(id, input = {}) {
         const value=jsonInput(input);
         output={typescript:toTypescript(value,input.rootName||'Root')};break;
       }
+      case 'data.json.csv': {
+        const result=runDataTool(contract.id,input);
+        output=result.output;
+        warnings.push(...(result.warnings||[]));
+        break;
+      }
+      case 'data.csv.json': {
+        const result=runDataTool(contract.id,input);
+        output=result.output;
+        warnings.push(...(result.warnings||[]));
+        break;
+      }
+      case 'data.json.yaml': {
+        const result=runDataTool(contract.id,input);
+        output=result.output;
+        warnings.push(...(result.warnings||[]));
+        break;
+      }
       case 'regex.test': output=regexTest(input);break;
       case 'jwt.inspect': {
         output=inspectJwt(input);
@@ -482,8 +502,11 @@ export async function runTool(id, input = {}) {
         output=runCalculatorTool(contract.id,input);break;
       case 'dev.hash.generate':
       case 'security.checksum.verify':
+      case 'security.password.generate':
       case 'dev.uuid.generate':
       case 'dev.url.encode':
+      case 'dev.timestamp.convert':
+      case 'dev.cron.inspect':
         {
           const result=runDeveloperTool(contract.id,input);
           output=result.output;
@@ -491,6 +514,12 @@ export async function runTool(id, input = {}) {
           break;
         }
       case 'qr.generate': output={svg:generateQrSvg(String(input.text||'')),format:'svg',errorCorrection:'L'};break;
+      case 'pdf.info':
+      case 'pdf.merge':
+      case 'pdf.split':
+      case 'pdf.rotate':
+      case 'pdf.reorder': output=await runPdfTool(contract.id,input);break;
+      case 'image.to_pdf': output=await runPdfTool(contract.id,input);break;
       default: return fail('NOT_CONFIGURED',contract.id,'No executor is configured for this contract.');
     }
     return done(contract.id,output,warnings);

@@ -1002,7 +1002,7 @@ Extended the existing Playwright browser smoke runner to collect measured naviga
 - Added focused coverage for expected outputs, invalid domains and no-network status; included the new module in the syntax gate and raised the canonical catalog assertion from 27 to 40.
 - **Verification: PASS on implementation revision `4b796eb615ce77d734a66230995c57d353406bb9`.** Build Vibe CI run [37987930669](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930669) passed 309/309 tests (0 failures, 0 skipped), coverage, release/syntax checks, SEO, server E2E, Playwright browser checks (including image optimizer and browser E2E), load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security, scale-out doctor and launch readiness. CodeQL run [37987930550](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930550) and Dependency Review run [37987930570](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930570) also passed on that exact head. Documentation changes and later commits must obtain their own fresh CI result; this evidence records the tested implementation revision.
 
-**Explicit exclusions:** PDF merge/split/extract/OCR is not represented as complete: the current dependency/runtime set does not yet provide a selected, governed local PDF-processing engine with its own test fixtures, parser limits and real-browser/runtime verification. The browser-evidence adapter is now wired into the Playwright runner: observed `metricsForAudit` values flow into `runTool('web.performance.audit', ...)`, with missing metrics kept explicit and INP never inferred from navigation-only data. The remaining PDF/document suite still requires a selected, governed local PDF engine plus real fixtures, parser limits, security tests and runtime verification.
+**Explicit exclusions:** PDF metadata inspection, merge, split, right-angle rotation and page reordering are implemented on the open PDF-tools PR using `pdf-lib`, real fixtures and explicit resource bounds. PDF compression, PDF-to-image rendering, image-to-PDF conversion, text extraction, OCR, redaction and decryption remain unimplemented and require separate bounded engines, fixtures and security tests. The browser-evidence adapter is now wired into the Playwright runner: observed `metricsForAudit` values flow into `runTool('web.performance.audit', ...)`, with missing metrics kept explicit and INP never inferred from navigation-only data. The remaining document suite still requires dedicated implementations for compression, rendering/conversion, text extraction and OCR; those capabilities are not implied by the page manipulation engine.
 
 
 ## 49. TDD checkpoint — local hash, checksum, UUID and URL utility suite (2026-10-10)
@@ -1016,3 +1016,109 @@ Extended the existing Playwright browser smoke runner to collect measured naviga
 - **Verification: PASS on implementation revision `b65c87d61dab2abc873f8765084c2255240cdf1c`.** Build Vibe CI [37988776436](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776436) passed 314/314 tests, 0 failures and 0 skipped, along with coverage, syntax/release, SEO, server/browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security, scale-out doctor and launch readiness. CodeQL [37988776447](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776447) and Dependency Review [37988776485](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776485) passed on the same revision. A fresh run is required for the updated documentation head.
 
 **Launch boundary remains:** production runners/toolchains, provider/payment secrets, persistent backup/restore, TLS/DNS, monitoring and quota enforcement require real environment configuration and deployed evidence. Source CI does not provision these services.
+
+
+## PDF utilities implementation checkpoint — October 2026
+
+The existing Tool Fabric now defines four bounded local PDF tools: `pdf.info`, `pdf.merge`, `pdf.split`, and `pdf.rotate`. They use `pdf-lib`, validate Base64 and page selections, reject malformed or encrypted PDFs, and enforce explicit input, output, document-count, and page-count limits. They do not claim OCR, text extraction, compression, redaction, or decryption. This checkpoint is complete only after the PR's full CI, coverage, browser, security, launch, and operations gates pass on the exact head SHA.
+
+
+## 50. TDD checkpoint — bounded PDF page reordering (2026-10-10)
+
+**Roadmap phase:** P1 local document utilities, extending the already-selected `pdf-lib` adapter on the existing PDF-tools PR (PR #59). No parallel registry or network service was introduced.
+
+- Added real-fixture tests first for the `pdf.reorder` contract, one-based complete permutations, page order, preservation of page rotations, and invalid/missing/duplicate/out-of-range selections. The test-only commit `6de1f6922defbac627f4efbbc0361f32461e9f1c` failed as intended because `pdf.reorder` was not registered.
+- Added `pdf.reorder` contract/aliases and a bounded local implementation that copies all pages according to a full permutation, preserves page dimensions/rotations and basic document metadata, and serializes under the existing 2 MB output cap. Invalid permutations fail with `INVALID_INPUT`; no network path exists.
+- Added regression for page property order using a real two-page PDF fixture whose first page is rotated before reordering; the resulting page rotation sequence proves page properties follow the reordered pages.
+- Catalog-count assertions are updated to 49 canonical tools; no other contracts were removed.
+- **Source verification: PASS** on implementation head `34893530713427c21fb6ec703fc3fddf9e91d8ff`: Build Vibe CI, CodeQL and Dependency Review all passed, including tests, coverage, syntax/release, SEO, server and browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security, scaleout and launch readiness. The documentation follow-up requires its own fresh CI run before merge.
+
+**Limits:** This tranche does not implement PDF compression, raster rendering, image-to-PDF conversion, text extraction, OCR, redaction or decryption. Resource-isolated worker execution remains recommended before accepting high-volume untrusted PDFs.
+
+
+## 51. TDD checkpoint — bounded PNG/JPEG image-to-PDF conversion (2026-10-10)
+
+**Roadmap phase:** P1 local document and asset utilities, extending the canonical PDF adapter on PR #59.
+
+- Added the `image.to_pdf` contract to the existing Tool Fabric, routed through the same `runTool()` executor. It accepts 1–20 PNG/JPEG images and creates one portrait/landscape A4 page per image, preserving aspect ratio and applying a 24-point margin.
+- Added failing contract/behavior tests before the executor: a real PNG/JPEG mixed-format conversion must produce a valid multi-page PDF readable by `pdf.info`; malformed Base64, invalid signatures, MIME mismatches, unsupported formats, excessive dimensions and excessive image counts must fail closed.
+- Enforced a 1 MB per-image and aggregate input limit, 10,000-pixel maximum edge, 20-megapixel per-image ceiling, supported MIME/signature/header checks, and the existing 2 MB output cap. Processing makes no network requests and reports `networkUsed:false`.
+- The real JPEG regression caught a byte-offset issue at the `pdf-lib` boundary. JPEG bytes are now normalized to a zero-offset `Uint8Array` before embedding; the valid JPEG fixture passes without weakening input validation.
+- Updated `docs/PDF_TOOLS.md`, `docs/TOOL_FABRIC.md`, the canonical contract catalog and tool-count assertions. The full CI run on implementation head `8e3063f3c55011c179357303f6e7ee7232ff0141` passed Build Vibe CI, CodeQL and Dependency Review. This documentation follow-up needs a fresh CI result on its own head before merge.
+
+**Limits:** PDF compression, PDF-to-image rendering, text extraction, OCR, redaction and decryption remain unimplemented. A PDF that is merely re-saved must not be described as compressed. High-volume processing of untrusted documents still needs a resource-isolated worker with hard time and memory limits.
+
+## 52. TDD checkpoint — safe local JSON-to-CSV conversion (2026-10-10)
+
+**Roadmap phase:** P1 local data-conversion utilities, extending the canonical Tool Fabric rather than creating a second registry.
+
+- Added a failing test suite first. The test-only CI run failed because `data.json.csv` had no contract/executor; the implementation then added one canonical contract, `src/tool-fabric/data.js`, and routing through `runTool()`.
+- Converts arrays of JSON object rows to CSV with stable first-seen columns, correct comma/quote/newline escaping, CRLF record separators, compact nested JSON cells and empty cells for missing/null values.
+- Security policy prefixes string cells and headers that look like spreadsheet formulas with an apostrophe while leaving actual numeric values unchanged. The test cycle caught and fixed both formula-sanitization behavior and CSV quoting expectations.
+- Limits: 10,000 rows, 200 columns, 500 KB serialized input, 100 KB per cell, 20 nested levels and 1 MB output. Invalid shapes, non-finite/unsupported values, circular structures, prototype-sensitive keys and unknown options fail explicitly. The tool makes no network requests.
+- Added the new module to syntax checks and updated canonical catalog-count assertions from 50 to 51. Tests cover sparse columns, nested data, quoting/newlines, formula-injection neutralization and invalid/resource-limit inputs.
+- **Verification: PASS on implementation head `7ccebbe92c2a9775122df9f7d034193dc634ecef`.** Build Vibe CI run [38043213261](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043213261), CodeQL run [38043213189](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043213189) and Dependency Review run [38043213277](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043213277) all passed on that implementation head. The documentation-inclusive head requires fresh CI before merge.
+
+**Next P1 data-conversion gap:** add CSV-to-JSON as a separate contract with explicit header/duplicate-header, quoting and size policies; do not silently infer it from the reverse conversion.
+
+## 53. TDD checkpoint — bounded CSV-to-JSON conversion (2026-10-10)
+
+**Roadmap phase:** P1 local data-conversion utilities, completing the reverse direction for the existing JSON-to-CSV capability.
+
+- Added regression tests first. The test-only head failed because the canonical `data.csv.json` contract was missing; the implementation then added a strict parser to `src/tool-fabric/data.js`, contract metadata and canonical `runTool()` routing.
+- Supports BOM-prefixed input, LF/CRLF records, quoted commas, doubled quote escapes, quoted newlines, empty trailing cells and multiline values. It returns string-valued records, header order, row count and compact JSON output; it does not guess numeric/date/boolean types.
+- Rejects unclosed or malformed quotes, characters after a closing quote, lone CR separators, duplicate/empty/prototype-sensitive headers, inconsistent row widths, unknown options and over-budget data.
+- Limits: 500 KB input, 10,000 data rows, 200 columns, 100 KB per cell and 1 MB serialized JSON output. No network or external parser dependency is used.
+- Updated catalog assertions from 51 to 52 and kept the parser covered by the existing local data-conversion test file.
+- **Verification: PASS on implementation head `50fa03a4eaff357e95b4194b91f223f1ff7d3025`.** Build Vibe CI [38043506862](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043506862), CodeQL [38043506799](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043506799) and Dependency Review [38043506807](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043506807) passed. The documentation-inclusive head needs its own fresh checks before merge.
+
+**Next P1 data conversion:** review JSON-to-YAML / XML formatting or another distinct utility against the roadmap. Do not broaden this parser by guessing schemas or coercing CSV text values.
+
+## 54. TDD checkpoint — bounded JSON-to-YAML serialization (2026-10-10)
+
+**Roadmap phase:** P1 local data-conversion utilities, adding JSON-to-YAML without a runtime dependency.
+
+- Added the regression suite before the implementation. The test-only commit failed because `data.json.yaml` was not registered; implementation then added its contract, executor and canonical Tool Fabric route.
+- Accepts JSON text and emits conservative YAML 1.2-compatible block mappings/sequences. String values and mapping keys are always double-quoted with JSON-compatible escaping, preventing ambiguous plain scalar interpretation. Null, booleans and finite numbers remain typed values; nested and empty containers are supported.
+- Rejects malformed JSON, unknown options, prototype-sensitive keys and excessive nesting. Enforces a 500 KB input cap, 20-level nesting cap, 100,000-value cap and 1 MB output cap. Processing is local and dependency-free.
+- Updated catalog assertions from 52 to 53. Regression tests cover exact nested serialization, ambiguous strings, scalar types, invalid JSON, unsafe keys and size limits.
+- **Verification: PASS on implementation head `aae431481637873c8c185bbf54ad22387b98e619`.** Build Vibe CI [38043863213](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043863213), CodeQL [38043863210](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043863210) and Dependency Review [38043863200](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043863200) all passed. Documentation-inclusive changes need a fresh verification run.
+
+**Remaining data-conversion work:** JSON↔CSV and JSON→YAML are now present; XML formatting/validation, YAML input parsing and SQL/HTML/CSS/JS format/minify utilities remain separate backlog items.
+
+## 55. TDD checkpoint — strict Unix/ISO timestamp conversion (2026-10-10)
+
+**Roadmap phase:** P1 local developer/data utilities, extending the canonical developer executor.
+
+- Added failing tests first for the missing `dev.timestamp.convert` contract, then implemented four explicit modes: ISO instant to Unix seconds/milliseconds and Unix seconds/milliseconds to ISO instant.
+- ISO input requires a full date/time plus `Z` or numeric `±HH:MM` offset. Calendar day, month, leap-year, hour, minute, second and offset ranges are validated before conversion. Ambiguous local times, malformed dates, unsupported modes and out-of-range timestamps fail with `INVALID_INPUT`.
+- Unix seconds accept finite values to millisecond precision; Unix milliseconds require safe integer input. Output includes normalized ISO text and both Unix units. No network or external dependency is used.
+- Added the contract to the canonical catalog, updated developer-tool expectations and catalog assertions from 53 to 54, and retained syntax verification for the developer module.
+- **Verification: PASS on implementation head `1ed389b1764654d1a13ccb0638180a5d297e4684`.** Build Vibe CI [38044201555](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044201555), CodeQL [38044201548](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044201548) and Dependency Review [38044201564](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044201564) passed on that head. Documentation changes require fresh checks.
+
+**Next P1 developer utility:** implement a bounded cron-expression inspector with a deliberately documented supported syntax, rather than pretending to support every scheduler dialect.
+
+## 56. TDD checkpoint — bounded five-field cron inspection (2026-10-10)
+
+**Roadmap phase:** P1 local developer utilities.
+
+- Added the test-only regression suite first; the expected red run showed `dev.cron.inspect` was absent from the canonical Tool Fabric.
+- Implemented strict five-field cron parsing for numeric values, lists, non-wrapping ranges, wildcards and positive step values. Scheduler aliases, named fields and unsupported extensions are rejected rather than approximated.
+- Returns at most five upcoming UTC occurrences, searches no further than 366 days, and documents the POSIX-style day-of-month/day-of-week OR rule when both fields are restricted. An impossible-but-syntactically-valid schedule returns an empty list plus a warning instead of hanging or claiming a match.
+- Reuses strict ISO timestamp validation for the optional `after` instant, updates the developer-tool catalog and catalog-count assertions from 54 to 55, and keeps all execution local.
+- **Verification: PASS on implementation head `9b2926158b92dba9271f39bb2c020b583965b532`.** Build Vibe CI [38044537286](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044537286), CodeQL [38044537311](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044537311) and Dependency Review [38044537272](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044537272) all passed. Documentation-inclusive changes need a fresh verification run.
+
+**Next:** continue through the remaining P1 local developer/data utilities with explicit syntax boundaries, bounded execution and tests before implementation. Do not claim support for cron dialects outside the documented five-field subset.
+
+## 57. TDD checkpoint — cryptographically secure password generation (2026-10-10)
+
+**Roadmap phase:** P1 local security/privacy utilities.
+
+- Added failing tests first for the missing `security.password.generate` contract, then implemented a canonical local executor using Node's cryptographic `randomInt` for class selection, pool sampling and Fisher-Yates shuffling.
+- Requires a length from 12 to 128, supports lowercase/uppercase/digits/symbols selection, guarantees at least one character from each enabled class, excludes ambiguous letters/digits by default, and rejects empty class policies, invalid option types and unknown options.
+- The tool returns the generated secret only in the direct result, declares `stored:false`, makes no network calls and does not claim a heuristic strength score. Its warning advises copying the result to a trusted password manager.
+- Added the Security-category contract and updated catalog assertions from 55 to 56. Tests cover length, class inclusion, restricted policy, ambiguity exclusion and invalid inputs.
+- **Verification: PASS on implementation head `06c90eab245db27e28549b80dffc4b0e3e74a9b2`.** Build Vibe CI [38044896479](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044896479), CodeQL [38044896492](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044896492) and Dependency Review [38044896500](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044896500) passed. Documentation-inclusive changes need fresh verification.
+
+**Next P1 security utility:** inspect the existing secret scanner and its data boundaries before extending security coverage; do not log or send generated secrets to external services.
+

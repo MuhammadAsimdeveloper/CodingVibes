@@ -13,6 +13,20 @@ All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
 
+- Added `data.json.csv`, a bounded local JSON-object-array to CSV converter with proper quoting, stable columns, spreadsheet formula-injection neutralization and resource-limit tests.
+- Added `data.csv.json`, a strict local CSV parser with BOM/quoted-field support, safe unique headers, row-width validation and resource-limit tests.
+- Added `data.json.yaml`, a bounded local JSON-to-YAML serializer with quoted strings/keys, nested block support, safe-key validation and resource-limit tests.
+- Added `dev.timestamp.convert` with strict ISO-8601 offset/calendar validation and explicit Unix seconds/milliseconds conversion modes.
+- Added `dev.cron.inspect`, a bounded five-field cron validator with up to five upcoming UTC occurrences and explicit dialect/search-window limits.
+- Added `security.password.generate`, a local cryptographic password generator with explicit length/class policy, ambiguous-character exclusion and no persistence/network use.
+
+
+
+
+- Added `image.to_pdf`, a bounded local PNG/JPEG-to-PDF conversion tool with MIME/signature validation, dimension and byte limits, mixed-format fixture tests and no network side effects.
+
+- Added `pdf.reorder` as a bounded local Tool Fabric operation with complete one-based page-permutation validation, metadata preservation, real PDF fixture tests and no network side effects.
+
 - Added measured browser performance evidence (navigation/FCP/TTFB/resource sizes/LCP/CLS where available) and made incomplete performance audits report missing metrics instead of a full-pass result.
 
 - Added nine bounded local Tool Fabric text utilities with explicit contracts, regression tests and no network side effects.

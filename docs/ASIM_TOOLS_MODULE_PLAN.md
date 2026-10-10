@@ -70,3 +70,40 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 - Implementation uses Node built-ins only, runs through the canonical `runTool` envelope, and reports no network use. Hashes are integrity utilities, not password storage or authentication; URL helpers never navigate to or fetch a URL.
 - Expanded the canonical catalog from 40 to 44 tools. Focused tests check known SHA-256 output, Base64 output, match/mismatch and invalid checksums, random UUID v4 shape, URL round-trips and bad-input handling.
 - Verification record: implementation revision `b65c87d61dab2abc873f8765084c2255240cdf1c` passed Build Vibe CI [37988776436](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776436) with 314/314 tests, and passed CodeQL [37988776447](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776447) and Dependency Review [37988776485](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776485). See the current PR checks for the documentation-inclusive head.
+
+## Local JSON-to-CSV conversion — 2026-10-10
+
+- Added `data.json.csv` as a canonical local Tool Fabric contract and executor, with no runtime call to Asim Tools and no external dependencies.
+- The converter handles first-seen column union, missing/null values, CSV quote/newline escaping, nested JSON values, CRLF records and spreadsheet formula-like strings. Numeric values are not rewritten as text-safety prefixes.
+- Enforced row, column, serialized-input, per-cell, nesting and output limits. Tests cover malformed rows, unsafe keys, formula injection, escaping and network-free execution.
+- Added the companion `data.csv.json` parser with strict quoting, BOM handling, LF/CRLF records, duplicate/prototype-sensitive header rejection, row-width validation and explicit byte/row/column/cell limits. It keeps values as strings and makes no network calls.
+
+## Local PDF and image conversion — 2026-10-10
+
+- Extended the existing canonical Tool Fabric with `image.to_pdf`; no Asim Tools runtime call or second registry was added.
+- The local adapter converts PNG/JPEG payloads to one A4 page per image, with strict MIME/signature checks, 1 MB per-image and aggregate input caps, 20-image count cap, 10,000-pixel edge and 20-megapixel image limits.
+- Mixed PNG/JPEG real-fixture tests verify the result can be reopened as a valid multi-page PDF. Malformed, unsupported and over-budget inputs fail explicitly; network use remains false.
+- See `docs/PDF_TOOLS.md` for the canonical behavior and current exclusions. PDF compression, raster rendering, text extraction and OCR remain unfinished.
+
+## Local JSON-to-YAML conversion — 2026-10-10
+
+- Added `data.json.yaml` as a local dependency-free JSON-text to YAML serializer. It double-quotes keys and string scalars, preserves booleans/numbers/null, supports nested block mappings/sequences, rejects unsafe keys and invalid JSON, and enforces input/depth/node/output limits.
+- YAML parsing remains unfinished and is not implied by this generator.
+
+## Timestamp conversion — 2026-10-10
+
+- Added `dev.timestamp.convert` as a canonical local contract/executor with explicit ISO-to-Unix and Unix-to-ISO modes.
+- ISO inputs require a full date/time and explicit UTC offset; impossible dates, invalid times, malformed offsets and out-of-range values fail explicitly.
+- Unix seconds allow millisecond precision; Unix milliseconds require safe integers. Tests cover conversion and invalid inputs without network use.
+
+## Cron inspection — 2026-10-10
+
+- Added `dev.cron.inspect` as a local canonical tool for the five-field numeric cron subset.
+- Validates ranges/lists/steps, evaluates next occurrences in UTC, caps search at 366 days and documents day-of-month/day-of-week OR semantics.
+- Rejects named fields, aliases and unsupported dialect syntax; it inspects schedules but does not run jobs or make network calls.
+
+## Secure password generation — 2026-10-10
+
+- Added `security.password.generate` to the canonical Security category and routed it through the existing local developer executor.
+- Uses cryptographic random selection/shuffling, mandatory 12–128 length, selected-class inclusion, ambiguous-character exclusion by default and rejects unsupported options.
+- Returns the secret once to the caller, does not persist it and makes no network calls. Tests cover policy and invalid-input boundaries.

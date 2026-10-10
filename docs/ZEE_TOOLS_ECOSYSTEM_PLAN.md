@@ -40,3 +40,8 @@ T0 Contracts → T1 developer tools → T2 website foundation → T3 audits → 
 
 ## Definition of done
 All 18 tools have contracts, tests, Build Vibe implementations, Aira routing metadata, ownership documentation and truthful runtime status.
+
+
+## Adjacent document utilities
+
+PDF operations are implemented as a separate document category in the canonical Tool Fabric, not added to the existing 18-tool Zee-derived list. See `docs/PDF_TOOLS.md` for limits, validation, and verified behavior.
