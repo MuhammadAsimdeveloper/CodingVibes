@@ -301,3 +301,7 @@ The canonical developer utility `dev.timestamp.convert` supports strict ISO-8601
 ## P1 cron inspection status — 2026-10-10
 
 The local `dev.cron.inspect` utility supports five-field numeric cron syntax, lists, ranges, wildcards and positive steps, with a 366-day UTC search cap and up to five upcoming occurrences. Named fields, aliases and vendor-specific extensions are rejected. The day-of-month/day-of-week OR policy is documented in `docs/TOOL_FABRIC.md`.
+
+## P1 password generation status — 2026-10-10
+
+`security.password.generate` is a local cryptographic generator with mandatory 12–128 length, selected character classes, guaranteed class inclusion, ambiguous-character exclusion by default and no persistence/network use. Results are secrets; the tool emits no strength score and advises storage in a trusted password manager.
