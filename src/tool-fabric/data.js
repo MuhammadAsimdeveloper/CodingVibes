@@ -28,7 +28,7 @@ function stableValue(value, seen = new Set(), depth = 0) {
     const prototype = Object.getPrototypeOf(value);
     if (prototype !== Object.prototype && prototype !== null) invalid('Rows must contain plain JSON objects.');
     result = {};
-    for (const key of Object.keys(value).sort()) {
+    for (const key of Object.keys(value)) {
       if (!key || UNSAFE_KEYS.has(key)) invalid('Column or nested keys may not be empty or prototype-sensitive.');
       if (Buffer.byteLength(key,'utf8') > 1_000) invalid('Column names may not exceed 1000 UTF-8 bytes.');
       result[key] = stableValue(value[key],seen,depth+1);
