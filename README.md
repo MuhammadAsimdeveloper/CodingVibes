@@ -182,3 +182,8 @@ Build Vibe includes a versioned 20-point generated-site audit and local CLI: `np
 
 
 Generated websites now include a custom 404 route, a web app manifest, a consent preference manager, an optional dismissible mobile CTA, and contact form error/loading feedback with a noindex thank-you route. Run `npm run site:quality -- <generated-project-directory> [config.json]` to produce the 20-point audit report. The report is included in web product-quality evidence but is not yet a publish-blocking gate. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md).
+
+
+### Production verification gate
+
+The generated-site 20-point quality report is included in web product-quality evidence. HTTP smoke checks unknown-route 404 behavior, and Playwright smoke exercises contact-form recovery, cookie preferences, mobile CTA dismissal, and thank-you redirects. Critical report gaps block verification in production or when `CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true`; development remains informational by default. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md).
