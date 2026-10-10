@@ -57,6 +57,7 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `data.json.yaml` | local | Serializes bounded JSON text to conservative YAML with quoted strings, safe keys, nesting/node caps and output-size checks |
 | `dev.hash.generate` | local | SHA-256/SHA-384/SHA-512 text digests in hex or Base64; not for password storage |
 | `security.checksum.verify` | local | Validates supplied digest encoding and compares fixed-size digests in constant time |
+| `security.password.generate` | local | Generates a 12–128 character password with cryptographic randomness, selectable character classes and ambiguous-character exclusion |
 | `dev.uuid.generate` | local | Cryptographically secure UUID v4 generation using Node crypto |
 | `dev.url.encode` | local | Explicit encode/decode URI and component modes; does not navigate or fetch URLs |
 | `dev.timestamp.convert` | local | Converts strict ISO-8601 instants with explicit offsets to Unix seconds/milliseconds and back, validating calendar fields and timestamp bounds |
@@ -94,6 +95,12 @@ The `data.json.yaml` contract accepts JSON text and emits conservative YAML 1.2-
 Input is limited to 500 KB, nesting to 20 levels, total values to 100,000, and YAML output to 1 MB. Invalid JSON, prototype-sensitive keys, unsupported values and unknown options fail explicitly. No YAML parser dependency or network request is used. Tests in `test/tool-fabric-data-conversion.test.js` cover nested output, ambiguous strings, scalar types, unsafe keys and resource limits.
 
 The reverse `data.csv.json` contract parses RFC-style quoted fields, doubled quotes, CRLF/LF record separators, BOM-prefixed files, multiline cells and trailing empty cells. It returns string-valued row objects and a compact JSON string. Headers must be non-empty, unique and not prototype-sensitive; every record must match the header width. It rejects malformed quoting, lone CR separators, unsupported options and over-budget rows, columns, cells, input or output. Empty cells remain empty strings; the converter does not guess number, date or boolean types. Regression coverage for this path is in the same test file.
+
+## Local secure password generation
+
+`security.password.generate` uses Node's cryptographic `randomInt` for class selection, pool sampling and Fisher-Yates shuffling. Length is mandatory and bounded to 12–128 characters. Lowercase, uppercase, digits and symbols are selectable; at least one enabled class must be selected, and at least one character from every selected class is guaranteed. Ambiguous characters are excluded by default from letters/digits. The result is returned once to the caller, is not stored by the tool, and makes no network request. The output includes selected classes and policy metadata, not an unsubstantiated strength score.
+
+Treat the result as a secret: copy it to a trusted password manager and do not put it into prompts, source code or logs.
 
 ## Local hash, checksum, UUID and URL tools
 
