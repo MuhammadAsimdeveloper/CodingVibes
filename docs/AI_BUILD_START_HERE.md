@@ -32,3 +32,7 @@ Tool/Agent Fabric → 18 Zee-derived utilities → Teamily-derived multi-agent/m
 Code exists, tests prove behavior, security boundaries are enforced, docs describe reality, and the launch matrix says PASS only when evidence exists.
 
 Start building immediately after reading the authority files; do not ask the user to restate this plan.
+
+## Mandatory generated-site checklist context (2026-10-10)
+
+Before implementing or changing website generation, read [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). It is the current source-inspection status and development plan for the 20-point generated-site checklist. Preserve existing SEO helpers, discoverability audit, product-quality contracts, motion/accessibility baseline, and verification gates. Do not claim universal support from source-level presence; implement artifact/HTTP/browser tests and update the status only when evidence exists. Critical generated-site failures must block publishing. Never invent owner contact data, analytics configuration, or legal facts.
