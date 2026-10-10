@@ -94,7 +94,7 @@ test('image.to_pdf converts valid PNG inputs into a real bounded local PDF',asyn
     {mimeType:'image/png',imageBase64:PNG_1X1},
     {mimeType:'image/jpeg',imageBase64:JPEG_1X1}
   ]});
-  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.status,'COMPLETED',JSON.stringify(result));
   assert.equal(result.output.pageCount,2);
   assert.equal(result.output.imageCount,2);
   assert.match(result.output.pdfBase64,/^JVBERi0/);
