@@ -72,3 +72,11 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 - Excluded the thank-you route from navigation, llms.txt, and the sitemap.
 - Attached the 20-point generated-site audit report to web product-quality evidence; publishing is not yet blocked by this report.
 - Full CI passed at `bcb4288036d0ac45b4a045e83531d406d99a85c6`.
+
+
+## [Unreleased] — production quality gate enforcement (2026-10-10)
+
+- Extended HTTP smoke checks to require exact HTTP 404 for a generated unknown route.
+- Extended Playwright browser smoke to exercise the primary CTA, cookie reject/preferences persistence, mobile sticky CTA dismissal, contact-form loading/error recovery, and successful redirect to the noindex thank-you page.
+- Fed runtime results into the generated-site quality report and added critical-check blocking to the verification contract in production or when `CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true`.
+- Full CI passed at `962d5006ed239ff39476aeefe3d43cb05d4d51a9`.
