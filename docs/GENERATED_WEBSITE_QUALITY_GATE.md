@@ -31,20 +31,20 @@
 | 1 | Custom 404 page and HTTP 404 | IMPLEMENTED + CI VERIFIED | Branded `public/404.html`; generated-server runtime test verifies unknown paths return HTTP 404. |
 | 2 | Unique meta title per page | IMPLEMENTED FOUNDATION | Assert each public route has a non-empty, appropriate title. |
 | 3 | Meta description per page | IMPLEMENTED FOUNDATION | Assert public route coverage, useful length, and quality. |
-| 4 | Primary CTA above the fold | VERIFY | Browser-test visibility on desktop and mobile. |
+| 4 | Primary CTA above the fold | IMPLEMENTED FOUNDATION / VERIFY | Generated homepages include a primary contact CTA; browser smoke checks desktop above-fold placement when present. Continue visual checks across templates. |
 | 5 | Complete favicon/app-icon set | IMPLEMENTED FOUNDATION / VERIFY | Every web target gets a manifest referencing the generated SVG favicon; add platform-specific icon sizes and device/browser validation. |
 | 6 | robots.txt | IMPLEMENTED FOUNDATION | Validate deployed sitemap URL and private-route exclusions. |
 | 7 | sitemap.xml | IMPLEMENTED FOUNDATION | Validate absolute URLs and only public/indexable routes. |
 | 8 | Open Graph image | IMPLEMENTED FOUNDATION | Verify real image URL, response, format, and dimensions. |
 | 9 | Alt text on meaningful images | PARTIAL | Audit generated HTML; empty alt only for decorative assets. |
-| 10 | Responsive mobile breakpoints | PARTIAL / VERIFY | Browser-test narrow mobile, tablet, and desktop viewports. |
-| 11 | Sticky mobile CTA | IMPLEMENTED FOUNDATION / VERIFY | Mobile-only contact CTA with dismissal persisted for the tab; add real viewport/overlap and keyboard browser tests. |
-| 12 | Loading states | IMPLEMENTED FOUNDATION / VERIFY | Contact submit button disables and shows a sending state with `aria-busy`; verify in a browser and cover other async actions. |
-| 13 | Form errors and recovery | IMPLEMENTED FOUNDATION / VERIFY | Contact form has a `role=alert` error region, live status, server/network failure messaging, and retry path; add browser-level interaction tests. |
-| 14 | Thank-you/confirmation page | IMPLEMENTED FOUNDATION / VERIFY | `/thank-you` is generated, `noindex,nofollow`, excluded from sitemap/navigation, and reached after successful contact API response; runtime tests cover route and sitemap. |
+| 10 | Responsive mobile breakpoints | PARTIAL / VERIFY | Responsive CSS and mobile CTA behavior exist; add systematic overflow/layout assertions at mobile, tablet, and desktop sizes. |
+| 11 | Sticky mobile CTA | IMPLEMENTED + BROWSER VERIFIED | Mobile-only contact CTA with tab-persistent dismissal; browser smoke verifies visibility and dismissal at a 390px viewport. Keep overlap and keyboard regression coverage. |
+| 12 | Loading states | IMPLEMENTED + BROWSER VERIFIED | Contact submission disables the button, shows a sending state and sets aria-busy; browser smoke verifies these states. Other async actions still need coverage. |
+| 13 | Form errors and recovery | IMPLEMENTED + BROWSER VERIFIED | Browser smoke injects a server failure, checks accessible error feedback and retry, then verifies the button recovers. |
+| 14 | Thank-you/confirmation page | IMPLEMENTED + BROWSER VERIFIED | The /thank-you route is noindex,nofollow, excluded from navigation/sitemap, and browser tests verify redirect only after a successful response. |
 | 15 | Privacy policy | TEMPLATE/SURFACE PRESENT | Generate accurate text from actual processing and integrations; flag legal review. |
 | 16 | Terms and conditions | TEMPLATE/SURFACE PRESENT | Adapt to product, billing, and jurisdiction; flag legal review. |
-| 17 | Cookie consent/preferences | IMPLEMENTED FOUNDATION / VERIFY | Accept/reject, analytics/marketing preferences, local persistence, settings reopening, and consent-change events are implemented and unit-tested. Browser-level consent and tracker-gating tests remain. |
+| 17 | Cookie consent/preferences | IMPLEMENTED + BROWSER VERIFIED | Accept/reject, analytics/marketing preferences, local persistence, settings reopening, and consent-change events are covered by unit and browser smoke tests. No third-party analytics is auto-installed; future tracking must honor consent. |
 | 18 | Customer-site analytics | NOT CONFIRMED AS DEFAULT | Offer explicit setup and consent-aware event verification. Internal product analytics is not customer-site analytics. |
 | 19 | Real contact address | USER INPUT REQUIRED | Ask the owner; never invent physical address or contact information. |
 | 20 | Compressed generated images | PARTIAL / VERIFY | Integrate optimizer into generation/export; assert size and format budgets. |
@@ -109,7 +109,7 @@ For every generated project, emit a versioned machine-readable and human-readabl
 - [x] Generate a custom 404 artifact and return HTTP 404 for unknown public routes; runtime test passes in CI.
 - [x] Add manifest generation, a consent preference manager, and a dismissible sticky mobile CTA.
 - [x] Add contact form loading/error recovery and a noindex thank-you route; runtime test verifies confirmation route and sitemap behavior.
-- [ ] Connect the audit engine to generation/preview/publish so the actual project receives an evidence report and critical failures block publishing.
+- [x] Attach the report to web product-quality evidence and enforce critical failures in production verification (NODE_ENV=production) or when CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true.
 - All 20 checks produce an explicit result for every generated project.
 - P0 failures block publish.
 - Tests cover real generated output and runtime behavior, not just helper functions or string presence.
@@ -121,4 +121,4 @@ For every generated project, emit a versioned machine-readable and human-readabl
 
 The generated-site report is now attached to the existing `auditProductExperience()` result for web targets as `generatedSiteQuality`, so it travels with the platform's product-quality evidence. The standalone CLI remains available for a generated project directory. Full GitHub Actions CI passed at `bcb4288036d0ac45b4a045e83531d406d99a85c6` (including tests, coverage, static checks, browser E2E, security checks, and launch readiness).
 
-This is **evidence integration, not publish enforcement**: `verifyContract` and deployment still do not reject projects based on the new 20-point report. Keep the publish-gate task open until status handling, user-input exceptions, runtime evidence, and blocking behavior have regression tests.
+The production verification contract now blocks a web build when critical report checks are not PASS or NOT_APPLICABLE. HTTP smoke verifies unknown-route 404; Playwright smoke exercises the primary CTA, consent choices, sticky mobile CTA, form failure/retry, and successful thank-you redirect. In development the report remains informational unless CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true is set. Customer-site analytics installation, complete platform-specific icons, and image optimization remain open.
