@@ -230,6 +230,19 @@ export function auditProductExperience(workspace,spec={}){
     const remoteRuntime=[...source.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']https?:\/\/[^"']+["'][^>]*>/gi)];
     addCheck('remote_runtime_dependency','provider-independent runtime',remoteRuntime.length===0&&remoteImportCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
     addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']));
+    const faviconAsset=names.some(name=>/(?:^|\/)favicon(?:-[a-z0-9_-]+)?\.(?:ico|svg|png|webp)$/i.test(name));
+    const faviconLinked=/<link\b[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=/i.test(html);
+    addCheck('favicon_asset','favicon asset is present and linked',faviconAsset&&faviconLinked,true);
+    const privacyFile=files.find(file=>/(?:^|[\\/])(?:privacy|privacy-policy)\.html$/i.test(file)||/(?:^|[\\/])(?:privacy|privacy-policy)[\\/]index\.html$/i.test(file));
+    const termsFile=files.find(file=>/(?:^|[\\/])(?:terms|terms-and-conditions|terms-of-service)\.html$/i.test(file)||/(?:^|[\\/])(?:terms|terms-and-conditions|terms-of-service)[\\/]index\.html$/i.test(file));
+    const privacyCopy=privacyFile?fs.readFileSync(privacyFile,'utf8').toLowerCase():'';
+    const termsCopy=termsFile?fs.readFileSync(termsFile,'utf8').toLowerCase():'';
+    const legalPlaceholder=/(explain what information|configure production providers before launch|replace this launch-ready outline|replace with your final|lorem ipsum|todo:)/i;
+    const privacyComplete=Boolean(privacyFile)&&!legalPlaceholder.test(privacyCopy)&&['contact form submissions','retention','third-party analytics','deletion','cookies'].every(term=>privacyCopy.includes(term));
+    const termsComplete=Boolean(termsFile)&&!legalPlaceholder.test(termsCopy)&&['acceptable use','user content','liability','applicable law','contact page'].every(term=>termsCopy.includes(term));
+    addCheck('privacy_policy_quality','privacy policy describes actual default data handling',privacyComplete,true);
+    addCheck('terms_conditions_quality','terms and conditions cover use and legal basics',termsComplete,true);
+
     addCheck('placeholder_content','no obvious placeholder copy',!/(lorem ipsum|todo:|coming soon|replace this text)/i.test(html));
     brokenLinks=linkIntegrity(html,spec,files);
     addCheck('internal_links','internal links resolve',brokenLinks.length===0,false,brokenLinks.slice(0,12).join(', '));
