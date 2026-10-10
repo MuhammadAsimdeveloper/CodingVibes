@@ -1149,3 +1149,16 @@ Follow-up: address and analytics settings now persist per project in browser loc
 - **Verification: PASS on revision `29f57ebea72a9725e3ac62cc73ea035d3f45732f`.** Build Vibe CI [38080632604](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604) passed all configured checks, including tests, coverage, syntax/release checks, SEO, server E2E, Playwright/browser E2E, image optimizer E2E, load/recovery, deployment preflight, benchmark, security, scale-out and launch readiness.
 
 **Next unfinished stages:** platform-specific icon sizes, automatic optimization of generated raster assets during export (distinct from the browser-local optimizer), broader accessibility/viewport budgets, and real production credentials/monitoring/recovery. Keep these open until each has implementation and independent evidence.
+
+
+## 51. TDD checkpoint — platform-specific generated app icons (2026-10-11)
+
+**Roadmap phase:** generated website launch quality, PWA installation and cross-platform brand assets.
+
+- Added a dependency-free PNG encoder that emits real RGBA PNG assets at 180×180 (Apple touch icon), 192×192 (PWA install icon) and 512×512 (large/maskable PWA icon). Rounded corners are transparent and the mark is generated deterministically.
+- Generated projects now ship `public/apple-touch-icon.png`, `public/icon-192.png`, and `public/icon-512.png`; public pages, 404, owner admin and sign-in pages link to the icon set.
+- The web manifest retains the scalable SVG fallback and declares both PNG install sizes. Removed the duplicate manifest emission so only one canonical manifest is written.
+- Added PNG structure/decompression tests, generated artifact/manifest tests, browser HTTP checks for content type and dimensions, and a syntax check for the icon generator.
+- **Verification: PASS on revision `588156e398bd643c7ed3bd7a5a17979983bea329`.** Build Vibe CI [38081225750](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750) passed tests, coverage, syntax/release checks, SEO, browser E2E (including the generated icon endpoints), load/recovery, deployment preflight, benchmark, security, scale-out and launch readiness.
+
+**Next unfinished stage:** optimize generated raster assets during export (distinct from the browser-local optimizer), extend accessibility/viewport budgets, and verify real production credentials, deployment, monitoring and recovery. Documentation commits must obtain their own fresh CI evidence; this checkpoint records the exact tested implementation revision.
