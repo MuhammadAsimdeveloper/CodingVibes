@@ -82,7 +82,7 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const alertOrError=/(role=["']alert["']|aria-invalid|aria-describedby|field-error|form-error)/i.test(allHtml+'\n'+allFilesText);
   const loadingPresent=/(aria-busy|loading(?:state|State|\.\.\.)|data-loading|role=["']status["'])/i.test(allHtml+'\n'+allFilesText);
   const contactAddress=text(config.contactAddress).trim();
-  const contactAddressValid=contactAddress.length>=8&&!/^(?:tbd|todo|n\/a|none|unknown|your address|placeholder)(?:\b|$)/i.test(contactAddress);
+  const contactAddressValid=contactAddress.length>=8&&!/^(?:tbd|todo|n\/a|none|unknown|required|please provide|not provided|your address|placeholder)(?:\b|$)/i.test(contactAddress);
   const imageAssets=fileEntries.filter(([name,value])=>/\.(png|jpe?g|webp|avif)$/i.test(name)&&value&&typeof value==='object');
   const socialUrl=tagContent(allHtml,/<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["']([^"']+)["'][^>]*>/i)[0]||'';
   const socialAsset=resolveAsset(fileMap,socialUrl,baseUrl);
