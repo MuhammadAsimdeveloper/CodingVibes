@@ -8,9 +8,9 @@ import { auditGeneratedSite, GENERATED_SITE_REQUIREMENTS } from '../src/verifica
 
 const goodHtml = ({title='Home',description='A useful description for this public website route that explains the value to its intended visitors.', extra='' }={}) => `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><meta name="description" content="${description}"><link rel="canonical" href="https://example.test/"><link rel="icon" href="/favicon.svg"><meta property="og:image" content="https://example.test/social.png"></head><body><main><h1>Welcome</h1><a class="primary-cta" href="/contact">Get started</a><img src="/hero.webp" alt="A team collaborating"><form><label for="email">Email</label><input id="email" type="email" required><button type="submit">Send</button><p role="alert"></p></form>${extra}</main></body></html>`;
 
-test('exports a stable, complete list of the 20 launch requirements',()=>{
-  assert.equal(GENERATED_SITE_REQUIREMENTS.length,20);
-  assert.equal(new Set(GENERATED_SITE_REQUIREMENTS.map(item=>item.id)).size,20);
+test('exports a stable, complete list of the 21 launch requirements',()=>{
+  assert.equal(GENERATED_SITE_REQUIREMENTS.length,21);
+  assert.equal(new Set(GENERATED_SITE_REQUIREMENTS.map(item=>item.id)).size,21);
   assert.ok(GENERATED_SITE_REQUIREMENTS.every(item=>item.id&&item.label&&item.severity));
 });
 
@@ -32,8 +32,8 @@ test('reports verifiable public SEO, image and form evidence without overclaimin
     baseUrl:'https://example.test',
     config:{contactAddress:'owner supplied address',analyticsConfigured:true,analyticsConsentAware:true,cookieConsentImplemented:true,thankYouRoute:'/thank-you',stickyMobileCtaImplemented:true,ctaAboveFoldVerified:true}
   });
-  assert.equal(report.requirements.length,20);
-  assert.equal(report.summary.total,20);
+  assert.equal(report.requirements.length,21);
+  assert.equal(report.summary.total,21);
   assert.ok(['PASS','FAIL','NEEDS_INPUT','NOT_APPLICABLE'].includes(report.requirements.find(item=>item.id==='meta-title').status));
   assert.equal(report.requirements.find(item=>item.id==='meta-title').status,'PASS');
   assert.equal(report.requirements.find(item=>item.id==='meta-description').status,'PASS');
@@ -80,7 +80,7 @@ test('product-quality evidence includes the generated-site report for web target
     fs.writeFileSync(path.join(pub,'sitemap.xml'),'<urlset><url><loc>https://example.test/</loc></url></urlset>');
     const quality=auditProductExperience(root,{target:{id:'web-node'},siteKind:'business',pages:['/']});
     assert.equal(quality.generatedSiteQuality.version,'generated-site-quality.v1');
-    assert.equal(quality.generatedSiteQuality.summary.total,20);
+    assert.equal(quality.generatedSiteQuality.summary.total,21);
     assert.equal(quality.generatedSiteQuality.requirements.find(item=>item.id==='cookie-consent').status,'PASS');
     assert.equal(quality.generatedSiteQuality.requirements.find(item=>item.id==='favicon-set').status,'PASS');
     assert.equal(quality.generatedSiteQuality.requirements.find(item=>item.id==='sticky-mobile-cta').status,'PASS');
@@ -112,4 +112,25 @@ test('business address is a production blocker when required and missing',()=>{
   assert.equal(supplied.requirements.find(item=>item.id==='contact-address').status,'PASS');
   const notRequired=auditGeneratedSite({files,config:{requireContactAddress:false}});
   assert.equal(notRequired.requirements.find(item=>item.id==='contact-address').status,'NOT_APPLICABLE');
+});
+
+test('accessibility basics require document language, a main landmark and accessible form names',()=>{
+  const report=auditGeneratedSite({files:{
+    'public/index.html':goodHtml(),
+    'public/contact.html':'<!doctype html><html><head><title>Contact</title><meta name="description" content="A useful description for this public website route that explains the value to its intended visitors."></head><body><h1>Contact</h1><form><input type="email"><button>Send</button></form></body></html>'
+  },config:{analyticsEnabled:false,requireContactAddress:false}});
+  const check=report.requirements.find(item=>item.id==='accessibility-basics');
+  assert.ok(check,'accessibility basics should be part of the generated-site quality report');
+  assert.equal(check.status,'FAIL');
+  assert.ok(check.evidence.some(item=>/language/i.test(item)));
+  assert.ok(check.evidence.some(item=>/main landmark/i.test(item)));
+  assert.ok(check.evidence.some(item=>/form control/i.test(item)));
+});
+
+test('accessibility basics pass when public pages declare language, main landmarks and associated labels',()=>{
+  const report=auditGeneratedSite({files:{
+    'public/index.html':goodHtml(),
+    'public/contact.html':goodHtml({title:'Contact'})
+  },config:{analyticsEnabled:false,requireContactAddress:false}});
+  assert.equal(report.requirements.find(item=>item.id==='accessibility-basics').status,'PASS');
 });

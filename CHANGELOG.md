@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — 2026-10-11
+
+- Added a generated-site accessibility baseline check for document language, main landmarks and accessible names on non-hidden form controls.
+- Expanded generated-site quality evidence from 20 to 21 requirements and added passing/failing fixtures.
+- Static baseline only; full keyboard, contrast, reduced-motion and WCAG automation remain planned.
+
+
 ## 13.0.0 — 2026-10-07
 
 - Completed final source-side launch hardening.

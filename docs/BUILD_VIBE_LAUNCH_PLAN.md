@@ -1162,3 +1162,16 @@ Follow-up: address and analytics settings now persist per project in browser loc
 - **Verification: PASS on revision `588156e398bd643c7ed3bd7a5a17979983bea329`.** Build Vibe CI [38081225750](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750) passed tests, coverage, syntax/release checks, SEO, browser E2E (including the generated icon endpoints), load/recovery, deployment preflight, benchmark, security, scale-out and launch readiness.
 
 **Next unfinished stage:** optimize generated raster assets during export (distinct from the browser-local optimizer), extend accessibility/viewport budgets, and verify real production credentials, deployment, monitoring and recovery. Documentation commits must obtain their own fresh CI evidence; this checkpoint records the exact tested implementation revision.
+
+## 51. Generated-site accessibility baseline audit (2026-10-11)
+
+**Roadmap phase:** generated website launch quality, accessibility budgets.
+
+- Added an explicit `accessibility-basics` result to every generated-site quality report.
+- Audits each public HTML route for a declared document language and a `main` landmark.
+- Audits non-hidden form controls for a visible associated label, wrapping label, `aria-label`, `aria-labelledby`, or a suitable submit/button value.
+- Missing evidence fails this high-severity quality requirement rather than silently passing. It remains a quality warning unless the configured production contract enforces the relevant requirement.
+- Added positive and negative fixtures and updated the stable requirement count from 20 to 21.
+- **Verification pending:** branch CI must pass after this checkpoint before it can be treated as verified.
+
+**Remaining accessibility work:** keyboard-only interaction coverage, focus visibility/order, accessible names for links and buttons, heading hierarchy, contrast checks, reduced-motion verification, and automated axe/WCAG checks. This baseline audit is not a WCAG conformance claim.
