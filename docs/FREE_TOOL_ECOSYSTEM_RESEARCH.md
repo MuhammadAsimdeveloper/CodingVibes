@@ -297,3 +297,7 @@ The P1 data-conversion suite now includes `data.json.yaml`, a bounded JSON-text 
 ## P1 timestamp conversion status — 2026-10-10
 
 The canonical developer utility `dev.timestamp.convert` supports strict ISO-8601 instants with explicit offsets and Unix seconds/milliseconds in both directions. Calendar and time fields are validated, conversions are bounded, and ambiguous local-time strings are rejected. See `docs/TOOL_FABRIC.md` for the exact modes and limits.
+
+## P1 cron inspection status — 2026-10-10
+
+The local `dev.cron.inspect` utility supports five-field numeric cron syntax, lists, ranges, wildcards and positive steps, with a 366-day UTC search cap and up to five upcoming occurrences. Named fields, aliases and vendor-specific extensions are rejected. The day-of-month/day-of-week OR policy is documented in `docs/TOOL_FABRIC.md`.
