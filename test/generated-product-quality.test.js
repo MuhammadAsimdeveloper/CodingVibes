@@ -161,6 +161,7 @@ test('generated customer pages provide a dismissible mobile-only primary contact
   const home=files.get('public/index.html')||'';
   const app=files.get('public/app.js')||'';
   const css=files.get('public/styles.css')||'';
+  assert.match(home,/class="primary-cta" data-primary-cta href="\\/contact">Get started/);
   assert.match(home,/data-sticky-cta/);
   assert.match(home,/href="\/contact"[^>]*>[^<]*<strong>Let's talk<\/strong>/);
   assert.match(home,/data-dismiss-sticky-cta/);
