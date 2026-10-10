@@ -32,3 +32,10 @@ All notable Build Vibe changes are recorded here.
 
 ## [12.2.0]
 See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
+
+
+## [Unreleased] — generated website quality follow-up (2026-10-10)
+
+- Documented a 20-point generated-website launch quality gate, including evidence-backed implementation, partial coverage, unconfirmed behavior, user-input requirements, and release acceptance criteria.
+- Planned automated checks for custom 404 behavior, CTA visibility, form confirmation/error flows, consent-aware analytics, responsive behavior, favicon coverage, image alt text, and image optimization.
+- No code implementation or fresh CI/deployment verification is claimed by this documentation update.
