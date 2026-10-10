@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {auditGeneratedSite} from '../verification/generated-site-quality.js';
 
 const BASE_STATES=['loading','empty','error','success'];
 const BASE_FEATURES=[
@@ -144,6 +145,7 @@ export function auditProductExperience(workspace,spec={}){
   const html=htmlText(files);
   const contract=buildQualityContract(spec);
   const webTarget=['web-node','web-pwa'].includes(String(spec.target?.id||'web-node'));
+  const generatedSiteQuality=webTarget?auditGeneratedSite({files:Object.fromEntries(files.map(file=>[path.relative(root,file).replaceAll(path.sep,'/'),fs.readFileSync(file,'utf8')])),baseUrl:spec.seo?.baseUrl||process.env.SITE_URL||'',config:spec.generatedSiteQuality||{}}):null;
   const checks=[];
   let brokenLinks=[];
   const addCheck=(id,label,ok,blocking=false,detail='')=>checks.push({id,label,passed:Boolean(ok),blocking:Boolean(blocking&&!ok),detail});
@@ -215,6 +217,7 @@ export function auditProductExperience(workspace,spec={}){
   return {
     version:'product-quality.v2',
     score,minimumScore:contract.minimumScore,passed,total:checks.length,checks,
+    generatedSiteQuality,
     missing:checks.filter(check=>!check.passed).map(check=>check.label),
     blockingFindings,warnings,
     releaseReady:blockingFindings.length===0&&score>=contract.minimumScore,
