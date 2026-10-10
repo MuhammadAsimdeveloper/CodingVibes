@@ -318,3 +318,7 @@ The canonical Tool Fabric now implements `data.json.csv` through `src/tool-fabri
 ## P1 PDF tool implementation status — 2026-10-10
 
 The existing Build Vibe Tool Fabric implements `pdf.info`, `pdf.merge`, `pdf.split`, `pdf.rotate` and `pdf.reorder` locally via the governed `pdf-lib` adapter on PR #59, plus `image.to_pdf` for bounded PNG/JPEG-to-A4-PDF conversion. Real fixtures cover PDF page operations and mixed PNG/JPEG conversion, with explicit input/output/page, MIME/signature, dimensions and image-count limits. Compression, PDF-to-image rendering, text extraction and OCR are not marked complete. Keep canonical ownership in Build Vibe and expose capabilities to Aira only through tool contracts.
+
+## P1 timestamp conversion — 2026-10-10
+
+`dev.timestamp.convert` is now implemented through the canonical developer executor with four explicit ISO/Unix modes, strict offset/calendar validation, range limits and no network use. This does not claim a cron-expression inspector or other date/time tools are implemented.
