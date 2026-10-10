@@ -21,6 +21,7 @@ const BASE_RULES=[
   'Never use emoji as interface icons',
   'Avoid vague filler copy and em-dash punctuation',
   'Use only authentic, licensed, or clearly identified illustrative assets',
+  'Do not use random placeholder-photo endpoints or synthetic people presented as real customers',
   'Preserve keyboard access, visible focus and accessible names',
   'Keep essential content available without animation'
 ];
