@@ -1110,3 +1110,15 @@ The existing Tool Fabric now defines four bounded local PDF tools: `pdf.info`, `
 
 **Next:** continue through the remaining P1 local developer/data utilities with explicit syntax boundaries, bounded execution and tests before implementation. Do not claim support for cron dialects outside the documented five-field subset.
 
+## 57. TDD checkpoint — cryptographically secure password generation (2026-10-10)
+
+**Roadmap phase:** P1 local security/privacy utilities.
+
+- Added failing tests first for the missing `security.password.generate` contract, then implemented a canonical local executor using Node's cryptographic `randomInt` for class selection, pool sampling and Fisher-Yates shuffling.
+- Requires a length from 12 to 128, supports lowercase/uppercase/digits/symbols selection, guarantees at least one character from each enabled class, excludes ambiguous letters/digits by default, and rejects empty class policies, invalid option types and unknown options.
+- The tool returns the generated secret only in the direct result, declares `stored:false`, makes no network calls and does not claim a heuristic strength score. Its warning advises copying the result to a trusted password manager.
+- Added the Security-category contract and updated catalog assertions from 55 to 56. Tests cover length, class inclusion, restricted policy, ambiguity exclusion and invalid inputs.
+- **Verification: PASS on implementation head `06c90eab245db27e28549b80dffc4b0e3e74a9b2`.** Build Vibe CI [38044896479](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044896479), CodeQL [38044896492](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044896492) and Dependency Review [38044896500](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044896500) passed. Documentation-inclusive changes need fresh verification.
+
+**Next P1 security utility:** inspect the existing secret scanner and its data boundaries before extending security coverage; do not log or send generated secrets to external services.
+
