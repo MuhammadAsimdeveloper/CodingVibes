@@ -311,6 +311,10 @@ Do not compete on raw tool count. Compete on **coverage × reliability × privac
 A utility is admitted to the canonical catalog only when it has a distinct user job, contract, tests, security/privacy classification, documentation and verification state.
 
 
+## P1 JSON-to-CSV implementation status — 2026-10-10
+
+The canonical Tool Fabric now implements `data.json.csv` through `src/tool-fabric/data.js`. It converts bounded arrays of JSON objects to CSV, handles quoting and sparse rows, preserves first-seen columns, neutralizes formula-like string cells and rejects invalid or over-budget input. See `docs/TOOL_FABRIC.md`; CSV-to-JSON is not implied.
+
 ## P1 PDF tool implementation status — 2026-10-10
 
 The existing Build Vibe Tool Fabric implements `pdf.info`, `pdf.merge`, `pdf.split`, `pdf.rotate` and `pdf.reorder` locally via the governed `pdf-lib` adapter on PR #59, plus `image.to_pdf` for bounded PNG/JPEG-to-A4-PDF conversion. Real fixtures cover PDF page operations and mixed PNG/JPEG conversion, with explicit input/output/page, MIME/signature, dimensions and image-count limits. Compression, PDF-to-image rendering, text extraction and OCR are not marked complete. Keep canonical ownership in Build Vibe and expose capabilities to Aira only through tool contracts.
