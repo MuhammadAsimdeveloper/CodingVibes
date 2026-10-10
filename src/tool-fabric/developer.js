@@ -161,7 +161,7 @@ function parseCronField(source,field) {
     if (slash.length > 2) invalid('Cron steps must use one slash.');
     let step=1;
     if (slash.length===2) {
-      if (!/^\\d+$/.test(slash[1])) invalid('Cron step must be a positive integer.');
+      if (!/^\d+$/.test(slash[1])) invalid('Cron step must be a positive integer.');
       step=Number(slash[1]);
       if (step < 1 || step > field.max-field.min+1) invalid('Cron step is outside the supported range.');
     }
@@ -170,11 +170,11 @@ function parseCronField(source,field) {
     if (base==='*') { start=field.min; end=field.max; }
     else if (base.includes('-')) {
       const parts=base.split('-');
-      if (parts.length!==2 || !/^\\d+$/.test(parts[0]) || !/^\\d+$/.test(parts[1])) invalid('Cron ranges must use numeric start-end values.');
+      if (parts.length!==2 || !/^\d+$/.test(parts[0]) || !/^\d+$/.test(parts[1])) invalid('Cron ranges must use numeric start-end values.');
       start=Number(parts[0]); end=Number(parts[1]);
       if (start>end) invalid('Cron ranges may not wrap around.');
     } else {
-      if (!/^\\d+$/.test(base)) invalid('Cron fields support numbers, lists, ranges, wildcards and steps only.');
+      if (!/^\d+$/.test(base)) invalid('Cron fields support numbers, lists, ranges, wildcards and steps only.');
       start=Number(base);
       end=slash.length===2 ? field.max : start;
     }
@@ -191,7 +191,7 @@ function inspectCron(input) {
     invalid('Input must contain only expression and optional after.');
   }
   if (typeof input.expression!=='string' || input.expression.length>100) invalid('expression must be a five-field cron string of at most 100 characters.');
-  const parts=input.expression.trim().split(/\\s+/);
+  const parts=input.expression.trim().split(/\s+/);
   if (parts.length!==5) invalid('Only five-field cron syntax is supported: minute hour day-of-month month day-of-week.');
   const fields=parts.map((part,index)=>parseCronField(part,CRON_FIELDS[index]));
   const afterMs=input.after===undefined ? Date.now() : parseIsoInstant(input.after);
