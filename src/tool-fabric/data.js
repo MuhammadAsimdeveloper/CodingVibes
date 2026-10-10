@@ -114,7 +114,120 @@ export function jsonToCsv(input = {}) {
   };
 }
 
+
+const MAX_CSV_BYTES = 500_000;
+
+function parseCsvRows(source) {
+  const text = source.charCodeAt(0) === 0xfeff ? source.slice(1) : source;
+  if (!text.length) invalid('CSV input must not be empty.');
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  let afterQuote = false;
+  let atFieldStart = true;
+  const pushField = () => {
+    if (Buffer.byteLength(field,'utf8') > MAX_CELL_BYTES) invalid('A CSV cell exceeds the 100 KB limit.');
+    row.push(field);
+    field = '';
+    afterQuote = false;
+    atFieldStart = true;
+  };
+  const pushRow = () => {
+    pushField();
+    rows.push(row);
+    row = [];
+  };
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i+1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; afterQuote = true; }
+      } else {
+        field += ch;
+      }
+      if (field.length > MAX_CELL_BYTES) invalid('A CSV cell exceeds the 100 KB limit.');
+      continue;
+    }
+    if (afterQuote) {
+      if (ch === ',') pushField();
+      else if (ch === '\n') pushRow();
+      else if (ch === '\r' && text[i+1] === '\n') { pushRow(); i++; }
+      else invalid('Unexpected characters after a closing CSV quote.');
+      if (rows.length > MAX_ROWS + 1) invalid('CSV input exceeds 10000 data rows.');
+      continue;
+    }
+    if (ch === '"' && atFieldStart && field.length === 0) {
+      inQuotes = true;
+      atFieldStart = false;
+    } else if (ch === '"') {
+      invalid('A quote may only begin a CSV field.');
+    } else if (ch === ',') {
+      pushField();
+    } else if (ch === '\n') {
+      pushRow();
+    } else if (ch === '\r') {
+      if (text[i+1] !== '\n') invalid('CSV records must use LF or CRLF line endings.');
+      pushRow();
+      i++;
+    } else {
+      field += ch;
+      atFieldStart = false;
+      if (field.length > MAX_CELL_BYTES) invalid('A CSV cell exceeds the 100 KB limit.');
+    }
+    if (rows.length > MAX_ROWS + 1) invalid('CSV input exceeds 10000 data rows.');
+  }
+  if (inQuotes) invalid('CSV input ends inside a quoted field.');
+  if (!text.endsWith('\n') && !text.endsWith('\r\n')) {
+    pushField();
+    rows.push(row);
+  }
+  if (rows.length < 1 || rows.length > MAX_ROWS + 1) invalid('CSV must contain a header and no more than 10000 data rows.');
+  return rows;
+}
+
+function csvToJson(input = {}) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) invalid('Input must be an object.');
+  if (Object.keys(input).some(key => key !== 'csv')) invalid('Only the csv input field is supported.');
+  const csv = input.csv;
+  if (typeof csv !== 'string') invalid('csv must be a string.');
+  if (Buffer.byteLength(csv,'utf8') > MAX_CSV_BYTES) {
+    const error = new Error('CSV input exceeds the 500 KB limit.');
+    error.status = 'INPUT_TOO_LARGE';
+    throw error;
+  }
+  const rows = parseCsvRows(csv);
+  const columns = rows[0];
+  if (!columns.length || columns.length > MAX_COLUMNS) invalid('CSV must contain between 1 and 200 columns.');
+  const seen = new Set();
+  for (const column of columns) {
+    if (!column.trim() || UNSAFE_KEYS.has(column) || seen.has(column)) {
+      invalid('CSV headers must be non-empty, unique and not prototype-sensitive.');
+    }
+    seen.add(column);
+  }
+  const dataRows = rows.slice(1);
+  if (dataRows.some(record => record.length !== columns.length)) {
+    invalid('Every CSV record must have the same number of fields as the header.');
+  }
+  const json = dataRows.map(record => {
+    const item = {};
+    for (let i = 0; i < columns.length; i++) item[columns[i]] = record[i];
+    return item;
+  });
+  const jsonString = JSON.stringify(json);
+  const byteLength = Buffer.byteLength(jsonString,'utf8');
+  if (byteLength > MAX_OUTPUT_BYTES) {
+    const error = new Error('Generated JSON exceeds the 1 MB output limit.');
+    error.status = 'INPUT_TOO_LARGE';
+    throw error;
+  }
+  return {output:{json,jsonString,columns,rowCount:json.length,byteLength},warnings:[]};
+}
+
 export function runDataTool(id,input = {}) {
   if (id === 'data.json.csv') return jsonToCsv(input);
+  if (id === 'data.csv.json') return csvToJson(input);
   invalid('No data conversion executor is registered for this id.');
 }
