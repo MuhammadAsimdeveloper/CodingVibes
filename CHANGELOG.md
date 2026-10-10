@@ -90,3 +90,11 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 - Business address is extracted only from explicitly labeled user input, rendered with HTML escaping, and required by the production quality gate for business sites.
 - Added a generated-site browser smoke fixture that checks the critical 20-point gate end to end.
 - Full CI passed at `ceac1d6c58af339880b5959f69a0e4d3d75547b8`.
+
+
+## [Unreleased] — project launch settings UI (2026-10-10)
+
+- Added project-scoped builder fields for business contact address and Google Analytics measurement ID.
+- Settings persist in browser localStorage per project, survive project switching/reload, and are appended to the build brief without echoing the settings into the visible prompt log.
+- Analytics IDs are validated before build; business addresses are explicitly supplied, safely rendered, and required for business-site production verification.
+- Full CI passed at `06d2a6fcd03d6e37a8793f260738f5383b152a94`.
