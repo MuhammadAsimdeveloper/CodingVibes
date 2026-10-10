@@ -13,6 +13,9 @@ All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
 
+- Replaced placeholder generated Privacy Policy and Terms pages with substantive default-data-practice disclosures, acceptable-use rules, user-content terms, third-party service notes, liability language, and contact routes.
+- Added release-blocking checks for favicon asset/link presence and substantive Privacy Policy and Terms content.
+
 - Added a mandatory generated-product quality contract and audit checks for fabricated social proof, unwanted AI attribution, purple gradients, emoji icons, em dashes, pill-shaped buttons, cursor-following effects, excessive scroll motion and vague marketing copy.
 - Changed generated design-system and template motion defaults to short, restrained reveals with no magnetic cursor-following behavior or decorative looping animation; preserved reduced-motion support.
 - Reviewed UI/UX Pro Max upstream guidance and recorded a pinned-source adoption plan with local anti-pattern overrides and controlled refresh requirements.
