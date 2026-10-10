@@ -1,4 +1,5 @@
 import test from 'node:test';
+import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {analyzeRequirements,completeSpec} from '../src/agent/requirements.js';
 import {generateProject} from '../src/agent/project-generator.js';
@@ -80,4 +81,57 @@ test('generated websites ship an accessible, persistent, opt-in cookie preferenc
   assert.match(css,/@media\(max-width:640px\)/);
   assert.match(css,/\.cookie-consent \[data-cookie-accept\],\.cookie-consent \[data-cookie-reject\]/,'accept and reject controls must have equal visual prominence');
   assert.match(pkg.scripts.check,/node --check public\/cookie-consent\.js/);
+});
+
+test('cookie preference runtime persists reject, custom preferences, and later changes',()=>{
+  const spec=completeSpec(analyzeRequirements('Build a local service business website'));
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  const source=files.get('public/cookie-consent.js');
+  assert.ok(source,'generated cookie consent runtime should exist');
+  const handlers=()=>({listeners:{},attributes:{},hidden:true,textContent:'',addEventListener(type,fn){this.listeners[type]=fn;},setAttribute(name,value){this.attributes[name]=value;},focus(){this.focused=true;}});
+  const panel=handlers(),form=handlers(),status=handlers(),accept=handlers(),reject=handlers(),settings=handlers(),reopen=handlers();
+  const analytics={checked:false},marketing={checked:false};
+  form.elements={analytics,marketing};
+  panel.querySelector=selector=>({
+    '[data-cookie-preferences]':form,
+    '[data-cookie-status]':status,
+    '[data-cookie-accept]':accept,
+    '[data-cookie-reject]':reject,
+    '[data-cookie-settings]':settings
+  })[selector]||null;
+  const values=new Map(),events=[];
+  const document={
+    querySelector:selector=>selector==='[data-cookie-consent]'?panel:null,
+    querySelectorAll:selector=>selector==='[data-cookie-reopen]'?[reopen]:[],
+    dispatchEvent:event=>{events.push(event);return true;}
+  };
+  class FakeCustomEvent{constructor(type,options={}){this.type=type;this.detail=options.detail;}}
+  const localStorage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)};
+  vm.runInNewContext(source,{document,localStorage,CustomEvent:FakeCustomEvent,JSON,Boolean,String,Date});
+  assert.equal(panel.hidden,false,'banner opens when no saved preference exists');
+  reject.listeners.click();
+  let saved=JSON.parse(values.get('build-vibe-cookie-preferences-v1'));
+  assert.equal(saved.essential,true);
+  assert.equal(saved.analytics,false);
+  assert.equal(saved.marketing,false);
+  assert.equal(panel.hidden,true);
+  assert.ok(events.some(event=>event.type==='buildvibe:consentchange'&&event.detail.analytics===false));
+  reopen.listeners.click();
+  assert.equal(panel.hidden,false,'settings control can reopen preferences');
+  assert.equal(panel.focused,true,'focus moves to the preference panel');
+  settings.listeners.click({currentTarget:settings});
+  assert.equal(form.hidden,false);
+  assert.equal(settings.attributes['aria-expanded'],'true');
+  analytics.checked=true;
+  marketing.checked=true;
+  let prevented=false;
+  form.listeners.submit({preventDefault(){prevented=true;}});
+  saved=JSON.parse(values.get('build-vibe-cookie-preferences-v1'));
+  assert.equal(prevented,true);
+  assert.equal(saved.analytics,true);
+  assert.equal(saved.marketing,true);
+  assert.equal(panel.hidden,true);
+  reopen.listeners.click();
+  assert.equal(analytics.checked,true,'saved analytics preference is restored');
+  assert.equal(marketing.checked,true,'saved marketing preference is restored');
 });
