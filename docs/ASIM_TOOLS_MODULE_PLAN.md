@@ -70,3 +70,10 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 - Implementation uses Node built-ins only, runs through the canonical `runTool` envelope, and reports no network use. Hashes are integrity utilities, not password storage or authentication; URL helpers never navigate to or fetch a URL.
 - Expanded the canonical catalog from 40 to 44 tools. Focused tests check known SHA-256 output, Base64 output, match/mismatch and invalid checksums, random UUID v4 shape, URL round-trips and bad-input handling.
 - Verification record: implementation revision `b65c87d61dab2abc873f8765084c2255240cdf1c` passed Build Vibe CI [37988776436](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776436) with 314/314 tests, and passed CodeQL [37988776447](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776447) and Dependency Review [37988776485](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776485). See the current PR checks for the documentation-inclusive head.
+
+## Local PDF and image conversion — 2026-10-10
+
+- Extended the existing canonical Tool Fabric with `image.to_pdf`; no Asim Tools runtime call or second registry was added.
+- The local adapter converts PNG/JPEG payloads to one A4 page per image, with strict MIME/signature checks, 1 MB per-image and aggregate input caps, 20-image count cap, 10,000-pixel edge and 20-megapixel image limits.
+- Mixed PNG/JPEG real-fixture tests verify the result can be reopened as a valid multi-page PDF. Malformed, unsupported and over-budget inputs fail explicitly; network use remains false.
+- See `docs/PDF_TOOLS.md` for the canonical behavior and current exclusions. PDF compression, raster rendering, text extraction and OCR remain unfinished.
