@@ -135,3 +135,22 @@ test('cookie preference runtime persists reject, custom preferences, and later c
   assert.equal(analytics.checked,true,'saved analytics preference is restored');
   assert.equal(marketing.checked,true,'saved marketing preference is restored');
 });
+
+test('generated contact flow has accessible loading/error states and a noindex thank-you route',()=>{
+  const spec=completeSpec(analyzeRequirements('Build a professional local plumbing business website with a contact form'));
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  const contact=files.get('public/contact.html')||'';
+  const thankYou=files.get('public/thank-you.html')||'';
+  const app=files.get('public/app.js')||'';
+  const sitemap=files.get('public/sitemap.xml')||'';
+  assert.ok(thankYou,'generated contact flow needs a thank-you page');
+  assert.match(thankYou,/<meta name="robots" content="noindex,nofollow">/);
+  assert.match(thankYou,/Thank you for your interest/i);
+  assert.match(contact,/id="contactError"[^>]*role="alert"/);
+  assert.match(contact,/id="contactResult"[^>]*role="status"/);
+  assert.match(contact,/aria-describedby="contactResult contactError"/);
+  assert.match(app,/aria-busy/);
+  assert.match(app,/button\.disabled=true/);
+  assert.match(app,/window\.location\.assign\('\/thank-you'\)/);
+  assert.doesNotMatch(sitemap,/__SITE_URL__\/thank-you/);
+});
