@@ -59,6 +59,18 @@ export function normalizeBrowserPerformanceMetrics({navigation={},resources=[],p
   };
 }
 
+export function assessResponsiveLayout({viewportWidth,documentWidth,bodyWidth,overflowingElements=[]}={}) {
+  const valid=value=>Number.isFinite(Number(value))&&Number(value)>0;
+  const failures=[];
+  if(!valid(viewportWidth)||!valid(documentWidth)||!valid(bodyWidth))failures.push('valid viewport measurements are required');
+  const viewport=valid(viewportWidth)?Number(viewportWidth):0;
+  const document=valid(documentWidth)?Number(documentWidth):0;
+  const body=valid(bodyWidth)?Number(bodyWidth):0;
+  const horizontalOverflowPx=Math.max(0,document-viewport,body-viewport);
+  if(horizontalOverflowPx>2)failures.push(`horizontal overflow of ${Math.ceil(horizontalOverflowPx)}px at ${viewport}px viewport`);
+  return {ok:failures.length===0,viewportWidth:viewport,documentWidth:document,bodyWidth:body,horizontalOverflowPx,overflowingElements:Array.isArray(overflowingElements)?overflowingElements.slice(0,5).map(String):[],failures};
+}
+
 export function assessBrowserQuality(result,{maxLoadMs=5000,maxTransferBytes=8_000_000}={}){
   const failures=[];
   if(result.error)failures.push(result.error);
@@ -74,7 +86,7 @@ export function assessBrowserQuality(result,{maxLoadMs=5000,maxTransferBytes=8_0
   return{ok:failures.length===0,failures};
 }
 
-export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir='artifacts',baselineDir='',viewport={width:1440,height:900},visualThreshold,pixelThreshold,analytics={},maxLoadMs=Number(process.env.CODINGVIBES_BROWSER_MAX_LOAD_MS||5000),maxTransferBytes=Number(process.env.CODINGVIBES_BROWSER_MAX_TRANSFER_BYTES||8_000_000)}={}){
+export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir='artifacts',baselineDir='',viewport={width:1440,height:900},responsiveViewports=[{width:375,height:812},{width:768,height:1024},{width:1440,height:900}],visualThreshold,pixelThreshold,analytics={},maxLoadMs=Number(process.env.CODINGVIBES_BROWSER_MAX_LOAD_MS||5000),maxTransferBytes=Number(process.env.CODINGVIBES_BROWSER_MAX_TRANSFER_BYTES||8_000_000)}={}){
  let pw;try{pw=await import('playwright');}catch{return{enabled:true,available:false,passed:false,skipped:'playwright not installed',results:[]};}
  const fs=await import('node:fs');fs.mkdirSync(artifactDir,{recursive:true});const browser=await pw.chromium.launch({headless:true});const results=[];
  try{
@@ -236,8 +248,32 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
         interactions.thankYouRuntimeVerified=new URL(page.url()).pathname==='/thank-you'&&robots==='noindex,nofollow';
       }
     }
+    const responsive=[];
+    for(const targetViewport of responsiveViewports){
+      await page.setViewportSize({width:targetViewport.width,height:targetViewport.height});
+      await page.waitForTimeout(40);
+      const measurements=await page.evaluate(()=>{
+        const viewportWidth=window.innerWidth;
+        const documentWidth=document.documentElement?.scrollWidth||0;
+        const bodyWidth=document.body?.scrollWidth||0;
+        const overflowingElements=Array.from(document.querySelectorAll('body *')).filter(element=>{
+          const rect=element.getBoundingClientRect();
+          return rect.width>0&&rect.right>viewportWidth+2&&getComputedStyle(element).position!=='fixed';
+        }).slice(0,5).map(element=>{
+          const tag=element.tagName.toLowerCase();
+          const id=element.id?'#'+element.id:'';
+          const classes=typeof element.className==='string'?'.'+element.className.trim().split(/\\s+/).filter(Boolean).slice(0,2).join('.'): '';
+          return (tag+id+classes).slice(0,120);
+        });
+        return {viewportWidth,documentWidth,bodyWidth,overflowingElements};
+      });
+      const audit=assessResponsiveLayout(measurements);
+      responsive.push({...audit,height:targetViewport.height});
+      for(const failure of audit.failures)uiFailures.push(failure);
+    }
+    await page.setViewportSize(viewport);
     const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures,visual,performance,accessibility},{maxLoadMs,maxTransferBytes});
-    results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures,screenshot,domSnapshot,visual,performance,performanceAudit,accessibility,interactions,quality,ok:quality.ok});
+    results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures,screenshot,domSnapshot,visual,performance,performanceAudit,accessibility,responsive,interactions,quality,ok:quality.ok});
    }catch(e){error=e.message;const quality=assessBrowserQuality({status,error,consoleErrors,requestFailures,responseFailures,uiFailures:[]},{maxLoadMs,maxTransferBytes});results.push({path:p,status,consoleErrors,consoleWarnings,requestFailures,responseFailures,error,ui,uiFailures:[],screenshot,domSnapshot,visual,performance,performanceAudit,accessibility,quality,ok:false});}
    await page.close();
   }
