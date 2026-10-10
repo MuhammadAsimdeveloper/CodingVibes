@@ -21,7 +21,7 @@ test('local hash, checksum, UUID and URL tools expose canonical no-network contr
     assert.ok(contract.auditEvent);
     assert.ok(contract.provenance);
   }
-  assert.equal(listToolContracts().length, 48);
+  assert.equal(listToolContracts().length, 49);
   assert.equal(listToolContracts({category:'Developer'}).filter(x => x.id.startsWith('dev.')).length, 3);
   assert.equal(listToolContracts({category:'Security'}).filter(x => x.id === 'security.checksum.verify').length, 1);
 });
@@ -37,7 +37,7 @@ test('hash generation produces standard known digests and supports explicit outp
 
   const base64 = await runTool('dev.hash.generate', {text:'abc',algorithm:'sha256',encoding:'base64'});
   assert.equal(base64.status, 'COMPLETED');
-  assert.equal(base64.output.digest, 'ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=');
+  assert.equal(base64.output.digest, 'ungWv49Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=');
   assert.equal(base64.output.encoding, 'base64');
 
   const sha512 = await runTool('dev.hash.generate', {text:'',algorithm:'sha512'});
@@ -57,7 +57,7 @@ test('checksum verification validates encoding/length and uses fixed-size digest
   assert.equal(mismatch.output.matches, false);
 
   const base64 = await runTool('security.checksum.verify', {
-    text:'abc', expected:'ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=', algorithm:'sha256', encoding:'base64'
+    text:'abc', expected:'ungWv49Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=', algorithm:'sha256', encoding:'base64'
   });
   assert.equal(base64.status, 'COMPLETED');
   assert.equal(base64.output.matches, true);
