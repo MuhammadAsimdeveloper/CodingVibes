@@ -76,7 +76,7 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 - Added `data.json.csv` as a canonical local Tool Fabric contract and executor, with no runtime call to Asim Tools and no external dependencies.
 - The converter handles first-seen column union, missing/null values, CSV quote/newline escaping, nested JSON values, CRLF records and spreadsheet formula-like strings. Numeric values are not rewritten as text-safety prefixes.
 - Enforced row, column, serialized-input, per-cell, nesting and output limits. Tests cover malformed rows, unsafe keys, formula injection, escaping and network-free execution.
-- CSV-to-JSON remains a separate capability and is not claimed complete.
+- Added the companion `data.csv.json` parser with strict quoting, BOM handling, LF/CRLF records, duplicate/prototype-sensitive header rejection, row-width validation and explicit byte/row/column/cell limits. It keeps values as strings and makes no network calls.
 
 ## Local PDF and image conversion — 2026-10-10
 
