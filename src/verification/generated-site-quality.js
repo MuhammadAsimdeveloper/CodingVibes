@@ -84,7 +84,7 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const socialAsset=resolveAsset(fileMap,socialUrl,baseUrl);
   const socialMetaOk=!!socialUrl&&(/^(https?:\/\/|\/)/i.test(socialUrl));
   const socialAssetText=contentOf(socialAsset);
-  const socialDimensions=Boolean(socialAsset&&((typeof socialAsset==='object'&&socialAsset.width>=1200&&socialAsset.height>=600)||(/<svg\\b/i.test(socialAssetText)&&/width=[\"']1200[\"']/i.test(socialAssetText)&&/height=[\"']630[\"']/i.test(socialAssetText))));
+  const socialDimensions=Boolean(socialAsset&&((typeof socialAsset==='object'&&socialAsset.width>=1200&&socialAsset.height>=600)||(/<svg\b/i.test(socialAssetText)&&/width=[\"']1200[\"']/i.test(socialAssetText)&&/height=[\"']630[\"']/i.test(socialAssetText))));
   const hasPrivacy=pageData.some(page=>/^\/(privacy|privacy-policy)$/.test(page.route));
   const hasTerms=pageData.some(page=>/^\/(terms|terms-and-conditions)$/.test(page.route));
   const has404=pageData.some(page=>page.route==='/404'||/404|not-found/i.test(page.name));
@@ -92,7 +92,7 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const noCtaNeeded=['documentation','docs','knowledge-base'].includes(siteGoal);
   const analyticsDisabled=config.analyticsEnabled===false;
   const cookieMarkupPresent=/data-cookie-consent/.test(allHtml)&&/data-cookie-accept/.test(allHtml)&&/data-cookie-reject/.test(allHtml)&&/data-cookie-settings/.test(allHtml);
-  const cookieRuntimePresent=/localStorage\\.setItem/.test(allFilesText)&&/build-vibe-cookie-preferences-v1/.test(allFilesText)&&/buildvibe:consentchange/.test(allFilesText);
+  const cookieRuntimePresent=/localStorage\.setItem/.test(allFilesText)&&/build-vibe-cookie-preferences-v1/.test(allFilesText)&&/buildvibe:consentchange/.test(allFilesText);
   const cookieConsentReady=config.cookieConsentImplemented===true||(cookieMarkupPresent&&cookieRuntimePresent);
   const checks=[
     result('custom-404',!has404?'FAIL':config.http404Verified===true?'PASS':'NEEDS_INPUT',[has404?'404 artifact exists':'No 404 artifact found',config.http404Verified===true?'Runtime HTTP 404 verified':'Runtime 404 status not verified'],'Generate a branded 404 page and verify unknown routes return HTTP 404, not HTTP 200.'),
