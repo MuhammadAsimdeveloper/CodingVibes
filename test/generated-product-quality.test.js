@@ -53,6 +53,8 @@ test('generated sites include a branded 404 artifact and unknown paths return HT
   const spec=completeSpec(analyzeRequirements('Build a modern local plumbing business website with a contact form'));
   const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
   assert.ok(files.has('public/404.html'),'generated site must include a custom not-found page');
+  assert.ok(files.has('public/manifest.webmanifest'),'all generated websites need an app manifest');
+  assert.match(JSON.parse(files.get('public/manifest.webmanifest')).icons[0].src,/favicon\.svg/);
   assert.match(files.get('public/404.html'),/Page not found|page could not be found/i);
   assert.match(files.get('app/server.js'),/send\(res,404/,'unknown public routes must return HTTP 404');
 });
