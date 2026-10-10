@@ -109,7 +109,7 @@ test('server public and authenticated route smoke covers launch control plane',a
   assert.ok(exported.body.downloadName.endsWith('.zip'));
   const zipDownload=await req(exported.body.downloadUrl,{headers:{cookie:sessionCookie}});
   assert.equal(zipDownload.response.status,200,'the generated export URL should download the ZIP');
-  assert.match(zipDownload.response.headers.get('content-type')||'','application/zip');
+  assert.ok((zipDownload.response.headers.get('content-type')||'').includes('application/zip'));
 
   const assetSession=smokeStore.createSession(userId,pid,'Image asset smoke');
   const assetRun=smokeStore.createRun(userId,assetSession.id,'optimized image upload smoke');
