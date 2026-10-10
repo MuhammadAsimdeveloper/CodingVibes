@@ -14,6 +14,9 @@ test('studio exposes project-scoped owner address and consent-aware analytics se
   assert.match(html,/for="analyticsMeasurementId"/);
   assert.match(html,/loads only after analytics consent/i);
   assert.match(js,/buildOptions:new Map\(\)/);
+  assert.match(js,/buildVibe\.projectSettings\./);
+  assert.match(js,/localStorage\.setItem\('buildVibe\.projectSettings\.'/);
+  assert.match(js,/localStorage\.getItem\('buildVibe\.projectSettings\.'/);
   assert.match(js,/function buildRequestWithOptions\(\)/);
   assert.match(js,/Business address is '\+JSON\.stringify\(businessAddress\)/);
   assert.match(js,/Install Google Analytics '\+analyticsMeasurementId\+' after consent/);
