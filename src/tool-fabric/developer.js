@@ -1,4 +1,4 @@
-import {createHash, randomUUID, timingSafeEqual} from 'node:crypto';
+import {createHash, randomInt, randomUUID, timingSafeEqual} from 'node:crypto';
 
 const ALGORITHMS = Object.freeze({
   sha256:'sha256',
@@ -222,6 +222,45 @@ function inspectCron(input) {
   };
 }
 
+
+function generatePassword(input={}) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) invalid('Input must be an options object.');
+  const allowed=new Set(['length','lowercase','uppercase','digits','symbols','excludeAmbiguous']);
+  if (Object.keys(input).some(key=>!allowed.has(key))) invalid('Password options contain an unsupported field.');
+  const length=input.length;
+  if (!Number.isInteger(length) || length<12 || length>128) invalid('length must be an integer from 12 to 128.');
+  const options={lowercase:true,uppercase:true,digits:true,symbols:true,excludeAmbiguous:true,...input};
+  for(const key of ['lowercase','uppercase','digits','symbols','excludeAmbiguous']) {
+    if(typeof options[key]!=='boolean') invalid(key+' must be a boolean.');
+  }
+  const classes=[
+    {name:'lowercase',full:'abcdefghijklmnopqrstuvwxyz',safe:'abcdefghjkmnpqrstuvwxyz',enabled:options.lowercase},
+    {name:'uppercase',full:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',safe:'ABCDEFGHJKLMNPQRSTUVWXYZ',enabled:options.uppercase},
+    {name:'digits',full:'0123456789',safe:'23456789',enabled:options.digits},
+    {name:'symbols',full:'!@#$%^&*()-_=+[]{}:,.?',safe:'!@#$%^&*()-_=+[]{}:,.?',enabled:options.symbols},
+  ].filter(group=>group.enabled).map(group=>({...group,characters:options.excludeAmbiguous?group.safe:group.full}));
+  if(!classes.length) invalid('At least one character class must be enabled.');
+  const pool=[...new Set(classes.flatMap(group=>[...group.characters]))].join('');
+  const chars=classes.map(group=>group.characters[randomInt(group.characters.length)]);
+  while(chars.length<length) chars.push(pool[randomInt(pool.length)]);
+  for(let i=chars.length-1;i>0;i--) {
+    const j=randomInt(i+1);
+    [chars[i],chars[j]]=[chars[j],chars[i]];
+  }
+  return {
+    output:{
+      password:chars.join(''),
+      length,
+      characterPoolSize:pool.length,
+      selectedClasses:classes.map(group=>group.name),
+      excludeAmbiguous:options.excludeAmbiguous,
+      cryptographicallySecure:true,
+      stored:false
+    },
+    warnings:['The generated password is returned once in this tool result; copy it to a trusted password manager and do not share it in prompts or logs.']
+  };
+}
+
 function makeUuid() {
   return {output:{uuid:randomUUID(),version:4},warnings:[]};
 }
@@ -249,6 +288,7 @@ export function runDeveloperTool(id,input={}) {
   switch (id) {
     case 'dev.hash.generate': return generateHash(input);
     case 'security.checksum.verify': return verifyChecksum(input);
+    case 'security.password.generate': return generatePassword(input);
     case 'dev.uuid.generate': return makeUuid();
     case 'dev.url.encode': return encodeUrl(input);
     case 'dev.timestamp.convert': return convertTimestamp(input);
