@@ -92,14 +92,14 @@ export function jsonToCsv(input = {}) {
   if (!columns.length) invalid('At least one column is required across the supplied rows.');
 
   let sanitizedCellCount = 0;
-  const cell = value => {
+  const cell = (value,forceText = false) => {
     const raw = csvValue(value);
     if (Buffer.byteLength(raw,'utf8') > MAX_CELL_BYTES) invalid('A CSV cell exceeds the 100 KB limit.');
-    const safe = safeSpreadsheetText(raw);
+    const safe = typeof value === 'string' || forceText ? safeSpreadsheetText(raw) : {value:raw,sanitized:false};
     if (safe.sanitized) sanitizedCellCount++;
     return escapeCsv(safe.value);
   };
-  const records = [columns.map(cell).join(',')];
+  const records = [columns.map(key => cell(key,true)).join(',')];
   for (const row of normalized) records.push(columns.map(key => cell(Object.hasOwn(row,key) ? row[key] : null)).join(','));
   const csv = records.join('\r\n');
   const byteLength = Buffer.byteLength(csv,'utf8');
