@@ -98,6 +98,7 @@ export function buildQualityContract(spec={}){
       'Responsive and reduced-motion behavior are explicit',
       'Never publish unsupported metrics or fabricated reviews, customer identities, ratings or logos',
       'Never show Made with AI attribution on published user products',
+      'Never add Build Vibe branding or builder attribution to published user products',
       'Never use purple gradients, unwanted AI attribution, emoji icons or pill-shaped buttons',
       'Never add cursor-following animations or excessive scroll-linked motion',
       'Avoid vague marketing copy and em-dash punctuation'
@@ -272,6 +273,7 @@ export function auditProductExperience(workspace,spec={}){
   const claims=socialProofClaims(html);
   const unverifiedClaims=claims.filter(claim=>!approvedClaims.has(claim.toLowerCase()));
   addCheck('unwanted_ai_attribution','no unwanted AI attribution',!(/made\s+with\s+(?:generative\s+)?ai/i.test(html)),true);
+    addCheck('builder_attribution','no builder branding on published products',!(/(?:built|made|powered)\s+with\s+build\s*vibe/i.test(html)),true);
   addCheck('purple_gradient','no purple gradients',!hasPurpleGradient(source),true);
   addCheck('fabricated_social_proof','customer proof has evidence',unverifiedClaims.length===0,true,unverifiedClaims.slice(0,5).join('; '));
   addCheck('emoji_ui_icon','no emoji used as interface icons',!hasEmojiIcon(html),true);
