@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {listTemplates,searchTemplates} from '../src/templates/catalog.js';
+import {listTemplates,searchTemplates,templatePrompt} from '../src/templates/catalog.js';
 
 test('every template exposes a reusable quality contract and capability map',()=>{
   const templates=listTemplates();
