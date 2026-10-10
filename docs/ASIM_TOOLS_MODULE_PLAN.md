@@ -84,3 +84,8 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 - The local adapter converts PNG/JPEG payloads to one A4 page per image, with strict MIME/signature checks, 1 MB per-image and aggregate input caps, 20-image count cap, 10,000-pixel edge and 20-megapixel image limits.
 - Mixed PNG/JPEG real-fixture tests verify the result can be reopened as a valid multi-page PDF. Malformed, unsupported and over-budget inputs fail explicitly; network use remains false.
 - See `docs/PDF_TOOLS.md` for the canonical behavior and current exclusions. PDF compression, raster rendering, text extraction and OCR remain unfinished.
+
+## Local JSON-to-YAML conversion — 2026-10-10
+
+- Added `data.json.yaml` as a local dependency-free JSON-text to YAML serializer. It double-quotes keys and string scalars, preserves booleans/numbers/null, supports nested block mappings/sequences, rejects unsafe keys and invalid JSON, and enforces input/depth/node/output limits.
+- YAML parsing remains unfinished and is not implied by this generator.
