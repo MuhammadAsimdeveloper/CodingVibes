@@ -92,6 +92,7 @@ export function buildQualityContract(spec={}){
       'Public pages expose semantic metadata',
       'Responsive and reduced-motion behavior are explicit',
       'Never publish unsupported metrics or fabricated reviews, customer identities, ratings or logos',
+      'Never show Made with AI attribution on published user products',
       'Never use purple gradients, unwanted AI attribution, emoji icons or pill-shaped buttons',
       'Never add cursor-following animations or excessive scroll-linked motion',
       'Avoid vague marketing copy and em-dash punctuation'
@@ -256,7 +257,7 @@ export function auditProductExperience(workspace,spec={}){
   addCheck('emoji_ui_icon','no emoji used as interface icons',!hasEmojiIcon(html),true);
   addCheck('em_dash_copy','copy avoids em dashes',!html.includes('\u2014'),true);
   addCheck('pill_button_style','buttons are not forced into pill shapes',!(/<(?:button|Button)\b[^>]*(?:rounded-full|rounded-pill|pill-button)[^>]*>/i.test(source)||/button\s*\{[^}]*border-radius\s*:\s*(?:9999?px|50%)/i.test(source)),true);
-  addCheck('custom_cursor_animation','no cursor-following animation',!(/cursor[-_ ]?(?:follower|trail|glow)|customCursor|cursorFollower|--mx\s*:|--my\s*:|cursor\s*:\s*none\b/i.test(source)),true);
+  addCheck('custom_cursor_animation','no cursor-following animation',!(/\.cursor[-_ ]?(?:follower|trail|glow)\b|cursor[-_ ]?(?:follower|trail)\b|customCursor|cursorFollower|cursorGlow[\"']?\s*:\s*true|--mx\s*:|--my\s*:|cursor\s*:\s*none\b/i.test(source)),true);
   addCheck('excessive_scroll_motion','scroll motion is restrained',!(/ScrollTrigger|scroll-timeline|data-scroll-(?:speed|position)|camera-story|scroll\s*:\s*['"]story['"]|parallax\s*:\s*true/i.test(source)),true);
   addCheck('vague_marketing_copy','copy is specific rather than vague',!(/revolutioniz(?:e|es|ing)|cutting.edge|world.class|seamless experience|next.level solution|game.changing/i.test(html)),true);
 
