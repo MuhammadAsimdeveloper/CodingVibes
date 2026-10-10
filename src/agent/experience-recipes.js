@@ -1,10 +1,10 @@
 const BASE_MOTION={
- scroll:'story',
- reveal:'clip-and-fade',
- hover:'magnetic',
- transition:'shared-layout',
- typography:'staggered',
- timing:{base:'420ms',scene:'1200ms',stagger:'70ms'},
+ scroll:'reveal',
+ reveal:'fade-up',
+ hover:'lift',
+ transition:'fade',
+ typography:'standard',
+ timing:{base:'240ms',scene:'500ms',stagger:'40ms'},
  accessibility:{preferReducedMotion:true}
 };
 
@@ -22,7 +22,7 @@ const RECIPES={
   controls:['orbit','zoom','pan','room-hotspots','floor-plan','camera-tour'],
   media:['MP4','WebM'],
   recording:{browser:'MediaRecorder',format:'webm',maxSeconds:30},
-  motion:{...BASE_MOTION,scroll:'camera-story',hover:'hotspot-focus',transition:'camera-dolly'},
+  motion:{...BASE_MOTION,scroll:'reveal',hover:'hotspot-focus',transition:'camera-dolly'},
   performance:{lazyLoad:true,preferReducedMotion:true,webglFallback:true,devicePixelRatioCap:1.75},
  },
  'interactive-3d':{
