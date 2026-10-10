@@ -61,6 +61,7 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `pdf.split` | local | Extracts selected one-based pages into separate one-page PDFs; bounded aggregate outputs |
 | `pdf.rotate` | local | Rotates all or selected pages by validated right-angle multiples |
 | `pdf.reorder` | local | Reorders all pages by a complete unique one-based permutation; preserves page-level rotation/dimensions and basic metadata |
+| `image.to_pdf` | local | Converts 1–20 bounded PNG/JPEG images into one A4 PDF page per image; validates Base64, MIME/signature, dimensions and total bytes before embedding |
 
 
 ## Local calculator, converter and date/time tools
@@ -160,6 +161,6 @@ The runner deliberately does **not** label a navigation-only measurement as Inte
 
 ## Bounded local PDF suite
 
-The canonical local PDF adapter lives in `src/tool-fabric/pdf.js` and is registered through the existing `contracts.js` and `runTool()` executor. The five implemented operations are `pdf.info`, `pdf.merge`, `pdf.split`, `pdf.rotate` and `pdf.reorder`. Inputs must be canonical Base64 with a PDF signature, each source is limited to 1 MB, merge inputs total no more than 1 MB, documents are limited to 200 pages, output to 2 MB, and merge accepts 2–10 documents. Malformed or encrypted files are rejected. Reorder accepts only a full permutation of every page exactly once, expressed as 1-based page numbers. Every operation is local-only and returns `networkUsed:false`.
+The canonical local document adapter lives in `src/tool-fabric/pdf.js` and is registered through the existing `contracts.js` and `runTool()` executor. The implemented operations are `pdf.info`, `pdf.merge`, `pdf.split`, `pdf.rotate`, `pdf.reorder` and `image.to_pdf`. PDF inputs must be canonical Base64 with a PDF signature; each source is limited to 1 MB, merge inputs total no more than 1 MB, documents are limited to 200 pages, output to 2 MB, and merge accepts 2–10 documents. Malformed or encrypted PDFs are rejected. Reorder accepts only a full permutation of every page exactly once, expressed as 1-based page numbers. Image-to-PDF accepts 1–20 PNG/JPEG images, 1 MB per image and combined, 10,000-pixel maximum edge and 20 megapixels per image. Images are aspect-fit to portrait or landscape A4 pages with a 24-point margin. Every operation is local-only and returns `networkUsed:false`.
 
-PDF compression, PDF-to-image rendering, image-to-PDF conversion, text extraction, OCR, redaction and decryption are not implemented by this suite. Do not mark these functions ready or route them to the current adapter until each has a bounded implementation, real fixtures, parser/rendering limits and security tests. High-volume processing of untrusted PDFs should move to a resource-isolated worker before production exposure.
+PDF compression, PDF-to-image rendering, text extraction, OCR, redaction and decryption are not implemented by this suite. Do not mark these functions ready or route them to the current adapter until each has a bounded implementation, real fixtures, parser/rendering limits and security tests. High-volume processing of untrusted PDFs should move to a resource-isolated worker before production exposure.
