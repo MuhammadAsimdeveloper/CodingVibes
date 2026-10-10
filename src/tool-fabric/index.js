@@ -3,6 +3,7 @@ import {generateQrSvg} from './qr.js';
 import {runTextTool} from './text.js';
 import {runCalculatorTool} from './calculators.js';
 import {runDeveloperTool} from './developer.js';
+import {runDataTool} from './data.js';
 import {runPdfTool} from './pdf.js';
 
 class ToolFailure extends Error {
@@ -457,6 +458,12 @@ export async function runTool(id, input = {}) {
       case 'json.typescript': {
         const value=jsonInput(input);
         output={typescript:toTypescript(value,input.rootName||'Root')};break;
+      }
+      case 'data.json.csv': {
+        const result=runDataTool(contract.id,input);
+        output=result.output;
+        warnings.push(...(result.warnings||[]));
+        break;
       }
       case 'regex.test': output=regexTest(input);break;
       case 'jwt.inspect': {
