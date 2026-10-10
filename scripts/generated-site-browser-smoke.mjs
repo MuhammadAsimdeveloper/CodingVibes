@@ -47,7 +47,7 @@ try {
   assert.equal(browser.passed,true,'generated website browser smoke should pass: '+JSON.stringify(browser.results.map(item=>({path:item.path,ok:item.ok,error:item.error,consoleErrors:item.consoleErrors,uiFailures:item.uiFailures}))));
   const home=browser.results.find(item=>item.path==='/')?.interactions||{};
   const contact=browser.results.find(item=>item.path==='/contact')?.interactions||{};
-  assert.equal(home.ctaAboveFoldVerified,true,'primary CTA should be visible above the fold');
+  assert.equal(home.ctaAboveFoldVerified,true,'primary CTA should be visible above the fold: '+JSON.stringify(home.ctaAboveFoldDetails));
   assert.equal(home.cookieConsentVerified,true,'cookie consent preferences should work');
   assert.equal(home.stickyMobileCtaVerified,true,'sticky mobile CTA should be visible and dismissible');
   assert.equal(home.analyticsConsentGateVerified,true,'analytics should load only after consent and stop collection on revocation');
