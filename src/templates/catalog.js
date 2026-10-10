@@ -1,4 +1,5 @@
 import {getDesignGuidance,renderDesignGuidance} from '../agent/design-guidance.js';
+import {buildQualityContract} from '../agent/product-quality.js';
 const TEMPLATES=[
 {id:'aurora-saas',label:'Aurora SaaS',category:'SaaS',kind:'business',tier:'free',style:'futuristic',experience:'motion',featured:true,tags:['saas','ai','b2b'],prompt:'Create a polished SaaS landing site with pricing, product benefits, testimonials, FAQ, signup CTA and responsive sections.',features:[]},
 {id:'studio-agency',label:'Studio Agency',category:'Agency',kind:'agency',tier:'free',style:'editorial',experience:'motion',featured:true,tags:['agency','portfolio','case studies'],prompt:'Create a premium creative agency site with case studies, services, process, team and contact CTA.',features:[]},
@@ -88,30 +89,53 @@ const QUALITY_BY_KIND={
 };
 
 function templateQuality(t){
-  const surfaces=['/','/about','/contact','/privacy','/terms'];
-  if(['ecommerce','marketplace'].includes(t.kind))surfaces.push('/shop','/collections','/cart','/checkout');
-  if(t.kind==='hospitality')surfaces.push('/booking');
-  if(t.kind==='realEstate')surfaces.push('/properties');
-  if(t.kind==='education')surfaces.push('/courses');
-  if(t.kind==='content')surfaces.push('/blog');
-  if(t.kind==='event')surfaces.push('/schedule');
-  if(['portfolio','agency'].includes(t.kind))surfaces.push('/work');
+  const kind=t.kind||'business';
+  const behavior={
+    search:kind==='content'||(Array.isArray(t.tags)&&t.tags.includes('search')),
+    catalog:['ecommerce','marketplace'].includes(kind),
+    booking:kind==='hospitality',
+    cms:kind==='content',
+    realtime:Array.isArray(t.features)&&t.features.includes('realtime'),
+    offline:Array.isArray(t.features)&&t.features.includes('offline'),
+    notifications:Array.isArray(t.features)&&t.features.includes('notifications'),
+    files:Array.isArray(t.features)&&t.features.includes('files'),
+    camera:Array.isArray(t.features)&&t.features.includes('camera'),
+    location:Array.isArray(t.features)&&t.features.includes('location'),
+    authentication:Array.isArray(t.features)&&t.features.includes('authentication'),
+    payments:false
+  };
+  const shared=buildQualityContract({
+    siteKind:kind,
+    behavior,
+    experience:{threeD:t.experience==='3d'},
+    styling:{visual:{style:t.style||'modern'}},
+    target:{id:'web-node'},
+    request:t.prompt||''
+  });
+  const surfaces=[...shared.requiredSurfaces,'/','/about','/contact','/privacy','/terms'];
+  if(['ecommerce','marketplace'].includes(kind))surfaces.push('/shop','/collections','/cart','/checkout');
+  if(kind==='hospitality')surfaces.push('/booking');
+  if(kind==='realEstate')surfaces.push('/properties');
+  if(kind==='education')surfaces.push('/courses');
+  if(kind==='content')surfaces.push('/blog');
+  if(kind==='event')surfaces.push('/schedule');
+  if(['portfolio','agency'].includes(kind))surfaces.push('/work');
   if(t.experience==='3d')surfaces.push('/experience');
-  const requiredFeatures=['responsive UI','accessible navigation and forms','reduced-motion support','SEO metadata and canonical URL','local assets/runtime','local content/data editing',...(QUALITY_BY_KIND[t.kind]||QUALITY_BY_KIND.business)];
+  const requiredFeatures=[...shared.requiredFeatures,...(QUALITY_BY_KIND[kind]||QUALITY_BY_KIND.business)];
   return {
-    version:'template-quality.v2',
-    providerIndependent:true,
+    version:'template-quality.v3',
+    providerIndependent:shared.providerIndependent,
     qualityTier:t.experience==='3d'?'immersive':'production',
-    requiredStates:['loading','empty','error','success'],
+    requiredStates:shared.requiredStates,
     requiredSurfaces:[...new Set(surfaces)],
     requiredFeatures:[...new Set(requiredFeatures)],
+    hardRules:shared.hardRules,
+    designGuidance:getDesignGuidance({productType:t.experience==='3d'?'3d-showcase':kind,style:t.style||'modern',stack:t.experience==='3d'?'3d-web':'web-node',intent:t.prompt||''}),
     motion:t.motion?.mode||null,
-    designGuidance:getDesignGuidance({productType:t.kind,style:t.style,stack:t.experience==='3d'?'3d-web':'web-node',intent:t.prompt}),
     webglFallback:Boolean(t.experience==='3d'),
     localRuntime:true
   };
 }
-
 function templateCapabilities(t){
   const out=['responsive','accessible','seo','local-runtime','content-editing'];
   if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(t.kind))out.push('admin','contact');
