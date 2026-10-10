@@ -16,7 +16,7 @@ test('PDF tools expose real local-only contracts with bounded document processin
     assert.equal(contract.status,'READY');
     assert.equal(contract.inputSchema.type,'object');
   }
-  assert.equal(listToolContracts().length,55);
+  assert.equal(listToolContracts().length,56);
   assert.equal(listToolContracts({category:'Documents'}).filter(t=>t.id.startsWith('pdf.')).length,5);
 });
 
