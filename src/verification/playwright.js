@@ -122,6 +122,7 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
    try{
     const response=await page.goto(new URL(p,baseUrl).toString(),{waitUntil:'networkidle',timeout:15000});
     status=response?.status()||0;
+    if(p==='/'){const primaryCta=page.locator('[data-primary-cta]').first();if(await primaryCta.count()){const box=await primaryCta.boundingBox();interactions.ctaAboveFoldDetails=box?{y:box.y,height:box.height,viewportHeight:viewport.height}:null;interactions.ctaAboveFoldVerified=Boolean(box&&box.y>=0&&box.y+box.height<=viewport.height)}}
     const links=await page.locator('a[href]').evaluateAll(els=>els.map(e=>e.getAttribute('href')).filter(Boolean).filter(x=>x.startsWith('/')));
     for(const link of links){const linkedResponse=await fetch(new URL(link,baseUrl));const optionalIntegration=/^\/auth\/google(?:\?|$)/.test(link)&&linkedResponse.status===503;if(!(linkedResponse.status>=200&&linkedResponse.status<400)&&!optionalIntegration)requestFailures.push({url:linkedResponse.url,failure:`internal link ${linkedResponse.status}`});}
     ui=await page.evaluate(()=>{const images=[...document.images],buttons=[...document.querySelectorAll('button,input[type="button"],input[type="submit"]')],links=[...document.querySelectorAll('a[href]')],rect=document.documentElement.getBoundingClientRect(),text=document.body?.innerText||'';return{title:document.title||'',lang:document.documentElement.lang||'',viewport:!!document.querySelector('meta[name="viewport"]'),main:!!document.querySelector('main'),nav:!!document.querySelector('nav'),h1:document.querySelectorAll('h1').length,imagesWithoutAlt:images.filter(x=>!x.getAttribute('alt')).length,controlsWithoutName:buttons.filter(x=>!(x.getAttribute('aria-label')||x.textContent?.trim()||x.getAttribute('title'))).length,linksWithoutName:links.filter(x=>!(x.getAttribute('aria-label')||x.textContent?.trim()||x.getAttribute('title'))).length,interactiveAriaHidden:[...document.querySelectorAll('button,a[href],input,select,textarea')].filter(x=>x.getAttribute('aria-hidden')==='true').length,documentWidth:rect.width,bodyScrollWidth:document.body?.scrollWidth||rect.width,bodyTextLength:text.length,forms:document.querySelectorAll('form').length};});
@@ -165,8 +166,6 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
       if(baselineDir){const base=baselinePath(baselineDir,p),diff=`${artifactDir}/${visualArtifactName(p,'diff')}`;visual=await comparePng(screenshot,base,diff,{visualThreshold,pixelThreshold});}
     }
     if(p==='/'){
-      const primaryCta=page.locator('[data-primary-cta]').first();
-      if(await primaryCta.count()){const box=await primaryCta.boundingBox();interactions.ctaAboveFoldVerified=Boolean(box&&box.y>=0&&box.y+box.height<=viewport.height)}
       const consent=page.locator('[data-cookie-consent]');
       if(await consent.count()){
         const initiallyVisible=await consent.isVisible();
