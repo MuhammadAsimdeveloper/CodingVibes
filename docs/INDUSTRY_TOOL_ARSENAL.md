@@ -326,3 +326,7 @@ The existing Build Vibe Tool Fabric implements `pdf.info`, `pdf.merge`, `pdf.spl
 ## P1 cron inspection — 2026-10-10
 
 `dev.cron.inspect` is implemented through the canonical developer executor. It parses a documented five-field subset, returns up to five upcoming UTC runs within 366 days, and rejects unsupported dialect extensions. It is not a general-purpose scheduler or job runner.
+
+## P1 password generator — 2026-10-10
+
+The canonical Tool Fabric now includes `security.password.generate`, using Node cryptographic randomness, explicit class/length policy, ambiguous-character exclusion by default and no persistence/network use. This does not imply that PII redaction, certificate inspection or every listed security utility is complete.
