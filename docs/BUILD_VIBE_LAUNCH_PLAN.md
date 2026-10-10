@@ -1133,3 +1133,6 @@ Still open: a dedicated analytics/contact settings UI, full platform-specific ic
 Implemented: the builder has address and Google Analytics ID fields, validates the measurement ID, persists values per project in browser storage, and adds explicit owner data to the generation brief. Address rendering is HTML-escaped; missing required business addresses block production verification. The generated-site browser gate covers consent-gated analytics and the core contact/confirmation flow. Full CI passed at `06d2a6fcd03d6e37a8793f260738f5383b152a94`.
 
 Remaining: complete platform-specific icon sizes, automatic raster image optimization during export, broader mobile/tablet/accessibility budgets, and production provider credentials/monitoring/recovery.
+
+
+Follow-up: address and analytics settings now persist per project in browser localStorage and are restored when projects are switched or the builder is reloaded. The build request is composed from the base prompt plus explicitly supplied settings; the visible prompt log avoids echoing those settings.
