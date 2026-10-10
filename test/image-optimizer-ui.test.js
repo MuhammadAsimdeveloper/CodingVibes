@@ -91,7 +91,7 @@ test('Studio includes an accessible, local-only image optimizer and uses the can
   assert.match(studio,/URL\.revokeObjectURL\(/);
   assert.match(studio,/saveOptimizedImageToProject\(/);
   assert.match(studio,/contentBase64/);
-  assert.match(studio,/api\/runs\/\/.+\/assets/);
+  assert.ok(studio.includes("'/api/runs/'+encodeURIComponent(runId)+'/assets'"));
 });
 
 test('browser image optimizer rejects empty and over-25-MiB files before decoding', async () => {
