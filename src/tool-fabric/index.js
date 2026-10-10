@@ -497,6 +497,7 @@ export async function runTool(id, input = {}) {
       case 'pdf.split':
       case 'pdf.rotate':
       case 'pdf.reorder': output=await runPdfTool(contract.id,input);break;
+      case 'image.to_pdf': output=await runPdfTool(contract.id,input);break;
       default: return fail('NOT_CONFIGURED',contract.id,'No executor is configured for this contract.');
     }
     return done(contract.id,output,warnings);
