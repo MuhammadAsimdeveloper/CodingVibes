@@ -1032,3 +1032,8 @@ Every new builder feature must update compatible templates and be regression-tes
 The deterministic web generator already emits `public/favicon.svg` and links it from generated pages; the icon accent now uses the non-purple blue palette. The generated Privacy Policy now describes the default contact-form data fields, local `.data/records.json` storage, session cookies, default absence of third-party analytics, retention/deletion responsibilities, and contact route. Terms now cover acceptable use, account and user-content responsibilities, demo/payment boundaries, availability, liability subject to mandatory law, applicable law, and contact. The product-quality audit blocks missing/unlinked favicon assets and placeholder or incomplete legal pages.
 
 These generated policies describe the default starter behavior and must be reviewed if the site owner enables analytics, payment, email, or other external providers. They are not jurisdiction-specific legal advice. The release process must still verify the actual deployment settings and the operator's legal requirements.
+
+
+## 27. Independent generated-product branding
+
+Generated websites no longer include the `Built with Build Vibe` footer attribution. Their favicon uses the generated product's own initial, Open Graph artwork uses the product title and description rather than Build Vibe marketing copy, and the PWA short name derives from the product brand. The quality audit blocks unwanted builder attribution. This keeps user products visually independent instead of making all outputs look like the builder itself.
