@@ -1086,3 +1086,15 @@ The existing Tool Fabric now defines four bounded local PDF tools: `pdf.info`, `
 
 **Remaining data-conversion work:** JSON↔CSV and JSON→YAML are now present; XML formatting/validation, YAML input parsing and SQL/HTML/CSS/JS format/minify utilities remain separate backlog items.
 
+## 55. TDD checkpoint — strict Unix/ISO timestamp conversion (2026-10-10)
+
+**Roadmap phase:** P1 local developer/data utilities, extending the canonical developer executor.
+
+- Added failing tests first for the missing `dev.timestamp.convert` contract, then implemented four explicit modes: ISO instant to Unix seconds/milliseconds and Unix seconds/milliseconds to ISO instant.
+- ISO input requires a full date/time plus `Z` or numeric `±HH:MM` offset. Calendar day, month, leap-year, hour, minute, second and offset ranges are validated before conversion. Ambiguous local times, malformed dates, unsupported modes and out-of-range timestamps fail with `INVALID_INPUT`.
+- Unix seconds accept finite values to millisecond precision; Unix milliseconds require safe integer input. Output includes normalized ISO text and both Unix units. No network or external dependency is used.
+- Added the contract to the canonical catalog, updated developer-tool expectations and catalog assertions from 53 to 54, and retained syntax verification for the developer module.
+- **Verification: PASS on implementation head `1ed389b1764654d1a13ccb0638180a5d297e4684`.** Build Vibe CI [38044201555](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044201555), CodeQL [38044201548](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044201548) and Dependency Review [38044201564](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38044201564) passed on that head. Documentation changes require fresh checks.
+
+**Next P1 developer utility:** implement a bounded cron-expression inspector with a deliberately documented supported syntax, rather than pretending to support every scheduler dialect.
+
