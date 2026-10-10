@@ -12,6 +12,20 @@ test('motion-first design system exposes reusable Figma-style motion tokens',()=
   assert.equal(ds.motion.accessibility.reducedMotion,true);
 });
 
+test('default palettes and interactions avoid purple accents, magnetic hover and pill buttons',()=>{
+  for(const style of ['futuristic','bold','modern']){
+    const system=inferDesignSystem('Build a polished professional website',{style,animation:true});
+    assert.notEqual(system.palette.accent.toLowerCase(),'#8d7dff');
+    assert.notEqual(system.palette.accent.toLowerCase(),'#6d5cff');
+    assert.equal(system.effects.magneticHover,false);
+    assert.equal(system.effects.cursorGlow,false);
+    assert.equal(system.effects.parallax,false);
+    assert.ok(parseFloat(system.radius)<=12);
+    assert.equal(system.motion.hover,'lift');
+    assert.equal(system.motion.scroll,'reveal');
+  }
+});
+
 test('template motion recipes are explicit and progressive',async()=>{
   const fs=await import('../src/agent/experience-recipes.js');
   const recipes=fs.listExperienceRecipes();
