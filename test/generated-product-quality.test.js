@@ -35,6 +35,9 @@ test('generated products include a real favicon and substantive privacy and term
   const spec=completeSpec(analyzeRequirements('Build a professional business website with contact form'));
   const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
   assert.ok(files.has('public/favicon.svg'));
+  assert.doesNotMatch(files.get('public/index.html'),/Built with Build Vibe|Made with AI/i);
+  assert.doesNotMatch(files.get('public/og-default.svg'),/BUILD VIBE|AI-generated websites and products/i);
+  assert.doesNotMatch(files.get('public/manifest.webmanifest'),/Build Vibe/i);
   assert.match(files.get('public/index.html'),/<link rel="icon" href="\/favicon\.svg">/);
   const privacy=files.get('public/privacy.html')||'';
   const terms=files.get('public/terms.html')||'';
