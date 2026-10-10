@@ -15,7 +15,7 @@ function schemaTypes(value){const out=[];const walk=x=>{if(!x||typeof x!=='objec
 function sitemapUrls(root){const file=path.join(root,'sitemap.xml');if(!fs.existsSync(file))return {exists:false,urls:[],raw:''};const raw=fs.readFileSync(file,'utf8');return {exists:true,urls:all(raw,/<loc>([\s\S]*?)<\/loc>/gi).map(x=>x.trim()),raw};}
 
 export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
-  const files=htmlFiles(root),issues=[],warnings=[],pages=[];
+  const files=htmlFiles(root),issues=[],warnings=[],pages=[],pageSources=new Map();
   const base=String(baseUrl||'__SITE_URL__').replace(/\/$/,'');
   if(!files.length)issues.push('No HTML pages found');
 
@@ -33,7 +33,7 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
     const images=html.match(/<img\b[^>]*>/gi)||[],missingAlt=images.filter(tag=>!/\balt=["'][^"']*["']/i.test(tag)).length;
     const h1s=count(html,/<h1\b/gi),lang=/<html[^>]+lang=["'][^"']+["']/i.test(html),viewport=/<meta[^>]+name=["']viewport["']/i.test(html),main=/<main\b/i.test(html),keywords=/<meta[^>]+name=["']keywords["']/i.test(html),themeColor=/<meta[^>]+name=["']theme-color["']/i.test(html),manifest=/<link[^>]+rel=["']manifest["']/i.test(html),author=/<meta[^>]+name=["']author["']/i.test(html);
     const page={file:name,route,private:isPrivate,title:!!title,description:!!description,canonical:!!canonical,robots:!!robots,og:Object.values(og).every(Boolean),twitter:Object.values(twitter).every(Boolean),jsonLd:jsonLd.length>0&&jsonLd.every(x=>!x.__invalidJsonLd),schemaTypes:types,h1Count:h1s,internalLinks:internalLinks.length,images:images.length,missingAlt,lang,viewport,main,themeColor,manifest,author};
-    pages.push(page);
+    pages.push(page);pageSources.set(route,file);
 
     if(isPrivate){
       if(!/noindex/i.test(robots))issues.push(name+': private page is not noindex');
@@ -60,7 +60,7 @@ export function auditDiscoverability(root,{baseUrl='__SITE_URL__'}={}){
     if(missingAlt)issues.push(name+': '+missingAlt+' image(s) missing alt text');
   }
 
-  const publicPages=pages.filter(p=>!p.private),titles=publicPages.map(p=>p.title?first(fs.readFileSync(path.join(root,p.file),'utf8'),/<title[^>]*>([^<]+)<\/title>/i):p.file),descriptions=publicPages.map(p=>p.description?first(fs.readFileSync(path.join(root,p.file),'utf8'),/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i):p.file);
+  const publicPages=pages.filter(p=>!p.private),titles=publicPages.map(p=>p.title?first(fs.readFileSync(pageSources.get(p.route),'utf8'),/<title[^>]*>([^<]+)<\/title>/i):p.file),descriptions=publicPages.map(p=>p.description?first(fs.readFileSync(pageSources.get(p.route),'utf8'),/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i):p.file);
   if(new Set(titles).size!==titles.length)issues.push('Duplicate public page titles detected');
   if(new Set(descriptions).size!==descriptions.length)issues.push('Duplicate public meta descriptions detected');
 
