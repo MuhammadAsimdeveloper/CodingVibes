@@ -1061,3 +1061,16 @@ The existing Tool Fabric now defines four bounded local PDF tools: `pdf.info`, `
 
 **Next P1 data-conversion gap:** add CSV-to-JSON as a separate contract with explicit header/duplicate-header, quoting and size policies; do not silently infer it from the reverse conversion.
 
+## 53. TDD checkpoint — bounded CSV-to-JSON conversion (2026-10-10)
+
+**Roadmap phase:** P1 local data-conversion utilities, completing the reverse direction for the existing JSON-to-CSV capability.
+
+- Added regression tests first. The test-only head failed because the canonical `data.csv.json` contract was missing; the implementation then added a strict parser to `src/tool-fabric/data.js`, contract metadata and canonical `runTool()` routing.
+- Supports BOM-prefixed input, LF/CRLF records, quoted commas, doubled quote escapes, quoted newlines, empty trailing cells and multiline values. It returns string-valued records, header order, row count and compact JSON output; it does not guess numeric/date/boolean types.
+- Rejects unclosed or malformed quotes, characters after a closing quote, lone CR separators, duplicate/empty/prototype-sensitive headers, inconsistent row widths, unknown options and over-budget data.
+- Limits: 500 KB input, 10,000 data rows, 200 columns, 100 KB per cell and 1 MB serialized JSON output. No network or external parser dependency is used.
+- Updated catalog assertions from 51 to 52 and kept the parser covered by the existing local data-conversion test file.
+- **Verification: PASS on implementation head `50fa03a4eaff357e95b4194b91f223f1ff7d3025`.** Build Vibe CI [38043506862](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043506862), CodeQL [38043506799](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043506799) and Dependency Review [38043506807](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38043506807) passed. The documentation-inclusive head needs its own fresh checks before merge.
+
+**Next P1 data conversion:** review JSON-to-YAML / XML formatting or another distinct utility against the roadmap. Do not broaden this parser by guessing schemas or coercing CSV text values.
+
