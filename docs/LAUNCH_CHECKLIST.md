@@ -144,3 +144,6 @@ Still open: real contact details from site owners, customer analytics setup with
 - [x] Add optional Google Analytics ID input with validation, consent-gated script loading, and revocation handling.
 - [x] Verify missing business address and unverified configured analytics as production quality-gate blockers.
 - [ ] Complete platform-specific icon sizes and generated raster image optimization.
+
+
+- [x] Persist business address and Google Analytics ID per project in the builder browser and restore them on reload/project switch.
