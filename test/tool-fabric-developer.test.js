@@ -207,3 +207,48 @@ test('dev.cron.inspect reports valid schedules with no match inside its bounded 
   assert.ok(result.warnings.some(message=>/no occurrence/i.test(message)));
 });
 
+test('security.password.generate creates a cryptographically random password satisfying selected character classes',async()=>{
+  const contract=getToolContract('security.password.generate');
+  assert.ok(contract);
+  assert.equal(contract.executionMode,'local');
+  assert.equal(contract.networkRequired,false);
+  const result=await runTool('security.password.generate',{length:32});
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.password.length,32);
+  assert.ok(/[a-z]/.test(result.output.password));
+  assert.ok(/[A-Z]/.test(result.output.password));
+  assert.ok(/[0-9]/.test(result.output.password));
+  assert.ok(/[!@#$%^&*()\-_=+\[\]{}:,.?]/.test(result.output.password));
+  assert.equal(result.output.cryptographicallySecure,true);
+  assert.equal(result.output.length,32);
+  assert.equal(result.networkUsed,false);
+});
+
+test('security.password.generate supports a restricted character policy and excludes ambiguous characters by default',async()=>{
+  const result=await runTool('security.password.generate',{
+    length:24,lowercase:true,uppercase:false,digits:true,symbols:false
+  });
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.password.length,24);
+  assert.match(result.output.password,/^[a-z2-9]+$/);
+  assert.ok(!/[ilo01]/i.test(result.output.password));
+  assert.deepEqual(result.output.selectedClasses,['lowercase','digits']);
+  assert.equal(result.networkUsed,false);
+});
+
+test('security.password.generate rejects weak lengths, invalid options and an empty character policy',async()=>{
+  for(const input of [
+    {},
+    {length:11},
+    {length:129},
+    {length:12.5},
+    {length:20,lowercase:false,uppercase:false,digits:false,symbols:false},
+    {length:20,lowercase:'yes'},
+    {length:20,unknownOption:true}
+  ]){
+    const result=await runTool('security.password.generate',input);
+    assert.notEqual(result.status,'COMPLETED',JSON.stringify(input));
+    assert.equal(result.networkUsed,false);
+  }
+});
+
