@@ -188,9 +188,12 @@ test('customer analytics is optional and its script loads only after explicit an
   const localStorage={getItem:key=>values.get(key)||null};
   vm.runInNewContext(source,{window,document,localStorage,JSON,Boolean,String,Date,encodeURIComponent});
   assert.equal(scripts.length,0,'analytics script must not load without consent');
+  assert.equal(window['ga-disable-G-ABCDEF1234'],true,'collection must start disabled');
   listeners['buildvibe:consentchange']({detail:{analytics:true}});
+  assert.equal(window['ga-disable-G-ABCDEF1234'],false,'explicit consent enables collection');
   assert.equal(scripts.length,1,'analytics script loads after consent');
   assert.match(scripts[0].src,/googletagmanager\.com\/gtag\/js\?id=G-ABCDEF1234/);
   listeners['buildvibe:consentchange']({detail:{analytics:false}});
+  assert.equal(window['ga-disable-G-ABCDEF1234'],true,'revocation disables collection');
   assert.ok(window.dataLayer.some(entry=>entry[0]==='consent'&&entry[1]==='update'&&entry[2]?.analytics_storage==='denied'),'revocation must update consent to denied');
 });
