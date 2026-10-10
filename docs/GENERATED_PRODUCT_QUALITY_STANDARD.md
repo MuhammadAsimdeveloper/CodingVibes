@@ -43,3 +43,8 @@ Every new feature or upstream design-system refresh must be applied consistently
 5. Mobile or web application interface.
 
 The change is not complete until those outputs preserve user edits, pass quality checks, and have regression coverage.
+
+
+## Launch essentials enforced by the audit
+
+Generated web products must link a real favicon asset, include a Privacy Policy describing default form storage, retention, cookies, third-party analytics and deletion requests, and include Terms covering acceptable use, user content, liability and applicable law. Placeholder legal copy is a release blocker. The generated text documents default starter behavior; owner-configured integrations and local legal requirements require review before publication.
