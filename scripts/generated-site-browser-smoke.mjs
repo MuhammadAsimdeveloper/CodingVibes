@@ -45,6 +45,11 @@ try {
   });
   assert.equal(browser.available,true,'Playwright must be available for this browser gate');
   assert.equal(browser.passed,true,'generated website browser smoke should pass: '+JSON.stringify(browser.results.map(item=>({path:item.path,ok:item.ok,error:item.error,consoleErrors:item.consoleErrors,uiFailures:item.uiFailures}))));
+  for(const pageResult of browser.results){
+    const responsive=pageResult.responsive||[];
+    assert.deepEqual(responsive.map(item=>item.viewportWidth),[375,768,1440],'mobile, tablet and desktop viewport evidence should be collected for '+pageResult.path+': '+JSON.stringify(responsive));
+    assert.ok(responsive.every(item=>item.ok),'horizontal overflow must be absent across viewports for '+pageResult.path+': '+JSON.stringify(responsive));
+  }
   const home=browser.results.find(item=>item.path==='/')?.interactions||{};
   const contact=browser.results.find(item=>item.path==='/contact')?.interactions||{};
   assert.equal(home.ctaAboveFoldVerified,true,'primary CTA should be visible above the fold: '+JSON.stringify(home.ctaAboveFoldDetails));
