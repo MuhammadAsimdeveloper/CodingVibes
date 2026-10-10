@@ -78,5 +78,6 @@ test('generated websites ship an accessible, persistent, opt-in cookie preferenc
   assert.match(consent,/marketing:Boolean\(marketing\)/);
   assert.match(css,/\.cookie-consent/);
   assert.match(css,/@media\(max-width:640px\)/);
+  assert.match(css,/\.cookie-consent \[data-cookie-accept\],\.cookie-consent \[data-cookie-reject\]/,'accept and reject controls must have equal visual prominence');
   assert.match(pkg.scripts.check,/node --check public\/cookie-consent\.js/);
 });
