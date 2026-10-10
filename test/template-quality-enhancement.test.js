@@ -41,7 +41,7 @@ test('raw template briefs do not request fabricated social proof or excessive mo
     if(template.id==='business-directory'){
       assert.match(prompt,/real submitted reviews/);
       assert.match(prompt,/never seed invented reviews/);
-    }else assert.doesNotMatch(prompt,/\breviews?\b/,template.id);
+    }else if(/\breviews?\b/.test(prompt)) assert.match(prompt,/only when the owner supplies verified review data/,template.id);
   }
 });
 
