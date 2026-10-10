@@ -187,3 +187,8 @@ Generated websites now include a custom 404 route, a web app manifest, a consent
 ### Production verification gate
 
 The generated-site 20-point quality report is included in web product-quality evidence. HTTP smoke checks unknown-route 404 behavior, and Playwright smoke exercises contact-form recovery, cookie preferences, mobile CTA dismissal, and thank-you redirects. Critical report gaps block verification in production or when `CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true`; development remains informational by default. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md).
+
+
+### Analytics and business contact details
+
+Customer-site Google Analytics is optional and requires an owner-supplied measurement ID. It is loaded only after analytics consent and disabled when consent is withdrawn. Business sites must provide a real contact address explicitly; Build Vibe does not invent addresses, and missing required addresses block production verification. The generated-site browser gate covers these flows. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md).
