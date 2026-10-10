@@ -10,7 +10,9 @@ const BASE_FEATURES=[
   'SEO metadata and canonical URL',
   'local assets/runtime',
   'local content/data editing',
-  'owner admin surface'
+  'owner admin surface',
+  'favicon and substantive privacy/terms pages',
+  'truthful, evidence-backed customer proof'
 ];
 
 function walk(root,out=[]){
@@ -63,7 +65,7 @@ function defaultSurfaces(kind='business',behavior={}){
 export function buildQualityContract(spec={}){
   const kind=String(spec.siteKind||spec.contentModel?.kit||'business');
   const behavior=spec.behavior||{};
-  const designGuidance=getDesignGuidance({productType:kind,style:spec.styling?.visual?.style||spec.style||'modern',stack:spec.target?.id||'web-node',intent:spec.request||''});
+  const designGuidance=getDesignGuidance({productType:spec.experience?.threeD?'3d-showcase':kind,style:spec.styling?.visual?.style||spec.style||'modern',stack:spec.experience?.threeD?'3d-web':(spec.target?.id||'web-node'),intent:spec.request||''});
   const requiredSurfaces=unique([...(Array.isArray(spec.pages)?spec.pages:[]),...defaultSurfaces(kind,behavior)]);
   const requiredFeatures=[...BASE_FEATURES];
   if(behavior.search)requiredFeatures.push('search and filtering');
