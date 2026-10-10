@@ -95,3 +95,9 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 - Added `dev.timestamp.convert` as a canonical local contract/executor with explicit ISO-to-Unix and Unix-to-ISO modes.
 - ISO inputs require a full date/time and explicit UTC offset; impossible dates, invalid times, malformed offsets and out-of-range values fail explicitly.
 - Unix seconds allow millisecond precision; Unix milliseconds require safe integers. Tests cover conversion and invalid inputs without network use.
+
+## Cron inspection — 2026-10-10
+
+- Added `dev.cron.inspect` as a local canonical tool for the five-field numeric cron subset.
+- Validates ranges/lists/steps, evaluates next occurrences in UTC, caps search at 366 days and documents day-of-month/day-of-week OR semantics.
+- Rejects named fields, aliases and unsupported dialect syntax; it inspects schedules but does not run jobs or make network calls.
