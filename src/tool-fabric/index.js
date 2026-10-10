@@ -14,7 +14,7 @@ function fail(status, tool, error, output) {
   return result;
 }
 function done(tool, output, warnings = []) {
-  return {ok:true,status:'COMPLETED',tool,version:1,output,warnings,provenance:{execution:'local',networkUsed:false}};
+  return {ok:true,status:'COMPLETED',tool,version:1,output,warnings,networkUsed:false,provenance:{execution:'local',networkUsed:false}};
 }
 function esc(value) {
   return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
