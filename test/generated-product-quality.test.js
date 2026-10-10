@@ -169,3 +169,28 @@ test('generated customer pages provide a dismissible mobile-only primary contact
   assert.match(css,/\.sticky-mobile-cta/);
   assert.match(css,/@media\(max-width:640px\)[\s\S]*\.sticky-mobile-cta/);
 });
+
+test('customer analytics is optional and its script loads only after explicit analytics consent',()=>{
+  const base=analyzeRequirements('Build a professional local service website with a contact form');
+  const unconfigured=new Map(generateProject(completeSpec(base)).files.map(file=>[file.path,file.content]));
+  assert.match(unconfigured.get('public/analytics-consent.js'),/const config=null/);
+  const spec=completeSpec({...base,analytics:{provider:'google-analytics',measurementId:'G-ABCDEF1234'}});
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  const source=files.get('public/analytics-consent.js');
+  assert.match(source,/G-ABCDEF1234/);
+  assert.match(source,/buildvibe:consentchange/);
+  assert.match(source,/googletagmanager\.com\/gtag\/js/);
+  assert.match(files.get('public/index.html'),/analytics-consent\.js/);
+  assert.doesNotMatch(files.get('public/index.html'),/googletagmanager\.com/);
+  const listeners={},scripts=[],values=new Map([['build-vibe-cookie-preferences-v1',JSON.stringify({version:1,essential:true,analytics:false,marketing:false})]]);
+  const window={};
+  const document={addEventListener:(type,handler)=>{listeners[type]=handler;},createElement:()=>({}),head:{appendChild:script=>scripts.push(script)}};
+  const localStorage={getItem:key=>values.get(key)||null};
+  vm.runInNewContext(source,{window,document,localStorage,JSON,Boolean,String,Date,encodeURIComponent});
+  assert.equal(scripts.length,0,'analytics script must not load without consent');
+  listeners['buildvibe:consentchange']({detail:{analytics:true}});
+  assert.equal(scripts.length,1,'analytics script loads after consent');
+  assert.match(scripts[0].src,/googletagmanager\.com\/gtag\/js\?id=G-ABCDEF1234/);
+  listeners['buildvibe:consentchange']({detail:{analytics:false}});
+  assert.ok(window.dataLayer.some(entry=>entry[0]==='consent'&&entry[1]==='update'&&entry[2]?.analytics_storage==='denied'),'revocation must update consent to denied');
+});
