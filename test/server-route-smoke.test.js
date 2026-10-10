@@ -137,7 +137,7 @@ test('server public and authenticated route smoke covers launch control plane',a
   ];
   for(const p of projectPaths){
     const r=await req(p,{headers:{cookie:sessionCookie}});
-    assert.ok(r.response.status<500,p+' status '+r.response.status);
+    assert.ok(r.response.status<500,p+' status '+r.response.status+' body '+JSON.stringify(r.body));
   }
 
   const blueprint=await req('/api/builder/blueprint',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({request:'Build a responsive landing page for a small SaaS product with SEO metadata.'})});
