@@ -283,3 +283,7 @@ Do not:
 ## Definition of done
 
 A new tool is complete only when its contract, implementation, tests, security policy, UX, documentation, privacy mode and verification state exist.
+
+## P1 PDF implementation status — 2026-10-10
+
+The canonical Tool Fabric now implements five bounded local PDF operations on PR #59: metadata inspection (`pdf.info`), merge (`pdf.merge`), page extraction into separate documents (`pdf.split`), right-angle rotation (`pdf.rotate`) and full page reordering (`pdf.reorder`). The implementation uses `pdf-lib`, real fixture PDFs, canonical Base64/signature validation, explicit source/output/page/document bounds and no network calls. Compression, PDF-to-image rendering, image-to-PDF conversion, text extraction, OCR, redaction and decryption are intentionally separate future work and must not be inferred from these page operations. See `docs/PDF_TOOLS.md` and `docs/TOOL_FABRIC.md` for the verified contract and limits.

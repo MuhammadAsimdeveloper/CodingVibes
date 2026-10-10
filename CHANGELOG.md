@@ -13,6 +13,8 @@ All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
 
+- Added `pdf.reorder` as a bounded local Tool Fabric operation with complete one-based page-permutation validation, metadata preservation, real PDF fixture tests and no network side effects.
+
 - Added measured browser performance evidence (navigation/FCP/TTFB/resource sizes/LCP/CLS where available) and made incomplete performance audits report missing metrics instead of a full-pass result.
 
 - Added nine bounded local Tool Fabric text utilities with explicit contracts, regression tests and no network side effects.

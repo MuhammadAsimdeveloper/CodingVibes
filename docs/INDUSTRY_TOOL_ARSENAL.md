@@ -309,3 +309,8 @@ Inspired by the production browser-agent pattern, but implemented as our own pro
 Do not compete on raw tool count. Compete on **coverage × reliability × privacy × composability × agent accessibility**.
 
 A utility is admitted to the canonical catalog only when it has a distinct user job, contract, tests, security/privacy classification, documentation and verification state.
+
+
+## P1 PDF tool implementation status — 2026-10-10
+
+The existing Build Vibe Tool Fabric implements `pdf.info`, `pdf.merge`, `pdf.split`, `pdf.rotate` and `pdf.reorder` locally via the governed `pdf-lib` adapter on PR #59. The operations have real PDF fixtures and bounded input/output/page constraints. This does not mark compression, rendering, conversion, text extraction or OCR complete; each requires its own contract, limits, tests and security evidence. Keep canonical ownership in Build Vibe and expose capabilities to Aira only through tool contracts.

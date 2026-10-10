@@ -56,6 +56,11 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `security.checksum.verify` | local | Validates supplied digest encoding and compares fixed-size digests in constant time |
 | `dev.uuid.generate` | local | Cryptographically secure UUID v4 generation using Node crypto |
 | `dev.url.encode` | local | Explicit encode/decode URI and component modes; does not navigate or fetch URLs |
+| `pdf.info` | local | Bounded PDF metadata, page count, dimensions and rotations from supplied Base64; rejects malformed/encrypted PDFs |
+| `pdf.merge` | local | Merges 2–10 PDFs in order, capped at 1 MB combined input, 200 pages and 2 MB output |
+| `pdf.split` | local | Extracts selected one-based pages into separate one-page PDFs; bounded aggregate outputs |
+| `pdf.rotate` | local | Rotates all or selected pages by validated right-angle multiples |
+| `pdf.reorder` | local | Reorders all pages by a complete unique one-based permutation; preserves page-level rotation/dimensions and basic metadata |
 
 
 ## Local calculator, converter and date/time tools
@@ -151,3 +156,10 @@ CI runs `npm run browser:image-optimizer` after installing Playwright Chromium. 
 The Playwright browser smoke runner records real navigation timings, first-contentful paint, observed resource transfer sizes, JavaScript/image byte subtotals where resource timing is complete, render-blocking resource counts when the browser exposes them, Largest Contentful Paint and Cumulative Layout Shift when their observers return data. Cross-origin timing entries without readable size values are marked incomplete rather than treated as zero-byte resources.
 
 The runner deliberately does **not** label a navigation-only measurement as Interaction to Next Paint (INP). It records observed interaction duration for diagnostics, but INP remains missing unless a real interaction/Lighthouse measurement is supplied. The Tool Fabric threshold evaluator now returns `complete:false`, `missingMetrics` and a `metrics_incomplete` finding when metrics are absent instead of reporting a false full pass. Per-route browser verification includes the measured evidence and threshold assessment; this is not a Lighthouse score.
+
+
+## Bounded local PDF suite
+
+The canonical local PDF adapter lives in `src/tool-fabric/pdf.js` and is registered through the existing `contracts.js` and `runTool()` executor. The five implemented operations are `pdf.info`, `pdf.merge`, `pdf.split`, `pdf.rotate` and `pdf.reorder`. Inputs must be canonical Base64 with a PDF signature, each source is limited to 1 MB, merge inputs total no more than 1 MB, documents are limited to 200 pages, output to 2 MB, and merge accepts 2–10 documents. Malformed or encrypted files are rejected. Reorder accepts only a full permutation of every page exactly once, expressed as 1-based page numbers. Every operation is local-only and returns `networkUsed:false`.
+
+PDF compression, PDF-to-image rendering, image-to-PDF conversion, text extraction, OCR, redaction and decryption are not implemented by this suite. Do not mark these functions ready or route them to the current adapter until each has a bounded implementation, real fixtures, parser/rendering limits and security tests. High-volume processing of untrusted PDFs should move to a resource-isolated worker before production exposure.
