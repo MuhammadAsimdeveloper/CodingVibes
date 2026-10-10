@@ -1016,3 +1016,12 @@ Extended the existing Playwright browser smoke runner to collect measured naviga
 - **Verification: PASS on implementation revision `b65c87d61dab2abc873f8765084c2255240cdf1c`.** Build Vibe CI [37988776436](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776436) passed 314/314 tests, 0 failures and 0 skipped, along with coverage, syntax/release, SEO, server/browser E2E, load/recovery, deployment preflight, benchmark, MiroFish status, retention dry-run, security, scale-out doctor and launch readiness. CodeQL [37988776447](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776447) and Dependency Review [37988776485](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37988776485) passed on the same revision. A fresh run is required for the updated documentation head.
 
 **Launch boundary remains:** production runners/toolchains, provider/payment secrets, persistent backup/restore, TLS/DNS, monitoring and quota enforcement require real environment configuration and deployed evidence. Source CI does not provision these services.
+
+
+## 25. Generated product quality contract and UI/UX Pro Max adoption
+
+The generation pipeline now enforces a product-quality contract that blocks recognizable anti-patterns: fabricated customer proof, unwanted AI attribution, purple gradients, emoji interface icons, em dashes, pill-shaped buttons, cursor-following effects, excessive scroll motion, and vague marketing copy. The deterministic generator and shared motion runtime use shorter transitions, smaller reveal distances, and no pointer-following or looping decorative animations. Reduced-motion behavior remains required.
+
+Upstream UI/UX Pro Max was reviewed at repository HEAD `50d8a7de0900119855614541f15a1a616691eb33` on 2026-10-10. The upstream license is MIT. Its searchable design guidance is adopted as a controlled source, not a mutable runtime dependency. See `docs/UI_UX_PRO_MAX_ADOPTION.md` and `docs/GENERATED_PRODUCT_QUALITY_STANDARD.md` for pinned-source provenance, local overrides, and refresh gates.
+
+Every new builder feature must update compatible templates and be regression-tested across a simple site, professional site, animated site, 3D product showcase, and application interface. The quality audit is heuristic and does not replace visual review, claim verification, asset provenance, or legal review.
