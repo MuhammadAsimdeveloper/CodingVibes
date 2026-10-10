@@ -13,6 +13,8 @@ All notable Build Vibe changes are recorded here.
 
 ## [Unreleased]
 
+- Added `image.to_pdf`, a bounded local PNG/JPEG-to-PDF conversion tool with MIME/signature validation, dimension and byte limits, mixed-format fixture tests and no network side effects.
+
 - Added `pdf.reorder` as a bounded local Tool Fabric operation with complete one-based page-permutation validation, metadata preservation, real PDF fixture tests and no network side effects.
 
 - Added measured browser performance evidence (navigation/FCP/TTFB/resource sizes/LCP/CLS where available) and made incomplete performance audits report missing metrics instead of a full-pass result.
