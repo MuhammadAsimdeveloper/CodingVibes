@@ -169,3 +169,8 @@ Google OAuth is optional and activates only when `GOOGLE_CLIENT_ID`, `GOOGLE_CLI
 ## AI build handoff
 
 AI agents should begin with [`docs/AI_BUILD_START_HERE.md`](docs/AI_BUILD_START_HERE.md), then follow [`docs/BUILD_VIBE_LAUNCH_PLAN.md`](docs/BUILD_VIBE_LAUNCH_PLAN.md). The plan is the authoritative implementation roadmap.
+
+
+## Generated website launch quality gate
+
+The 2026-10-10 repository audit mapped the 20-point website launch checklist against current source evidence and identified items that still require implementation or generated-project verification. See [`docs/GENERATED_WEBSITE_QUALITY_GATE.md`](docs/GENERATED_WEBSITE_QUALITY_GATE.md) for the full status matrix, implementation order, and acceptance criteria. Do not equate source-level foundations with a verified production website.
