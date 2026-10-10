@@ -88,3 +88,14 @@ test('product-quality evidence includes the generated-site report for web target
     fs.rmSync(root,{recursive:true,force:true});
   }
 });
+
+test('customer analytics stays NEEDS_INPUT until browser delivery and consent evidence pass',()=>{
+  const files={
+    'public/index.html':goodHtml(),
+    'public/analytics-consent.js':'const config={"provider":"google-analytics","measurementId":"G-ABCDEF1234"};document.addEventListener("buildvibe:consentchange",()=>{});const mode="analytics_storage";'
+  };
+  const unverified=auditGeneratedSite({files,config:{analyticsEnabled:true,analyticsConsentAware:true,analyticsDeliveryVerified:false}});
+  assert.equal(unverified.requirements.find(item=>item.id==='analytics').status,'NEEDS_INPUT');
+  const verified=auditGeneratedSite({files,config:{analyticsEnabled:true,analyticsConsentAware:true,analyticsDeliveryVerified:true}});
+  assert.equal(verified.requirements.find(item=>item.id==='analytics').status,'PASS');
+});
