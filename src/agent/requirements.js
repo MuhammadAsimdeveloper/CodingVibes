@@ -20,8 +20,8 @@ export function completeSpec(raw={}){
  if(['ecommerce','marketplace'].includes(kind)){addPage('/shop');addPage('/collections');addPage('/cart');addPage('/checkout');addPage('/account');addApi('GET','/api/products');addApi('POST','/api/orders')};
  if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments');behavior.booking=true;}
  const requestText=String(spec.request||'');
- const addressJsonMatch=requestText.match(/(?:business|contact|office)?\s*address\s*(?:is|:)\s*("(?:\\.|[^"\\])*")/i);
- let addressFromJson; if(addressJsonMatch){try{addressFromJson=JSON.parse(addressJsonMatch[1]);}catch{}}
+ const addressJsonMatch=requestText.match(/(?:business|contact|office)?\s*address\s*(?:is|:)\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/i);
+ let addressFromJson; if(addressJsonMatch){try{const raw=addressJsonMatch[1];addressFromJson=raw.startsWith('"')?JSON.parse(raw):raw.slice(1,-1).replace(/\\'/g,"'").replace(/\\\\/g,"\\");}catch{}}
  const addressMatch=requestText.match(/(?:business|contact|office)?\s*address\s*(?:is|:)\s*([^.;\n]{8,120})/i);
  const rawContactAddress=String(spec.contactAddress||spec.businessAddress||spec.business?.address||addressFromJson||addressMatch?.[1]||'').trim();
  const contactAddress=/^(?:tbd|todo|n\/a|none|unknown|required|please provide|not provided|your address|placeholder)(?:\b|$)/i.test(rawContactAddress)?undefined:rawContactAddress||undefined;
