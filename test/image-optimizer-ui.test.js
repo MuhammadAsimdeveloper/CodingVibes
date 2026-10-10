@@ -78,17 +78,20 @@ test('browser image optimizer rejects unsupported encoders rather than mislabell
 });
 
 test('Studio includes an accessible, local-only image optimizer and uses the canonical browser adapter', () => {
-  for (const id of ['imageOptimizeFile','imageOptimizeFormat','imageOptimizeQuality','imageOptimizeMaxWidth','imageOptimizeButton','imageOptimizeStatus','imageOptimizePreview','imageOptimizeDownload']) {
+  for (const id of ['imageOptimizeFile','imageOptimizeFormat','imageOptimizeQuality','imageOptimizeMaxWidth','imageOptimizeButton','imageOptimizeStatus','imageOptimizePreview','imageOptimizeDownload','imageOptimizeSave','imageOptimizeSaveHint']) {
     assert.match(html,new RegExp('id="' + id + '"'));
   }
   assert.ok(html.includes('accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/bmp"'));
   assert.match(html,/aria-live="polite"/);
-  assert.match(html,/Processed in this browser; the selected file is never uploaded\./);
+  assert.match(html,/Only the optimized result is uploaded if you choose Save to project\./);
   assert.match(studio,/import \{optimizeImageInBrowser\} from '\.\/tool-fabric-browser\.js'/);
   assert.match(studio,/async function optimizeSelectedImage\(/);
   assert.match(studio,/optimizeImageInBrowser\(/);
   assert.match(studio,/URL\.createObjectURL\(/);
   assert.match(studio,/URL\.revokeObjectURL\(/);
+  assert.match(studio,/saveOptimizedImageToProject\(/);
+  assert.match(studio,/contentBase64/);
+  assert.match(studio,/api\/runs\/\/.+\/assets/);
 });
 
 test('browser image optimizer rejects empty and over-25-MiB files before decoding', async () => {
