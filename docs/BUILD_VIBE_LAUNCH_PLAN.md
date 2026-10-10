@@ -1117,3 +1117,12 @@ Implemented and CI-verified at `bcb4288036d0ac45b4a045e83531d406d99a85c6`:
 The 20-point report is now attached to web product-quality evidence. HTTP smoke verifies unknown-route 404, and Playwright smoke exercises primary CTA placement, cookie consent preferences, mobile sticky CTA dismissal, contact error/retry/loading, and successful thank-you redirect. The verification contract blocks critical report gaps in production (`NODE_ENV=production`) or when `CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true`; local development remains informational by default. Full CI passed at `962d5006ed239ff39476aeefe3d43cb05d4d51a9`.
 
 Remaining launch work includes owner-provided contact data, customer analytics configuration and tracking consent integration, platform-specific icon sets, automatic image optimization in generated exports, broader viewport/accessibility checks, and production infrastructure/credentials. Do not mark the platform launch-ready until these are closed and independently verified.
+
+
+## Owner data and analytics milestone (2026-10-10)
+
+- Implemented optional consent-aware Google Analytics using an explicit owner-provided measurement ID; browser smoke verifies load only after consent and collection disable/revocation.
+- Implemented safe rendering and explicit-brief extraction for business contact addresses. Missing/placeholder addresses become a critical production blocker for business sites.
+- Added end-to-end generated-site browser smoke coverage and report-level publishability assertions. Full CI passed at `ceac1d6c58af339880b5959f69a0e4d3d75547b8`.
+
+Still open: a dedicated analytics/contact settings UI, full platform-specific icon set, automatic image optimization for generated raster assets, expanded viewport/accessibility budgets, and production provider credentials/monitoring/recovery.
