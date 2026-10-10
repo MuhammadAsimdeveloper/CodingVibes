@@ -1,3 +1,4 @@
+import {getDesignGuidance} from './design-guidance.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -62,6 +63,7 @@ function defaultSurfaces(kind='business',behavior={}){
 export function buildQualityContract(spec={}){
   const kind=String(spec.siteKind||spec.contentModel?.kit||'business');
   const behavior=spec.behavior||{};
+  const designGuidance=getDesignGuidance({productType:kind,style:spec.styling?.visual?.style||spec.style||'modern',stack:spec.target?.id||'web-node',intent:spec.request||''});
   const requiredSurfaces=unique([...(Array.isArray(spec.pages)?spec.pages:[]),...defaultSurfaces(kind,behavior)]);
   const requiredFeatures=[...BASE_FEATURES];
   if(behavior.search)requiredFeatures.push('search and filtering');
@@ -84,6 +86,7 @@ export function buildQualityContract(spec={}){
     requiredSurfaces,
     requiredStates:BASE_STATES,
     requiredFeatures:unique(requiredFeatures),
+    designGuidance,
     hardRules:[
       'Core runtime does not require a remote script, stylesheet or external API',
       'Core interactions remain usable when optional effects or providers fail',
