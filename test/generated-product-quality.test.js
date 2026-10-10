@@ -239,8 +239,10 @@ test('generated website exports platform-specific PNG icons and links them corre
     assert.equal(icon.readUInt32BE(20),size);
   }
   const manifest=JSON.parse(byPath.get('public/manifest.webmanifest'));
-  assert.deepEqual(manifest.icons.map(icon=>icon.sizes),['192x192','512x512']);
-  assert.ok(manifest.icons.every(icon=>icon.type==='image/png'));
+  const pngIcons=manifest.icons.filter(icon=>icon.type==='image/png');
+  assert.deepEqual(pngIcons.map(icon=>icon.sizes),['192x192','512x512']);
+  assert.ok(pngIcons.every(icon=>icon.src.startsWith('/icon-')));
+  assert.ok(manifest.icons.some(icon=>icon.src==='/favicon.svg'&&icon.sizes==='any'));
   assert.match(byPath.get('public/index.html'),/rel="apple-touch-icon"[^>]+href="\/apple-touch-icon\.png"/);
   assert.match(byPath.get('public/index.html'),/rel="icon" type="image\/png" sizes="192x192" href="\/icon-192\.png"/);
 });
