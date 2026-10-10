@@ -7,7 +7,7 @@ This standard applies to every website, app, 3D product page, and animated exper
 - Never generate purple gradients as a default. Choose a product-specific palette and semantic color roles.
 - Never make pill-shaped buttons the default. Use compact, intentional control shapes with clear hierarchy and states.
 - Never fabricate reviews, testimonials, customer identities, company logos, ratings, customer counts, growth claims, or performance metrics. Customer proof is allowed only when the user supplies verifiable evidence. Otherwise omit it.
-- Never include unwanted “Made with AI” attribution in a published user product.
+- Never include unwanted “Made with AI” attribution or Build Vibe builder branding in a published user product.
 - Never use emoji as interface icons. Use a consistent icon set or accessible inline SVG.
 - Avoid em dashes and generic marketing filler. Describe real capabilities and user benefits in specific language.
 - Never ship cursor-following animations, pointer trails, or decorative cursor glow.
