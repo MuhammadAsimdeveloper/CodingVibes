@@ -96,6 +96,7 @@ test('customer analytics stays NEEDS_INPUT until browser delivery and consent ev
   };
   const unverified=auditGeneratedSite({files,config:{analyticsEnabled:true,analyticsConsentAware:true,analyticsDeliveryVerified:false}});
   assert.equal(unverified.requirements.find(item=>item.id==='analytics').status,'NEEDS_INPUT');
+  assert.equal(unverified.requirements.find(item=>item.id==='analytics').severity,'critical');
   const verified=auditGeneratedSite({files,config:{analyticsEnabled:true,analyticsConsentAware:true,analyticsDeliveryVerified:true}});
   assert.equal(verified.requirements.find(item=>item.id==='analytics').status,'PASS');
 });
