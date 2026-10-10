@@ -120,6 +120,43 @@ async function split(input) {
   return { documents, pageCount: selected.length, networkUsed: false };
 }
 
+function normalizePageOrder(pages, pageCount) {
+  if (!Array.isArray(pages) || pages.length !== pageCount ||
+      pages.some(n => !Number.isInteger(n) || n < 1 || n > pageCount) ||
+      new Set(pages).size !== pageCount) {
+    throw new PdfToolError('INVALID_INPUT', 'Page order must be a complete permutation of all one-based page numbers.');
+  }
+  return pages;
+}
+
+async function reorder(input) {
+  const source = await loadPdf(input.pdfBase64);
+  const pageOrder = normalizePageOrder(input.pages, source.getPageCount());
+  const output = await PDFDocument.create({ updateMetadata: false });
+  const pages = await output.copyPages(source, pageOrder.map(page => page - 1));
+  for (const page of pages) output.addPage(page);
+  for (const [getter, setter] of [
+    ['getTitle', 'setTitle'],
+    ['getAuthor', 'setAuthor'],
+    ['getSubject', 'setSubject'],
+    ['getCreator', 'setCreator'],
+    ['getProducer', 'setProducer']
+  ]) {
+    const value = source[getter]();
+    if (value) output[setter](value);
+  }
+  const creationDate = source.getCreationDate();
+  const modificationDate = source.getModificationDate();
+  if (creationDate instanceof Date && Number.isFinite(creationDate.getTime())) output.setCreationDate(creationDate);
+  if (modificationDate instanceof Date && Number.isFinite(modificationDate.getTime())) output.setModificationDate(modificationDate);
+  return {
+    pdfBase64: await encodePdf(output),
+    pageCount: pageOrder.length,
+    pageOrder: [...pageOrder],
+    networkUsed: false
+  };
+}
+
 async function rotate(input) {
   const source = await loadPdf(input.pdfBase64);
   const angle = input.angle;
@@ -143,6 +180,7 @@ export async function runPdfTool(id, input = {}) {
       case 'pdf.merge': output = await merge(input); break;
       case 'pdf.split': output = await split(input); break;
       case 'pdf.rotate': output = await rotate(input); break;
+      case 'pdf.reorder': output = await reorder(input); break;
       default: throw new PdfToolError('UNKNOWN_TOOL', 'Unknown PDF tool.');
     }
     return output;
