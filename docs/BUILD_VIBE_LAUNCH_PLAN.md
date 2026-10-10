@@ -1025,3 +1025,10 @@ The generation pipeline now enforces a product-quality contract that blocks reco
 Upstream UI/UX Pro Max was reviewed at repository HEAD `50d8a7de0900119855614541f15a1a616691eb33` on 2026-10-10. The upstream license is MIT. Its searchable design guidance is adopted as a controlled source, not a mutable runtime dependency. See `docs/UI_UX_PRO_MAX_ADOPTION.md` and `docs/GENERATED_PRODUCT_QUALITY_STANDARD.md` for pinned-source provenance, local overrides, and refresh gates.
 
 Every new builder feature must update compatible templates and be regression-tested across a simple site, professional site, animated site, 3D product showcase, and application interface. The quality audit is heuristic and does not replace visual review, claim verification, asset provenance, or legal review.
+
+
+## 26. Generated-site launch essentials: favicon and legal pages
+
+The deterministic web generator already emits `public/favicon.svg` and links it from generated pages; the icon accent now uses the non-purple blue palette. The generated Privacy Policy now describes the default contact-form data fields, local `.data/records.json` storage, session cookies, default absence of third-party analytics, retention/deletion responsibilities, and contact route. Terms now cover acceptable use, account and user-content responsibilities, demo/payment boundaries, availability, liability subject to mandatory law, applicable law, and contact. The product-quality audit blocks missing/unlinked favicon assets and placeholder or incomplete legal pages.
+
+These generated policies describe the default starter behavior and must be reviewed if the site owner enables analytics, payment, email, or other external providers. They are not jurisdiction-specific legal advice. The release process must still verify the actual deployment settings and the operator's legal requirements.
