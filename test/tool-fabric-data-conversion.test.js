@@ -32,7 +32,7 @@ test('data.json.csv prevents spreadsheet formula injection in string cells but p
     {unsafe:'=HYPERLINK("https://example.test","open")',alsoUnsafe:'  @SUM(A1:A2)',number:-12,plain:'safe'}
   ]});
   assert.equal(result.status,'COMPLETED');
-  assert.equal(result.output.csv,'unsafe,alsoUnsafe,number,plain\n\'=HYPERLINK(""https://example.test"",""open"") ,\'  @SUM(A1:A2),-12,safe'.replace('"" ,','"",'));
+  assert.equal(result.output.csv,'unsafe,alsoUnsafe,number,plain\\n"\\'=HYPERLINK(""https://example.test"",""open"")","\\'  @SUM(A1:A2)",-12,safe');
   assert.equal(result.output.sanitizedCellCount,2);
   assert.ok(result.warnings.some(message=>/spreadsheet formula/i.test(message)));
 });
