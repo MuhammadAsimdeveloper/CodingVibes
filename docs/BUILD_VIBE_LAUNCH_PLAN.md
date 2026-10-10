@@ -1095,3 +1095,18 @@ Completed and CI-verified: `src/verification/generated-site-quality.js` defines 
 `auditProductExperience()` now attaches the generated-site 20-point report under `generatedSiteQuality` for web targets. The report is therefore included in existing product-quality evidence and can be inspected alongside other verification findings. The standalone `npm run site:quality` CLI remains available. Full CI passed at `af6adf6ff6e480bcac351745b0a40a9e17068231`.
 
 The new report does not yet block the publish/deployment transaction. Next, define runtime evidence for unknown-route 404, form submission states, consent, and analytics; then connect critical statuses to the existing contract/publish gate with tests that prove both rejection and legitimate NOT_APPLICABLE cases.
+
+
+## Generated-site quality implementation status (2026-10-10)
+
+Implemented and CI-verified at `bcb4288036d0ac45b4a045e83531d406d99a85c6`:
+
+- Versioned 20-point generated-site audit engine and `npm run site:quality` CLI.
+- Audit report attached to web `auditProductExperience()` evidence.
+- Custom 404 artifact and correct HTTP 404 response for unknown routes.
+- Web app manifest on all generated web targets.
+- Cookie preference manager with accept/reject, optional categories, persistence, settings reopening, and consent-change event.
+- Dismissible sticky mobile CTA for relevant customer pages.
+- Contact form loading/error feedback and noindex thank-you route; only successful submissions redirect to confirmation.
+
+**Still not complete:** the new 20-point report does not yet block generation/publishing; the consent/form/CTA features need browser-level interaction coverage; full icon sizes, customer analytics installation, owner-supplied contact details, and image optimization remain open. See [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md) for the authoritative matrix. Do not mark the product launch-ready from these changes alone.
