@@ -90,7 +90,11 @@ export function buildQualityContract(spec={}){
       'Forms expose labels and actionable errors',
       'Images expose alternatives unless decorative',
       'Public pages expose semantic metadata',
-      'Responsive and reduced-motion behavior are explicit'
+      'Responsive and reduced-motion behavior are explicit',
+      'Never fabricate reviews, customer identities, ratings, logos or business metrics',
+      'Never use purple gradients, unwanted AI attribution, emoji icons or pill-shaped buttons',
+      'Never add cursor-following animations or excessive scroll-linked motion',
+      'Avoid vague marketing copy and em-dash punctuation'
     ]
   };
 }
@@ -134,6 +138,53 @@ function nativeEntrypointExists(target,names){
     'multiplatform-kmp':names.some(name=>name.endsWith('/commonmain/kotlin/app.kt'))
   };
   return checks[target]!==false;
+}
+
+function purpleHueFromHex(raw){
+  let hex=String(raw||'').replace(/^#/,'');
+  if(hex.length===3)hex=hex.split('').map(ch=>ch+ch).join('');
+  if(!/^[0-9a-f]{6}$/i.test(hex))return null;
+  const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255);
+  const max=Math.max(...rgb),min=Math.min(...rgb),delta=max-min;
+  if(delta===0)return{hue:0,saturation:0};
+  let hue;
+  if(max===rgb[0])hue=60*(((rgb[1]-rgb[2])/delta)%6);
+  else if(max===rgb[1])hue=60*((rgb[2]-rgb[0])/delta+2);
+  else hue=60*((rgb[0]-rgb[1])/delta+4);
+  if(hue<0)hue+=360;
+  const saturation=max===0?0:delta/max;
+  return{hue,saturation};
+}
+
+function hasPurpleGradient(source){
+  const text=String(source||'');
+  if(/\b(?:from|via|to)-(?:purple|violet|fuchsia)-\d{2,3}\b/i.test(text))return true;
+  const gradients=text.match(/(?:linear|radial|conic)-gradient\s*\([^)]{0,1000}\)/gi)||[];
+  return gradients.some(gradient=>{
+    if(/\b(?:purple|violet|fuchsia)\b/i.test(gradient))return true;
+    const colors=[...gradient.matchAll(/#([0-9a-f]{3}|[0-9a-f]{6})\b/gi)];
+    return colors.some(match=>{
+      const value=purpleHueFromHex(match[1]);
+      return Boolean(value&&value.hue>=250&&value.hue<=320&&value.saturation>=0.25);
+    });
+  });
+}
+
+function socialProofClaims(source){
+  const text=String(source||'');
+  const patterns=[
+    /\b(?:trusted by|loved by)\s+(?:over\s+)?[\d,.]+\s*(?:\+|k|m|thousand|million)?\s*(?:users|customers|teams|businesses|companies)\b/gi,
+    /\b[\d,.]+\s*(?:k|m|thousand|million)?\s*(?:happy customers|five[- ]star reviews|5[- ]star reviews)\b/gi,
+    /\b(?:fake|sample|placeholder|demo)\s+(?:customer\s+)?(?:review|testimonial|rating)s?\b/gi,
+    /\b(?:Jane Doe|John Smith)\b/gi
+  ];
+  const claims=[];
+  for(const pattern of patterns)for(const match of text.matchAll(pattern))claims.push(match[0]);
+  return unique(claims);
+}
+
+function hasEmojiIcon(html){
+  return /<(?:button|a)\b[^>]*>(?:(?!<\/(?:button|a)>)[\s\S]){0,240}?\p{Extended_Pictographic}[\s\S]{0,120}?<\/(?:button|a)>/iu.test(String(html||''));
 }
 
 export function auditProductExperience(workspace,spec={}){
@@ -195,6 +246,19 @@ export function auditProductExperience(workspace,spec={}){
     addCheck('app_navigation','application navigation shell',hasAny(source,['Home','Explore','Profile','Settings','Calendar','NavigationBar','TabView','nav']));
     addCheck('app_action_state','application action/state feedback',hasAny(source,['Get started','Saved locally','Saved','Loading','Error','empty']));
   }
+
+  const approvedClaims=new Set((Array.isArray(spec.verifiedSocialProof)?spec.verifiedSocialProof:[]).map(value=>String(value).trim().toLowerCase()));
+  const claims=socialProofClaims(html);
+  const unverifiedClaims=claims.filter(claim=>!approvedClaims.has(claim.toLowerCase()));
+  addCheck('unwanted_ai_attribution','no unwanted AI attribution',!(/made\s+with\s+(?:generative\s+)?ai/i.test(html)),true);
+  addCheck('purple_gradient','no purple gradients',!hasPurpleGradient(source),true);
+  addCheck('fabricated_social_proof','customer proof has evidence',unverifiedClaims.length===0,true,unverifiedClaims.slice(0,5).join('; '));
+  addCheck('emoji_ui_icon','no emoji used as interface icons',!hasEmojiIcon(html),true);
+  addCheck('em_dash_copy','copy avoids em dashes',!html.includes('\u2014'),true);
+  addCheck('pill_button_style','buttons are not forced into pill shapes',!(/<(?:button|Button)\b[^>]*(?:rounded-full|rounded-pill|pill-button)[^>]*>/i.test(source)||/button\s*\{[^}]*border-radius\s*:\s*(?:9999?px|50%)/i.test(source)),true);
+  addCheck('custom_cursor_animation','no cursor-following animation',!(/cursor[-_ ]?(?:follower|trail|glow)|customCursor|cursorFollower|--mx\s*:|--my\s*:|cursor\s*:\s*none\b/i.test(source)),true);
+  addCheck('excessive_scroll_motion','scroll motion is restrained',!(/ScrollTrigger|scroll-timeline|data-scroll-(?:speed|position)|camera-story|scroll\s*:\s*['"]story['"]|parallax\s*:\s*true/i.test(source)),true);
+  addCheck('vague_marketing_copy','copy is specific rather than vague',!(/revolutioniz(?:e|es|ing)|cutting.edge|world.class|seamless experience|next.level solution|game.changing/i.test(html)),true);
 
   const required=contract.requiredFeatures;
   if(required.includes('search and filtering'))addCheck('feature_search','search and filtering',hasAny(source,['search','filter']));
