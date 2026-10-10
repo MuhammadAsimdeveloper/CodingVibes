@@ -4,7 +4,7 @@ import {getToolContract,listToolContracts,runTool} from '../src/tool-fabric/inde
 
 const PDF_ALPHA='JVBERi0xLjMKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSCj4+CmVuZG9iagoyIDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMSAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjMgMCBvYmoKPDwKL0NvbnRlbnRzIDcgMCBSIC9NZWRpYUJveCBbIDAgMCA2MTIgNzkyIF0gL1BhcmVudCA2IDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago0IDAgb2JqCjw8Ci9QYWdlTW9kZSAvVXNlTm9uZSAvUGFnZXMgNiAwIFIgL1R5cGUgL0NhdGFsb2cKPj4KZW5kb2JqCjUgMCBvYmoKPDwKL0F1dGhvciAoQnVpbGQgVmliZSBGaXh0dXJlKSAvQ3JlYXRpb25EYXRlIChEOjIwMjYxMDA5MjA0OTM4KzAwJzAwJykgL0NyZWF0b3IgKGFub255bW91cykgL0tleXdvcmRzICgpIC9Nb2REYXRlIChEOjIwMjYxMDA5MjA0OTM4KzAwJzAwJykgL1Byb2R1Y2VyIChSZXBvcnRMYWIgUERGIExpYnJhcnkgLSBcKG9wZW5zb3VyY2VcKSkgCiAgL1N1YmplY3QgKFBERiB0b29sIHRlc3QgZml4dHVyZSkgL1RpdGxlIChGaXh0dXJlIEFscGhhKSAvVHJhcHBlZCAvRmFsc2UKPj4KZW5kb2JqCjYgMCBvYmoKPDwKL0NvdW50IDEgL0tpZHMgWyAzIDAgUiBdIC9UeXBlIC9QYWdlcwo+PgplbmRvYmoKNyAwIG9iago8PAovTGVuZ3RoIDExMgo+PgpzdHJlYW0KMSAwIDAgMSAwIDAgY20gIEJUIC9GMSAxMiBUZiAxNC40IFRMIEVUCkJUIC9GMSAxMiBUZiAxNC40IFRMIEVUCkJUIDEgMCAwIDEgNzIgNzIwIFRtIChGaXh0dXJlIEFscGhhKSBUaiBUKiBFVAogCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDgKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDYxIDAwMDAwIG4gCjAwMDAwMDAwOTIgMDAwMDAgbiAKMDAwMDAwMDE5OSAwMDAwMCBuIAowMDAwMDAwMzkyIDAwMDAwIG4gCjAwMDAwMDA0NjAgMDAwMDAgbiAKMDAwMDAwMDc0NSAwMDAwMCBuIAowMDAwMDAwODA0IDAwMDAwIG4gCnRyYWlsZXIKPDwKL0lEIApbPDNiYzc5Mjc4YTZiZWI0MjEzMTlkOTUwNGEzODAwNTM0PjwzYmM3OTI3OGE2YmViNDIxMzE5ZDk1MDRhMzgwMDUzND5dCiUgUmVwb3J0TGFiIGdlbmVyYXRlZCBQREYgZG9jdW1lbnQgLS0gZGlnZXN0IChvcGVuc291cmNlKQoKL0luZm8gNSAwIFIKL1Jvb3QgNCAwIFIKL1NpemUgOAo+PgpzdGFydHhyZWYKOTY2CiUlRU9GCg==';
 const PDF_BETA='JVBERi0xLjMKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSCj4+CmVuZG9iagoyIDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMSAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjMgMCBvYmoKPDwKL0NvbnRlbnRzIDggMCBSIC9NZWRpYUJveCBbIDAgMCA2MTIgNzkyIF0gL1BhcmVudCA3IDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago0IDAgb2JqCjw8Ci9Db250ZW50cyA5IDAgUiAvTWVkaWFCb3ggWyAwIDAgNjEyIDc5MiBdIC9QYXJlbnQgNyAwIFIgL1Jlc291cmNlcyA8PAovRm9udCAxIDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgL1RyYW5zIDw8Cgo+PiAKICAvVHlwZSAvUGFnZQo+PgplbmRvYmoKNSAwIG9iago8PAovUGFnZU1vZGUgL1VzZU5vbmUgL1BhZ2VzIDcgMCBSIC9UeXBlIC9DYXRhbG9nCj4+CmVuZG9iago2IDAgb2JqCjw8Ci9BdXRob3IgKEJ1aWxkIFZpYmUgRml4dHVyZSkgL0NyZWF0aW9uRGF0ZSAoRDoyMDI2MTAwOTIwNDkzOCswMCcwMCcpIC9DcmVhdG9yIChhbm9ueW1vdXMpIC9LZXl3b3JkcyAoKSAvTW9kRGF0ZSAoRDoyMDI2MTAwOTIwNDkzOCswMCcwMCcpIC9Qcm9kdWNlciAoUmVwb3J0TGFiIFBERiBMaWJyYXJ5IC0gXChvcGVuc291cmNlXCkpIAogIC9TdWJqZWN0IChQREYgdG9vbCB0ZXN0IGZpeHR1cmUpIC9UaXRsZSAoRml4dHVyZSBCZXRhKSAvVHJhcHBlZCAvRmFsc2UKPj4KZW5kb2JqCjcgMCBvYmoKPDwKL0NvdW50IDIgL0tpZHMgWyAzIDAgUiA0IDAgUiBdIC9UeXBlIC9QYWdlcwo+PgplbmRvYmoKOCAwIG9iago8PAovTGVuZ3RoIDExOAo+PgpzdHJlYW0KMSAwIDAgMSAwIDAgY20gIEJUIC9GMSAxMiBUZiAxNC40IFRMIEVUCkJUIC9GMSAxMiBUZiAxNC40IFRMIEVUCkJUIDEgMCAwIDEgNzIgNzIwIFRtIChGaXh0dXJlIEJldGEgUGFnZSAxKSBUaiBUKiBFVAogCmVuZHN0cmVhbQplbmRvYmoKOSAwIG9iago8PAovTGVuZ3RoIDExOAo+PgpzdHJlYW0KMSAwIDAgMSAwIDAgY20gIEJUIC9GMSAxMiBUZiAxNC40IFRMIEVUCkJUIC9GMSAxMiBUZiAxNC40IFRMIEVUCkJUIDEgMCAwIDEgNzIgNzIwIFRtIChGaXh0dXJlIEJldGEgUGFnZSAyKSBUaiBUKiBFVAogCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEwCjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDA2MSAwMDAwMCBuIAowMDAwMDAwMDkyIDAwMDAwIG4gCjAwMDAwMDAxOTkgMDAwMDAgbiAKMDAwMDAwMDM5MiAwMDAwMCBuIAowMDAwMDAwNTg1IDAwMDAwIG4gCjAwMDAwMDA2NTMgMDAwMDAgbiAKMDAwMDAwMDkzNyAwMDAwMCBuIAowMDAwMDAxMDAyIDAwMDAwIG4gCjAwMDAwMDExNzAgMDAwMDAgbiAKdHJhaWxlcgo8PAovSUQgCls8ZmVjMzhhMTcxNGVkODk0MTRmNDVkYTlhODNjMTc4Nzg+PGZlYzM4YTE3MTRlZDg5NDE0ZjQ1ZGE5YTgzYzE3ODc4Pl0KJSBSZXBvcnRMYWIgZ2VuZXJhdGVkIFBERiBkb2N1bWVudCAtLSBkaWdlc3QgKG9wZW5zb3VyY2UpCgovSW5mbyA2IDAgUgovUm9vdCA1IDAgUgovU2l6ZSAxMAo+PgpzdGFydHhyZWYKMTMzOAolJUVPRgo=';
-const REQUIRED_TOOLS=['pdf.info','pdf.merge','pdf.split','pdf.rotate','pdf.reorder'];
+const REQUIRED_TOOLS=['pdf.info','pdf.merge','pdf.split','pdf.rotate','pdf.reorder','image.to_pdf'];
 
 test('PDF tools expose real local-only contracts with bounded document processing',()=>{
   for(const id of REQUIRED_TOOLS){
@@ -16,8 +16,8 @@ test('PDF tools expose real local-only contracts with bounded document processin
     assert.equal(contract.status,'READY');
     assert.equal(contract.inputSchema.type,'object');
   }
-  assert.equal(listToolContracts().length,49);
-  assert.equal(listToolContracts({category:'Documents'}).filter(t=>t.id.startsWith('pdf.')).length,5);
+  assert.equal(listToolContracts().length,50);
+  assert.equal(listToolContracts({category:'Documents'}).filter(t=>t.id.startsWith('pdf.')).length,6);
 });
 
 test('PDF info reads page count, metadata and page sizes from a real PDF fixture',async()=>{
@@ -84,6 +84,52 @@ test('PDF reorder rejects incomplete, duplicate and out-of-range page permutatio
   }
   const missing=await runTool('pdf.reorder',{pdfBase64:PDF_BETA});
   assert.notEqual(missing.status,'COMPLETED');
+});
+
+const PNG_1X1='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a2WYAAAAASUVORK5CYII=';
+
+test('image.to_pdf converts valid PNG inputs into a real bounded local PDF',async()=>{
+  const result=await runTool('image.to_pdf',{images:[
+    {mimeType:'image/png',imageBase64:PNG_1X1},
+    {mimeType:'image/png',imageBase64:PNG_1X1}
+  ]});
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.pageCount,2);
+  assert.equal(result.output.imageCount,2);
+  assert.match(result.output.pdfBase64,/^JVBERi0/);
+  assert.equal(result.networkUsed,false);
+  const info=await runTool('pdf.info',{pdfBase64:result.output.pdfBase64});
+  assert.equal(info.status,'COMPLETED');
+  assert.equal(info.output.pageCount,2);
+  assert.ok(info.output.pageSizes.every(size=>size.width>0&&size.height>0));
+});
+
+test('image.to_pdf rejects missing, malformed, MIME-mismatched, and unsupported images',async()=>{
+  for(const input of [
+    {},
+    {images:[]},
+    {images:[{mimeType:'image/png',imageBase64:'not base64'}]},
+    {images:[{mimeType:'image/png',imageBase64:Buffer.from('not png').toString('base64')}]},
+    {images:[{mimeType:'image/jpeg',imageBase64:PNG_1X1}]},
+    {images:[{mimeType:'image/svg+xml',imageBase64:PNG_1X1}]},
+    {images:[{mimeType:'image/png',imageBase64:''}]}
+  ]){
+    const result=await runTool('image.to_pdf',input);
+    assert.notEqual(result.status,'COMPLETED',JSON.stringify(input));
+    assert.equal(result.networkUsed,false);
+  }
+});
+
+test('image.to_pdf rejects oversized dimensions and excessive image counts before embedding',async()=>{
+  const oversized=Buffer.from(PNG_1X1,'base64');
+  oversized.writeUInt32BE(100001,16);
+  oversized.writeUInt32BE(100001,20);
+  const dimensionResult=await runTool('image.to_pdf',{images:[{mimeType:'image/png',imageBase64:oversized.toString('base64')}]});
+  assert.notEqual(dimensionResult.status,'COMPLETED');
+  assert.equal(dimensionResult.networkUsed,false);
+  const tooMany=await runTool('image.to_pdf',{images:Array.from({length:21},()=>({mimeType:'image/png',imageBase64:PNG_1X1}))});
+  assert.notEqual(tooMany.status,'COMPLETED');
+  assert.equal(tooMany.networkUsed,false);
 });
 
 test('PDF tools reject malformed inputs, invalid page ranges and over-budget documents',async()=>{
