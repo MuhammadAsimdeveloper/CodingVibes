@@ -81,21 +81,24 @@ export function auditGeneratedSite({files={},baseUrl='',config={}}={}) {
   const cssText=fileEntries.filter(([name])=>/\.css$/i.test(name)).map(([,value])=>contentOf(value)).join('\n');
   const formPresent=/<form\b/i.test(allHtml);
   const accessibilityEvidence=[];
-  const missingLanguage=publicHtml.filter(page=>!/<html\\b[^>]*\\blang\\s*=\\s*["'][^"']+["']/i.test(page.html));
-  const missingMain=publicHtml.filter(page=>!/<main\\b/i.test(page.html));
+  const missingLanguage=publicHtml.filter(page=>!/<html\b[^>]*\blang\s*=\s*["'][^"']+["']/i.test(page.html));
+  const missingMain=publicHtml.filter(page=>!/<main\b/i.test(page.html));
   let unnamedControls=0;
   for(const page of publicHtml){
     const html=page.html;
-    const controls=[...html.matchAll(/<(input|select|textarea)\\b[^>]*>/gi)].map(match=>match[0]);
+    const controls=[...html.matchAll(/<(input|select|textarea)\b[^>]*>/gi)].map(match=>match[0]);
     for(const tag of controls){
-      const type=tag.match(/\\btype\\s*=\\s*["']?([^\\s"'>]+)/i)?.[1]?.toLowerCase()||'';
+      const type=tag.match(/\btype\s*=\s*["']?([^\s"'>]+)/i)?.[1]?.toLowerCase()||'';
       if(type==='hidden')continue;
-      const id=tag.match(/\\bid\\s*=\\s*["']([^"']+)["']/i)?.[1]||'';
-      const explicitlyNamed=/\\baria-label\\s*=\\s*["'][^"']+["']/i.test(tag)||/\\baria-labelledby\\s*=\\s*["'][^"']+["']/i.test(tag);
-      const escapedId=id.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&');
-      const associatedLabel=Boolean(id&&new RegExp('<label\\b[^>]*\\bfor\\s*=\\s*["\\']'+escapedId+'["\\']','i').test(html));
-      const wrappedLabel=new RegExp('<label\\b[^>]*>[\\s\\S]*?'+tag.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')+'[\\s\\S]*?<\\/label>','i').test(html);
-      const buttonLike=['submit','button','reset'].includes(type)&&/\\bvalue\\s*=\\s*["'][^"']+["']/i.test(tag);
+      const id=tag.match(/\bid\s*=\s*["']([^"']+)["']/i)?.[1]||'';
+      const explicitlyNamed=/\baria-label\s*=\s*["'][^"']+["']/i.test(tag)||/\baria-labelledby\s*=\s*["'][^"']+["']/i.test(tag);
+      const associatedLabel=Boolean(id&&(html.includes('for="'+id+'"')||html.includes("for='"+id+"'")));
+      const controlIndex=html.indexOf(tag);
+      const previousLabel=html.lastIndexOf('<label',controlIndex);
+      const previousLabelClose=html.lastIndexOf('</label>',controlIndex);
+      const nextLabelClose=html.indexOf('</label>',controlIndex);
+      const wrappedLabel=previousLabel>previousLabelClose&&nextLabelClose>=controlIndex;
+      const buttonLike=['submit','button','reset'].includes(type)&&/\bvalue\s*=\s*["'][^"']+["']/i.test(tag);
       if(!explicitlyNamed&&!associatedLabel&&!wrappedLabel&&!buttonLike)unnamedControls++;
     }
   }
