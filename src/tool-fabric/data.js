@@ -134,8 +134,8 @@ function yamlNode(value,indent = 0) {
     return value.map(item => {
       const nested = item !== null && typeof item === 'object' &&
         (Array.isArray(item) ? item.length > 0 : Object.keys(item).length > 0);
-      return nested ? pad + '-\\n' + yamlNode(item,indent+2) : pad + '- ' + yamlInline(item);
-    }).join('\\n');
+      return nested ? pad + '-\n' + yamlNode(item,indent+2) : pad + '- ' + yamlInline(item);
+    }).join('\n');
   }
   if (value !== null && typeof value === 'object') {
     const keys = Object.keys(value);
@@ -145,9 +145,9 @@ function yamlNode(value,indent = 0) {
       const nested = child !== null && typeof child === 'object' &&
         (Array.isArray(child) ? child.length > 0 : Object.keys(child).length > 0);
       return nested
-        ? pad + JSON.stringify(key) + ':\\n' + yamlNode(child,indent+2)
+        ? pad + JSON.stringify(key) + ':\n' + yamlNode(child,indent+2)
         : pad + JSON.stringify(key) + ': ' + yamlInline(child);
-    }).join('\\n');
+    }).join('\n');
   }
   return pad + yamlInline(value);
 }
