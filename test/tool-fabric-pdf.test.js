@@ -87,11 +87,12 @@ test('PDF reorder rejects incomplete, duplicate and out-of-range page permutatio
 });
 
 const PNG_1X1='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a2WYAAAAASUVORK5CYII=';
+const JPEG_1X1='/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAABv/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJoBUMv/2Q==';
 
 test('image.to_pdf converts valid PNG inputs into a real bounded local PDF',async()=>{
   const result=await runTool('image.to_pdf',{images:[
     {mimeType:'image/png',imageBase64:PNG_1X1},
-    {mimeType:'image/png',imageBase64:PNG_1X1}
+    {mimeType:'image/jpeg',imageBase64:JPEG_1X1}
   ]});
   assert.equal(result.status,'COMPLETED');
   assert.equal(result.output.pageCount,2);
