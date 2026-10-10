@@ -214,6 +214,8 @@ test('owner-provided contact address is rendered safely and never fabricated',()
 test('explicit address in the user brief is captured without inventing missing details',()=>{
   const supplied=completeSpec(analyzeRequirements('Build a plumbing business website. Business address is 18 Market Road, Lahore, Punjab, Pakistan.'));
   assert.equal(supplied.contactAddress,'18 Market Road, Lahore, Punjab, Pakistan');
+  const punctuated=completeSpec(analyzeRequirements('Build a plumbing business website. Business address is \'18 Market St., Lahore, Punjab, Pakistan\'.'));
+  assert.equal(punctuated.contactAddress,'18 Market St., Lahore, Punjab, Pakistan');
   const missing=completeSpec(analyzeRequirements('Build a plumbing business website. Business address is required.'));
   assert.equal(missing.contactAddress,undefined);
 });
