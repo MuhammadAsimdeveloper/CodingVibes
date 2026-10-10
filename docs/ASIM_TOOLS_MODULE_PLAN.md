@@ -89,3 +89,9 @@ Use **local copied modules** from `MuhammadAsimdeveloper/Our-Tools-`. Do not cal
 
 - Added `data.json.yaml` as a local dependency-free JSON-text to YAML serializer. It double-quotes keys and string scalars, preserves booleans/numbers/null, supports nested block mappings/sequences, rejects unsafe keys and invalid JSON, and enforces input/depth/node/output limits.
 - YAML parsing remains unfinished and is not implied by this generator.
+
+## Timestamp conversion — 2026-10-10
+
+- Added `dev.timestamp.convert` as a canonical local contract/executor with explicit ISO-to-Unix and Unix-to-ISO modes.
+- ISO inputs require a full date/time and explicit UTC offset; impossible dates, invalid times, malformed offsets and out-of-range values fail explicitly.
+- Unix seconds allow millisecond precision; Unix milliseconds require safe integers. Tests cover conversion and invalid inputs without network use.
