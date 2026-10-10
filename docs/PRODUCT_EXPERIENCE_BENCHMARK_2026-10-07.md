@@ -51,3 +51,8 @@ https://help.webflow.com/hc/en-us/articles/42832301823635-Intro-to-GSAP
 https://spline.design/
 https://base44.com/ai-app-builder
 https://www.framer.com/solutions/builders/
+
+
+## Additional benchmark: 20-point website launch checklist (2026-10-10)
+
+The visual/product experience benchmark is extended with an operational completeness gate. Track CTA placement, responsive overflow, form loading/error/success behavior, 404 routing, accessibility and alt text, complete social/icon assets, consent-aware analytics, contact-data integrity, and image/performance budgets. These are measurable acceptance checks, not marketing claims. Current source foundations and unconfirmed items are itemized in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Compare competitors using observable outcomes and evidence rather than assumed feature parity.
