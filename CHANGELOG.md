@@ -18,6 +18,8 @@ All notable Build Vibe changes are recorded here.
 - Added `data.json.yaml`, a bounded local JSON-to-YAML serializer with quoted strings/keys, nested block support, safe-key validation and resource-limit tests.
 - Added `dev.timestamp.convert` with strict ISO-8601 offset/calendar validation and explicit Unix seconds/milliseconds conversion modes.
 - Added `dev.cron.inspect`, a bounded five-field cron validator with up to five upcoming UTC occurrences and explicit dialect/search-window limits.
+- Added `security.password.generate`, a local cryptographic password generator with explicit length/class policy, ambiguous-character exclusion and no persistence/network use.
+
 
 
 
