@@ -73,3 +73,8 @@ The PR remains open and unmerged. Repository CI does not prove production deploy
 ## Follow-up — local image optimizer integration (2026-10-10)
 
 The P1 image.optimize tool now has a usable Studio path. Controls are in Content & data; the browser adapter stays local, supports bounded raster input only and reports format failures explicitly. Its source is shared through public/tool-fabric-browser.js, with src/tool-fabric/browser.js as the Node entrypoint. Test-first regression coverage is in test/image-optimizer-ui.test.js. Verification passed on source revision 322d36db86047c9d7ff580959ee4d7afa1c8b3a2: CI run 37982011949 passed all configured gates with 292/292 tests; CodeQL run 37982012043 and Dependency Review run 37982011944 passed. No production deployment is claimed.
+
+
+## Follow-up status — generated website quality (2026-10-10)
+
+The source-inspection follow-up is tracked in [`../GENERATED_WEBSITE_QUALITY_GATE.md`](../GENERATED_WEBSITE_QUALITY_GATE.md). Existing foundations include SEO metadata/structured data, robots/sitemap checks, discoverability auditing, product-quality state contracts, reduced-motion support, and privacy/terms templates. The 20-point checklist still requires generated-artifact and browser acceptance evidence for unconfirmed/partial items. This documentation update does not constitute a fresh test run or production verification.
