@@ -1162,3 +1162,15 @@ Follow-up: address and analytics settings now persist per project in browser loc
 - **Verification: PASS on revision `588156e398bd643c7ed3bd7a5a17979983bea329`.** Build Vibe CI [38081225750](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750) passed tests, coverage, syntax/release checks, SEO, browser E2E (including the generated icon endpoints), load/recovery, deployment preflight, benchmark, security, scale-out and launch readiness.
 
 **Next unfinished stage:** optimize generated raster assets during export (distinct from the browser-local optimizer), extend accessibility/viewport budgets, and verify real production credentials, deployment, monitoring and recovery. Documentation commits must obtain their own fresh CI evidence; this checkpoint records the exact tested implementation revision.
+
+## 52. TDD checkpoint — generated PNG export optimization (2026-10-11)
+
+**Roadmap phase:** reduce generated-site binary asset weight before export.
+
+- Added `src/assets/png-optimizer.js`, a dependency-free lossless PNG optimizer using Node's zlib implementation. It validates PNG chunk checksums, inflates and recompresses IDAT at level 9, preserves IHDR and all non-IDAT chunks (including transparency/metadata), and returns malformed/unsupported input unchanged.
+- Wired optimization into `generateProject()` before the manifest hash is calculated, so exported binary PNG assets are optimized and the integrity hash describes the actual exported bytes. Generation reports the number of PNGs checked and bytes saved.
+- Added generated-project assertions that all three platform icons pass through the export optimizer, and added the optimizer to syntax/release checks.
+- Existing browser-local image optimization remains a separate user-facing tool; this stage specifically covers binary PNGs generated or supplied as Buffer assets during project export. It does not yet transcode arbitrary source JPEG/WebP assets or rewrite inline SVG/CSS references.
+- **Verification: PASS** for the optimizer implementation and regression tests on revision `e6ba5c7ab50738a4fa486f2014084cebf203bf52`. Build Vibe CI passed: https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38085906711. Dependency Review and CodeQL also passed on the same revision. The optimizer regression found in the first CI attempt was fixed by making the generated file list reassignable; the complete suite passed on this SHA.
+
+**Next:** extend export processing to safely inventory and optimize user-provided raster assets across PNG/JPEG/WebP formats without quality loss or broken references; then continue accessibility budgets and production-service verification.

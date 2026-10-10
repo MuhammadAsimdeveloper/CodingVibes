@@ -229,8 +229,11 @@ test('Google Analytics is configured only when the owner explicitly provides a m
 
 test('generated website exports platform-specific PNG icons and links them correctly',()=>{
   const spec=completeSpec(analyzeRequirements('Build a professional local service website'));
-  const files=generateProject(spec).files;
+  const generated=generateProject(spec);
+  const files=generated.files;
   const byPath=new Map(files.map(file=>[file.path,file.content]));
+  assert.equal(generated.assetOptimization.pngFilesChecked,3,'all generated platform icons should pass through the export optimizer');
+  assert.ok(generated.assetOptimization.bytesSaved>=0,'optimization should report a non-negative byte saving');
   for(const [path,size] of [['public/apple-touch-icon.png',180],['public/icon-192.png',192],['public/icon-512.png',512]]){
     const icon=byPath.get(path);
     assert.ok(Buffer.isBuffer(icon),path+' should be generated as binary PNG data');

@@ -115,3 +115,10 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 
 
 - Follow-up: project launch settings now persist per project in browser localStorage and restore when switching projects or reloading the builder. Verified by unit/static tests and full CI at `06d2a6fcd03d6e37a8793f260738f5383b152a94`.
+
+## [Unreleased] — generated PNG export optimization (2026-10-11)
+
+- Added a dependency-free lossless PNG optimizer for generated binary assets, with chunk checksum validation, IDAT recompression and safe fallback for malformed input.
+- Integrated optimization into project generation before manifest hashing and surfaced PNG counts/byte savings in generation metadata.
+- Added tests for lossless output and integration of platform icon assets; added optimizer syntax validation.
+- Verified on `e6ba5c7ab50738a4fa486f2014084cebf203bf52`; [Build Vibe CI](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38085906711), Dependency Review, and CodeQL passed.

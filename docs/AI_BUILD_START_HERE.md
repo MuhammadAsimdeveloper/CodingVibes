@@ -54,3 +54,11 @@ Before implementing or changing website generation, read [`GENERATED_WEBSITE_QUA
 - Tests verify PNG dimensions/decompression, generated output, manifest entries, MIME type and served asset dimensions.
 - Full CI passed on `588156e398bd643c7ed3bd7a5a17979983bea329`: https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750.
 - Continue from the next unfinished roadmap item: generated-export raster optimization. Do not confuse the existing browser-local image optimizer with automatic optimization during export. Keep accessibility budgets and production environment/credentials/monitoring/recovery open until evidenced.
+
+## Latest implementation in progress — generated PNG export optimization (2026-10-11)
+
+- Implemented `src/assets/png-optimizer.js` and wired it into `generateProject()` before manifest hashing.
+- Added a regression assertion that all three platform PNG icons pass through the export optimizer, plus syntax validation.
+- This is separate from the existing browser-local image optimizer and currently targets PNG Buffer assets only. Do not claim arbitrary JPEG/WebP export optimization.
+- Verified optimizer implementation on `e6ba5c7ab50738a4fa486f2014084cebf203bf52`; [Build Vibe CI passed](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38085906711), as did Dependency Review and CodeQL. This tested SHA includes the fix for the generator's file-list reassignment regression.
+- Next: broaden export asset processing to user-provided raster files while preserving references and explicit quality settings.
