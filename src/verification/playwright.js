@@ -256,14 +256,15 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
         const viewportWidth=window.innerWidth;
         const documentWidth=document.documentElement?.scrollWidth||0;
         const bodyWidth=document.body?.scrollWidth||0;
-        const overflowingElements=Array.from(document.querySelectorAll('body *')).filter(element=>{
+        const overflowingElements=Array.from(document.querySelectorAll('html,body,body *')).filter(element=>{
           const rect=element.getBoundingClientRect();
-          return rect.width>0&&rect.right>viewportWidth+2&&getComputedStyle(element).position!=='fixed';
-        }).slice(0,5).map(element=>{
+          return rect.width>0&&(rect.right>viewportWidth+2||element.scrollWidth>element.clientWidth+2);
+        }).slice(0,8).map(element=>{
           const tag=element.tagName.toLowerCase();
           const id=element.id?'#'+element.id:'';
-          const classes=typeof element.className==='string'?'.'+element.className.trim().split(/\\s+/).filter(Boolean).slice(0,2).join('.'): '';
-          return (tag+id+classes).slice(0,120);
+          const classes=typeof element.className==='string'?'.'+element.className.trim().split(/\s+/).filter(Boolean).slice(0,2).join('.'): '';
+          const rect=element.getBoundingClientRect();
+          return (tag+id+classes+'[right='+Math.round(rect.right)+',scroll='+element.scrollWidth+',client='+element.clientWidth+']').slice(0,160);
         });
         return {viewportWidth,documentWidth,bodyWidth,overflowingElements};
       });
