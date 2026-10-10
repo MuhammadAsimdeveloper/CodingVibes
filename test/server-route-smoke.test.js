@@ -62,7 +62,7 @@ test('server public and authenticated route smoke covers launch control plane',a
 
   const catalog=await req('/api/tool-fabric/catalog',{headers:{cookie:sessionCookie}});
   assert.equal(catalog.response.status,200);
-  assert.equal(catalog.body.tools.length,44);
+  assert.equal(catalog.body.tools.length,48);
   assert.ok(catalog.body.tools.some(tool=>tool.id==='seo.meta.generate'));
   assert.ok(catalog.body.tools.some(tool=>tool.id==='image.optimize'&&tool.executionMode==='browser'));
 
