@@ -143,3 +143,66 @@ test('dev.timestamp.convert rejects ambiguous dates, missing offsets, invalid mo
   }
 });
 
+test('dev.cron.inspect validates five-field cron syntax and returns bounded UTC occurrences',async()=>{
+  const contract=getToolContract('dev.cron.inspect');
+  assert.ok(contract);
+  assert.equal(contract.executionMode,'local');
+  assert.equal(contract.networkRequired,false);
+  const result=await runTool('dev.cron.inspect',{
+    expression:'*/15 9-10 * * 1-5',
+    after:'2026-10-05T08:59:00Z'
+  });
+  assert.equal(result.status,'COMPLETED');
+  assert.deepEqual(result.output.nextRuns,[
+    '2026-10-05T09:00:00.000Z',
+    '2026-10-05T09:15:00.000Z',
+    '2026-10-05T09:30:00.000Z',
+    '2026-10-05T09:45:00.000Z',
+    '2026-10-05T10:00:00.000Z'
+  ]);
+  assert.equal(result.output.timeZone,'UTC');
+  assert.equal(result.networkUsed,false);
+});
+
+test('dev.cron.inspect applies documented OR semantics when both day fields are restricted',async()=>{
+  const result=await runTool('dev.cron.inspect',{
+    expression:'0 9 1 * 1',
+    after:'2026-10-02T10:00:00Z'
+  });
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.dayMatchPolicy,'day-of-month OR day-of-week when both are restricted');
+  assert.deepEqual(result.output.nextRuns.slice(0,2),[
+    '2026-10-05T09:00:00.000Z',
+    '2026-10-12T09:00:00.000Z'
+  ]);
+});
+
+test('dev.cron.inspect rejects unsupported cron syntax, invalid offsets and extra options',async()=>{
+  for(const input of [
+    {},
+    {expression:'* * * *'},
+    {expression:'60 * * * *'},
+    {expression:'*/0 * * * *'},
+    {expression:'10-2 * * * *'},
+    {expression:'a b c d e'},
+    {expression:'* * * * *',after:'2026-10-01T00:00:00'},
+    {expression:'* * * * *',after:'2026-02-30T00:00:00Z'},
+    {expression:'* * * * *',after:'2026-10-01T00:00:00Z',timeZone:'America/New_York'}
+  ]){
+    const result=await runTool('dev.cron.inspect',input);
+    assert.notEqual(result.status,'COMPLETED',JSON.stringify(input));
+    assert.equal(result.networkUsed,false);
+  }
+});
+
+test('dev.cron.inspect reports valid schedules with no match inside its bounded search window',async()=>{
+  const result=await runTool('dev.cron.inspect',{
+    expression:'0 0 31 2 *',
+    after:'2026-01-01T00:00:00Z'
+  });
+  assert.equal(result.status,'COMPLETED');
+  assert.deepEqual(result.output.nextRuns,[]);
+  assert.equal(result.output.searchWindowDays,366);
+  assert.ok(result.warnings.some(message=>/no occurrence/i.test(message)));
+});
+
