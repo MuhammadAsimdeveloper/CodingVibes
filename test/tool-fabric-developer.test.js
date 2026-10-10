@@ -21,7 +21,7 @@ test('local hash, checksum, UUID and URL tools expose canonical no-network contr
     assert.ok(contract.auditEvent);
     assert.ok(contract.provenance);
   }
-  assert.equal(listToolContracts().length, 49);
+  assert.equal(listToolContracts().length, 50);
   assert.equal(listToolContracts({category:'Developer'}).filter(x => x.id.startsWith('dev.')).length, 3);
   assert.equal(listToolContracts({category:'Security'}).filter(x => x.id === 'security.checksum.verify').length, 1);
 });
