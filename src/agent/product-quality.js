@@ -232,6 +232,8 @@ export function auditProductExperience(workspace,spec={}){
     addCheck('form_label_missing','form control labels',unlabeled.length===0,true,unlabeled.length?String(unlabeled.length):'');
     const badImages=[...html.matchAll(/<img\b([^>]*)>/gi)].filter(match=>!(/\balt\s*=\s*["'][^"']*["']/i.test(match[1])||/\brole\s*=\s*["']presentation["']/i.test(match[1])));
     addCheck('image_alt_missing','image alternative text',badImages.length===0,true,badImages.length?String(badImages.length):'');
+    const placeholderMedia=/(?:placehold\\.co|placeholder\\.com|picsum\\.photos|loremflickr\\.com|source\\.unsplash\\.com|randomuser\\.me|pravatar\\.cc|thispersondoesnotexist\\.com|generated\\.photos)/i.test(html);
+    addCheck('placeholder_media','no random placeholder or fake-avatar media endpoints',!placeholderMedia,true);
     const remoteRuntime=[...source.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']https?:\/\/[^"']+["'][^>]*>/gi)];
     addCheck('remote_runtime_dependency','provider-independent runtime',remoteRuntime.length===0&&remoteImportCount(source)===0,true,remoteRuntime.length?String(remoteRuntime.length):'');
     addCheck('launch_surfaces','launch surfaces',hasAny(source,['contact','privacy','terms','sitemap','robots']));
