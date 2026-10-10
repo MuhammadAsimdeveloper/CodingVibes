@@ -52,6 +52,7 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `time.age` | local | Calendar age between strict YYYY-MM-DD dates; leap-day policy is explicit |
 | `time.timezone` | local | Converts a supplied ISO-8601 instant with explicit offset between IANA zones |
 | `data.size.convert` | local | Decimal SI and binary IEC byte units with safe-integer limits |
+| `data.json.csv` | local | Converts bounded arrays of JSON objects to RFC-style CSV with stable first-seen columns, quoted nested values and spreadsheet-formula string neutralization |
 | `dev.hash.generate` | local | SHA-256/SHA-384/SHA-512 text digests in hex or Base64; not for password storage |
 | `security.checksum.verify` | local | Validates supplied digest encoding and compares fixed-size digests in constant time |
 | `dev.uuid.generate` | local | Cryptographically secure UUID v4 generation using Node crypto |
@@ -73,6 +74,14 @@ Inputs must use finite JSON numbers rather than numeric strings; each operation 
 No tool reads financial accounts, contacts a lender, performs market lookup, writes user files, or makes network calls. Results are arithmetic estimates from the supplied inputs, not financial, tax or lending advice. Regression tests live in `test/tool-fabric-calculators.test.js`.
 
 **Verification record:** implementation revision `4b796eb615ce77d734a66230995c57d353406bb9` passed Build Vibe CI run [37987930669](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930669), 309/309 tests, coverage, syntax/release checks, SEO, server/browser E2E and launch-gate steps. CodeQL [37987930550](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930550) and Dependency Review [37987930570](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/37987930570) passed on the same source revision. Results are arithmetic estimates from the supplied inputs, not financial, tax or lending advice. Regression tests live in `test/tool-fabric-calculators.test.js`.
+
+## Local JSON-to-CSV conversion
+
+The `data.json.csv` contract converts an array of JSON objects to CSV without network calls or external dependencies. Columns are the first-seen union of row keys; missing and null values become empty cells, booleans and finite numbers use their JSON text forms, and nested arrays/objects are serialized as compact JSON. CSV fields containing commas, quotes or newlines are quoted and embedded quotes are doubled. Records use CRLF separators.
+
+The converter is bounded to 10,000 rows, 200 columns, 500 KB serialized input, 100 KB per cell and 1 MB output. It rejects invalid row shapes, unsupported values, circular structures, excessive nesting, prototype-sensitive keys and unrecognized options. String cells and headers that begin with spreadsheet formula markers are prefixed with an apostrophe; numeric values remain numeric text. The result reports the columns, row count, byte length and number of sanitized cells, and emits a warning when formula-like text was neutralized.
+
+Focused regression tests live in `test/tool-fabric-data-conversion.test.js`, including quotes/newlines, sparse columns, nested values, formula-injection handling, invalid input and resource limits.
 
 ## Local hash, checksum, UUID and URL tools
 
