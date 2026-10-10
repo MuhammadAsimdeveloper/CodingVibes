@@ -31,6 +31,25 @@ test('deterministic generator creates a real portable web product without a mode
   assert.match(files.get('package.json'),/node app\/server\.js/);
 });
 
+test('generated products include a real favicon and substantive privacy and terms pages',()=>{
+  const spec=completeSpec(analyzeRequirements('Build a professional business website with contact form'));
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  assert.ok(files.has('public/favicon.svg'));
+  assert.match(files.get('public/index.html'),/<link rel="icon" href="\/favicon\.svg">/);
+  const privacy=files.get('public/privacy.html')||'';
+  const terms=files.get('public/terms.html')||'';
+  assert.doesNotMatch(privacy,/Explain what information|configure production providers before launch|Replace this/i);
+  assert.match(privacy,/contact form submissions/i);
+  assert.match(privacy,/retention/i);
+  assert.match(privacy,/third-party analytics/i);
+  assert.match(privacy,/deletion|delete/i);
+  assert.doesNotMatch(terms,/Replace this launch-ready outline|Replace with your final/i);
+  assert.match(terms,/acceptable use/i);
+  assert.match(terms,/user content/i);
+  assert.match(terms,/liability/i);
+  assert.match(terms,/applicable law/i);
+});
+
 test('generated 3D routes declare the Three.js import map before dependent ES modules',()=>{
   const spec=completeSpec(analyzeRequirements('Create an immersive 3D product launch site with an interactive model'));
   spec.experience={...(spec.experience||{}),threeD:true,type:'interactive-3d'};
