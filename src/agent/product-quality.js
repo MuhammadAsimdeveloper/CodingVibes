@@ -46,6 +46,7 @@ function hasAny(source,values){
 
 function defaultSurfaces(kind='business',behavior={}){
   const surfaces=['/','/privacy','/terms','/contact'];
+  if(behavior.contactForm!==false)surfaces.push('/thank-you');
   if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind))surfaces.push('/about');
   if(['portfolio','agency'].includes(kind))surfaces.push('/work');
   if(kind==='realEstate')surfaces.push('/properties');
