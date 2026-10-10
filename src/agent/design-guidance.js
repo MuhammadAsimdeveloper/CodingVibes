@@ -20,6 +20,7 @@ const BASE_RULES=[
   'Never show Made with AI attribution on published user products',
   'Never use emoji as interface icons',
   'Avoid vague filler copy and em-dash punctuation',
+  'Never publish template placeholder copy or owner instructions',
   'Use only authentic, licensed, or clearly identified illustrative assets',
   'Do not use random placeholder-photo endpoints or synthetic people presented as real customers',
   'Preserve keyboard access, visible focus and accessible names',
