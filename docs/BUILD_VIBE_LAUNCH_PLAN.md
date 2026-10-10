@@ -1076,3 +1076,8 @@ Status meanings: IMPLEMENTED FOUNDATION means supporting code exists but every g
 - Critical failures block publish. User-specific facts and credentials are requested, never invented.
 - Existing architecture, provider-independent local workflows, user changes, and security gates remain intact.
 - Record exact commit, commands, environment, and test counts for each real verification run. Never copy historical test counts forward as new evidence.
+
+
+## Generated website quality gate — required follow-up (2026-10-10)
+
+Before claiming every generated website is launch-ready, implement and enforce the 20-point checklist in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Current source includes SEO metadata/structured-data helpers, robots/sitemap checks, discoverability auditing, a product-quality contract, reduced-motion support, and privacy/terms templates. These are foundations, not proof that each generated site has a correct 404, above-the-fold CTA, complete icon set, sticky mobile CTA, working form confirmation/error paths, consent banner, customer-site analytics, real contact address, and optimized image assets. Keep unconfirmed items explicitly marked until runtime evidence exists. Require per-project artifact + HTTP + browser checks, a machine-readable 20-point report, and publish blocking for critical failures. Preserve the existing architecture and never weaken verification gates.
