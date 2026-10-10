@@ -39,3 +39,11 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 - Documented a 20-point generated-website launch quality gate, including evidence-backed implementation, partial coverage, unconfirmed behavior, user-input requirements, and release acceptance criteria.
 - Planned automated checks for custom 404 behavior, CTA visibility, form confirmation/error flows, consent-aware analytics, responsive behavior, favicon coverage, image alt text, and image optimization.
 - No code implementation or fresh CI/deployment verification is claimed by this documentation update.
+
+
+## [Unreleased] — generated website quality follow-up (2026-10-10)
+
+- Added `docs/GENERATED_WEBSITE_QUALITY_GATE.md` as the evidence-based 20-point generated-site implementation/status plan.
+- Recorded existing foundations (SEO metadata/JSON-LD, robots/sitemap checks, discoverability auditing, product-quality state contracts, reduced-motion support, and privacy/terms templates) separately from behavior that still requires end-to-end verification.
+- Planned P0/P1/P2 work for real 404 routing, robust form confirmation/error handling, responsive CTA checks, favicon/OG validation, consent-aware customer-site analytics, contact-data integrity, and image optimization.
+- Documentation-only update: no new implementation, test run, or deployment is claimed.
