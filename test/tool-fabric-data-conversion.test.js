@@ -67,19 +67,19 @@ test('data.csv.json is a canonical local contract and parses RFC-style quoting i
   assert.ok(contract);
   assert.equal(contract.executionMode,'local');
   assert.equal(contract.networkRequired,false);
-  const result=await runTool('data.csv.json',{csv:'name,age,notes\\r\\nAda,36,"likes, commas"\\r\\nGrace,,"line 1\\nline 2"'});
+  const result=await runTool('data.csv.json',{csv:'name,age,notes\r\nAda,36,"likes, commas"\r\nGrace,,"line 1\nline 2"'});
   assert.equal(result.status,'COMPLETED');
   assert.deepEqual(result.output.columns,['name','age','notes']);
   assert.equal(result.output.rowCount,2);
   assert.deepEqual(result.output.json,[
     {name:'Ada',age:'36',notes:'likes, commas'},
-    {name:'Grace',age:'',notes:'line 1\\nline 2'}
+    {name:'Grace',age:'',notes:'line 1\nline 2'}
   ]);
   assert.equal(result.networkUsed,false);
 });
 
 test('data.csv.json handles BOM, doubled quotes, empty trailing cells and LF records',async()=>{
-  const result=await runTool('data.csv.json',{csv:'\\uFEFFid,value\\n1,"say ""yes"""\\n2,'});
+  const result=await runTool('data.csv.json',{csv:'\uFEFFid,value\n1,"say ""yes"""\n2,'});
   assert.equal(result.status,'COMPLETED');
   assert.deepEqual(result.output.json,[{id:'1',value:'say "yes"'},{id:'2',value:''}]);
   assert.equal(result.output.jsonString,'[{"id":"1","value":"say \\"yes\\""},{"id":"2","value":""}]');
@@ -90,14 +90,14 @@ test('data.csv.json rejects malformed CSV, unsafe or duplicate headers and unsup
     {},
     {csv:''},
     {csv:12},
-    {csv:'a,b\\n1,"unclosed'},
-    {csv:'a,b\\n1,broken"quote'},
-    {csv:'a,b\\n1,"quoted"x'},
-    {csv:'a,b\\n1,2\\r3,4'},
-    {csv:'a,a\\n1,2'},
-    {csv:',b\\n1,2'},
-    {csv:'__proto__,value\\nx,y'},
-    {csv:'a,b\\n1,2',delimiter:';'}
+    {csv:'a,b\n1,"unclosed'},
+    {csv:'a,b\n1,broken"quote'},
+    {csv:'a,b\n1,"quoted"x'},
+    {csv:'a,b\n1,2\r3,4'},
+    {csv:'a,a\n1,2'},
+    {csv:',b\n1,2'},
+    {csv:'__proto__,value\nx,y'},
+    {csv:'a,b\n1,2',delimiter:';'}
   ]){
     const result=await runTool('data.csv.json',input);
     assert.notEqual(result.status,'COMPLETED',JSON.stringify(input));
@@ -106,13 +106,13 @@ test('data.csv.json rejects malformed CSV, unsafe or duplicate headers and unsup
 });
 
 test('data.csv.json enforces row, column, cell and input-size budgets',async()=>{
-  const tooManyRows='a\\n'+Array.from({length:10_001},()=> 'x').join('\\n');
+  const tooManyRows='a\n'+Array.from({length:10_001},()=> 'x').join('\n');
   const tooManyColumns=Array.from({length:201},(_,i)=>'c'+i).join(',');
-  const tooManyCell='a\\n'+('x'.repeat(100_001));
-  const tooMuchInput='a\\n'+('x'.repeat(500_001));
+  const tooManyCell='a\n'+('x'.repeat(100_001));
+  const tooMuchInput='a\n'+('x'.repeat(500_001));
   for(const csv of [
     tooManyRows,
-    tooManyColumns+'\\n'+Array(201).fill('x').join(','),
+    tooManyColumns+'\n'+Array(201).fill('x').join(','),
     tooManyCell,
     tooMuchInput
   ]){
