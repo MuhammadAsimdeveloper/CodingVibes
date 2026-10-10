@@ -48,3 +48,11 @@ test('generated 3D routes declare the Three.js import map before dependent ES mo
   assert.equal(importMap.imports.three,'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js');
 });
 
+
+test('generated sites include a branded 404 artifact and unknown paths return HTTP 404',()=>{
+  const spec=completeSpec(analyzeRequirements('Build a modern local plumbing business website with a contact form'));
+  const files=new Map(generateProject(spec).files.map(file=>[file.path,file.content]));
+  assert.ok(files.has('public/404.html'),'generated site must include a custom not-found page');
+  assert.match(files.get('public/404.html'),/Page not found|page could not be found/i);
+  assert.match(files.get('app/server.js'),/send\(res,404/,'unknown public routes must return HTTP 404');
+});
