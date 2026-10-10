@@ -59,14 +59,14 @@
 ## Prioritized future-development plan
 
 ### P0 — Correctness and trust
-1. [x] Implement branded 404 pages with correct HTTP status and fallback routing.
-2. [ ] Connect the 20-point report to generation/preview/publish and block critical failures.
-3. [ ] Complete browser-level form/consent/mobile interaction tests.
-4. [x] Implement contact form loading/error recovery and a truthful success redirect to a noindex thank-you route.
-5. [x] Implement opt-in cookie preference controls and a dismissible sticky mobile CTA.
+1. [x] Generate a branded 404 page and verify unknown routes return HTTP 404.
+2. [x] Add contact form loading/error recovery, duplicate-submit prevention, and a noindex thank-you route after successful submission.
+3. [x] Add an opt-in cookie preference manager with accept/reject, saved preferences, and settings reopening.
+4. [ ] Connect the 20-point report to generation/preview/publish and block critical failures.
+5. [ ] Add browser-level tests for consent interactions, form failure/retry, and successful redirect.
 6. [ ] Validate complete icon sets, actual CTA visibility, and tracking consent in a real browser.
-3. Ensure privacy and terms pages reflect actual data processing, cookies, payments, and integrations.
-4. Make missing contact details a setup blocker/warning; never synthesize a real-world address.
+7. Ensure privacy and terms pages reflect actual data processing, cookies, payments, and integrations.
+8. Make missing contact details a setup blocker/warning; never synthesize a real-world address.
 
 ### P1 — Conversion, responsive quality, and SEO
 1. Browser-test primary CTA placement and visibility at common mobile/desktop sizes.
@@ -119,6 +119,6 @@ For every generated project, emit a versioned machine-readable and human-readabl
 
 ### Integration status update (2026-10-10)
 
-The generated-site report is now attached to the existing `auditProductExperience()` result for web targets as `generatedSiteQuality`, so it travels with the platform's product-quality evidence. The standalone CLI remains available for a generated project directory. Full CI passed at `af6adf6ff6e480bcac351745b0a40a9e17068231`.
+The generated-site report is now attached to the existing `auditProductExperience()` result for web targets as `generatedSiteQuality`, so it travels with the platform's product-quality evidence. The standalone CLI remains available for a generated project directory. Full GitHub Actions CI passed at `bcb4288036d0ac45b4a045e83531d406d99a85c6` (including tests, coverage, static checks, browser E2E, security checks, and launch readiness).
 
 This is **evidence integration, not publish enforcement**: `verifyContract` and deployment still do not reject projects based on the new 20-point report. Keep the publish-gate task open until status handling, user-input exceptions, runtime evidence, and blocking behavior have regression tests.
