@@ -42,12 +42,25 @@ test('quality contract forbids deceptive social proof and default design anti-pa
 test('product audit blocks AI attribution, purple gradients, fabricated proof, emoji icons and distracting motion',()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-anti-patterns-'));
   fs.mkdirSync(path.join(root,'public'),{recursive:true});
-  fs.writeFileSync(path.join(root,'public','index.html'),`<!doctype html><html lang="en"><head><meta name="description" content="Specific service"><link rel="canonical" href="https://example.com/"><meta property="og:title" content="Example"><meta name="viewport" content="width=device-width"></head><body><nav><a href="/">Home</a></nav><main><h1>Useful product</h1><button class="rounded-full">🚀 Start now</button><p>Trusted by 10,000+ customers</p><p>Made with AI</p><p>Built for teams — without compromise.</p><img alt="Product preview" src="/preview.png"></main></body></html>`,'utf8');
+  fs.writeFileSync(path.join(root,'public','index.html'),`<!doctype html><html lang="en"><head><meta name="description" content="Specific service"><link rel="canonical" href="https://example.com/"><meta property="og:title" content="Example"><meta name="viewport" content="width=device-width"></head><body><nav><a href="/">Home</a></nav><main><h1>Useful product</h1><button class="rounded-full">🚀 Start now</button><p>Trusted by 10,000+ customers</p><p>Made with AI</p><p>Built for teams — without compromise.</p><img alt="Product preview" src="/preview.png"><img alt="Customer portrait" src="https://thispersondoesnotexist.com/image"></main></body></html>`,'utf8');
   fs.writeFileSync(path.join(root,'public','styles.css'),'.hero{background:linear-gradient(120deg,#7c3aed,#c026d3)} .cursor-follower{position:fixed} .cta{border-radius:9999px}','utf8');
   fs.writeFileSync(path.join(root,'public','motion.js'),"ScrollTrigger.create({trigger:'.hero'}); document.addEventListener('pointermove',moveCursor);",'utf8');
   const audit=auditProductExperience(root,{siteKind:'business',target:{id:'web-node'},experience:{threeD:false}});
   const ids=new Set(audit.checks.filter(x=>!x.passed).map(x=>x.id));
-  for(const id of ['unwanted_ai_attribution','purple_gradient','fabricated_social_proof','emoji_ui_icon','em_dash_copy','custom_cursor_animation','excessive_scroll_motion','pill_button_style']) assert.ok(ids.has(id),id);
+  for(const id of ['unwanted_ai_attribution','purple_gradient','fabricated_social_proof','emoji_ui_icon','em_dash_copy','custom_cursor_animation','excessive_scroll_motion','pill_button_style','placeholder_media']) assert.ok(ids.has(id),id);
+  fs.rmSync(root,{recursive:true,force:true});
+});
+
+test('media quality gate blocks random placeholders and fake-avatar endpoints but permits curated static assets',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-media-gate-'));
+  fs.mkdirSync(path.join(root,'public'),{recursive:true});
+  fs.writeFileSync(path.join(root,'public','index.html'),'<html lang="en"><head><meta name="viewport" content="width=device-width"><meta name="description" content="A specific service"><link rel="canonical" href="https://example.com"><meta property="og:title" content="Example"></head><body><nav><a href="/">Home</a></nav><main><h1>Service</h1><img src="https://picsum.photos/800/600" alt="Product image"><img src="https://images.unsplash.com/photo-1500000000000-example" alt="Workspace photograph"></main></body></html>','utf8');
+  const audit=auditProductExperience(root,{siteKind:'business',target:{id:'web-node'},experience:{threeD:false}});
+  const ids=new Set(audit.checks.filter(x=>!x.passed).map(x=>x.id));
+  assert.ok(ids.has('placeholder_media'));
+  fs.writeFileSync(path.join(root,'public','index.html'),fs.readFileSync(path.join(root,'public','index.html'),'utf8').replace('https://picsum.photos/800/600','/assets/product-photo.webp'),'utf8');
+  const curated=auditProductExperience(root,{siteKind:'business',target:{id:'web-node'},experience:{threeD:false}});
+  assert.ok(!curated.checks.some(x=>x.id==='placeholder_media'&&!x.passed));
   fs.rmSync(root,{recursive:true,force:true});
 });
 
