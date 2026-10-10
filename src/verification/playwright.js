@@ -74,7 +74,7 @@ export function assessBrowserQuality(result,{maxLoadMs=5000,maxTransferBytes=8_0
   return{ok:failures.length===0,failures};
 }
 
-export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir='artifacts',baselineDir='',viewport={width:1440,height:900},visualThreshold,pixelThreshold,maxLoadMs=Number(process.env.CODINGVIBES_BROWSER_MAX_LOAD_MS||5000),maxTransferBytes=Number(process.env.CODINGVIBES_BROWSER_MAX_TRANSFER_BYTES||8_000_000)}={}){
+export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir='artifacts',baselineDir='',viewport={width:1440,height:900},visualThreshold,pixelThreshold,analytics={},maxLoadMs=Number(process.env.CODINGVIBES_BROWSER_MAX_LOAD_MS||5000),maxTransferBytes=Number(process.env.CODINGVIBES_BROWSER_MAX_TRANSFER_BYTES||8_000_000)}={}){
  let pw;try{pw=await import('playwright');}catch{return{enabled:true,available:false,passed:false,skipped:'playwright not installed',results:[]};}
  const fs=await import('node:fs');fs.mkdirSync(artifactDir,{recursive:true});const browser=await pw.chromium.launch({headless:true});const results=[];
  try{
@@ -177,11 +177,28 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
         await consent.waitFor({state:'visible',timeout:3000});
         await page.locator('[data-cookie-settings]').click();
         await page.locator('[data-cookie-preferences]').waitFor({state:'visible',timeout:3000});
+        const analyticsConfigured=analytics?.provider==='google-analytics'&&/^G-[A-Z0-9]{6,20}$/i.test(String(analytics.measurementId||''));
+        let analyticsScriptRequests=0;
+        if(analyticsConfigured)await page.route('https://www.googletagmanager.com/gtag/js**',async route=>{analyticsScriptRequests++;await route.fulfill({status:200,contentType:'application/javascript',body:'window.__buildVibeAnalyticsLoaded=true;'});});
+        const requestsBeforeConsent=analyticsScriptRequests;
         await page.locator('[data-cookie-preferences] input[name="analytics"]').check();
         await page.locator('[data-cookie-preferences] button[type="submit"]').click();
         await consent.waitFor({state:'hidden',timeout:3000});
         const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('build-vibe-cookie-preferences-v1')||'null'));
         interactions.cookieConsentVerified=Boolean(initiallyVisible&&rejected?.analytics===false&&rejected?.marketing===false&&saved?.analytics===true&&saved?.marketing===false);
+        if(analyticsConfigured){
+          await page.waitForFunction(()=>window.__buildVibeAnalyticsLoaded===true,null,{timeout:3000});
+          const loadedAfterConsent=analyticsScriptRequests===1;
+          await page.locator('[data-cookie-reopen]').click();
+          await consent.waitFor({state:'visible',timeout:3000});
+          await page.locator('[data-cookie-settings]').click();
+          await page.locator('[data-cookie-preferences]').waitFor({state:'visible',timeout:3000});
+          await page.locator('[data-cookie-preferences] input[name="analytics"]').uncheck();
+          await page.locator('[data-cookie-preferences] button[type="submit"]').click();
+          await consent.waitFor({state:'hidden',timeout:3000});
+          const revoked=await page.evaluate(()=>window.dataLayer?.some(entry=>entry[0]==='consent'&&entry[1]==='update'&&entry[2]?.analytics_storage==='denied'));
+          interactions.analyticsConsentGateVerified=Boolean(requestsBeforeConsent===0&&loadedAfterConsent&&revoked);
+        }
       }
       await page.setViewportSize({width:390,height:844});
       const sticky=page.locator('[data-sticky-cta]');
