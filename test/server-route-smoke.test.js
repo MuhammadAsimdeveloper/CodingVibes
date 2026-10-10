@@ -14,6 +14,8 @@ process.env.CODINGVIBES_ENFORCE_QUOTAS='false';
 process.env.CODINGVIBES_BILLING_REQUIRED='false';
 
 const {server}=await import('../src/server.js?route-smoke');
+const {Store}=await import('../src/db/store.js');
+const smokeStore=new Store(process.env.DATABASE_PATH);
 let origin='';
 
 async function req(path,options={}){
@@ -89,6 +91,23 @@ test('server public and authenticated route smoke covers launch control plane',a
   const project=await req('/api/projects',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({name:'Smoke Product'})});
   assert.equal(project.response.status,201);
   const pid=project.body.project.id;
+  const me=await req('/api/auth/me',{headers:{cookie:sessionCookie}});
+  const userId=me.body.user?.id||me.body.id;
+  assert.ok(userId,'authenticated user id should be available');
+  const assetSession=smokeStore.createSession(userId,pid,'Image asset smoke');
+  const assetRun=smokeStore.createRun(userId,assetSession.id,'optimized image upload smoke');
+  const assetWorkspace=fs.mkdtempSync(path.join(root,'asset-workspace-'));
+  smokeStore.updateRun(assetRun.id,userId,{workspace:assetWorkspace,status:'verified'});
+  const pixelPng='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/s9sAAAAASUVORK5CYII=';
+  const savedAsset=await req('/api/runs/'+assetRun.id+'/assets',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({fileName:'pixel.png',mimeType:'image/png',contentBase64:pixelPng})});
+  assert.equal(savedAsset.response.status,201);
+  assert.match(savedAsset.body.path,/^public\/assets\/[a-zA-Z0-9_-]+-[a-f0-9]{12}\.png$/);
+  assert.deepEqual(fs.readFileSync(path.join(assetWorkspace,savedAsset.body.path)),Buffer.from(pixelPng,'base64'));
+  assert.equal(smokeStore.getRun(assetRun.id,userId).status,'edited');
+  assert.equal(smokeStore.listChangesets(assetRun.id).at(-1).status,'needs_verification');
+  const badAsset=await req('/api/runs/'+assetRun.id+'/assets',{method:'POST',headers:{cookie:sessionCookie},body:JSON.stringify({fileName:'pixel.webp',mimeType:'image/webp',contentBase64:pixelPng})});
+  assert.equal(badAsset.response.status,415);
+
 
   const projectPaths=[
     '/api/projects/'+pid+'/memory',
@@ -129,5 +148,6 @@ test('server public and authenticated route smoke covers launch control plane',a
 
 test.after(async()=>{
   await new Promise(resolve=>server.close(resolve));
+  smokeStore.close();
   fs.rmSync(root,{recursive:true,force:true});
 });
