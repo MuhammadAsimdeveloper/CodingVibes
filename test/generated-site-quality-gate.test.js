@@ -1,5 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { auditProductExperience } from '../src/agent/product-quality.js';
 import { auditGeneratedSite, GENERATED_SITE_REQUIREMENTS } from '../src/verification/generated-site-quality.js';
 
 const goodHtml = ({title='Home',description='A useful description for this public website route that explains the value to its intended visitors.', extra='' }={}) => `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><meta name="description" content="${description}"><link rel="canonical" href="https://example.test/"><link rel="icon" href="/favicon.svg"><meta property="og:image" content="https://example.test/social.png"></head><body><main><h1>Welcome</h1><a class="primary-cta" href="/contact">Get started</a><img src="/hero.webp" alt="A team collaborating"><form><label for="email">Email</label><input id="email" type="email" required><button type="submit">Send</button><p role="alert"></p></form>${extra}</main></body></html>`;
@@ -56,4 +60,25 @@ test('marks non-applicable sticky CTA and analytics explicitly rather than silen
   });
   assert.equal(report.requirements.find(item=>item.id==='sticky-mobile-cta').status,'NOT_APPLICABLE');
   assert.equal(report.requirements.find(item=>item.id==='analytics').status,'NOT_APPLICABLE');
+});
+
+test('product-quality evidence includes the generated-site report for web targets',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-quality-evidence-'));
+  const pub=path.join(root,'public');
+  fs.mkdirSync(pub,{recursive:true});
+  try {
+    fs.writeFileSync(path.join(pub,'index.html'),goodHtml());
+    fs.writeFileSync(path.join(pub,'404.html'),goodHtml({title:'Page not found'}));
+    fs.writeFileSync(path.join(pub,'privacy.html'),goodHtml({title:'Privacy'}));
+    fs.writeFileSync(path.join(pub,'terms.html'),goodHtml({title:'Terms'}));
+    fs.writeFileSync(path.join(pub,'styles.css'),'@media (max-width: 640px) { main { padding: 1rem; } }');
+    fs.writeFileSync(path.join(pub,'favicon.svg'),'<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+    fs.writeFileSync(path.join(pub,'robots.txt'),'User-agent: *\nAllow: /\nSitemap: https://example.test/sitemap.xml');
+    fs.writeFileSync(path.join(pub,'sitemap.xml'),'<urlset><url><loc>https://example.test/</loc></url></urlset>');
+    const quality=auditProductExperience(root,{target:{id:'web-node'},siteKind:'business',pages:['/']});
+    assert.equal(quality.generatedSiteQuality.version,'generated-site-quality.v1');
+    assert.equal(quality.generatedSiteQuality.summary.total,20);
+  } finally {
+    fs.rmSync(root,{recursive:true,force:true});
+  }
 });
