@@ -122,3 +122,52 @@ test('data.csv.json enforces row, column, cell and input-size budgets',async()=>
   }
 });
 
+test('data.json.yaml is a canonical local contract and serializes nested JSON as safe YAML',async()=>{
+  const contract=getToolContract('data.json.yaml');
+  assert.ok(contract);
+  assert.equal(contract.executionMode,'local');
+  assert.equal(contract.networkRequired,false);
+  const result=await runTool('data.json.yaml',{json:'{"name":"Build Vibe","active":true,"empty":"","count":2,"items":["alpha","line\\nbreak"],"nested":{"note":"a: b"}}'});
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.output.yaml,'"name": "Build Vibe"\\n"active": true\\n"empty": ""\\n"count": 2\\n"items":\\n  - "alpha"\\n  - "line\\\\nbreak"\\n"nested":\\n  "note": "a: b"');
+  assert.equal(result.output.nodeCount,10);
+  assert.equal(result.networkUsed,false);
+});
+
+test('data.json.yaml quotes ambiguous strings and preserves JSON scalar types',async()=>{
+  const result=await runTool('data.json.yaml',{json:'{"danger":"=cmd","colon":"a: b","hash":"#tag","yes":"yes","nil":null,"flag":false,"number":7}'});
+  assert.equal(result.status,'COMPLETED');
+  assert.match(result.output.yaml,/"danger": "=cmd"/);
+  assert.match(result.output.yaml,/"colon": "a: b"/);
+  assert.match(result.output.yaml,/"hash": "#tag"/);
+  assert.match(result.output.yaml,/"yes": "yes"/);
+  assert.match(result.output.yaml,/"nil": null/);
+  assert.match(result.output.yaml,/"flag": false/);
+  assert.match(result.output.yaml,/"number": 7/);
+});
+
+test('data.json.yaml rejects invalid JSON, unsafe keys, excessive depth and unknown options',async()=>{
+  for(const input of [
+    {},
+    {json:'{'},
+    {json:123},
+    {json:'{"__proto__":"unsafe"}'},
+    {json:'{"constructor":{"prototype":1}}'},
+    {json:'{"ok":true}',format:'flow'}
+  ]){
+    const result=await runTool('data.json.yaml',input);
+    assert.notEqual(result.status,'COMPLETED');
+    assert.equal(result.networkUsed,false);
+  }
+  let deep='0';
+  for(let i=0;i<22;i++)deep='{"nested":'+deep+'}';
+  assert.notEqual((await runTool('data.json.yaml',{json:deep})).status,'COMPLETED');
+});
+
+test('data.json.yaml enforces JSON input and output resource budgets',async()=>{
+  const tooLarge=JSON.stringify({value:'x'.repeat(500_001)});
+  const result=await runTool('data.json.yaml',{json:tooLarge});
+  assert.equal(result.status,'INPUT_TOO_LARGE');
+  assert.equal(result.networkUsed,false);
+});
+
