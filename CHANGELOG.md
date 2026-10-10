@@ -57,3 +57,6 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 - Added a generated-server HTTP integration test for the 404 behavior.
 - Full GitHub Actions Build Vibe CI passed at commit `dd1bd2662125db43634ccdca4055b58b8bb852c3`.
 - Remaining: connect the quality report to the generation/publish transaction and implement/verify the other 19 checklist items as appropriate. The CLI is not yet an enforced publish gate.
+
+
+- Follow-up: attached the 20-point generated-site report to product-quality evidence for web targets; it remains informational until publish-gate integration is implemented and tested.
