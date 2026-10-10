@@ -104,3 +104,8 @@ Status meanings: IMPLEMENTED FOUNDATION means supporting code exists but every g
 - Critical failures block publish. User-specific facts and credentials are requested, never invented.
 - Existing architecture, provider-independent local workflows, user changes, and security gates remain intact.
 - Record exact commit, commands, environment, and test counts for each real verification run. Never copy historical test counts forward as new evidence.
+
+
+## Generated-site quality as a competitive workstream (2026-10-10)
+
+Build Vibe's differentiator should remain verified, portable output rather than feature-count claims. The 20-point generated-site checklist is tracked in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Existing SEO and verification foundations are useful, but competitor parity must be judged by observable end-to-end behavior: 404 handling, form recovery, mobile CTA and breakpoints, complete social/icon assets, accessible image semantics, consent-aware analytics, and performance budgets. Publish only verified capabilities; keep unconfirmed items on the roadmap until browser/runtime evidence is recorded.
