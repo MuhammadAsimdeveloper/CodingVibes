@@ -80,3 +80,13 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 - Extended Playwright browser smoke to exercise the primary CTA, cookie reject/preferences persistence, mobile sticky CTA dismissal, contact-form loading/error recovery, and successful redirect to the noindex thank-you page.
 - Fed runtime results into the generated-site quality report and added critical-check blocking to the verification contract in production or when `CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true`.
 - Full CI passed at `962d5006ed239ff39476aeefe3d43cb05d4d51a9`.
+
+
+## [Unreleased] — analytics consent and business contact data (2026-10-10)
+
+- Added optional Google Analytics generation when a valid owner-supplied measurement ID is provided in structured project settings or explicitly in the build brief.
+- Analytics script is not loaded before analytics consent; revocation sets Google consent state to denied and activates the ga-disable collection guard.
+- Added browser verification for consent-gated analytics load/revocation, using a locally intercepted test script rather than a real third-party request.
+- Business address is extracted only from explicitly labeled user input, rendered with HTML escaping, and required by the production quality gate for business sites.
+- Added a generated-site browser smoke fixture that checks the critical 20-point gate end to end.
+- Full CI passed at `ceac1d6c58af339880b5959f69a0e4d3d75547b8`.
