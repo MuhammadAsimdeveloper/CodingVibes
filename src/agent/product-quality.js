@@ -138,7 +138,7 @@ function nativeEntrypointExists(target,names){
   return checks[target]!==false;
 }
 
-export function auditProductExperience(workspace,spec={}){
+export function auditProductExperience(workspace,spec={}, {runtimeEvidence={}}={}){
   const root=path.resolve(workspace);
   const files=walk(root);
   const names=files.map(file=>path.relative(root,file).replaceAll(path.sep,'/').toLowerCase());
@@ -146,7 +146,7 @@ export function auditProductExperience(workspace,spec={}){
   const html=htmlText(files);
   const contract=buildQualityContract(spec);
   const webTarget=['web-node','web-pwa'].includes(String(spec.target?.id||'web-node'));
-  const generatedSiteQuality=webTarget?auditGeneratedSite({files:Object.fromEntries(files.map(file=>[path.relative(root,file).replaceAll(path.sep,'/'),fs.readFileSync(file,'utf8')])),baseUrl:spec.seo?.baseUrl||process.env.SITE_URL||'',config:spec.generatedSiteQuality||{}}):null;
+  const generatedSiteQuality=webTarget?auditGeneratedSite({files:Object.fromEntries(files.map(file=>[path.relative(root,file).replaceAll(path.sep,'/'),fs.readFileSync(file,'utf8')])),baseUrl:spec.seo?.baseUrl||process.env.SITE_URL||'',config:{...(spec.generatedSiteQuality||{}),...runtimeEvidence}}):null;
   const checks=[];
   let brokenLinks=[];
   const addCheck=(id,label,ok,blocking=false,detail='')=>checks.push({id,label,passed:Boolean(ok),blocking:Boolean(blocking&&!ok),detail});
