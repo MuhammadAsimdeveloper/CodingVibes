@@ -54,3 +54,8 @@ Do not fetch mutable upstream `main` into production prompts on every user reque
 - Add retrieval by product category, user intent, target stack, and accessibility constraints.
 - Add source-version and freshness metadata to imported guidance.
 - Add template regression fixtures so newly introduced builder features upgrade all compatible templates in the same release.
+
+
+## Local guidance adapter implemented
+
+`src/agent/design-guidance.js` now contains a versioned, curated local adapter with upstream provenance and product-, style-, and stack-specific rules. It is consumed by `buildQualityContract` and every template prompt, so the generation pipeline can retrieve guidance without calling a mutable external repository at runtime. The adapter is a curated summary, not a mirror of the full upstream corpus. Future catalog expansion must follow the controlled refresh process above.
