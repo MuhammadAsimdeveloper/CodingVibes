@@ -43,3 +43,8 @@ npm run benchmark
 npm run launch:check
 
 The release decision must remain PASS/BLOCKED/NOT_CONFIGURED rather than treating missing external infrastructure as a fake green result.
+
+
+## Post-release follow-up: generated website launch gate (2026-10-10)
+
+The source release contract covers platform-level verification and SEO foundations; it must not be interpreted as automatic proof that all 20 customer-site checklist items are present and working in every generated project. Use [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md) as the follow-up acceptance plan. Implement artifact and browser checks, return per-item evidence, and block publication on critical failures. No fresh CI, test run, or deployment is claimed here.
