@@ -47,3 +47,13 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 - Recorded existing foundations (SEO metadata/JSON-LD, robots/sitemap checks, discoverability auditing, product-quality state contracts, reduced-motion support, and privacy/terms templates) separately from behavior that still requires end-to-end verification.
 - Planned P0/P1/P2 work for real 404 routing, robust form confirmation/error handling, responsive CTA checks, favicon/OG validation, consent-aware customer-site analytics, contact-data integrity, and image optimization.
 - Documentation-only update: no new implementation, test run, or deployment is claimed.
+
+
+## [Unreleased] — generated website quality gate implementation (2026-10-10)
+
+- Added a versioned 20-requirement generated-site audit engine (`src/verification/generated-site-quality.js`) and `npm run site:quality` CLI.
+- Added tests for report statuses, missing evidence, and critical publish blockers.
+- Generated projects now include a branded `public/404.html`; unknown public routes return HTTP 404 rather than silently falling back to the home page.
+- Added a generated-server HTTP integration test for the 404 behavior.
+- Full GitHub Actions Build Vibe CI passed at commit `dd1bd2662125db43634ccdca4055b58b8bb852c3`.
+- Remaining: connect the quality report to the generation/publish transaction and implement/verify the other 19 checklist items as appropriate. The CLI is not yet an enforced publish gate.
