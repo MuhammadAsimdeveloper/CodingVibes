@@ -127,3 +127,12 @@ Still open: wire critical audit statuses into publish blocking, browser-test act
 The 20-point report now receives HTTP/browser runtime evidence and is attached to web product-quality results. Production verification blocks critical gaps under `NODE_ENV=production` or `CODINGVIBES_ENFORCE_GENERATED_SITE_QUALITY=true`. Browser smoke exercises CTA placement, consent preferences, sticky CTA dismissal, form error/retry/loading, and successful thank-you redirect. Full CI passed at `962d5006ed239ff39476aeefe3d43cb05d4d51a9`.
 
 Still open: real contact details from site owners, customer analytics setup with consent, complete platform-specific icons, generated image compression, broader viewport and accessibility testing, and production deployment configuration.
+
+
+## Owner-provided data gate (2026-10-10)
+
+- [x] Google Analytics is optional, requires an explicit measurement ID, loads only after consent, and disables collection on revocation.
+- [x] Business contact address is never fabricated; it must be owner-supplied and is a critical production check for business sites.
+- [x] Browser smoke verifies the analytics consent path and asserts that a configured, fully evidenced generated site passes the critical quality gate.
+- [ ] Add polished project-settings fields for analytics and address, including preview and validation.
+- [ ] Complete platform-specific icon sizes and integrate image compression into generated export.
