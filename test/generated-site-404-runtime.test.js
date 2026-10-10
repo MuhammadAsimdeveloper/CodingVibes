@@ -36,6 +36,13 @@ test('generated server serves the custom 404 page with HTTP 404 for unknown publ
     assert.equal(healthy,true,'generated server should start');
     const home=await fetch('http://127.0.0.1:'+port+'/');
     assert.equal(home.status,200);
+    const thankYou=await fetch('http://127.0.0.1:'+port+'/thank-you');
+    assert.equal(thankYou.status,200);
+    assert.match(await thankYou.text(),/name="robots" content="noindex,nofollow"/);
+    const sitemap=await fetch('http://127.0.0.1:'+port+'/sitemap.xml');
+    assert.doesNotMatch(await sitemap.text(),/\/thank-you/);
+    const contact=await fetch('http://127.0.0.1:'+port+'/api/contact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:'Test visitor',email:'visitor@example.test',message:'Test submission'})});
+    assert.ok(contact.status>=200&&contact.status<300,'contact submission should be accepted');
     const missing=await fetch('http://127.0.0.1:'+port+'/this-route-does-not-exist');
     assert.equal(missing.status,404);
     assert.match(await missing.text(),/Page not found/i);
