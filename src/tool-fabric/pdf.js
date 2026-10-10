@@ -159,7 +159,8 @@ async function imageToPdf(input) {
     try {
       embedded = item.mimeType === 'image/png'
         ? await document.embedPng(item.bytes)
-        : await document.embedJpg(item.bytes);
+        // pdf-lib's JPEG parser reads DataView(imageData.buffer) without byteOffset, so copy Node Buffer views into a zero-offset Uint8Array.
+        : await document.embedJpg(Uint8Array.from(item.bytes));
     } catch {
       throw new PdfToolError('INVALID_INPUT', item.label + ' could not be decoded as a supported PNG or JPEG.');
     }
