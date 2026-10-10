@@ -108,3 +108,8 @@ Status meanings: IMPLEMENTED FOUNDATION means supporting code exists but every g
 - Critical failures block publish. User-specific facts and credentials are requested, never invented.
 - Existing architecture, provider-independent local workflows, user changes, and security gates remain intact.
 - Record exact commit, commands, environment, and test counts for each real verification run. Never copy historical test counts forward as new evidence.
+
+
+## Generated website quality gate (added 2026-10-10)
+
+Before a customer-generated project is published, run the checks in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Verify all 20 requirements against actual output. The source already provides SEO/discoverability helpers, product-quality state contracts, motion/reduced-motion support, and legal page templates; this is not proof that all generated projects pass. Require correct 404 status, tested form failure/success, responsive CTA visibility, favicon/manifest and OG assets, meaningful alt text, consent-aware customer analytics, owner-supplied contact details, and image budgets. Emit per-item evidence and block publication on critical failures. Do not mark NEEDS_INPUT as PASS.
