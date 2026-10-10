@@ -8,9 +8,9 @@ import { auditGeneratedSite, GENERATED_SITE_REQUIREMENTS } from '../src/verifica
 
 const goodHtml = ({title='Home',description='A useful description for this public website route that explains the value to its intended visitors.', extra='' }={}) => `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><meta name="description" content="${description}"><link rel="canonical" href="https://example.test/"><link rel="icon" href="/favicon.svg"><meta property="og:image" content="https://example.test/social.png"></head><body><main><h1>Welcome</h1><a class="primary-cta" href="/contact">Get started</a><img src="/hero.webp" alt="A team collaborating"><form><label for="email">Email</label><input id="email" type="email" required><button type="submit">Send</button><p role="alert"></p></form>${extra}</main></body></html>`;
 
-test('exports a stable, complete list of the 20 launch requirements',()=>{
+test('exports a stable, complete list of the 21 launch requirements',()=>{
   assert.equal(GENERATED_SITE_REQUIREMENTS.length,21);
-  assert.equal(new Set(GENERATED_SITE_REQUIREMENTS.map(item=>item.id)).size,20);
+  assert.equal(new Set(GENERATED_SITE_REQUIREMENTS.map(item=>item.id)).size,21);
   assert.ok(GENERATED_SITE_REQUIREMENTS.every(item=>item.id&&item.label&&item.severity));
 });
 
@@ -80,7 +80,7 @@ test('product-quality evidence includes the generated-site report for web target
     fs.writeFileSync(path.join(pub,'sitemap.xml'),'<urlset><url><loc>https://example.test/</loc></url></urlset>');
     const quality=auditProductExperience(root,{target:{id:'web-node'},siteKind:'business',pages:['/']});
     assert.equal(quality.generatedSiteQuality.version,'generated-site-quality.v1');
-    assert.equal(quality.generatedSiteQuality.summary.total,20);
+    assert.equal(quality.generatedSiteQuality.summary.total,21);
     assert.equal(quality.generatedSiteQuality.requirements.find(item=>item.id==='cookie-consent').status,'PASS');
     assert.equal(quality.generatedSiteQuality.requirements.find(item=>item.id==='favicon-set').status,'PASS');
     assert.equal(quality.generatedSiteQuality.requirements.find(item=>item.id==='sticky-mobile-cta').status,'PASS');
