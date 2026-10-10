@@ -33,6 +33,24 @@ test('quality audit blocks hard dependency on remote runtime assets and missing 
   fs.rmSync(root,{recursive:true,force:true});
 });
 
+test('quality contract forbids deceptive social proof and default design anti-patterns',()=>{
+  const contract=buildQualityContract({siteKind:'saas'});
+  const rules=contract.hardRules.join(' ').toLowerCase();
+  for(const phrase of ['fabricated reviews','unsupported metrics','purple gradients','cursor-following','pill-shaped buttons','emoji icons','made with ai']) assert.ok(rules.includes(phrase),phrase);
+});
+
+test('product audit blocks AI attribution, purple gradients, fabricated proof, emoji icons and distracting motion',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-anti-patterns-'));
+  fs.mkdirSync(path.join(root,'public'),{recursive:true});
+  fs.writeFileSync(path.join(root,'public','index.html'),`<!doctype html><html lang="en"><head><meta name="description" content="Specific service"><link rel="canonical" href="https://example.com/"><meta property="og:title" content="Example"><meta name="viewport" content="width=device-width"></head><body><nav><a href="/">Home</a></nav><main><h1>Useful product</h1><button>🚀 Start now</button><p>Trusted by 10,000+ customers</p><p>Made with AI</p><p>Built for teams — without compromise.</p><img alt="Product preview" src="/preview.png"></main></body></html>`,'utf8');
+  fs.writeFileSync(path.join(root,'public','styles.css'),'.hero{background:linear-gradient(120deg,#7c3aed,#c026d3)} .cursor-follower{position:fixed} .cta{border-radius:9999px}','utf8');
+  fs.writeFileSync(path.join(root,'public','motion.js'),"ScrollTrigger.create({trigger:'.hero'}); document.addEventListener('pointermove',moveCursor);",'utf8');
+  const audit=auditProductExperience(root,{siteKind:'business',target:{id:'web-node'},experience:{threeD:false}});
+  const ids=new Set(audit.checks.filter(x=>!x.passed).map(x=>x.id));
+  for(const id of ['unwanted_ai_attribution','purple_gradient','fabricated_social_proof','emoji_ui_icon','em_dash_copy','custom_cursor_animation','excessive_scroll_motion','pill_button_style']) assert.ok(ids.has(id),id);
+  fs.rmSync(root,{recursive:true,force:true});
+});
+
 test('deterministic native and desktop fallbacks provide real navigation shells instead of a placeholder screen',async()=>{
   const {generateTargetFallback}=await import('../src/targets/generator.js');
   const {getTarget}=await import('../src/targets/registry.js');
