@@ -129,7 +129,7 @@ test('data.json.yaml is a canonical local contract and serializes nested JSON as
   assert.equal(contract.networkRequired,false);
   const result=await runTool('data.json.yaml',{json:'{"name":"Build Vibe","active":true,"empty":"","count":2,"items":["alpha","line\\nbreak"],"nested":{"note":"a: b"}}'});
   assert.equal(result.status,'COMPLETED');
-  assert.equal(result.output.yaml,'"name": "Build Vibe"\\n"active": true\\n"empty": ""\\n"count": 2\\n"items":\\n  - "alpha"\\n  - "line\\\\nbreak"\\n"nested":\\n  "note": "a: b"');
+  assert.equal(result.output.yaml,'"name": "Build Vibe"\n"active": true\n"empty": ""\n"count": 2\n"items":\n  - "alpha"\n  - "line\\nbreak"\n"nested":\n  "note": "a: b"');
   assert.equal(result.output.nodeCount,10);
   assert.equal(result.networkUsed,false);
 });
