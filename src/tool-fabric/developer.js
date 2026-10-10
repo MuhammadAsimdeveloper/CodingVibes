@@ -141,6 +141,87 @@ function convertTimestamp(input) {
   return {output:{mode:input.mode,iso,unixMilliseconds:milliseconds,unixSeconds:milliseconds/1000},warnings:[]};
 }
 
+
+const CRON_FIELDS = Object.freeze([
+  {name:'minute',min:0,max:59},
+  {name:'hour',min:0,max:23},
+  {name:'dayOfMonth',min:1,max:31},
+  {name:'month',min:1,max:12},
+  {name:'dayOfWeek',min:0,max:7},
+]);
+
+function parseCronField(source,field) {
+  const values=new Set();
+  const wildcard=source === '*';
+  const segments=source.split(',');
+  if (!source || segments.length > 100) invalid('Cron fields must contain a bounded list of values.');
+  for (const segment of segments) {
+    if (!segment) invalid('Cron lists may not contain empty items.');
+    const slash=segment.split('/');
+    if (slash.length > 2) invalid('Cron steps must use one slash.');
+    let step=1;
+    if (slash.length===2) {
+      if (!/^\\d+$/.test(slash[1])) invalid('Cron step must be a positive integer.');
+      step=Number(slash[1]);
+      if (step < 1 || step > field.max-field.min+1) invalid('Cron step is outside the supported range.');
+    }
+    const base=slash[0];
+    let start,end;
+    if (base==='*') { start=field.min; end=field.max; }
+    else if (base.includes('-')) {
+      const parts=base.split('-');
+      if (parts.length!==2 || !/^\\d+$/.test(parts[0]) || !/^\\d+$/.test(parts[1])) invalid('Cron ranges must use numeric start-end values.');
+      start=Number(parts[0]); end=Number(parts[1]);
+      if (start>end) invalid('Cron ranges may not wrap around.');
+    } else {
+      if (!/^\\d+$/.test(base)) invalid('Cron fields support numbers, lists, ranges, wildcards and steps only.');
+      start=Number(base);
+      end=slash.length===2 ? field.max : start;
+    }
+    if (start<field.min || start>field.max || end<field.min || end>field.max) invalid('Cron field value is outside the allowed range for '+field.name+'.');
+    for(let value=start;value<=end;value+=step) values.add(field.name==='dayOfWeek' && value===7 ? 0 : value);
+  }
+  if (!values.size) invalid('Cron field did not select any values.');
+  return {values,wildcard};
+}
+
+function inspectCron(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input) ||
+      Object.keys(input).some(key=>key!=='expression'&&key!=='after')) {
+    invalid('Input must contain only expression and optional after.');
+  }
+  if (typeof input.expression!=='string' || input.expression.length>100) invalid('expression must be a five-field cron string of at most 100 characters.');
+  const parts=input.expression.trim().split(/\\s+/);
+  if (parts.length!==5) invalid('Only five-field cron syntax is supported: minute hour day-of-month month day-of-week.');
+  const fields=parts.map((part,index)=>parseCronField(part,CRON_FIELDS[index]));
+  const afterMs=input.after===undefined ? Date.now() : parseIsoInstant(input.after);
+  const startMinute=Math.floor(afterMs/60_000)*60_000+60_000;
+  const endMinute=startMinute+366*24*60*60_000;
+  const nextRuns=[];
+  for(let timestamp=startMinute;timestamp<endMinute&&nextRuns.length<5;timestamp+=60_000){
+    const date=new Date(timestamp);
+    const minuteMatch=fields[0].values.has(date.getUTCMinutes());
+    const hourMatch=fields[1].values.has(date.getUTCHours());
+    const domMatch=fields[2].values.has(date.getUTCDate());
+    const monthMatch=fields[3].values.has(date.getUTCMonth()+1);
+    const dowMatch=fields[4].values.has(date.getUTCDay());
+    const dayMatch=fields[2].wildcard ? dowMatch : fields[4].wildcard ? domMatch : domMatch||dowMatch;
+    if(minuteMatch&&hourMatch&&monthMatch&&dayMatch) nextRuns.push(date.toISOString());
+  }
+  const warnings=nextRuns.length?[]:['No occurrence was found within the bounded 366-day search window.'];
+  return {
+    output:{
+      expression:parts.join(' '),
+      fields:Object.fromEntries(CRON_FIELDS.map((field,index)=>[field.name,[...fields[index].values].sort((a,b)=>a-b)])),
+      timeZone:'UTC',
+      dayMatchPolicy:'day-of-month OR day-of-week when both are restricted',
+      searchWindowDays:366,
+      nextRuns
+    },
+    warnings
+  };
+}
+
 function makeUuid() {
   return {output:{uuid:randomUUID(),version:4},warnings:[]};
 }
@@ -171,6 +252,7 @@ export function runDeveloperTool(id,input={}) {
     case 'dev.uuid.generate': return makeUuid();
     case 'dev.url.encode': return encodeUrl(input);
     case 'dev.timestamp.convert': return convertTimestamp(input);
+    case 'dev.cron.inspect': return inspectCron(input);
     default: invalid('No developer utility executor is registered for this id.');
   }
 }
