@@ -15,7 +15,7 @@ export function completeSpec(raw={}){
  const addPage=p=>{if(!pages.includes(p))pages.push(p)};
  const addApi=(method,path)=>{if(!apis.some(a=>String(a.method||'GET').toUpperCase()===method&&a.path===path))apis.push({method,path})};
  addPage('/privacy'); addPage('/terms');
- if(kind!=='immersive') addPage('/contact');
+ if(kind!=='immersive'){addPage('/contact');addPage('/thank-you');}
  if(['business','local','agency','portfolio','hospitality','realEstate','education','event','content'].includes(kind)) addPage('/about');
  if(['ecommerce','marketplace'].includes(kind)){addPage('/shop');addPage('/collections');addPage('/cart');addPage('/checkout');addPage('/account');addApi('GET','/api/products');addApi('POST','/api/orders')};
  if(kind==='hospitality'||behavior.booking||spec.productKinds?.includes?.('booking')){addPage('/booking');addPage('/calendar');addApi('GET','/api/appointments');behavior.booking=true;}
