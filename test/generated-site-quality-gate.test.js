@@ -100,3 +100,16 @@ test('customer analytics stays NEEDS_INPUT until browser delivery and consent ev
   const verified=auditGeneratedSite({files,config:{analyticsEnabled:true,analyticsConsentAware:true,analyticsDeliveryVerified:true}});
   assert.equal(verified.requirements.find(item=>item.id==='analytics').status,'PASS');
 });
+
+test('business address is a production blocker when required and missing',()=>{
+  const files={'public/index.html':goodHtml()};
+  const missing=auditGeneratedSite({files,config:{requireContactAddress:true}});
+  const missingAddress=missing.requirements.find(item=>item.id==='contact-address');
+  assert.equal(missingAddress.status,'NEEDS_INPUT');
+  assert.equal(missingAddress.severity,'critical');
+  assert.equal(missing.publishable,false);
+  const supplied=auditGeneratedSite({files,config:{requireContactAddress:true,contactAddress:'18 Market Road, Lahore, Punjab, Pakistan'}});
+  assert.equal(supplied.requirements.find(item=>item.id==='contact-address').status,'PASS');
+  const notRequired=auditGeneratedSite({files,config:{requireContactAddress:false}});
+  assert.equal(notRequired.requirements.find(item=>item.id==='contact-address').status,'NOT_APPLICABLE');
+});
