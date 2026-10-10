@@ -60,6 +60,7 @@ Every contract supplies a stable ID and aliases, an input/output schema, risk cl
 | `dev.uuid.generate` | local | Cryptographically secure UUID v4 generation using Node crypto |
 | `dev.url.encode` | local | Explicit encode/decode URI and component modes; does not navigate or fetch URLs |
 | `dev.timestamp.convert` | local | Converts strict ISO-8601 instants with explicit offsets to Unix seconds/milliseconds and back, validating calendar fields and timestamp bounds |
+| `dev.cron.inspect` | local | Validates five-field cron syntax and returns up to five upcoming UTC occurrences within a 366-day search window |
 | `pdf.info` | local | Bounded PDF metadata, page count, dimensions and rotations from supplied Base64; rejects malformed/encrypted PDFs |
 | `pdf.merge` | local | Merges 2–10 PDFs in order, capped at 1 MB combined input, 200 pages and 2 MB output |
 | `pdf.split` | local | Extracts selected one-based pages into separate one-page PDFs; bounded aggregate outputs |
@@ -97,6 +98,8 @@ The reverse `data.csv.json` contract parses RFC-style quoted fields, doubled quo
 ## Local hash, checksum, UUID and URL tools
 
 The developer-utility tranche adds `dev.hash.generate`, `security.checksum.verify`, `dev.uuid.generate`, and `dev.url.encode`. Hash generation permits only SHA-256, SHA-384 and SHA-512 and supports hex/Base64 output. Checksum verification parses a supplied digest strictly, rejects unsupported encodings and digest lengths before comparison, and uses Node's fixed-size `timingSafeEqual`. UUID v4 uses the cryptographic random generator. URL operations require an explicit mode (`encode-component`, `decode-component`, `encode-uri`, or `decode-uri`) and malformed inputs return `INVALID_INPUT`.
+
+Cron inspection supports exactly five fields: minute, hour, day-of-month, month and day-of-week. Numeric values, comma lists, non-wrapping ranges, `*` and positive `/step` forms are supported; named months/days, aliases and scheduler-specific extensions are rejected. Occurrences are evaluated in UTC, at minute precision, and search is capped at 366 days. When both day-of-month and day-of-week are restricted, the inspector uses the documented cron OR rule. It returns at most five next occurrences and warns when no occurrence is found in the search window.
 
 Timestamp conversion requires an explicit mode. ISO inputs must include `Z` or a numeric `±HH:MM` offset, validate the actual calendar date and time, and are limited to millisecond precision. Unix-seconds input may be fractional to millisecond precision; Unix-milliseconds input must be a safe integer. Unsupported modes and out-of-range dates fail explicitly.
 
