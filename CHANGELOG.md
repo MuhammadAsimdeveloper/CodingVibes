@@ -98,3 +98,6 @@ See `docs/FINAL_RELEASE.md` and `docs/FINAL_RELEASE_12.2.md`.
 - Settings persist in browser localStorage per project, survive project switching/reload, and are appended to the build brief without echoing the settings into the visible prompt log.
 - Analytics IDs are validated before build; business addresses are explicitly supplied, safely rendered, and required for business-site production verification.
 - Full CI passed at `06d2a6fcd03d6e37a8793f260738f5383b152a94`.
+
+
+- Follow-up: project launch settings now persist per project in browser localStorage and restore when switching projects or reloading the builder. Verified by unit/static tests and full CI at `06d2a6fcd03d6e37a8793f260738f5383b152a94`.
