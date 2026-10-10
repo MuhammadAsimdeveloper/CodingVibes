@@ -138,3 +138,9 @@ Remaining: broader accessibility budgets, icon sets for platform-specific instal
 Generated-site artifacts now include 180×180 Apple touch, 192×192 PWA and 512×512 maskable PNG icons, retain the SVG fallback, and expose correct icon links in public, 404, admin and sign-in pages. Browser E2E confirms each PNG endpoint returns HTTP 200 with `image/png` and the expected dimensions. Full CI passed on revision `588156e398bd643c7ed3bd7a5a17979983bea329` ([run](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750)).
 
 Remaining: automatic generated-export raster optimization, broader accessibility budgets, and real production infrastructure evidence.
+
+### Accessibility baseline audit (2026-10-11)
+
+Added the `accessibility-basics` requirement to generated-site reports. It checks each public HTML page for document language and a main landmark, and checks non-hidden form controls for an associated or explicit accessible name. Missing evidence reports `FAIL`; tests cover both compliant and non-compliant fixtures. The requirement list is now 21 items. CI verification for this change is pending.
+
+This is a baseline static audit, not a WCAG conformance claim. Still planned: keyboard-only browser journeys, focus order/visibility, link and button names, heading hierarchy, contrast, reduced-motion behavior, and axe-based checks.
