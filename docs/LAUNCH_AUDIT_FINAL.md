@@ -151,3 +151,8 @@ Status meanings: IMPLEMENTED FOUNDATION means supporting code exists but every g
 - Critical failures block publish. User-specific facts and credentials are requested, never invented.
 - Existing architecture, provider-independent local workflows, user changes, and security gates remain intact.
 - Record exact commit, commands, environment, and test counts for each real verification run. Never copy historical test counts forward as new evidence.
+
+
+## Follow-up audit: generated website completeness (2026-10-10)
+
+The previous source audit and CI results are historical evidence for that source line. A separate checklist review found that Build Vibe has strong SEO/product-quality foundations, but the 20 website requirements must be validated on generated artifacts. In particular, the reviewed evidence did not establish a complete end-to-end custom 404, sticky mobile CTA, thank-you flow, consent manager, customer-site analytics setup, or automatic generated-image compression. Review [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md) for status, P0/P1/P2 priorities, and acceptance criteria. No new tests or deployment are claimed by this documentation update.
