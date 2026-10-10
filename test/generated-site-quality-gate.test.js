@@ -113,3 +113,24 @@ test('business address is a production blocker when required and missing',()=>{
   const notRequired=auditGeneratedSite({files,config:{requireContactAddress:false}});
   assert.equal(notRequired.requirements.find(item=>item.id==='contact-address').status,'NOT_APPLICABLE');
 });
+
+test('accessibility basics require document language, a main landmark and accessible form names',()=>{
+  const report=auditGeneratedSite({files:{
+    'public/index.html':goodHtml(),
+    'public/contact.html':'<!doctype html><html><head><title>Contact</title><meta name="description" content="A useful description for this public website route that explains the value to its intended visitors."></head><body><h1>Contact</h1><form><input type="email"><button>Send</button></form></body></html>'
+  },config:{analyticsEnabled:false,requireContactAddress:false}});
+  const check=report.requirements.find(item=>item.id==='accessibility-basics');
+  assert.ok(check,'accessibility basics should be part of the generated-site quality report');
+  assert.equal(check.status,'FAIL');
+  assert.ok(check.evidence.some(item=>/language/i.test(item)));
+  assert.ok(check.evidence.some(item=>/main landmark/i.test(item)));
+  assert.ok(check.evidence.some(item=>/form control/i.test(item)));
+});
+
+test('accessibility basics pass when public pages declare language, main landmarks and associated labels',()=>{
+  const report=auditGeneratedSite({files:{
+    'public/index.html':goodHtml(),
+    'public/contact.html':goodHtml({title:'Contact'})
+  },config:{analyticsEnabled:false,requireContactAddress:false}});
+  assert.equal(report.requirements.find(item=>item.id==='accessibility-basics').status,'PASS');
+});
