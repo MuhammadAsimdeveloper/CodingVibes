@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 export const GENERATED_SITE_REQUIREMENTS = Object.freeze([
   {id:'custom-404',label:'Custom 404 page and HTTP 404 response',severity:'critical'},
   {id:'meta-title',label:'Unique title for every public page',severity:'critical'},
@@ -35,7 +33,7 @@ const routeOf = name => {
   if(rel==='index.html')return '/';
   return '/'+rel.replace(/\.html?$/i,'').replace(/\/index$/,'');
 };
-const tagContent = (html, pattern) => [...html.matchAll(pattern)].map(match=>match[1] || '');
+const tagContent = (html, pattern) => { const flags=pattern.flags.includes('g')?pattern.flags:pattern.flags+'g'; return [...html.matchAll(new RegExp(pattern.source,flags))].map(match=>match[1]||''); };
 
 function resolveAsset(files, url, baseUrl) {
   const raw=String(url||'').trim();
