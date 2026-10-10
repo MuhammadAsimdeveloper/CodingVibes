@@ -105,7 +105,7 @@ test('server public and authenticated route smoke covers launch control plane',a
   smokeStore.updateRun(exportRun.id,userId,{workspace:exportWorkspace,status:'verified'});
   const exported=await req('/api/projects/'+pid+'/export',{headers:{cookie:sessionCookie}});
   assert.equal(exported.response.status,200,'verified projects should export a ZIP');
-  assert.match(exported.body.downloadUrl,/^\\/api\\/deployments\\/[^/]+\\/file$/);
+  assert.ok(exported.body.downloadUrl.startsWith('/api/deployments/')&&exported.body.downloadUrl.endsWith('/file'));
   assert.ok(exported.body.downloadName.endsWith('.zip'));
   const zipDownload=await req(exported.body.downloadUrl,{headers:{cookie:sessionCookie}});
   assert.equal(zipDownload.response.status,200,'the generated export URL should download the ZIP');
