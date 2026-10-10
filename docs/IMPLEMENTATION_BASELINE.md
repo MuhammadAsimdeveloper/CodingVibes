@@ -126,3 +126,8 @@ Status meanings: IMPLEMENTED FOUNDATION means supporting code exists but every g
 - Critical failures block publish. User-specific facts and credentials are requested, never invented.
 - Existing architecture, provider-independent local workflows, user changes, and security gates remain intact.
 - Record exact commit, commands, environment, and test counts for each real verification run. Never copy historical test counts forward as new evidence.
+
+
+## Generated website checklist follow-up (2026-10-10)
+
+A source inspection mapped the screenshot's 20 launch requirements against the repository. Existing foundations include SEO metadata/JSON-LD, sitemap/robots checks, discoverability auditing, product-quality contracts, reduced-motion support, and privacy/terms templates. The inspection did not freshly run tests or deployment and did not establish universal per-generated-site behavior for custom 404, sticky mobile CTA, thank-you flow, cookie consent, customer-site analytics, or generated image compression. Track status and acceptance evidence in [`GENERATED_WEBSITE_QUALITY_GATE.md`](GENERATED_WEBSITE_QUALITY_GATE.md). Historical CI counts in this baseline remain historical, not results of this update.
