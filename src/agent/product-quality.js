@@ -146,7 +146,7 @@ export function auditProductExperience(workspace,spec={}, {runtimeEvidence={}}={
   const html=htmlText(files);
   const contract=buildQualityContract(spec);
   const webTarget=['web-node','web-pwa'].includes(String(spec.target?.id||'web-node'));
-  const generatedSiteQuality=webTarget?auditGeneratedSite({files:Object.fromEntries(files.map(file=>[path.relative(root,file).replaceAll(path.sep,'/'),fs.readFileSync(file,'utf8')])),baseUrl:spec.seo?.baseUrl||process.env.SITE_URL||'',config:{...(spec.generatedSiteQuality||{}),contactAddress:spec.contactAddress||spec.businessAddress||spec.business?.address||spec.generatedSiteQuality?.contactAddress,...runtimeEvidence}}):null;
+  const generatedSiteQuality=webTarget?auditGeneratedSite({files:Object.fromEntries(files.map(file=>[path.relative(root,file).replaceAll(path.sep,'/'),fs.readFileSync(file,'utf8')])),baseUrl:spec.seo?.baseUrl||process.env.SITE_URL||'',config:{...(spec.generatedSiteQuality||{}),contactAddress:spec.contactAddress||spec.businessAddress||spec.business?.address||spec.generatedSiteQuality?.contactAddress,requireContactAddress:spec.generatedSiteQuality?.requireContactAddress??(spec.siteKind==='business'),...runtimeEvidence}}):null;
   const checks=[];
   let brokenLinks=[];
   const addCheck=(id,label,ok,blocking=false,detail='')=>checks.push({id,label,passed:Boolean(ok),blocking:Boolean(blocking&&!ok),detail});
