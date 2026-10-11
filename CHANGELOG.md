@@ -11,6 +11,13 @@
 
 All notable Build Vibe changes are recorded here.
 
+## [Unreleased] — media-aware export archive packaging (2026-10-11)
+
+- ZIP exports now store already-compressed PNG/JPEG/WebP/AVIF/GIF/BMP, common audio/video, PDF, ZIP/gzip/Brotli and WOFF font assets without an additional DEFLATE pass.
+- Text and source files remain DEFLATE-compressed. Asset payload bytes, paths and references remain unchanged.
+- Added regression tests for media-byte preservation and exact HTML content round-tripping.
+- Scope note: this reduces archive CPU/wasted compression; generated-raster resizing/re-encoding is still a separate unfinished task and is not claimed complete.
+
 ## [Unreleased] — platform-specific generated app icons (2026-10-11)
 
 - Generated projects now include real 180px Apple touch, 192px PWA, and 512px maskable PNG icons plus the existing scalable SVG fallback.
