@@ -5,6 +5,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {zipDirectory} from './zip.js';
 import {createOptimizedExportWorkspace} from './media-optimizer.js';
+import {verifyDeploymentCredential} from './credential-check.js';
 
 const exec=promisify(execFile);
 const safeName=v=>String(v||'site').toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48)||'codingvibes-site';
@@ -16,6 +17,20 @@ async function jsonFetch(url,{token,method='GET',body,headers={}}={}){
  return data;
 }
 function authRequired(provider){return Object.assign(new Error(provider+'_not_connected'),{code:'PROVIDER_NOT_CONNECTED',status:409})}
+async function verifyConnectedCredentials(provider,credentials={}){
+  const env={};
+  if(provider==='github'||provider==='hostinger')env.GITHUB_TOKEN=credentials.accessToken;
+  else if(provider==='vercel')env.VERCEL_TOKEN=credentials.accessToken;
+  else if(provider==='netlify')env.NETLIFY_AUTH_TOKEN=credentials.accessToken;
+  else if(provider==='cloudflare'){
+    env.CLOUDFLARE_API_TOKEN=credentials.accessToken;
+    env.CLOUDFLARE_ACCOUNT_ID=credentials.accountId;
+  }else if(provider==='coding-vibes'){
+    return verifyDeploymentCredential(provider,{env:process.env});
+  }else return {schema:'build-vibe.deployment-credential-check.v1',provider,status:provider==='manual'?'NOT_REQUIRED':'UNVERIFIED',authenticated:provider==='manual',writeAccessVerified:false,checks:[],blockers:[],warnings:['read_only_credential_probe_not_supported']};
+  const check=await verifyDeploymentCredential(provider,{env});
+  return {...check,authenticated:check.status==='PASS'};
+}
 function contentTypeFor(file){const e=path.extname(file).toLowerCase();return({'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.avif':'image/avif','.gif':'image/gif','.bmp':'image/bmp','.ico':'image/x-icon','.mp4':'video/mp4','.m4v':'video/x-m4v','.mov':'video/quicktime','.webm':'video/webm','.mp3':'audio/mpeg','.m4a':'audio/mp4','.aac':'audio/aac','.ogg':'audio/ogg','.opus':'audio/opus','.pdf':'application/pdf','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf','.otf':'font/otf','.eot':'application/vnd.ms-fontobject','.glb':'model/gltf-binary','.gltf':'model/gltf+json','.stl':'model/stl','.obj':'text/plain','.mtl':'text/plain','.wasm':'application/wasm','.webmanifest':'application/manifest+json'})[e]||'application/octet-stream'}
 function ensureStatic(artifact,provider){if(artifact.deploymentMetadata.serverRequired)throw Object.assign(new Error(provider+' direct publishing is not available for server-required projects. Export the complete project or use a Node/shared-host adapter.'),{code:'SERVER_RUNTIME_REQUIRED',status:409});}
 async function gitEnv(token){return {...process.env,GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'http.https://github.com/.extraheader',GIT_CONFIG_VALUE_0:'AUTHORIZATION: basic '+Buffer.from('x-access-token:'+token).toString('base64')}}
@@ -23,6 +38,7 @@ async function gitEnv(token){return {...process.env,GIT_TERMINAL_PROMPT:'0',GIT_
 async function githubApi(pathname,{token,method='GET',body}={}){return jsonFetch('https://api.github.com'+pathname,{token,method,body,headers:{'X-GitHub-Api-Version':'2026-03-10'}})}
 export const PROVIDERS={
  github:{id:'github',label:'GitHub',type:'source',auth:'oauth',supports:{static:true,server:true},description:'Create or update a GitHub repository with the portable project source.',
+  async authenticate({credentials}){return verifyConnectedCredentials('github',credentials);},
   async deploy({artifact,credentials,options={}}){
    const token=credentials?.accessToken;if(!token)throw authRequired('github');const user=await githubApi('/user',{token});const owner=user.login,repo=safeName(options.repoName||artifact.projectMetadata.name),branch=String(options.branch||'main').replace(/[^A-Za-z0-9._/-]/g,'-').slice(0,120)||'main';
    let existing=null;let created=false;try{existing=await githubApi('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo),{token})}catch{}
@@ -45,6 +61,7 @@ export const PROVIDERS={
   status:async({credentials,deploymentId})=>credentials?.accessToken?{status:'connected',deploymentId:deploymentId||null}:authRequired('github')
  },
  vercel:{id:'vercel',label:'Vercel',type:'deployment',auth:'token-or-oauth',supports:{static:true,server:false},description:'Deploy static-compatible projects through Vercel REST.',
+  async authenticate({credentials}){return verifyConnectedCredentials('vercel',credentials);},
   async deploy({artifact,credentials,options={}}){
    const token=credentials?.accessToken;if(!token)throw authRequired('vercel');ensureStatic(artifact,'Vercel');
    const workspace=await createOptimizedExportWorkspace(artifact);
@@ -58,6 +75,7 @@ export const PROVIDERS={
   status:async({credentials,deploymentId})=>{if(!credentials?.accessToken)throw authRequired('vercel');const d=await jsonFetch('https://api.vercel.com/v13/deployments/'+encodeURIComponent(deploymentId),{token:credentials.accessToken});return{status:d.readyState||d.state||'unknown',url:d.url?(d.url.startsWith('http')?d.url:'https://'+d.url):null,deploymentId:d.id}}
  },
  netlify:{id:'netlify',label:'Netlify',type:'deployment',auth:'token-or-oauth',supports:{static:true,server:false},description:'Deploy static-compatible project ZIPs through Netlify.',
+  async authenticate({credentials}){return verifyConnectedCredentials('netlify',credentials);},
   async deploy({artifact,credentials,options={}}){
    const token=credentials?.accessToken;if(!token)throw authRequired('netlify');ensureStatic(artifact,'Netlify');
    const created=await jsonFetch('https://api.netlify.com/api/v1/sites',{token,method:'POST',body:{name:safeName(options.siteName||artifact.projectMetadata.name)}});
@@ -69,6 +87,7 @@ export const PROVIDERS={
   status:async({credentials,deploymentId})=>{if(!credentials?.accessToken)throw authRequired('netlify');const d=await jsonFetch('https://api.netlify.com/api/v1/deploys/'+encodeURIComponent(deploymentId),{token:credentials.accessToken});return{status:d.state||'unknown',url:d.ssl_url||d.url||null,deploymentId:d.id}}
  },
  cloudflare:{id:'cloudflare',label:'Cloudflare Pages',type:'deployment',auth:'token-or-oauth',supports:{static:true,server:false},description:'Deploy static-compatible assets through Cloudflare Pages Direct Upload.',
+  async authenticate({credentials}){return verifyConnectedCredentials('cloudflare',credentials);},
   async deploy({artifact,credentials,options={}}){
    const token=credentials?.accessToken,accountId=credentials?.accountId||options.accountId;if(!token||!accountId)throw authRequired('cloudflare');ensureStatic(artifact,'Cloudflare Pages');const name=safeName(options.projectName||artifact.projectMetadata.name);
    try{await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/pages/projects/'+name,{token})}catch{await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/pages/projects',{token,method:'POST',body:{name,production_branch:String(options.branch||'main')}})}
@@ -86,6 +105,7 @@ export const PROVIDERS={
   status:async({credentials,options={},deploymentId})=>{if(!credentials?.accessToken||!credentials?.accountId||!options.projectName)throw authRequired('cloudflare');const d=await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+credentials.accountId+'/pages/projects/'+encodeURIComponent(options.projectName)+'/deployments/'+encodeURIComponent(deploymentId),{token:credentials.accessToken});return{status:d.result?.latest_stage?.status||'unknown',url:d.result?.aliases?.[0]||null,deploymentId:d.result?.id}}
  },
  hostinger:{id:'hostinger',label:'Hostinger',type:'hosting-assist',auth:'github',supports:{static:true,server:true},description:'Prepare a verified project for Hostinger by publishing it to GitHub, then connect that repository in Hostinger Node.js Web Apps. Direct Hostinger deployment API access is not assumed.',
+  async authenticate({credentials}){return verifyConnectedCredentials('hostinger',credentials);},
   async deploy({artifact,credentials,options={}}){
     if(!credentials?.accessToken)throw authRequired('hostinger');
     const result=await PROVIDERS.github.deploy({artifact,credentials,options:{...options,repoName:options.repoName||artifact.projectMetadata.name,branch:options.branch||'main'}});
@@ -94,6 +114,7 @@ export const PROVIDERS={
   status:async({credentials,deploymentId})=>credentials?.accessToken?{status:'ready_for_hostinger',deploymentId:deploymentId||null,nextStep:'Connect the published GitHub repository from Hostinger Node.js Web Apps and deploy.'}:authRequired('hostinger')
  },
  'coding-vibes':{id:'coding-vibes',label:'Build Vibe Cloud Hosting',type:'deployment',auth:'internal',supports:{static:true,server:true},description:'First-party hosting adapter for verified Build Vibe artifacts.',
+  async authenticate(){return verifyConnectedCredentials('coding-vibes',{});},
   async deploy({artifact,options={}}){
     const base=String(process.env.CODINGVIBES_HOSTING_API_URL||process.env.CODINGVIBES_CLOUD_API_URL||'').replace(/\/$/,'');
     const token=process.env.CODINGVIBES_HOSTING_API_KEY||process.env.CODINGVIBES_CLOUD_API_KEY;
@@ -115,6 +136,7 @@ export const PROVIDERS={
   }
  },
  manual:{id:'manual',label:'Download ZIP / Other Hosting',type:'export',auth:'none',supports:{static:true,server:true},description:'Export a validated portable project ZIP for any compatible host.',
+  async authenticate(){return verifyConnectedCredentials('manual',{});},
   async deploy({artifact}){const out=path.resolve(process.env.CODINGVIBES_EXPORT_ROOT||path.join(process.cwd(),'data','exports'),safeName(artifact.projectMetadata.name)+'-'+Date.now()+'.zip');const workspace=await createOptimizedExportWorkspace(artifact);try{return{status:'ready',deploymentId:out,url:null,file:zipDirectory(workspace.root,out),optimization:workspace.report}}finally{workspace.cleanup()}},
   status:async({deploymentId})=>({status:'ready',file:deploymentId})
  }
