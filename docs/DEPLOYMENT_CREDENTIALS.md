@@ -18,6 +18,10 @@ Set `CODINGVIBES_DEPLOY_PROVIDER` to the provider ID you intend to use. Supporte
 | `coding-vibes` | `CODINGVIBES_HOSTING_API_URL` or `CODINGVIBES_CLOUD_API_URL` | Reports `UNVERIFIED` until the hosting adapter exposes a documented, non-mutating health/credential endpoint |
 | `manual` | None | Reports `NOT_REQUIRED` |
 
+## Verify a saved provider connection
+
+A signed-in workspace user can send `POST /api/deployment/providers/{providerId}/verify`. The server reads that user's saved connection and runs the provider's read-only probe; it does not accept or echo a token in the request body. The response includes a sanitized verification status and never proves provider write/publish permissions. Supported connected providers are checked with an identity/token endpoint; Build Vibe Cloud remains `UNVERIFIED` until its hosting adapter defines a safe non-mutating credential endpoint. A stored token alone is not reported as authenticated.
+
 ## Result meanings
 
 - `PASS`: a provider's read-only identity/token check succeeded.
