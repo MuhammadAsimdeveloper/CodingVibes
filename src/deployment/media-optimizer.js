@@ -13,7 +13,7 @@ async function loadPng(){
   try{const mod=await import('pngjs');return mod.PNG||mod.default?.PNG||null;}catch{return null;}
 }
 function safeRelativePath(value){
-  const file=String(value||'').replace(/\\\\/g,'/');
+  const file=String(value||'').replace(/\\/g,'/');
   if(!file||file.startsWith('/')||file.split('/').some(part=>!part||part==='.'||part==='..'))throw new Error('invalid_export_asset_path');
   return file;
 }
