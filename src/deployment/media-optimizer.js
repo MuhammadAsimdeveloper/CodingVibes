@@ -35,6 +35,10 @@ function resizeRgba(source,sourceWidth,sourceHeight,width,height){
   }
   return output;
 }
+function pngDimensions(source){
+  if(source.length<24||source.toString('hex',0,8)!=='89504e470d0a1a0a'||source.readUInt32BE(8)!==13||source.toString('ascii',12,16)!=='IHDR')return null;
+  return {width:source.readUInt32BE(16),height:source.readUInt32BE(20)};
+}
 function targetDimensions(width,height,maxDimension){
   const scale=Math.min(1,maxDimension/width,maxDimension/height);
   return {width:Math.max(1,Math.round(width*scale)),height:Math.max(1,Math.round(height*scale))};
@@ -58,9 +62,11 @@ async function optimizeOne(filePath,extension,source,{sharp,PNG,maxDimension,min
       output=await image.resize({width:dimensions.width,height:dimensions.height,fit:'inside',withoutEnlargement:true}).toFormat(format,encoder).toBuffer();
       width=dimensions.width;height=dimensions.height;
     }else{
+      const declared=pngDimensions(source);
+      if(!declared||!declared.width||!declared.height||declared.width*declared.height>MAX_INPUT_PIXELS)return {status:'skipped',reason:'invalid_or_oversized_dimensions',originalBytes:source.length};
       const decoded=PNG.sync.read(source);
       width=Number(decoded.width);height=Number(decoded.height);
-      if(!width||!height||width*height>MAX_INPUT_PIXELS)return {status:'skipped',reason:'invalid_or_oversized_dimensions',originalBytes:source.length};
+      if(width!==declared.width||height!==declared.height||!width||!height||width*height>MAX_INPUT_PIXELS)return {status:'skipped',reason:'invalid_or_oversized_dimensions',originalBytes:source.length};
       const dimensions=targetDimensions(width,height,maxDimension);
       if(dimensions.width===width&&dimensions.height===height)return {status:'unchanged',reason:'within_dimension_budget',width,height,originalBytes:source.length,optimizedBytes:source.length};
       const pixels=resizeRgba(decoded.data,width,height,dimensions.width,dimensions.height);
