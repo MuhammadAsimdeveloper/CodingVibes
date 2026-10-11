@@ -33,7 +33,10 @@ test('export ZIP stores already-compressed raster and media assets without alter
     ['public/photo.png', Buffer.from([137,80,78,71,13,10,26,10,0,1,2,3])],
     ['public/photo.jpg', Buffer.from([255,216,255,219,4,5,6])],
     ['public/photo.webp', Buffer.from('RIFF0000WEBPpayload')],
-    ['public/demo.mp4', Buffer.from('ftypmp4 payload')]
+    ['public/demo.mp4', Buffer.from('ftypmp4 payload')],
+    ['public/model.glb', Buffer.from('glTFbinary-3d-model-payload')],
+    ['public/brand.ttf', Buffer.from([0,1,0,0,0,16,0,128])],
+    ['public/roughness.ktx2', Buffer.from('KTX 2.0 texture bytes')]
   ]);
   for (const [name, bytes] of assets) {
     const target = path.join(files, name);
