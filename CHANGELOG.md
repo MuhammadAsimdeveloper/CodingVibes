@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased] — generated raster optimization in ZIP export paths (2026-10-11)
+
+- Added an isolated export workspace so optimization never mutates project source files.
+- Oversized PNG assets are resized with RGBA interpolation and PNG re-encoding; assets retain their original relative paths so HTML/CSS references remain valid. Output is accepted only when it clears a size-saving threshold; malformed, oversized, unsupported or non-beneficial cases keep their source bytes.
+- The Sharp encoder is detected optionally for same-format JPEG/WebP/AVIF optimization. Without Sharp, those formats are conservatively preserved.
+- Wired the workspace into manual ZIP export, Netlify ZIP deployment, and Build Vibe Cloud ZIP deployment. Results include a bounded optimization report. Direct-file upload providers are not yet covered.
+- Added regression tests for resizing/path preservation, unchanged source files, text/unsupported asset preservation, and path validation. CI status is pending for this commit series.
+
 ## 13.0.0 — 2026-10-07
 
 - Completed final source-side launch hardening.
