@@ -1,4 +1,5 @@
 import test from 'node:test';
+import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -56,6 +57,7 @@ test('Vercel direct-file deployment uploads optimized raster bytes while preserv
     assert.equal(result.optimization.optimized,1);
     assert.ok(result.optimization.savedBytes>0);
     assert.deepEqual(uploads.map(item=>item.headers['content-type']),['application/octet-stream','application/octet-stream']);
+    assert.equal(uploads[0].headers['x-vercel-digest'],crypto.createHash('sha1').update(uploads[0].bytes).digest('hex'),'Vercel digest must match the uploaded optimized bytes');
     const optimizedPng=PNG.sync.read(uploads[0].bytes);
     assert.equal(optimizedPng.width,1920);
     assert.ok(optimizedPng.height<1250);
