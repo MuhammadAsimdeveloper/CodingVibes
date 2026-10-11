@@ -44,6 +44,7 @@ Before implementing or changing website generation, read [`GENERATED_WEBSITE_QUA
 - Generated-site browser verification now measures each route at 375px mobile, 768px tablet and 1440px desktop widths. Horizontal overflow fails the browser quality result and includes diagnostics.
 - Fixed the generated owner-admin page's long configuration hint overflow. Full CI passed on `29f57ebea72a9725e3ac62cc73ea035d3f45732f`: https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604.
 - Next priorities: media-aware ZIP packaging is now an initial export increment; finish actual generated-raster optimization (dimensions/encoding with safe fallback) rather than treating ZIP compression as image optimization; extend accessibility and responsive budgets; keep real provider credentials, monitoring, backup/recovery and deployment evidence explicit.
+- Raster export checkpoint (2026-10-11): isolated-copy PNG resize/re-encode is wired into manual ZIP, Netlify ZIP, and Build Vibe Cloud ZIP paths. Regression tests and CI are pending on the current branch head; JPEG/WebP/AVIF remain unchanged without an installed Sharp encoder, and direct-upload providers are not covered. After verification, broaden encoder/provider coverage, then continue accessibility/responsive budgets and production credential/deployment/monitoring/recovery evidence.
 - Continue TDD from the first unfinished item. Do not mark launch-ready based only on source presence or CI; verify configured production services separately.
 
 
