@@ -8,6 +8,14 @@
 - Wired the workspace into manual ZIP export, Netlify ZIP deployment, and Build Vibe Cloud ZIP deployment. Results include a bounded optimization report. Direct-file upload providers are not yet covered.
 - Added regression tests for resizing/path preservation, unchanged source files, text/unsupported asset preservation, and path validation. CI status is pending for this commit series.
 
+## [Unreleased] — deployment-wide raster optimization and generated-site accessibility (2026-10-11)
+
+- Extended the isolated export optimizer from ZIP-based deployment to GitHub, Vercel and Cloudflare Pages direct-upload paths, preserving original project source, file paths and HTML/CSS references. Provider results include a bounded optimization report.
+- Added PNG dimension preflight before decode to avoid allocating from oversized declared dimensions, and reject cross-format file-extension mismatches when Sharp is available.
+- Generated-site browser verification now checks missing image-alt attributes, accessible names for links/buttons/form fields, interactive `aria-hidden`, exactly one H1 and skipped heading levels.
+- Generated styles now apply visible focus outlines, forced-colors focus handling and 44px minimum targets for primary interactive controls; checkbox/radio sizing remains consistent. Existing reduced-motion support is retained.
+- Added direct-upload provider mocks, raster safety regressions, generated CSS assertions and semantic accessibility tests. Verify the latest CI head before marking this increment complete.
+
 ## 13.0.0 — 2026-10-07
 
 - Completed final source-side launch hardening.
