@@ -63,7 +63,7 @@ test('Vercel direct-file deployment uploads optimized raster bytes while preserv
     const optimizedPng=PNG.sync.read(uploads[0].bytes);
     assert.equal(optimizedPng.width,1920);
     assert.ok(optimizedPng.height<1250);
-    assert.equal(uploads.length,2);
+    assert.equal(uploads.length,3);
     assert.deepEqual(deploymentPayload.files.map(file=>file.file).sort(),['index.html','public/hero.png','public/model.glb']);
     assert.equal(deploymentPayload.files.find(file=>file.file==='public/hero.png').size,uploads[0].bytes.length);
     assert.deepEqual(fs.readFileSync(path.join(root,'public','hero.png')),source,'deployment must not mutate the project source');
