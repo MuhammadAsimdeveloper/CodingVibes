@@ -49,7 +49,7 @@
 | 17 | Cookie consent/preferences | IMPLEMENTED + BROWSER VERIFIED | Accept/reject, analytics/marketing preferences, local persistence, settings reopening, and consent-change events are covered by unit and browser smoke tests. No third-party analytics is auto-installed; future tracking must honor consent. |
 | 18 | Customer-site analytics | IMPLEMENTED OPTIONAL / OWNER ID REQUIRED | Builder exposes a per-project Google Analytics measurement-ID field, persists it locally, validates the ID, loads tracking only after consent, disables collection on withdrawal, and browser-smoke verifies the consent flow. Missing ID remains NEEDS_INPUT; configured but unverified analytics blocks production. |
 | 19 | Real contact address | IMPLEMENTED / OWNER INPUT REQUIRED | Builder exposes a per-project address field, persists it in browser localStorage per project, adds it to the build brief, parses quoted addresses with punctuation, and renders it with HTML escaping. Business sites require it for production; missing/placeholder values block the gate. Never invent one. |
-| 20 | Compressed generated images | PARTIAL / VERIFY | The audit returns NOT_APPLICABLE when there are no image elements/background image URLs. When images exist, require asset size/format evidence and integrate optimization into generation/export. |
+| 20 | Compressed generated images | PARTIAL / VERIFY | The audit returns NOT_APPLICABLE when there are no image elements/background image URLs. Oversized PNG optimization is integrated into ZIP export paths; other raster formats require Sharp, and direct-upload providers still need integration. Add per-asset budgets and visual-quality evidence. |
 
 ### Status definitions
 
