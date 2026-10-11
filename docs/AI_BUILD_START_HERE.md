@@ -43,7 +43,7 @@ Before implementing or changing website generation, read [`GENERATED_WEBSITE_QUA
 - Repository recovery confirmed newer commits had already completed the previously visible contact/analytics and image-optimizer work; do not replay those commits.
 - Generated-site browser verification now measures each route at 375px mobile, 768px tablet and 1440px desktop widths. Horizontal overflow fails the browser quality result and includes diagnostics.
 - Fixed the generated owner-admin page's long configuration hint overflow. Full CI passed on `29f57ebea72a9725e3ac62cc73ea035d3f45732f`: https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38080632604.
-- Next priorities: platform-specific favicon/app icon sizes; optimize generated raster assets as part of export rather than only in the browser-local optimizer; extend accessibility and responsive budgets; keep real provider credentials, monitoring, backup/recovery and deployment evidence explicit.
+- Next priorities: media-aware ZIP packaging is now an initial export increment; finish actual generated-raster optimization (dimensions/encoding with safe fallback) rather than treating ZIP compression as image optimization; extend accessibility and responsive budgets; keep real provider credentials, monitoring, backup/recovery and deployment evidence explicit.
 - Continue TDD from the first unfinished item. Do not mark launch-ready based only on source presence or CI; verify configured production services separately.
 
 
@@ -53,4 +53,4 @@ Before implementing or changing website generation, read [`GENERATED_WEBSITE_QUA
 - Generated public pages, custom 404, admin and sign-in now reference the icon set; the manifest is emitted once and contains the two PNG install sizes.
 - Tests verify PNG dimensions/decompression, generated output, manifest entries, MIME type and served asset dimensions.
 - Full CI passed on `588156e398bd643c7ed3bd7a5a17979983bea329`: https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750.
-- Continue from the next unfinished roadmap item: generated-export raster optimization. Do not confuse the existing browser-local image optimizer with automatic optimization during export. Keep accessibility budgets and production environment/credentials/monitoring/recovery open until evidenced.
+- Initial export increment on `codex/export-media-archive-optimization`: ZIP packaging now stores already-compressed image/audio/video/PDF/archive/font assets without deflating them again, while retaining deflate for text/code. This preserves original bytes, names, references and generated-site behavior. Regression tests were added for PNG/JPEG/WebP/MP4 byte preservation and HTML round-tripping. This is archive efficiency, not raster resizing/re-encoding; actual generated-raster optimization remains open until implemented and verified. Keep accessibility budgets and production environment/credentials/monitoring/recovery open until evidenced.
