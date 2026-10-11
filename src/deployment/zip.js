@@ -6,7 +6,7 @@ function crc32(buf){let c=0xffffffff;for(const byte of buf){c^=byte;for(let i=0;
 function dosDateTime(date=new Date()){const d=((date.getFullYear()-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate();const t=(date.getHours()<<11)|(date.getMinutes()<<5)|Math.floor(date.getSeconds()/2);return[d,t]}
 function u16(n){const b=Buffer.alloc(2);b.writeUInt16LE(n);return b}
 function u32(n){const b=Buffer.alloc(4);b.writeUInt32LE(n>>>0);return b}
-const STORE_EXTENSIONS=new Set(['.png','.jpg','.jpeg','.webp','.avif','.gif','.bmp','.ico','.heic','.heif','.mp4','.m4v','.mov','.webm','.mp3','.m4a','.aac','.ogg','.opus','.pdf','.zip','.gz','.br','.woff','.woff2']);
+const STORE_EXTENSIONS=new Set(['.png','.jpg','.jpeg','.webp','.avif','.gif','.bmp','.ico','.heic','.heif','.mp4','.m4v','.mov','.webm','.mkv','.avi','.mpg','.mpeg','.mp3','.m4a','.aac','.ogg','.opus','.flac','.pdf','.zip','.gz','.br','.woff','.woff2','.ttf','.otf','.eot','.glb','.fbx','.blend','.ktx2','.basis','.exr','.hdr']);
 export function zipDirectory(root,outFile,{ignore=[]}={}){
  const abs=path.resolve(root),files=[];const skip=new Set(ignore);
  const walk=(dir)=>{for(const e of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,e.name),rel=path.relative(abs,full).split(path.sep).join('/');if(skip.has(rel)||e.name==='.git'||e.name==='node_modules'||e.name==='.codingvibes')continue;if(e.isDirectory())walk(full);else if(e.isFile())files.push({rel,full})}};walk(abs);
