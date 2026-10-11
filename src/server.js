@@ -415,8 +415,8 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     }catch(e){return sendJson(res,e.status||404,{ok:false,error:e.message});}
   }
   if(method==='GET'&&u.pathname==='/api/deployment/providers')return sendJson(res,200,{ok:true,providers:deploymentCatalog(),connected:store.listProviderConnections(userId)});
-  if(/^\\/api\\/deployment\\/providers\\/[^/]+\\/verify$/.test(u.pathname)&&method==='POST'){
-    const provider=pathParam(u.pathname,'/api/deployment/providers/').replace(/\\/verify$/,'');
+  if(/^\/api\/deployment\/providers\/[^/]+\/verify$/.test(u.pathname)&&method==='POST'){
+    const provider=pathParam(u.pathname,'/api/deployment/providers/').replace(/\/verify$/,'');
     try{
       const verification=await authenticateProvider({store,userId,provider});
       return sendJson(res,200,{ok:true,verification});
