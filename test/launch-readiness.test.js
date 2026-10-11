@@ -22,6 +22,19 @@ test('readiness reports production blockers without secrets',()=>{
 });
 
 
+test('production readiness blocks explicitly disabled structured access logs',()=>{
+ const previous={...process.env};
+ try{
+  process.env.NODE_ENV='production';
+  process.env.CODINGVIBES_STRUCTURED_ACCESS_LOGS='false';
+  const result=readiness({router:{getStatus:()=>({configured:true,provider:'fixture'})}});
+  assert.ok(result.blockers.includes('structured_access_logs_disabled'));
+ }finally{
+  for(const key of Object.keys(process.env))if(!(key in previous))delete process.env[key];
+  for(const [key,value] of Object.entries(previous))process.env[key]=value;
+ }
+});
+
 test('hostinger assisted deployment reuses the connected GitHub credential and records the next step',async()=>{
  const index=await import('../src/deployment/index.js?hostinger-test');
  assert.equal(typeof index.providerSecret,'function');
