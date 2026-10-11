@@ -48,6 +48,8 @@ async function optimizeOne(filePath,extension,source,{sharp,PNG,maxDimension,min
       const image=sharp(source,{limitInputPixels:MAX_INPUT_PIXELS,animated:false});
       const metadata=await image.metadata();
       width=Number(metadata.width);height=Number(metadata.height);format=metadata.format;
+      const expectedFormat={'.png':'png','.jpg':'jpeg','.jpeg':'jpeg','.webp':'webp','.avif':'avif'}[extension];
+      if(format!==expectedFormat)return {status:'skipped',reason:'extension_format_mismatch',originalBytes:source.length};
       if(!width||!height||width*height>MAX_INPUT_PIXELS)return {status:'skipped',reason:'invalid_or_oversized_dimensions',originalBytes:source.length};
       const dimensions=targetDimensions(width,height,maxDimension);
       if(dimensions.width===width&&dimensions.height===height)return {status:'unchanged',reason:'within_dimension_budget',width,height,originalBytes:source.length,optimizedBytes:source.length};
@@ -85,7 +87,7 @@ export async function createOptimizedExportWorkspace(artifact,{maxDimension=1920
   if(!Number.isFinite(minSavingsRatio)||minSavingsRatio<0||minSavingsRatio>0.5)throw new RangeError('minSavingsRatio_must_be_0_to_0.5');
   const temporaryDirectory=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-export-'));
   const root=path.join(temporaryDirectory,'project');
-  const report={schema:'build-vibe.raster-optimization.v1',maxDimension,examined:0,optimized:0,unchanged:0,skipped:0,originalBytes:0,optimizedBytes:0,savedBytes:0,assets:[]};
+  const report={schema:'build-vibe.raster-optimization.v1',maxDimension,examined:0,optimized:0,unchanged:0,skipped:0,originalBytes:0,optimizedBytes:0,savedBytes:0,assets:[],assetDetailsOmitted:0};
   try{
     fs.mkdirSync(root,{recursive:true});
     const copiedFiles=[];
@@ -105,7 +107,7 @@ export async function createOptimizedExportWorkspace(artifact,{maxDimension=1920
       const full=path.join(root,item.path),source=fs.readFileSync(full);
       report.examined++;report.originalBytes+=source.length;
       const result=await optimizeOne(full,extension,source,{sharp,PNG,maxDimension,minSavingsRatio});
-      report.assets.push({path:item.path,...result});
+      if(report.assets.length<100)report.assets.push({path:item.path,...result});else report.assetDetailsOmitted++;
       if(result.status==='optimized'){report.optimized++;report.savedBytes+=result.savedBytes;report.optimizedBytes+=result.optimizedBytes;item.size=result.optimizedBytes;}
       else if(result.status==='unchanged'){report.unchanged++;report.optimizedBytes+=source.length;}
       else{report.skipped++;report.optimizedBytes+=source.length;}
