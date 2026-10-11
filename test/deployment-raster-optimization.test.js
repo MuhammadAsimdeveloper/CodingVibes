@@ -25,10 +25,13 @@ test('export raster optimization resizes oversized PNGs in an isolated copy and 
     const originalPng=makePng(640,320);
     fs.writeFileSync(path.join(sourceRoot,'public','hero.png'),originalPng);
     fs.writeFileSync(path.join(sourceRoot,'public','hero.jpg'),Buffer.from('not-a-jpeg; safe fallback'));
+    const oversizedHeader=Buffer.alloc(24);Buffer.from([137,80,78,71,13,10,26,10]).copy(oversizedHeader);oversizedHeader.writeUInt32BE(13,8);oversizedHeader.write('IHDR',12,'ascii');oversizedHeader.writeUInt32BE(100000,16);oversizedHeader.writeUInt32BE(100000,20);
+    fs.writeFileSync(path.join(sourceRoot,'public','bomb.png'),oversizedHeader);
     fs.writeFileSync(path.join(sourceRoot,'index.html'),Buffer.from('<img src="/public/hero.png" alt="Hero">'));
     const artifact={root:sourceRoot,files:[
       {path:'public/hero.png',size:originalPng.length},
       {path:'public/hero.jpg',size:25},
+      {path:'public/bomb.png',size:oversizedHeader.length},
       {path:'index.html',size:39}
     ]};
     const workspace=await createOptimizedExportWorkspace(artifact,{maxDimension:256});
@@ -42,6 +45,8 @@ test('export raster optimization resizes oversized PNGs in an isolated copy and 
       assert.equal(optimized.height,128);
       assert.deepEqual(fs.readFileSync(path.join(sourceRoot,'public','hero.png')),originalPng,'source assets must never be mutated');
       assert.equal(fs.readFileSync(path.join(workspace.root,'public','hero.jpg'),'utf8'),'not-a-jpeg; safe fallback');
+      assert.equal(fs.readFileSync(path.join(workspace.root,'public','bomb.png')).length,oversizedHeader.length,'oversized malformed PNG should remain unchanged');
+      assert.equal(workspace.report.assets.find(item=>item.path==='public/bomb.png').reason,'invalid_or_oversized_dimensions');
       assert.equal(fs.readFileSync(path.join(workspace.root,'index.html'),'utf8'),'<img src="/public/hero.png" alt="Hero">');
       assert.equal(workspace.report.assets[0].path,'public/hero.png');
     }finally{workspace.cleanup();}
