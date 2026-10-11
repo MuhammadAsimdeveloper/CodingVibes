@@ -49,7 +49,7 @@ import {auditDiscoverability,aeoSummary} from './verification/discoverability.js
 import {runTool as runFabricTool,runToolPipeline as runFabricPipeline,listToolContracts,getToolContract} from './tool-fabric/index.js';
 import {submitIndexNow} from './seo/indexnow.js';
 import {listPublicSeoPages,renderPublicSeoPage} from './seo/public-pages.js';
-import {telemetry} from './ops/telemetry.js';
+import {telemetry,requestLogEvent} from './ops/telemetry.js';
 import {sanitizeProductEvent,recordProductEvent} from './ops/product-analytics.js';
 import {normalizeFeatureFlag,evaluateFeatureFlag} from './ops/feature-flags.js';
 import {scaleOutConfig as scaleOutConfigSnapshot} from './platform/scaleout.js';
@@ -108,7 +108,12 @@ function syncProjectContent(projectId,userId,content){
 
 export function createAppServer(){return http.createServer(async(req,res)=>{
  try{
-  const requestId=randomUUID();const startedAt=Date.now();res.setHeader('x-request-id',requestId);res.once('finish',()=>telemetry.record({method:req.method||'GET',path:req.url||'/',status:res.statusCode,durationMs:Date.now()-startedAt}));
+  const requestId=randomUUID();const startedAt=Date.now();res.setHeader('x-request-id',requestId);res.once('finish',()=>{
+    const event={requestId,method:req.method||'GET',path:req.url||'/',status:res.statusCode,durationMs:Date.now()-startedAt};
+    telemetry.record(event);
+    if(process.env.NODE_ENV==='production'&&process.env.CODINGVIBES_STRUCTURED_ACCESS_LOGS==='false')return;
+    if(process.env.NODE_ENV==='production'||process.env.CODINGVIBES_STRUCTURED_ACCESS_LOGS==='true')console.log(JSON.stringify(requestLogEvent(event)));
+  });
   res.setHeader('x-content-type-options','nosniff');res.setHeader('x-frame-options','SAMEORIGIN');res.setHeader('referrer-policy','same-origin');res.setHeader('cross-origin-resource-policy','same-origin');res.setHeader('cross-origin-opener-policy','same-origin');res.setHeader('permissions-policy','camera=(),microphone=(),geolocation=()');res.setHeader('content-security-policy',"default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdn.paddle.com; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.dev.runwayml.com https://*.paddle.com; frame-src 'self' http: https: https://*.paddle.com; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");if(process.env.NODE_ENV==='production')res.setHeader('strict-transport-security','max-age=15552000; includeSubDomains');
   if(!rateLimit(req))return sendJson(res,429,{ok:false,error:'rate_limit'});
   const u=new URL(req.url||'/',`http://${req.headers.host||HOST}`),method=req.method||'GET';if(u.pathname==='/health'||u.pathname==='/ready'||u.pathname.startsWith('/api/')||u.pathname.startsWith('/v1/'))res.setHeader('cache-control','no-store');
