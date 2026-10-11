@@ -75,7 +75,7 @@
 2. [x] Add an optional mobile CTA with dismissal; verify viewport visibility, keyboard operation, and overlap in browser tests.
 3. Validate titles, descriptions, canonical URLs, robots directives, sitemap membership, OG/Twitter metadata, favicon and manifest for every generated route.
 4. [x] Browser-test missing image-alt attributes, accessible names for links/buttons/form fields, interactive `aria-hidden` and heading order; generated templates now ship keyboard-visible focus outlines, forced-colors focus styling, and 44px minimum primary control targets.
-5. Continue with contrast, focus visibility regression across every template, keyboard interactions, responsive overflow, and reduced-motion checks; automated semantic checks do not replace assistive-technology review.
+5. [x] Add a browser-computed text-contrast audit against 4.5:1 for normal text and 3:1 for large text. Elements with image/complex backgrounds are explicitly reported as skipped instead of guessed. Continue template-wide contrast sampling, color-pair visual QA, focus/keyboard regression and assistive-technology review.
 
 ### P1 — Privacy-aware analytics
 1. Distinguish Build Vibe's internal analytics from analytics installed on customer websites.
