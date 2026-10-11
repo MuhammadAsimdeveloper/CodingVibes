@@ -22,6 +22,19 @@ test('readiness reports production blockers without secrets',()=>{
 });
 
 
+test('production readiness blocks explicitly disabled structured access logs',()=>{
+ const previous={...process.env};
+ try{
+  process.env.NODE_ENV='production';
+  process.env.CODINGVIBES_STRUCTURED_ACCESS_LOGS='false';
+  const result=readiness({router:{getStatus:()=>({configured:true,provider:'fixture'})}});
+  assert.ok(result.blockers.includes('structured_access_logs_disabled'));
+ }finally{
+  for(const key of Object.keys(process.env))if(!(key in previous))delete process.env[key];
+  for(const [key,value] of Object.entries(previous))process.env[key]=value;
+ }
+});
+
 test('hostinger assisted deployment reuses the connected GitHub credential and records the next step',async()=>{
  const index=await import('../src/deployment/index.js?hostinger-test');
  assert.equal(typeof index.providerSecret,'function');
@@ -40,7 +53,7 @@ test('billing helper maps Stripe price IDs to configured plans',async()=>{const 
 
 test('target execution availability is classified',async()=>{const {targetExecutionAvailability}=await import('../src/targets/verify.js');const {getTarget}=await import('../src/targets/registry.js');const r=targetExecutionAvailability(getTarget('web-node'));assert.equal(r.canBuild,true);assert.equal(typeof r.host.available,'boolean');});
 
-test('launch center surfaces exist',async()=>{const f=await (await import('node:fs/promises')).readFile('src/server.js','utf8');assert.ok(f.includes('/api/launch/status'));assert.ok(f.includes('/api/billing/webhook'));assert.ok(f.includes('/api/targets/availability'));});
+test('launch center surfaces exist',async()=>{const f=await (await import('node:fs/promises')).readFile('src/server.js','utf8');assert.ok(f.includes('/api/launch/status'));assert.ok(f.includes('/api/billing/webhook'));assert.ok(f.includes('/api/targets/availability'));assert.ok(f.includes('/api/deployment/providers/'));assert.ok(f.includes('authenticateProvider({store,userId,provider})'));});
 
 
 test('production readiness forbids host-local execution and requires an explicit container image',()=>{

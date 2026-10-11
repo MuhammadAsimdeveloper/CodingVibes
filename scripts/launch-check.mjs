@@ -27,5 +27,28 @@ for(const [path,type] of checks){
   if(path==='/llms.txt' && !body.startsWith('# Build Vibe')) failures.push('/llms_invalid');
   if(path==='/sitemap.xml'){for(const page of listPublicSeoPages())if(!body.includes('<loc>'+base+page.path+'</loc>'))failures.push('/sitemap_missing_'+page.path.replaceAll('/','_'));}
 }
+// Verify the operational endpoints and correlation/security boundaries, not just their MIME types.
+const healthResponse=await fetch(base+'/health',{redirect:'manual',signal:AbortSignal.timeout(5000)});
+const health=await healthResponse.json().catch(()=>null);
+if(healthResponse.status!==200)failures.push('/health:status');
+if(!health||health.ok!==true||health.service!=='build-vibe'||typeof health.version!=='string')failures.push('/health:payload');
+if(!health||Number.isNaN(Date.parse(health.time)))failures.push('/health:timestamp');
+if(!String(healthResponse.headers.get('x-request-id')||'').trim())failures.push('/health:request_id_missing');
+if(!String(healthResponse.headers.get('cache-control')||'').includes('no-store'))failures.push('/health:cache_control');
+const readyResponse=await fetch(base+'/ready',{redirect:'manual',signal:AbortSignal.timeout(5000)});
+const ready=await readyResponse.json().catch(()=>null);
+if(readyResponse.status!==200)failures.push('/ready:not_ready');
+if(!ready||ready.ok!==true||ready.ready!==true&&ready.status!=='ready')failures.push('/ready:payload');
+if(!String(readyResponse.headers.get('x-request-id')||'').trim())failures.push('/ready:request_id_missing');
+for(const pathname of ['/api/ops/metrics','/api/launch/status']){
+  try{
+    const response=await fetch(base+pathname,{headers:{accept:'application/json'},redirect:'manual',signal:AbortSignal.timeout(5000)});
+    const payload=await response.json().catch(()=>null);
+    if(response.status!==403)failures.push(pathname+':admin_route_not_protected');
+    if(!payload||payload.ok!==false||!String(payload.error||'').trim())failures.push(pathname+':auth_error_shape');
+  }catch{
+    failures.push(pathname+':probe_failed');
+  }
+}
 if(failures.length){console.error('Build Vibe launch check failed:');for(const x of failures)console.error('- '+x);process.exit(2);}
-console.log(JSON.stringify({ok:true,base,checks:checks.length},null,2));
+console.log(JSON.stringify({ok:true,base,checks:checks.length,operations:{health:'PASS',ready:'PASS',metricsAdminProtection:'PASS',launchStatusAdminProtection:'PASS'}},null,2));

@@ -1162,3 +1162,37 @@ Follow-up: address and analytics settings now persist per project in browser loc
 - **Verification: PASS on revision `588156e398bd643c7ed3bd7a5a17979983bea329`.** Build Vibe CI [38081225750](https://github.com/MuhammadAsimdeveloper/CodingVibes/actions/runs/38081225750) passed tests, coverage, syntax/release checks, SEO, browser E2E (including the generated icon endpoints), load/recovery, deployment preflight, benchmark, security, scale-out and launch readiness.
 
 **Next unfinished stage:** optimize generated raster assets during export (distinct from the browser-local optimizer), extend accessibility/viewport budgets, and verify real production credentials, deployment, monitoring and recovery. Documentation commits must obtain their own fresh CI evidence; this checkpoint records the exact tested implementation revision.
+
+## 52. TDD checkpoint — export optimization, accessibility, credential preflight (2026-10-11)
+
+This checkpoint records source changes on `codex/export-media-archive-optimization`. It is not a release certification.
+
+- ZIP export stores already-compressed media formats—including common raster formats, audio/video, fonts, and compressed 3D/texture assets—without redundantly DEFLATE-compressing them; text/source assets remain compressed. PNG resize interpolation uses premultiplied alpha to prevent transparent RGB halos.
+- The isolated raster workspace protects source files, keeps relative paths unchanged, validates paths and PNG dimensions before decode, uses a PNG fallback encoder, accepts output only when a configured size-saving threshold is met, and returns a bounded report. It is integrated into manual ZIP, Netlify, Build Vibe Cloud, GitHub, Vercel and Cloudflare Pages paths.
+- Vercel file upload hashes the optimized file bytes (not the path) for its content digest. Cloudflare's direct-upload MIME map now covers common image, audio, video, PDF and font extensions.
+- Generated-site browser checks cover missing alt attributes, accessible names, interactive aria-hidden, H1/heading hierarchy, visible focus on first keyboard Tab, minimum dimensions for primary interactive targets, and horizontal overflow. Generated styles include focus-visible rules and forced-colors handling.
+- `npm run deployment:credentials` provides sanitized, read-only probes for GitHub, Vercel, Netlify and Cloudflare authentication. It distinguishes BLOCKED from UNVERIFIED, does not print secrets, and explicitly does not claim publish/write permissions. Build Vibe Cloud remains UNVERIFIED until its adapter provides a documented non-mutating health/credential probe. See [Deployment credential verification](DEPLOYMENT_CREDENTIALS.md).
+- Regression tests cover asset/source/reference preservation, ZIP byte round-trips, direct-upload provider behavior, credential results, accessibility semantics and generated CSS. The prior full CI run passed on revision `b282ed10490bb2f99ff2e0e8cdbec9bf13d25859`; subsequent digest/focus/credential-check commits still require fresh full CI before this checkpoint can be considered verified.
+
+### Remaining release blockers
+
+- JPEG/WebP/AVIF resizing is conditional on an installed Sharp encoder, which is not a declared project dependency in the current lockfile; otherwise source bytes are conservatively preserved. Add encoder support only with a reproducible cross-platform lockfile and quality tests.
+- Visual difference/quality budgets, contrast checks and assistive-technology review remain open.
+- Read-only credential authentication does not prove target write scopes. Run the credential probe with real production-managed secrets and verify a controlled staging deployment.
+- Production domain/TLS, observability/alerting, quotas, persistence, backup/restore and failure recovery still need evidence from the intended production environment.
+
+
+## 54. Generated text contrast audit checkpoint (2026-10-11)
+
+- Added a browser-computed color contrast measurement to the generated-site verification path. For sampled visible text it composites supported RGBA ancestor backgrounds and uses sRGB relative luminance; applies 4.5:1 to normal text and 3:1 to large text.
+- Complex/image backgrounds and grouped opacity are explicitly excluded from automatic conclusions and counted as skipped. Findings are included in the semantic accessibility evidence and participate in browser gate failures when a supported sample is below threshold.
+- Unit regressions cover compliant ratios, low contrast, large-text thresholds, and explicitly skipped image/unknown backgrounds. Verify fresh Playwright E2E before considering this checkpoint done; manually inspect all template color pairs and complete assistive-technology review.
+
+## 53. Production operations checkpoint — monitoring, deployment and recovery (2026-10-11)
+
+- Enhanced `scripts/launch-check.mjs` to verify that `/health` returns the expected service/version/timestamp shape, request-correlation and no-store headers; `/ready` must return ready; and `/api/ops/metrics` plus `/api/launch/status` reject unauthenticated access.
+- Added `docs/PRODUCTION_OPERATIONS.md` covering provider credential preflight, staging deployment and HTTPS smoke, limits of the in-memory telemetry buffer, protected metrics access, persistent backup storage, isolated restore verification, and release rollback.
+- The request telemetry currently measures requests, 5xx counts, status families and bounded latency percentiles per process. It is not a durable metrics store or external alerting service; production must integrate and test the host platform's monitoring/alerting.
+- Added `src/ops/backup.js::verifyBackup` and `npm run backup:verify`: checks a real SQLite backup read-only using a streaming SHA-256 digest, SQLite `quick_check`, and `foreign_key_check`; rejects symlinks and optional digest mismatches. Regression tests cover valid backups, checksum mismatch, malformed DB files, missing paths and symlinks. The automated recovery smoke still creates/restores a temporary SQLite database and verifies a representative project. Neither proves production backup retention, off-host storage, real-data restore, or RTO/RPO compliance.
+- Latest implementation commits require fresh full CI. The prior credential-check CI failure was traced to a test boolean that tracked every Cloudflare request instead of account access specifically; the fixture now tracks only the account endpoint. Do not close this phase until Build Vibe CI, CodeQL and Dependency Review pass on the exact final head.
+

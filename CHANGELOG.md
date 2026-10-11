@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased] — export optimization, accessibility and deployment preflight (2026-10-11)
+
+- ZIP exports store already-compressed media without redundant DEFLATE; text/source files remain compressed.
+- Added isolated-copy raster optimization in manual ZIP, Netlify, Build Vibe Cloud, GitHub, Vercel and Cloudflare Pages paths. Oversized PNGs can be resized/re-encoded when the result clears the savings threshold; original source files and relative paths are preserved.
+- PNG optimization uses the optional `pngjs` fallback. JPEG/WebP/AVIF resizing requires an installed Sharp encoder; without Sharp, these formats remain unchanged. Reports are bounded and attached to export/deployment results.
+- Added dimension/path guards before PNG decode, alpha-premultiplied PNG resizing to prevent transparent-edge color halos, ZIP media byte-preservation tests for 3D models/fonts/textures, and direct-upload provider tests including Vercel digest correctness and Cloudflare 3D model MIME types.
+- Generated-site browser verification checks missing alt attributes, unnamed controls/links/form fields, interactive `aria-hidden`, H1/heading hierarchy, visible keyboard focus, primary interactive target dimensions, horizontal overflow, and sampled rendered-text contrast (4.5:1 normal text / 3:1 large text). Text over image/complex backgrounds is reported as skipped, not guessed.
+- Generated CSS includes visible focus outlines, forced-colors support and 44px minimum primary control targets. Existing reduced-motion support is retained.
+- Added `npm run deployment:credentials` plus `POST /api/deployment/providers/{providerId}/verify` for sanitized, read-only probes of environment-managed or saved provider credentials. Authentication checks do not prove write permissions; the Build Vibe Cloud adapter remains `UNVERIFIED` without a documented non-mutating probe. Production emits safe structured request events; disabling those logs explicitly blocks readiness.
+- Current source includes broader automated regression coverage. Launch checks validate /health and /ready response/correlation headers and protect admin telemetry/launch-status endpoints. Added `npm run backup:verify` to check an existing SQLite backup read-only, validate `PRAGMA quick_check` and foreign-key integrity, and compare a trusted SHA-256 digest when supplied. A fresh Build Vibe CI + CodeQL + Dependency Review result is required for the final PR head. See docs/PRODUCTION_OPERATIONS.md for honest monitoring, staging, backup/restore and rollback steps; production deployment, external monitoring, backup/recovery, contrast/visual-quality budgets and real provider write access remain distinct release gates.
+
 ## 13.0.0 — 2026-10-07
 
 - Completed final source-side launch hardening.
@@ -10,6 +21,13 @@
 - Preserved explicit runner/infrastructure readiness boundaries.
 
 All notable Build Vibe changes are recorded here.
+
+## [Unreleased] — media-aware export archive packaging (2026-10-11)
+
+- ZIP exports now store already-compressed PNG/JPEG/WebP/AVIF/GIF/BMP, common audio/video, PDF, ZIP/gzip/Brotli and WOFF font assets without an additional DEFLATE pass.
+- Text and source files remain DEFLATE-compressed. Asset payload bytes, paths and references remain unchanged.
+- Added regression tests for media-byte preservation and exact HTML content round-tripping.
+- Scope note: archive packaging preserves original bytes, while the isolated export optimizer can resize oversized PNG assets when it produces meaningful savings. Non-PNG raster resizing depends on an installed Sharp encoder.
 
 ## [Unreleased] — platform-specific generated app icons (2026-10-11)
 

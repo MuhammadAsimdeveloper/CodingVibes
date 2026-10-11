@@ -5,6 +5,7 @@ import {scaleOutConfig} from '../platform/scaleout.js';
 export function readiness({router,store}={}) {
   const production=process.env.NODE_ENV==='production';
   const blockers=[],warnings=[];
+  if(production&&process.env.CODINGVIBES_STRUCTURED_ACCESS_LOGS==='false')blockers.push('structured_access_logs_disabled');
   if(production && String(process.env.CODINGVIBES_SESSION_SECRET||'').length<32) blockers.push('session_secret_too_short');
   const runtime=process.env.CODINGVIBES_RUNTIME||(production?'daytona':'local');
   if(production && !['daytona','container'].includes(runtime)) blockers.push('unsupported_production_runtime');
