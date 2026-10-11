@@ -39,7 +39,7 @@ import {buildBlueprint} from './platform/blueprint.js';
 import {builderResearch} from './platform/research.js';
 import {createDefaultSiteContent,normalizeSiteContent,applyContentOperation,contentSchema,contentSummary} from './site/content.js';
 import {kitForKind,SITE_KITS} from './site/kits.js';
-import {deploymentCatalog,connectProvider,disconnectProvider,deployProject,prepareDeploymentArtifact,getDeploymentStatus,cancelDeployment} from './deployment/index.js';
+import {deploymentCatalog,connectProvider,disconnectProvider,deployProject,prepareDeploymentArtifact,getDeploymentStatus,cancelDeployment,authenticateProvider} from './deployment/index.js';
 import {beginOAuth,completeOAuth,oauthConfigured} from './deployment/oauth.js';
 import {beginGoogleOAuth,completeGoogleOAuth,googleOAuthConfigured,readGoogleOAuthStateCookie,setGoogleOAuthStateCookie,clearGoogleOAuthStateCookieHeader} from './security/google-auth.js';
 import {assetType,safeAssetName,hashBuffer,makeAssetRecord,validateAssetUpload,MAX_ASSET_BYTES} from './assets/library.js';
@@ -415,6 +415,13 @@ if(method==='GET'&&PUBLIC_SEO_ROUTES.includes(u.pathname)){const html=renderPubl
     }catch(e){return sendJson(res,e.status||404,{ok:false,error:e.message});}
   }
   if(method==='GET'&&u.pathname==='/api/deployment/providers')return sendJson(res,200,{ok:true,providers:deploymentCatalog(),connected:store.listProviderConnections(userId)});
+  if(/^\\/api\\/deployment\\/providers\\/[^/]+\\/verify$/.test(u.pathname)&&method==='POST'){
+    const provider=pathParam(u.pathname,'/api/deployment/providers/').replace(/\\/verify$/,'');
+    try{
+      const verification=await authenticateProvider({store,userId,provider});
+      return sendJson(res,200,{ok:true,verification});
+    }catch(e){return sendJson(res,e.status||400,{ok:false,error:e.message})}
+  }
   if(/^\/api\/deployment\/providers\/[^/]+\/oauth$/.test(u.pathname)&&method==='GET'){const provider=pathParam(u.pathname,'/api/deployment/providers/').replace(/\/oauth$/,'');try{const location=beginOAuth(store,provider,{userId,redirectAfter:'/app'});res.writeHead(302,{location});res.end();return;}catch(e){return sendJson(res,e.status||503,{ok:false,error:e.message})}}
   if(/^\/api\/deployment\/oauth\/[^/]+\/callback$/.test(u.pathname)&&method==='GET'){const provider=pathParam(u.pathname,'/api/deployment/oauth/').replace(/\/callback$/,'');try{const result=await completeOAuth(store,provider,{code:u.searchParams.get('code'),state:u.searchParams.get('state')});if(result.userId!==userId)throw Object.assign(new Error('oauth_user_mismatch'),{status:403});connectProvider(store,userId,provider,{secret:result.secret,metadata:result.metadata});res.writeHead(302,{location:'/app?deployment=connected&provider='+encodeURIComponent(provider)});res.end();return;}catch(e){res.writeHead(302,{location:'/app?deployment=error&provider='+encodeURIComponent(provider)+'&message='+encodeURIComponent(String(e.message||e).slice(0,240))});res.end();return}}
 
