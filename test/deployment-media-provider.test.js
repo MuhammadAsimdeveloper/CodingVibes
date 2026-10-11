@@ -40,6 +40,7 @@ test('Vercel direct-file deployment uploads optimized raster bytes while preserv
   const artifact=makeArtifact(root,source);
   const previousFetch=globalThis.fetch;
   const uploads=[];
+  let deploymentPayload=null;
   try{
     globalThis.fetch=async(url,init={})=>{
       const href=String(url);
@@ -47,7 +48,7 @@ test('Vercel direct-file deployment uploads optimized raster bytes while preserv
         uploads.push({bytes:Buffer.from(init.body),headers:init.headers});
         return new Response('',{status:200});
       }
-      if(href==='https://api.vercel.com/v13/deployments')return jsonResponse({readyState:'READY',id:'vercel-media-fixture',url:'media-fixture.vercel.app',projectId:'fixture-project'});
+      if(href==='https://api.vercel.com/v13/deployments'){deploymentPayload=JSON.parse(init.body);return jsonResponse({readyState:'READY',id:'vercel-media-fixture',url:'media-fixture.vercel.app',projectId:'fixture-project'});}
       throw new Error('unexpected network URL '+href);
     };
     const result=await PROVIDERS.vercel.deploy({artifact,credentials:{accessToken:'test-token'},options:{projectName:'media-fixture'}});
@@ -59,8 +60,9 @@ test('Vercel direct-file deployment uploads optimized raster bytes while preserv
     assert.equal(optimizedPng.width,1920);
     assert.ok(optimizedPng.height<1250);
     assert.equal(uploads.length,2);
+    assert.deepEqual(deploymentPayload.files.map(file=>file.file).sort(),['index.html','public/hero.png']);
+    assert.equal(deploymentPayload.files.find(file=>file.file==='public/hero.png').size,uploads[0].bytes.length);
     assert.deepEqual(fs.readFileSync(path.join(root,'public','hero.png')),source,'deployment must not mutate the project source');
-    const body=JSON.parse(await (async()=>{return new TextDecoder().decode([])})()).catch?.(()=>null);
   }finally{
     globalThis.fetch=previousFetch;
     fs.rmSync(root,{recursive:true,force:true});
