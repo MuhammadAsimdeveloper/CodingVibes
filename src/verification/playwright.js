@@ -71,6 +71,23 @@ export function assessResponsiveLayout({viewportWidth,documentWidth,bodyWidth,ov
   return {ok:failures.length===0,viewportWidth:viewport,documentWidth:document,bodyWidth:body,horizontalOverflowPx,overflowingElements:Array.isArray(overflowingElements)?overflowingElements.slice(0,5).map(String):[],failures};
 }
 
+export function assessAccessibilitySemantics({imagesMissingAlt=0,controlsWithoutName=0,linksWithoutName=0,formControlsWithoutName=0,interactiveAriaHidden=0,headingLevels=[]}={}){
+  const failures=[];
+  if(Number(imagesMissingAlt)>0)failures.push(`${Number(imagesMissingAlt)} image(s) missing an alt attribute`);
+  if(Number(controlsWithoutName)>0)failures.push(`${Number(controlsWithoutName)} control(s) without accessible name`);
+  if(Number(linksWithoutName)>0)failures.push(`${Number(linksWithoutName)} link(s) without accessible name`);
+  if(Number(formControlsWithoutName)>0)failures.push(`${Number(formControlsWithoutName)} form field(s) without accessible name`);
+  if(Number(interactiveAriaHidden)>0)failures.push(`${Number(interactiveAriaHidden)} interactive element(s) incorrectly aria-hidden`);
+  const levels=Array.isArray(headingLevels)?headingLevels.map(Number).filter(level=>Number.isInteger(level)&&level>=1&&level<=6):[];
+  const h1Count=levels.filter(level=>level===1).length;
+  if(h1Count!==1)failures.push(`expected one H1 heading, found ${h1Count}`);
+  for(let i=0;i<levels.length;i++){
+    if(i===0&&levels[i]>1){failures.push(`heading hierarchy starts at H${levels[i]}`);break;}
+    if(i>0&&levels[i]>levels[i-1]+1){failures.push(`heading hierarchy skips from H${levels[i-1]} to H${levels[i]}`);break;}
+  }
+  return {ok:failures.length===0,failures,h1Count,headingLevels:levels};
+}
+
 export function assessBrowserQuality(result,{maxLoadMs=5000,maxTransferBytes=8_000_000}={}){
   const failures=[];
   if(result.error)failures.push(result.error);
@@ -137,12 +154,15 @@ export async function browserSmoke(baseUrl,paths,{screenshots=false,artifactDir=
     if(p==='/'){const primaryCta=page.locator('[data-primary-cta]').first();if(await primaryCta.count()){const box=await primaryCta.boundingBox();interactions.ctaAboveFoldDetails=box?{y:box.y,height:box.height,viewportHeight:viewport.height}:null;interactions.ctaAboveFoldVerified=Boolean(box&&box.y>=0&&box.y+box.height<=viewport.height)}}
     const links=await page.locator('a[href]').evaluateAll(els=>els.map(e=>e.getAttribute('href')).filter(Boolean).filter(x=>x.startsWith('/')));
     for(const link of links){const linkedResponse=await fetch(new URL(link,baseUrl));const optionalIntegration=/^\/auth\/google(?:\?|$)/.test(link)&&linkedResponse.status===503;if(!(linkedResponse.status>=200&&linkedResponse.status<400)&&!optionalIntegration)requestFailures.push({url:linkedResponse.url,failure:`internal link ${linkedResponse.status}`});}
-    ui=await page.evaluate(()=>{const images=[...document.images],buttons=[...document.querySelectorAll('button,input[type="button"],input[type="submit"]')],links=[...document.querySelectorAll('a[href]')],rect=document.documentElement.getBoundingClientRect(),text=document.body?.innerText||'';return{title:document.title||'',lang:document.documentElement.lang||'',viewport:!!document.querySelector('meta[name="viewport"]'),main:!!document.querySelector('main'),nav:!!document.querySelector('nav'),h1:document.querySelectorAll('h1').length,imagesWithoutAlt:images.filter(x=>!x.getAttribute('alt')).length,controlsWithoutName:buttons.filter(x=>!(x.getAttribute('aria-label')||x.textContent?.trim()||x.getAttribute('title'))).length,linksWithoutName:links.filter(x=>!(x.getAttribute('aria-label')||x.textContent?.trim()||x.getAttribute('title'))).length,interactiveAriaHidden:[...document.querySelectorAll('button,a[href],input,select,textarea')].filter(x=>x.getAttribute('aria-hidden')==='true').length,documentWidth:rect.width,bodyScrollWidth:document.body?.scrollWidth||rect.width,bodyTextLength:text.length,forms:document.querySelectorAll('form').length};});
-    const uiFailures=[];if(!ui.title)uiFailures.push('missing document title');if(!ui.lang)uiFailures.push('missing html lang');if(ui.viewport===false)uiFailures.push('missing responsive viewport');if(ui.main===false)uiFailures.push('missing main landmark');if(ui.imagesWithoutAlt>0)uiFailures.push(`${ui.imagesWithoutAlt} image(s) without alt text`);if(ui.controlsWithoutName>0)uiFailures.push(`${ui.controlsWithoutName} control(s) without accessible name`);if(ui.linksWithoutName>0)uiFailures.push(`${ui.linksWithoutName} link(s) without accessible name`);if(ui.interactiveAriaHidden>0)uiFailures.push(`${ui.interactiveAriaHidden} interactive element(s) incorrectly aria-hidden`);if(ui.bodyScrollWidth>ui.documentWidth+4)uiFailures.push('horizontal overflow detected');
+    ui=await page.evaluate(()=>{const images=[...document.images],buttons=[...document.querySelectorAll('button,input[type="button"],input[type="submit"],input[type="reset"],input[type="image"]')],links=[...document.querySelectorAll('a[href]')],formControls=[...document.querySelectorAll('input:not([type="hidden"]),select,textarea')],headings=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6')],rect=document.documentElement.getBoundingClientRect(),text=document.body?.innerText||'';
+      const nameOf=element=>{const aria=element.getAttribute('aria-label')?.trim();if(aria)return aria;const labelled=(element.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>document.getElementById(id)?.innerText||document.getElementById(id)?.textContent||'').join(' ').trim();if(labelled)return labelled;const labels=element.labels?[...element.labels].map(label=>label.innerText||label.textContent||'').join(' ').trim():element.closest('label')?.innerText?.trim()||'';if(labels)return labels;const type=String(element.getAttribute('type')||'').toLowerCase();if(['button','submit','reset'].includes(type)&&element.value?.trim())return element.value.trim();const imageAlt=element.querySelector('img[alt]')?.getAttribute('alt')?.trim();if(imageAlt)return imageAlt;return (element.innerText||element.textContent||element.getAttribute('title')||'').trim();};
+      return{title:document.title||'',lang:document.documentElement.lang||'',viewport:!!document.querySelector('meta[name="viewport"]'),main:!!document.querySelector('main'),nav:!!document.querySelector('nav'),h1:document.querySelectorAll('h1').length,headingLevels:headings.map(element=>Number(element.tagName.slice(1))),imagesMissingAlt:images.filter(image=>!image.hasAttribute('alt')).length,controlsWithoutName:buttons.filter(element=>!nameOf(element)).length,linksWithoutName:links.filter(element=>!nameOf(element)).length,formControlsWithoutName:formControls.filter(element=>!nameOf(element)).length,interactiveAriaHidden:[...document.querySelectorAll('a[href],button,input:not([type="hidden"]),select,textarea')].filter(element=>element.getAttribute('aria-hidden')==='true').length,documentWidth:rect.width,bodyScrollWidth:document.body?.scrollWidth||rect.width,bodyTextLength:text.length,forms:document.querySelectorAll('form').length};});
+    const accessibilityAudit=assessAccessibilitySemantics(ui);
+    const uiFailures=[];if(!ui.title)uiFailures.push('missing document title');if(!ui.lang)uiFailures.push('missing html lang');if(ui.viewport===false)uiFailures.push('missing responsive viewport');if(ui.main===false)uiFailures.push('missing main landmark');uiFailures.push(...accessibilityAudit.failures);if(ui.bodyScrollWidth>ui.documentWidth+4)uiFailures.push('horizontal overflow detected');
     const focusableCount=await page.locator('a[href],button,input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"]').count();
     let firstTabFocused=false;
     if(focusableCount>0){await page.keyboard.press('Tab');firstTabFocused=await page.evaluate(()=>{const el=document.activeElement;return !!el&&el!==document.body&&!!el.matches('a[href],button,input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');});}
-    accessibility={keyboard:{focusableCount,firstTabFocused},landmarks:{main:Boolean(ui.main),nav:Boolean(ui.nav)}};
+    accessibility={keyboard:{focusableCount,firstTabFocused},landmarks:{main:Boolean(ui.main),nav:Boolean(ui.nav)},semantics:accessibilityAudit};
     const measured=await page.evaluate(()=>{
       const nav=performance.getEntriesByType('navigation')[0];
       const resources=performance.getEntriesByType('resource');
