@@ -51,7 +51,7 @@ test('export raster optimization resizes oversized PNGs in an isolated copy and 
 test('export optimizer validates settings and rejects paths escaping the artifact root',async()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-raster-guard-'));
   try{
-    assert.throws(()=>createOptimizedExportWorkspace({root,files:[]},{maxDimension:12}),/maxDimension/);
+    await assert.rejects(createOptimizedExportWorkspace({root,files:[]},{maxDimension:12}),/maxDimension/);
     await assert.rejects(createOptimizedExportWorkspace({root,files:[{path:'../outside',size:0}]}),/invalid_export_asset_path/);
   }finally{fs.rmSync(root,{recursive:true,force:true});}
 });
