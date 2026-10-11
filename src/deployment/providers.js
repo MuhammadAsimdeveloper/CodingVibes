@@ -27,27 +27,33 @@ export const PROVIDERS={
    const token=credentials?.accessToken;if(!token)throw authRequired('github');const user=await githubApi('/user',{token});const owner=user.login,repo=safeName(options.repoName||artifact.projectMetadata.name),branch=String(options.branch||'main').replace(/[^A-Za-z0-9._/-]/g,'-').slice(0,120)||'main';
    let existing=null;let created=false;try{existing=await githubApi('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo),{token})}catch{}
    if(!existing){existing=await githubApi('/user/repos',{token,method:'POST',body:{name:repo,private:options.private!==false,description:'Generated with Coding Vibes',auto_init:false}});created=true;}
-   const temp=fs.mkdtempSync(path.join(process.cwd(),'data','deploy-tmp-'));try{
+   const temp=fs.mkdtempSync(path.join(process.cwd(),'data','deploy-tmp-'));let workspace;
+   try{
+     workspace=await createOptimizedExportWorkspace(artifact);
      const filesDir=path.join(temp,'site');const env=await gitEnv(token);
      if(existing?.id&&!created){await exec('git',['clone','--depth','1','--single-branch','--branch',branch,'https://github.com/'+owner+'/'+repo+'.git',filesDir],{cwd:temp,env,timeout:180000}).catch(async()=>{await exec('git',['clone','--depth','1','https://github.com/'+owner+'/'+repo+'.git',filesDir],{cwd:temp,env,timeout:180000});await exec('git',['checkout','-B',branch],{cwd:filesDir,env})})}
      else {fs.mkdirSync(filesDir,{recursive:true});await exec('git',['init'],{cwd:filesDir,env});await exec('git',['checkout','-b',branch],{cwd:filesDir,env})}
      const gitFiles=fs.readdirSync(filesDir,{withFileTypes:true}).filter(e=>e.name!=='.git');for(const e of gitFiles){fs.rmSync(path.join(filesDir,e.name),{recursive:true,force:true})}
-     for(const f of artifact.files){const from=path.join(artifact.root,f.path),to=path.join(filesDir,f.path);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)}
+     for(const f of workspace.files){const from=path.join(workspace.root,f.path),to=path.join(filesDir,f.path);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)}
      await exec('git',['config','user.name',user.name||owner],{cwd:filesDir,env});await exec('git',['config','user.email',user.email||owner+'@users.noreply.github.com'],{cwd:filesDir,env});await exec('git',['add','--all'],{cwd:filesDir,env});
-     const status=await exec('git',['status','--porcelain'],{cwd:filesDir,env});if(!String(status.stdout||'').trim())return{status:'unchanged',deploymentId:existing.id,url:existing.html_url,branch,providerProject:existing.full_name};
+     const status=await exec('git',['status','--porcelain'],{cwd:filesDir,env});if(!String(status.stdout||'').trim())return{status:'unchanged',deploymentId:existing.id,url:existing.html_url,branch,providerProject:existing.full_name,optimization:workspace.report};
      await exec('git',['commit','-m',String(options.commitMessage||'Publish from Coding Vibes').slice(0,160)],{cwd:filesDir,env});if(created)await exec('git',['remote','add','origin','https://github.com/'+owner+'/'+repo+'.git'],{cwd:filesDir,env});
      try{await exec('git',['push','-u','origin','HEAD:'+branch],{cwd:filesDir,env,timeout:180000})}catch(e){throw new Error('GitHub push failed: '+cleanError(e,token))}
-     const commit=(await exec('git',['rev-parse','HEAD'],{cwd:filesDir,env})).stdout.trim();return{status:'published',deploymentId:repo,url:existing.html_url,branch,commitSha:commit,providerProject:owner+'/'+repo};
-   }finally{try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
+     const commit=(await exec('git',['rev-parse','HEAD'],{cwd:filesDir,env})).stdout.trim();return{status:'published',deploymentId:repo,url:existing.html_url,branch,commitSha:commit,providerProject:owner+'/'+repo,optimization:workspace.report};
+   }finally{workspace?.cleanup();try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
   },
   status:async({credentials,deploymentId})=>credentials?.accessToken?{status:'connected',deploymentId:deploymentId||null}:authRequired('github')
  },
  vercel:{id:'vercel',label:'Vercel',type:'deployment',auth:'token-or-oauth',supports:{static:true,server:false},description:'Deploy static-compatible projects through Vercel REST.',
   async deploy({artifact,credentials,options={}}){
-   const token=credentials?.accessToken;if(!token)throw authRequired('vercel');ensureStatic(artifact,'Vercel');const files=[];
-   for(const f of artifact.files){const data=fs.readFileSync(path.join(artifact.root,f.path)),digest=crypto.createHash('sha1').update(f.path).digest('hex');const up=await fetch('https://api.vercel.com/v2/files',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/octet-stream','x-vercel-digest':digest},body:data});if(!up.ok&&up.status!==200)throw new Error('Vercel file upload failed for '+f.path);files.push({file:f.path,sha:digest,size:data.length});}
-   const data=await jsonFetch('https://api.vercel.com/v13/deployments',{token,method:'POST',body:{name:safeName(options.projectName||artifact.projectMetadata.name),files,projectSettings:{framework:artifact.framework==='static-html'?null:artifact.framework,buildCommand:artifact.buildCommand||undefined,outputDirectory:artifact.outputDirectory||undefined},target:options.target||'production',meta:{codingvibesArtifact:'v1'}}});
-   return{status:data.readyState||'published',deploymentId:data.id,url:data.url?(data.url.startsWith('http')?data.url:'https://'+data.url):null,commitSha:options.commitSha||null,providerProject:data.projectId||data.name};
+   const token=credentials?.accessToken;if(!token)throw authRequired('vercel');ensureStatic(artifact,'Vercel');
+   const workspace=await createOptimizedExportWorkspace(artifact);
+   try{
+    const files=[];
+    for(const f of workspace.files){const data=fs.readFileSync(path.join(workspace.root,f.path)),digest=crypto.createHash('sha1').update(f.path).digest('hex');const up=await fetch('https://api.vercel.com/v2/files',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/octet-stream','x-vercel-digest':digest},body:data});if(!up.ok&&up.status!==200)throw new Error('Vercel file upload failed for '+f.path);files.push({file:f.path,sha:digest,size:data.length});}
+    const data=await jsonFetch('https://api.vercel.com/v13/deployments',{token,method:'POST',body:{name:safeName(options.projectName||artifact.projectMetadata.name),files,projectSettings:{framework:artifact.framework==='static-html'?null:artifact.framework,buildCommand:artifact.buildCommand||undefined,outputDirectory:artifact.outputDirectory||undefined},target:options.target||'production',meta:{codingvibesArtifact:'v1'}}});
+    return{status:data.readyState||'published',deploymentId:data.id,url:data.url?(data.url.startsWith('http')?data.url:'https://'+data.url):null,commitSha:options.commitSha||null,providerProject:data.projectId||data.name,optimization:workspace.report};
+   }finally{workspace.cleanup();}
   },
   status:async({credentials,deploymentId})=>{if(!credentials?.accessToken)throw authRequired('vercel');const d=await jsonFetch('https://api.vercel.com/v13/deployments/'+encodeURIComponent(deploymentId),{token:credentials.accessToken});return{status:d.readyState||d.state||'unknown',url:d.url?(d.url.startsWith('http')?d.url:'https://'+d.url):null,deploymentId:d.id}}
  },
@@ -66,12 +72,16 @@ export const PROVIDERS={
   async deploy({artifact,credentials,options={}}){
    const token=credentials?.accessToken,accountId=credentials?.accountId||options.accountId;if(!token||!accountId)throw authRequired('cloudflare');ensureStatic(artifact,'Cloudflare Pages');const name=safeName(options.projectName||artifact.projectMetadata.name);
    try{await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/pages/projects/'+name,{token})}catch{await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/pages/projects',{token,method:'POST',body:{name,production_branch:String(options.branch||'main')}})}
-   const tokenResponse=await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/pages/projects/'+encodeURIComponent(name)+'/upload-token',{token});const uploadToken=tokenResponse.result?.jwt||tokenResponse.result?.token;if(!uploadToken)throw new Error('Cloudflare did not return an upload token');const manifest={};const assets=[];
-   for(const f of artifact.files){const bytes=fs.readFileSync(path.join(artifact.root,f.path));if(bytes.length>25*1024*1024)throw Object.assign(new Error('Cloudflare Pages direct upload rejected '+f.path+': file exceeds the 25 MiB limit.'),{code:'CLOUDFLARE_FILE_TOO_LARGE',status:413});const hash=crypto.createHash('sha256').update(bytes).digest('hex');manifest[f.path]=hash;assets.push({key:hash,value:bytes.toString('base64'),base64:true,metadata:{contentType:contentTypeFor(f.path)}});}
-   for(let i=0;i<assets.length;i+=20){const batch=assets.slice(i,i+20);const up=await fetch('https://api.cloudflare.com/client/v4/pages/assets/upload',{method:'POST',headers:{authorization:'Bearer '+uploadToken,'content-type':'application/json'},body:JSON.stringify(batch)});const ut=await up.text();let ud={};try{ud=ut?JSON.parse(ut):{}}catch{}if(!up.ok||ud.success===false)throw new Error(ud?.errors?.[0]?.message||'Cloudflare asset upload failed');}
-   const form=new FormData();form.set('manifest',JSON.stringify(manifest));form.set('branch',String(options.branch||'main'));form.set('commit_dirty','false');form.set('commit_message',String(options.commitMessage||'Publish from Coding Vibes'));if(options.commitSha)form.set('commit_hash',options.commitSha);
-   const d=await fetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/pages/projects/'+name+'/deployments',{method:'POST',headers:{authorization:'Bearer '+token},body:form});const text=await d.text();let data={};try{data=text?JSON.parse(text):{}}catch{}if(!d.ok||data.success===false)throw new Error(data?.errors?.[0]?.message||'Cloudflare Pages deployment creation failed');
-   return{status:data.result?.latest_stage?.status||'queued',deploymentId:data.result?.id||data.result?.short_id||null,url:data.result?.aliases?.[0]||null,providerProject:name};
+   const tokenResponse=await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/pages/projects/'+encodeURIComponent(name)+'/upload-token',{token});const uploadToken=tokenResponse.result?.jwt||tokenResponse.result?.token;if(!uploadToken)throw new Error('Cloudflare did not return an upload token');
+   const workspace=await createOptimizedExportWorkspace(artifact);
+   try{
+    const manifest={};const assets=[];
+    for(const f of workspace.files){const bytes=fs.readFileSync(path.join(workspace.root,f.path));if(bytes.length>25*1024*1024)throw Object.assign(new Error('Cloudflare Pages direct upload rejected '+f.path+': file exceeds the 25 MiB limit.'),{code:'CLOUDFLARE_FILE_TOO_LARGE',status:413});const hash=crypto.createHash('sha256').update(bytes).digest('hex');manifest[f.path]=hash;assets.push({key:hash,value:bytes.toString('base64'),base64:true,metadata:{contentType:contentTypeFor(f.path)}});}
+    for(let i=0;i<assets.length;i+=20){const batch=assets.slice(i,i+20);const up=await fetch('https://api.cloudflare.com/client/v4/pages/assets/upload',{method:'POST',headers:{authorization:'Bearer '+uploadToken,'content-type':'application/json'},body:JSON.stringify(batch)});const ut=await up.text();let ud={};try{ud=ut?JSON.parse(ut):{}}catch{}if(!up.ok||ud.success===false)throw new Error(ud?.errors?.[0]?.message||'Cloudflare asset upload failed');}
+    const form=new FormData();form.set('manifest',JSON.stringify(manifest));form.set('branch',String(options.branch||'main'));form.set('commit_dirty','false');form.set('commit_message',String(options.commitMessage||'Publish from Coding Vibes'));if(options.commitSha)form.set('commit_hash',options.commitSha);
+    const d=await fetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/pages/projects/'+name+'/deployments',{method:'POST',headers:{authorization:'Bearer '+token},body:form});const text=await d.text();let data={};try{data=text?JSON.parse(text):{}}catch{}if(!d.ok||data.success===false)throw new Error(data?.errors?.[0]?.message||'Cloudflare Pages deployment creation failed');
+    return{status:data.result?.latest_stage?.status||'queued',deploymentId:data.result?.id||data.result?.short_id||null,url:data.result?.aliases?.[0]||null,providerProject:name,optimization:workspace.report};
+   }finally{workspace.cleanup();}
   },
   status:async({credentials,options={},deploymentId})=>{if(!credentials?.accessToken||!credentials?.accountId||!options.projectName)throw authRequired('cloudflare');const d=await jsonFetch('https://api.cloudflare.com/client/v4/accounts/'+credentials.accountId+'/pages/projects/'+encodeURIComponent(options.projectName)+'/deployments/'+encodeURIComponent(deploymentId),{token:credentials.accessToken});return{status:d.result?.latest_stage?.status||'unknown',url:d.result?.aliases?.[0]||null,deploymentId:d.result?.id}}
  },
