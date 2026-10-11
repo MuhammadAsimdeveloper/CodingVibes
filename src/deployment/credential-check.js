@@ -22,7 +22,7 @@ function classifyResponse(name,response,payload,identity){
   return {name,status:'PASS',httpStatus:response.status,reason:'authenticated_identity_confirmed'};
 }
 async function requestJson(fetchImpl,url,token,headers={},timeoutMs=8000){
-  const response=await fetchImpl(url,{method:'GET',headers:{authorization:'Bearer '+token,...headers},signal:AbortSignal.timeout(timeoutMs)});
+  const response=await fetchImpl(url,{method:'GET',redirect:'error',cache:'no-store',headers:{authorization:'Bearer '+token,...headers},signal:AbortSignal.timeout(timeoutMs)});
   const payload=await response.json().catch(()=>null);
   return {response,payload};
 }
@@ -44,7 +44,7 @@ export async function verifyDeploymentCredential(provider,{env=process.env,fetch
   const config=PROVIDER_CONFIG[requested];
   if(requested==='coding-vibes'){
     const base=String(env.CODINGVIBES_HOSTING_API_URL||env.CODINGVIBES_CLOUD_API_URL||'').trim().replace(/\/$/,'');
-    const variables=['CODINGVIBES_HOSTING_API_URL'];
+    const variables=[String(env.CODINGVIBES_HOSTING_API_URL||'').trim()?'CODINGVIBES_HOSTING_API_URL':'CODINGVIBES_CLOUD_API_URL'];
     if(!base)return result(requested,'NOT_CONFIGURED',{credentialVariables:variables,blockers:['hosting_endpoint_not_configured']});
     let parsed;
     try{parsed=new URL(base);}catch{return result(requested,'BLOCKED',{credentialVariables:variables,blockers:['hosting_endpoint_invalid']});}
