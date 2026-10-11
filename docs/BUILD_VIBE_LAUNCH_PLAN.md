@@ -1181,6 +1181,13 @@ This checkpoint records source changes on `codex/export-media-archive-optimizati
 - Read-only credential authentication does not prove target write scopes. Run the credential probe with real production-managed secrets and verify a controlled staging deployment.
 - Production domain/TLS, observability/alerting, quotas, persistence, backup/restore and failure recovery still need evidence from the intended production environment.
 
+
+## 54. Generated text contrast audit checkpoint (2026-10-11)
+
+- Added a browser-computed color contrast measurement to the generated-site verification path. For sampled visible text it composites supported RGBA ancestor backgrounds and uses sRGB relative luminance; applies 4.5:1 to normal text and 3:1 to large text.
+- Complex/image backgrounds and grouped opacity are explicitly excluded from automatic conclusions and counted as skipped. Findings are included in the semantic accessibility evidence and participate in browser gate failures when a supported sample is below threshold.
+- Unit regressions cover compliant ratios, low contrast, large-text thresholds, and explicitly skipped image/unknown backgrounds. Verify fresh Playwright E2E before considering this checkpoint done; manually inspect all template color pairs and complete assistive-technology review.
+
 ## 53. Production operations checkpoint — monitoring, deployment and recovery (2026-10-11)
 
 - Enhanced `scripts/launch-check.mjs` to verify that `/health` returns the expected service/version/timestamp shape, request-correlation and no-store headers; `/ready` must return ready; and `/api/ops/metrics` plus `/api/launch/status` reject unauthenticated access.
