@@ -86,7 +86,7 @@
 ### P2 — Performance and asset budgets
 1. [x] Add an isolated export workspace and PNG resize/re-encode fallback to manual ZIP, Netlify ZIP, and Build Vibe Cloud ZIP flows; preserve source files and asset paths.
 2. Extend same-format JPEG/WebP/AVIF resizing only when a governed Sharp encoder is installed; otherwise preserve original bytes.
-3. Integrate optimization into direct-upload providers and generation-time output, then add image visual-difference and resource-size budgets.
+3. [x] Integrate optimization into GitHub, Vercel and Cloudflare Pages direct-upload providers.\n4. Integrate optimization into generation-time output and add image visual-difference/resource-size budgets.\n5. [ ] Add real per-asset budgets and measured browser evidence for LCP, CLS and resource sizes.
 4. Add configurable image/resource budgets and measured browser evidence for LCP, CLS, and resource sizes.
 5. Avoid destructive compression or forcing unsupported formats.
 
