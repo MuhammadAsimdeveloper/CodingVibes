@@ -1181,3 +1181,11 @@ This checkpoint records source changes on `codex/export-media-archive-optimizati
 - Read-only credential authentication does not prove target write scopes. Run the credential probe with real production-managed secrets and verify a controlled staging deployment.
 - Production domain/TLS, observability/alerting, quotas, persistence, backup/restore and failure recovery still need evidence from the intended production environment.
 
+## 53. Production operations checkpoint — monitoring, deployment and recovery (2026-10-11)
+
+- Enhanced `scripts/launch-check.mjs` to verify that `/health` returns the expected service/version/timestamp shape, request-correlation and no-store headers; `/ready` must return ready; and `/api/ops/metrics` plus `/api/launch/status` reject unauthenticated access.
+- Added `docs/PRODUCTION_OPERATIONS.md` covering provider credential preflight, staging deployment and HTTPS smoke, limits of the in-memory telemetry buffer, protected metrics access, persistent backup storage, isolated restore verification, and release rollback.
+- The request telemetry currently measures requests, 5xx counts, status families and bounded latency percentiles per process. It is not a durable metrics store or external alerting service; production must integrate and test the host platform's monitoring/alerting.
+- The automated recovery smoke creates/restores a temporary SQLite database and verifies a representative project. It does not establish production backup retention, off-host storage, real-data restore, or RTO/RPO compliance. These remain production gates.
+- Latest implementation commits require fresh full CI. The prior credential-check CI failure was traced to a test boolean that tracked every Cloudflare request instead of account access specifically; the fixture now tracks only the account endpoint. Do not close this phase until Build Vibe CI, CodeQL and Dependency Review pass on the exact final head.
+
