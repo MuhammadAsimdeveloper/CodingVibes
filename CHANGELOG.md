@@ -14,7 +14,7 @@
 - Added PNG dimension preflight before decode to avoid allocating from oversized declared dimensions, and reject cross-format file-extension mismatches when Sharp is available.
 - Generated-site browser verification now checks missing image-alt attributes, accessible names for links/buttons/form fields, interactive `aria-hidden`, exactly one H1 and skipped heading levels.
 - Generated styles now apply visible focus outlines, forced-colors focus handling and 44px minimum targets for primary interactive controls; checkbox/radio sizing remains consistent. Existing reduced-motion support is retained.
-- Added direct-upload provider mocks, raster safety regressions, generated CSS assertions and semantic accessibility tests. Verify the latest CI head before marking this increment complete.
+- Added direct-upload provider mocks, raster safety regressions, generated CSS assertions, semantic accessibility tests, keyboard-focus/touch-target browser checks, and a read-only deployment credential probe. Credential results omit tokens, distinguish BLOCKED from UNVERIFIED, and explicitly do not claim write access. The latest branch head must pass fresh CI; real production provider probes and staging deployment remain operator-run.
 
 ## 13.0.0 — 2026-10-07
 
