@@ -1,5 +1,12 @@
 const DEFAULT_MAX_ROUTES=100;
-function safeRoute(pathname){const value=String(pathname||'/').split('?')[0].trim()||'/';return value.length>160?value.slice(0,160):value;}
+function safeRoute(pathname){const value=String(pathname||'/').split('?')[0].replace(/[\\u0000-\\u001f\\u007f]/g,'').trim()||'/';return value.length>160?value.slice(0,160):value;}
+export function requestLogEvent({requestId='',method='GET',path='/',status=200,durationMs=0,at=new Date()}={}){
+  const code=Number.isInteger(Number(status))?Number(status):500;
+  const verb=String(method||'GET').toUpperCase().replace(/[^A-Z]/g,'').slice(0,12)||'UNKNOWN';
+  const id=String(requestId||'').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,100);
+  const duration=Math.round(Math.max(0,Number(durationMs)||0)*100)/100;
+  return {timestamp:new Date(at).toISOString(),level:code>=500?'error':code>=400?'warn':'info',event:'http.request',requestId:id,method:verb,path:safeRoute(path),status:code,durationMs:duration};
+}
 export class RequestTelemetry{
   constructor({maxRoutes=DEFAULT_MAX_ROUTES}={}){this.maxRoutes=Math.max(1,Math.min(500,Number(maxRoutes)||DEFAULT_MAX_ROUTES));this.startedAt=Date.now();this.total=0;this.errors=0;this.statuses=new Map();this.routes=new Map();}
   record({method='GET',path='/',status=200,durationMs=0}={}){
