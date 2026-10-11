@@ -5,7 +5,7 @@
 - ZIP exports store already-compressed media without redundant DEFLATE; text/source files remain compressed.
 - Added isolated-copy raster optimization in manual ZIP, Netlify, Build Vibe Cloud, GitHub, Vercel and Cloudflare Pages paths. Oversized PNGs can be resized/re-encoded when the result clears the savings threshold; original source files and relative paths are preserved.
 - PNG optimization uses the optional `pngjs` fallback. JPEG/WebP/AVIF resizing requires an installed Sharp encoder; without Sharp, these formats remain unchanged. Reports are bounded and attached to export/deployment results.
-- Added dimension/path guards before PNG decode, ZIP media byte-preservation tests, and direct-upload provider tests including Vercel digest correctness and Cloudflare 3D model MIME types.
+- Added dimension/path guards before PNG decode, alpha-premultiplied PNG resizing to prevent transparent-edge color halos, ZIP media byte-preservation tests for 3D models/fonts/textures, and direct-upload provider tests including Vercel digest correctness and Cloudflare 3D model MIME types.
 - Generated-site browser verification checks missing alt attributes, unnamed controls/links/form fields, interactive `aria-hidden`, H1/heading hierarchy, visible keyboard focus, primary interactive target dimensions and horizontal overflow.
 - Generated CSS includes visible focus outlines, forced-colors support and 44px minimum primary control targets. Existing reduced-motion support is retained.
 - Added `npm run deployment:credentials` for sanitized, read-only provider probes. Authentication checks do not prove write permissions; the Build Vibe Cloud adapter remains `UNVERIFIED` without a documented non-mutating probe.
