@@ -1167,7 +1167,7 @@ Follow-up: address and analytics settings now persist per project in browser loc
 
 This checkpoint records source changes on `codex/export-media-archive-optimization`. It is not a release certification.
 
-- ZIP export stores already-compressed media formats without redundantly DEFLATE-compressing them; text/source files remain compressed.
+- ZIP export stores already-compressed media formats—including common raster formats, audio/video, fonts, and compressed 3D/texture assets—without redundantly DEFLATE-compressing them; text/source assets remain compressed. PNG resize interpolation uses premultiplied alpha to prevent transparent RGB halos.
 - The isolated raster workspace protects source files, keeps relative paths unchanged, validates paths and PNG dimensions before decode, uses a PNG fallback encoder, accepts output only when a configured size-saving threshold is met, and returns a bounded report. It is integrated into manual ZIP, Netlify, Build Vibe Cloud, GitHub, Vercel and Cloudflare Pages paths.
 - Vercel file upload hashes the optimized file bytes (not the path) for its content digest. Cloudflare's direct-upload MIME map now covers common image, audio, video, PDF and font extensions.
 - Generated-site browser checks cover missing alt attributes, accessible names, interactive aria-hidden, H1/heading hierarchy, visible focus on first keyboard Tab, minimum dimensions for primary interactive targets, and horizontal overflow. Generated styles include focus-visible rules and forced-colors handling.
