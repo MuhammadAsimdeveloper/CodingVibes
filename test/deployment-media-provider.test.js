@@ -22,9 +22,11 @@ function makeArtifact(root,bytes){
   fs.mkdirSync(path.join(root,'public'),{recursive:true});
   fs.writeFileSync(path.join(root,'public','hero.png'),bytes);
   fs.writeFileSync(path.join(root,'index.html'),'<img src="/public/hero.png" alt="Hero">');
+  const model=Buffer.from('glTFbinary-3d-model-payload');
+  fs.writeFileSync(path.join(root,'public','model.glb'),model);
   return {
     root,
-    files:[{path:'public/hero.png',size:bytes.length},{path:'index.html',size:39}],
+    files:[{path:'public/hero.png',size:bytes.length},{path:'index.html',size:39},{path:'public/model.glb',size:model.length}],
     framework:'static-html',
     buildCommand:null,
     outputDirectory:'',
@@ -62,7 +64,7 @@ test('Vercel direct-file deployment uploads optimized raster bytes while preserv
     assert.equal(optimizedPng.width,1920);
     assert.ok(optimizedPng.height<1250);
     assert.equal(uploads.length,2);
-    assert.deepEqual(deploymentPayload.files.map(file=>file.file).sort(),['index.html','public/hero.png']);
+    assert.deepEqual(deploymentPayload.files.map(file=>file.file).sort(),['index.html','public/hero.png','public/model.glb']);
     assert.equal(deploymentPayload.files.find(file=>file.file==='public/hero.png').size,uploads[0].bytes.length);
     assert.deepEqual(fs.readFileSync(path.join(root,'public','hero.png')),source,'deployment must not mutate the project source');
   }finally{
@@ -77,6 +79,7 @@ test('Cloudflare Pages direct-file deployment receives optimized raster bytes an
   const artifact=makeArtifact(root,source);
   const previousFetch=globalThis.fetch;
   let uploadedImage=null;
+  let uploadedModelContentType=null;
   let manifest=null;
   try{
     globalThis.fetch=async(url,init={})=>{
@@ -87,6 +90,7 @@ test('Cloudflare Pages direct-file deployment receives optimized raster bytes an
         for(const asset of JSON.parse(init.body)){
           const bytes=Buffer.from(asset.value,'base64');
           if(bytes.toString('hex',0,8)==='89504e470d0a1a0a')uploadedImage=bytes;
+          if(bytes.toString('utf8',0,4)==='glTF')uploadedModelContentType=asset.metadata?.contentType||null;
         }
         return jsonResponse({success:true,result:{}});
       }
@@ -102,7 +106,8 @@ test('Cloudflare Pages direct-file deployment receives optimized raster bytes an
     assert.ok(uploadedImage,'a PNG should be present in the direct-upload batch');
     const optimizedPng=PNG.sync.read(uploadedImage);
     assert.equal(optimizedPng.width,1920);
-    assert.deepEqual(Object.keys(manifest).sort(),['index.html','public/hero.png']);
+    assert.deepEqual(Object.keys(manifest).sort(),['index.html','public/hero.png','public/model.glb']);
+    assert.equal(uploadedModelContentType,'model/gltf-binary');
     assert.deepEqual(fs.readFileSync(path.join(root,'public','hero.png')),source,'deployment must not mutate the project source');
   }finally{
     globalThis.fetch=previousFetch;
