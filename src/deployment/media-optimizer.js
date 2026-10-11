@@ -25,11 +25,23 @@ function resizeRgba(source,sourceWidth,sourceHeight,width,height){
     for(let x=0;x<width;x++){
       const sx=Math.max(0,Math.min(sourceWidth-1,(x+0.5)*sourceWidth/width-0.5));
       const x0=Math.floor(sx),x1=Math.min(sourceWidth-1,x0+1),fx=sx-x0;
-      const a=(y0*sourceWidth+x0)*4,b=(y0*sourceWidth+x1)*4,c=(y1*sourceWidth+x0)*4,d=(y1*sourceWidth+x1)*4,o=(y*width+x)*4;
-      for(let channel=0;channel<4;channel++){
-        const top=source[a+channel]*(1-fx)+source[b+channel]*fx;
-        const bottom=source[c+channel]*(1-fx)+source[d+channel]*fx;
-        output[o+channel]=Math.round(top*(1-fy)+bottom*fy);
+      const offsets=[(y0*sourceWidth+x0)*4,(y0*sourceWidth+x1)*4,(y1*sourceWidth+x0)*4,(y1*sourceWidth+x1)*4];
+      const weights=[(1-fx)*(1-fy),fx*(1-fy),(1-fx)*fy,fx*fy],o=(y*width+x)*4;
+      let alpha=0,red=0,green=0,blue=0;
+      for(let sample=0;sample<4;sample++){
+        const i=offsets[sample],weight=weights[sample],sampleAlpha=source[i+3]/255;
+        alpha+=sampleAlpha*weight;
+        red+=(source[i]/255)*sampleAlpha*weight;
+        green+=(source[i+1]/255)*sampleAlpha*weight;
+        blue+=(source[i+2]/255)*sampleAlpha*weight;
+      }
+      output[o+3]=Math.round(alpha*255);
+      if(alpha>0){
+        output[o]=Math.max(0,Math.min(255,Math.round(red/alpha*255)));
+        output[o+1]=Math.max(0,Math.min(255,Math.round(green/alpha*255)));
+        output[o+2]=Math.max(0,Math.min(255,Math.round(blue/alpha*255)));
+      }else{
+        output[o]=0;output[o+1]=0;output[o+2]=0;
       }
     }
   }
