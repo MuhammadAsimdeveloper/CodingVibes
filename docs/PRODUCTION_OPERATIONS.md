@@ -16,7 +16,7 @@ npm run deployment:preflight
 CODINGVIBES_DEPLOY_PROVIDER=vercel npm run deployment:credentials
 ```
 
-Use the provider ID that matches the actual deployment target: `github`, `vercel`, `netlify`, `cloudflare`, `hostinger`, `coding-vibes`, or `manual`. Set `CODINGVIBES_DEPLOY_TARGET` when a specific target is required. The credential probe is read-only: `PASS` confirms token identity (and Cloudflare account readability), not publication permissions. `UNVERIFIED` is not a pass. Build Vibe Cloud intentionally remains `UNVERIFIED` until a documented non-mutating credential/health endpoint is implemented.
+Use the provider ID that matches the actual deployment target: `github`, `vercel`, `netlify`, `cloudflare`, `hostinger`, `coding-vibes`, or `manual`. Set `CODINGVIBES_DEPLOY_TARGET` when a specific target is required. Signed-in workspace users can also run a read-only verification of a saved connection with `POST /api/deployment/providers/{providerId}/verify`; it uses the user's stored credential and never echoes the token. The credential probe is read-only: `PASS` confirms token identity (and Cloudflare account readability), not publication permissions. `UNVERIFIED` is not a pass. Build Vibe Cloud intentionally remains `UNVERIFIED` until a documented non-mutating credential/health endpoint is implemented.
 
 ## 2. Publish to staging before production
 
