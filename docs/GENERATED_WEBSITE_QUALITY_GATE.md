@@ -84,10 +84,11 @@
 4. Never claim analytics is installed until configuration and event delivery have been verified.
 
 ### P2 — Performance and asset budgets
-1. Integrate browser-local image optimization into the generated project workflow where technically applicable.
-2. Preserve originals and verify output format, dimensions, and visual quality.
-3. Add configurable image/resource budgets and measured browser evidence for LCP, CLS, and resource sizes.
-4. Avoid destructive compression or forcing unsupported formats.
+1. [x] Add an isolated export workspace and PNG resize/re-encode fallback to manual ZIP, Netlify ZIP, and Build Vibe Cloud ZIP flows; preserve source files and asset paths.
+2. Extend same-format JPEG/WebP/AVIF resizing only when a governed Sharp encoder is installed; otherwise preserve original bytes.
+3. Integrate optimization into direct-upload providers and generation-time output, then add image visual-difference and resource-size budgets.
+4. Add configurable image/resource budgets and measured browser evidence for LCP, CLS, and resource sizes.
+5. Avoid destructive compression or forcing unsupported formats.
 
 ### Release gate
 **Current state:** the versioned audit engine and CLI exist, and generated 404 handling is implemented and covered by runtime integration tests. The audit is not yet automatically wired into the generation/publish transaction; this is the next integration task. Do not describe the full 20-point publish gate as enforced until that connection is implemented and tested.
