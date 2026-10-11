@@ -39,7 +39,7 @@ Use the provider ID that matches the actual deployment target: `github`, `vercel
 
 The app's super-admin endpoint `POST /api/ops/backup` creates a SQLite backup using `VACUUM INTO`, then returns a SHA-256 digest, byte size and creation time without returning the filesystem path. Configure `CODINGVIBES_BACKUP_ROOT` to a persistent, access-restricted destination with sufficient disk capacity.
 
-The automated `npm run recovery:smoke` check exercises a temporary SQLite backup/restore and validates a representative project. It does **not** prove that a production backup was copied off-host, that scheduled backups are running, or that a real customer database can be restored within its recovery objectives.
+Use `CODINGVIBES_BACKUP_FILE=/restricted/path/codingvibes-<timestamp>.db npm run backup:verify` to run a read-only SQLite integrity check, foreign-key check and SHA-256 calculation for an existing backup. Set `CODINGVIBES_BACKUP_SHA256` as well to compare the file against a digest from a trusted backup record. The command rejects symlinks and reports sanitized reasons without dumping database content. The automated `npm run recovery:smoke` separately exercises a temporary SQLite backup/restore and validates a representative project. Neither command proves that a production backup was copied off-host, that scheduled backups are running, or that a real customer database can be restored within its recovery objectives.
 
 Before launch:
 1. Configure and verify an off-host or managed backup destination, access controls, encryption at rest, retention and failure alerts.
