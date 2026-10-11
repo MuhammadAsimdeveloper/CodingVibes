@@ -26,7 +26,8 @@ async function verifyConnectedCredentials(provider,credentials={}){
     env.CLOUDFLARE_API_TOKEN=credentials.accessToken;
     env.CLOUDFLARE_ACCOUNT_ID=credentials.accountId;
   }else if(provider==='coding-vibes'){
-    return verifyDeploymentCredential(provider,{env:process.env});
+    const check=await verifyDeploymentCredential(provider,{env:process.env});
+    return {...check,authenticated:check.status==='PASS'};
   }else return {schema:'build-vibe.deployment-credential-check.v1',provider,status:provider==='manual'?'NOT_REQUIRED':'UNVERIFIED',authenticated:provider==='manual',writeAccessVerified:false,checks:[],blockers:[],warnings:['read_only_credential_probe_not_supported']};
   const check=await verifyDeploymentCredential(provider,{env});
   return {...check,authenticated:check.status==='PASS'};
