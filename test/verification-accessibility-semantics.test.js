@@ -37,6 +37,23 @@ test('accessibility semantics report missing image alternatives, unnamed fields 
   assert.match(result.failures.join(' '),/expected one H1/);
 });
 
+test('browser quality gate requires a visible keyboard focus indicator',()=>{
+  const result={
+    status:200,
+    consoleErrors:[],
+    requestFailures:[],
+    responseFailures:[],
+    uiFailures:[],
+    performance:{navigationDurationMs:0,transferBytes:0},
+    accessibility:{keyboard:{focusableCount:3,firstTabFocused:true,focusIndicatorVisible:true}}
+  };
+  assert.equal(assessBrowserQuality(result).ok,true);
+  result.accessibility.keyboard.focusIndicatorVisible=false;
+  const failed=assessBrowserQuality(result);
+  assert.equal(failed.ok,false);
+  assert.match(failed.failures.join(' '),/keyboard focus indicator is not visibly styled/);
+});
+
 test('accessibility semantics reject heading-level skips and pages without a primary heading',()=>{
   assert.match(assessAccessibilitySemantics({headingLevels:[1,3]}).failures.join(' '),/skips from H1 to H3/);
   assert.match(assessAccessibilitySemantics({headingLevels:[2,2,3]}).failures.join(' '),/expected one H1/);
