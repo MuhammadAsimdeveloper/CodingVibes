@@ -36,5 +36,5 @@ test('accessibility semantics report missing image alternatives, unnamed fields 
 
 test('accessibility semantics reject heading-level skips and pages without a primary heading',()=>{
   assert.match(assessAccessibilitySemantics({headingLevels:[1,3]}).failures.join(' '),/skips from H1 to H3/);
-  assert.match(assessAccessibilitySemantics({headingLevels:[2,3]}).failures.join(' '),/expected one H1/);
+  assert.match(assessAccessibilitySemantics({headingLevels:[2,2,3]}).failures.join(' '),/expected one H1/);
 });
