@@ -15,7 +15,21 @@ export async function deployProject({store,userId,project,provider,options={}}={
 export async function exportProject({project}={}){const artifact=await prepareDeploymentArtifact(project),result=await getProvider('manual').deploy({artifact}),downloadName=path.basename(result.file?.file||result.deploymentId||'project.zip');return{artifact,deployment:{status:'ready',downloadPath:result.deploymentId,downloadName,optimization:result.optimization||null}}}
 
 export function validateProvider(provider,artifact){return compatibility(provider,artifact)}
-export async function authenticateProvider({store,userId,provider}={}){const p=getProvider(provider);if(!p)throw Object.assign(new Error('unsupported_deployment_provider'),{status:400});const credentials=providerSecret(store,userId,provider);if(!credentials)return{authenticated:false,provider};if(typeof p.authenticate==='function')return p.authenticate({credentials});return{authenticated:true,provider}}
+export async function authenticateProvider({store,userId,provider}={}){
+ const p=getProvider(provider);
+ if(!p)throw Object.assign(new Error('unsupported_deployment_provider'),{status:400});
+ if(typeof p.authenticate!=='function')return {provider,authenticated:false,status:provider==='manual'?'NOT_REQUIRED':'UNVERIFIED',reason:'read_only_credential_probe_not_supported',writeAccessVerified:false};
+ if(provider==='manual'||provider==='coding-vibes'){
+   try{return await p.authenticate({credentials:provider==='manual'?null:{}});}
+   catch{return {provider,authenticated:false,status:'UNVERIFIED',reason:'credential_check_failed',writeAccessVerified:false};}
+ }
+ let credentials;
+ try{credentials=providerSecret(store,userId,provider);}
+ catch{return {provider,authenticated:false,status:'BLOCKED',reason:'stored_credential_unreadable',writeAccessVerified:false};}
+ if(!credentials)return {provider,authenticated:false,status:'NOT_CONFIGURED',reason:'provider_not_connected',writeAccessVerified:false};
+ try{return await p.authenticate({credentials});}
+ catch{return {provider,authenticated:false,status:'UNVERIFIED',reason:'credential_check_failed',writeAccessVerified:false};}
+}
 export async function getDeploymentStatus({store,userId,deploymentId}={}){const d=store.getDeployment(deploymentId,userId);if(!d)throw Object.assign(new Error('deployment_not_found'),{status:404});const p=getProvider(d.provider);if(!p?.status)throw Object.assign(new Error('provider_status_not_supported'),{status:409});const credentials=d.provider==='manual'?null:providerSecret(store,d.user_id,d.provider);const result=await p.status({credentials,deploymentId:d.deployment_id,options:d.metadata||{}});return {...d, ...result}}
 export function getDeploymentUrl(deployment){return deployment?.url||null}
 export async function cancelDeployment({store,userId,deploymentId}={}){const d=store.getDeployment(deploymentId,userId);if(!d)throw Object.assign(new Error('deployment_not_found'),{status:404});const p=getProvider(d.provider);if(typeof p?.cancel!=='function')throw Object.assign(new Error('provider_cancel_not_supported'),{status:409});const credentials=d.provider==='manual'?null:providerSecret(store,d.user_id,d.provider);return p.cancel({credentials,deploymentId:d.deployment_id,options:d.metadata||{}})}
