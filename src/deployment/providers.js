@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {zipDirectory} from './zip.js';
+import {createOptimizedExportWorkspace} from './media-optimizer.js';
 
 const exec=promisify(execFile);
 const safeName=v=>String(v||'site').toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48)||'codingvibes-site';
@@ -55,9 +56,9 @@ export const PROVIDERS={
    const token=credentials?.accessToken;if(!token)throw authRequired('netlify');ensureStatic(artifact,'Netlify');
    const created=await jsonFetch('https://api.netlify.com/api/v1/sites',{token,method:'POST',body:{name:safeName(options.siteName||artifact.projectMetadata.name)}});
    const siteId=created.id;if(!siteId)throw new Error('Netlify did not return a site id');
-   const temp=fs.mkdtempSync(path.join(process.cwd(),'data','netlify-deploy-'));
-   try{const zip=path.join(temp,'site.zip');zipDirectory(artifact.root,zip);const body=fs.readFileSync(zip);const r=await fetch('https://api.netlify.com/api/v1/sites/'+encodeURIComponent(siteId)+'/deploys',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/zip','content-length':String(body.length)},body});const text=await r.text();let data={};try{data=text?JSON.parse(text):{}}catch{}if(!r.ok)throw new Error(data?.message||'Netlify deploy failed');return{status:data.state||'published',deploymentId:data.id||siteId,url:data.ssl_url||data.url||created.ssl_url||created.url||null,providerProject:created.name||siteId};}
-   finally{try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
+   const temp=fs.mkdtempSync(path.join(process.cwd(),'data','netlify-deploy-'));let workspace;
+   try{workspace=await createOptimizedExportWorkspace(artifact);const zip=path.join(temp,'site.zip');zipDirectory(workspace.root,zip);const body=fs.readFileSync(zip);const r=await fetch('https://api.netlify.com/api/v1/sites/'+encodeURIComponent(siteId)+'/deploys',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/zip','content-length':String(body.length)},body});const text=await r.text();let data={};try{data=text?JSON.parse(text):{}}catch{}if(!r.ok)throw new Error(data?.message||'Netlify deploy failed');return{status:data.state||'published',deploymentId:data.id||siteId,url:data.ssl_url||data.url||created.ssl_url||created.url||null,providerProject:created.name||siteId,optimization:workspace.report};}
+   finally{workspace?.cleanup();try{fs.rmSync(temp,{recursive:true,force:true})}catch{}}
   },
   status:async({credentials,deploymentId})=>{if(!credentials?.accessToken)throw authRequired('netlify');const d=await jsonFetch('https://api.netlify.com/api/v1/deploys/'+encodeURIComponent(deploymentId),{token:credentials.accessToken});return{status:d.state||'unknown',url:d.ssl_url||d.url||null,deploymentId:d.id}}
  },
@@ -87,14 +88,15 @@ export const PROVIDERS={
     const base=String(process.env.CODINGVIBES_HOSTING_API_URL||process.env.CODINGVIBES_CLOUD_API_URL||'').replace(/\/$/,'');
     const token=process.env.CODINGVIBES_HOSTING_API_KEY||process.env.CODINGVIBES_CLOUD_API_KEY;
     if(!base)throw Object.assign(new Error('Build Vibe Cloud hosting is not configured.'),{code:'HOSTING_NOT_AVAILABLE',status:503});
-    const tmp=fs.mkdtempSync(path.join(process.cwd(),'data','cloud-deploy-'));
+    const tmp=fs.mkdtempSync(path.join(process.cwd(),'data','cloud-deploy-'));let workspace;
     try{
-      const zip=path.join(tmp,'artifact.zip');zipDirectory(artifact.root,zip);const bytes=fs.readFileSync(zip);
+      workspace=await createOptimizedExportWorkspace(artifact);
+      const zip=path.join(tmp,'artifact.zip');zipDirectory(workspace.root,zip);const bytes=fs.readFileSync(zip);
       if(bytes.length>100*1024*1024)throw Object.assign(new Error('Cloud deployment artifact exceeds 100 MiB.'),{code:'HOSTING_ARTIFACT_TOO_LARGE',status:413});
       const response=await fetch(base+'/deploy',{method:'POST',headers:{'content-type':'application/json',accept:'application/json',...(token?{authorization:'Bearer '+token}: {})},body:JSON.stringify({project:artifact.projectMetadata,name:safeName(options.projectName||artifact.projectMetadata.name),framework:artifact.framework,fingerprint:artifact.fingerprint||null,fileName:path.basename(zip),artifactBase64:bytes.toString('base64'),target:options.target||'production'})});
       const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data?.error||'Build Vibe Cloud deploy failed');
-      return{status:data.status||'published',deploymentId:data.id||data.deploymentId||null,url:data.url||null,providerProject:data.projectId||data.project||null,nextStep:data.nextStep||null};
-    }finally{try{fs.rmSync(tmp,{recursive:true,force:true})}catch{}}
+      return{status:data.status||'published',deploymentId:data.id||data.deploymentId||null,url:data.url||null,providerProject:data.projectId||data.project||null,nextStep:data.nextStep||null,optimization:workspace.report};
+    }finally{workspace?.cleanup();try{fs.rmSync(tmp,{recursive:true,force:true})}catch{}}
   },
   status:async({credentials,deploymentId})=>{
     const base=String(process.env.CODINGVIBES_HOSTING_API_URL||process.env.CODINGVIBES_CLOUD_API_URL||'').replace(/\/$/,'');const token=process.env.CODINGVIBES_HOSTING_API_KEY||process.env.CODINGVIBES_CLOUD_API_KEY;
@@ -103,7 +105,7 @@ export const PROVIDERS={
   }
  },
  manual:{id:'manual',label:'Download ZIP / Other Hosting',type:'export',auth:'none',supports:{static:true,server:true},description:'Export a validated portable project ZIP for any compatible host.',
-  async deploy({artifact}){const out=path.resolve(process.env.CODINGVIBES_EXPORT_ROOT||path.join(process.cwd(),'data','exports'),safeName(artifact.projectMetadata.name)+'-'+Date.now()+'.zip');return{status:'ready',deploymentId:out,url:null,file:zipDirectory(artifact.root,out)}},
+  async deploy({artifact}){const out=path.resolve(process.env.CODINGVIBES_EXPORT_ROOT||path.join(process.cwd(),'data','exports'),safeName(artifact.projectMetadata.name)+'-'+Date.now()+'.zip');const workspace=await createOptimizedExportWorkspace(artifact);try{return{status:'ready',deploymentId:out,url:null,file:zipDirectory(workspace.root,out),optimization:workspace.report}}finally{workspace.cleanup()}},
   status:async({deploymentId})=>({status:'ready',file:deploymentId})
  }
 };
