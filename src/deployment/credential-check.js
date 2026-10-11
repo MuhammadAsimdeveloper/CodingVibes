@@ -48,7 +48,7 @@ export async function verifyDeploymentCredential(provider,{env=process.env,fetch
     if(!base)return result(requested,'NOT_CONFIGURED',{credentialVariables:variables,blockers:['hosting_endpoint_not_configured']});
     let parsed;
     try{parsed=new URL(base);}catch{return result(requested,'BLOCKED',{credentialVariables:variables,blockers:['hosting_endpoint_invalid']});}
-    if(!['https:','http:'].includes(parsed.protocol)||parsed.username||parsed.password)return result(requested,'BLOCKED',{credentialVariables:variables,blockers:['hosting_endpoint_invalid']});
+    if((parsed.protocol!=='https:'&&!(parsed.protocol==='http:'&&['localhost','127.0.0.1','::1'].includes(parsed.hostname)))||parsed.username||parsed.password)return result(requested,'BLOCKED',{credentialVariables:variables,blockers:['hosting_endpoint_invalid']});
     return result(requested,'UNVERIFIED',{
       credentialVariables:variables,
       checks:[{name:'endpoint_configuration',status:'PASS',reason:'endpoint_url_validated'}],
