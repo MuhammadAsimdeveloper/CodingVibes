@@ -39,7 +39,7 @@
 | 7 | sitemap.xml | IMPLEMENTED FOUNDATION | Validate absolute URLs and only public/indexable routes. |
 | 8 | Open Graph image | IMPLEMENTED FOUNDATION | Verify real image URL, response, format, and dimensions. |
 | 9 | Alt text on meaningful images | PARTIAL / BROWSER CHECKED | Browser verification now fails images without an `alt` attribute while allowing empty `alt` for decorative assets. Content quality and whether meaningful images have descriptive text still need review. |
-| 10 | Responsive mobile breakpoints | PARTIAL / VERIFY | Responsive CSS and mobile CTA behavior exist; add systematic overflow/layout assertions at mobile, tablet, and desktop sizes. |
+| 10 | Responsive mobile breakpoints | PARTIAL / BROWSER CHECKED | Browser smoke sweeps 375px, 768px and 1440px viewports and rejects horizontal overflow. Touch-target dimensions are also checked. Continue template-specific wrapping, overlap, orientation and visual-diff coverage. |
 | 11 | Sticky mobile CTA | IMPLEMENTED + BROWSER VERIFIED | Mobile-only contact CTA with tab-persistent dismissal; browser smoke verifies visibility and dismissal at a 390px viewport. Keep overlap and keyboard regression coverage. |
 | 12 | Loading states | IMPLEMENTED + BROWSER VERIFIED | Contact submission disables the button, shows a sending state and sets aria-busy; browser smoke verifies these states. Other async actions still need coverage. |
 | 13 | Form errors and recovery | IMPLEMENTED + BROWSER VERIFIED | Browser smoke injects a server failure, checks accessible error feedback and retry, then verifies the button recovers. |
