@@ -9,7 +9,7 @@
 - Generated-site browser verification checks missing alt attributes, unnamed controls/links/form fields, interactive `aria-hidden`, H1/heading hierarchy, visible keyboard focus, primary interactive target dimensions and horizontal overflow.
 - Generated CSS includes visible focus outlines, forced-colors support and 44px minimum primary control targets. Existing reduced-motion support is retained.
 - Added `npm run deployment:credentials` for sanitized, read-only provider probes. Authentication checks do not prove write permissions; the Build Vibe Cloud adapter remains `UNVERIFIED` without a documented non-mutating probe.
-- Current source includes broader automated regression coverage. A fresh Build Vibe CI + CodeQL + Dependency Review result is required for the final PR head; production deployment, monitoring, backup/recovery, contrast/visual-quality budgets and real provider write access remain distinct release gates.
+- Current source includes broader automated regression coverage. Launch checks also validate /health and /ready response shape/correlation headers and ensure admin telemetry/launch-status endpoints reject unauthenticated requests. A fresh Build Vibe CI + CodeQL + Dependency Review result is required for the final PR head. See docs/PRODUCTION_OPERATIONS.md for honest monitoring, staging, backup/restore and rollback steps; production deployment, external monitoring, backup/recovery, contrast/visual-quality budgets and real provider write access remain distinct release gates.
 
 ## 13.0.0 — 2026-10-07
 
