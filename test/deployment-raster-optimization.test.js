@@ -58,5 +58,6 @@ test('export optimizer validates settings and rejects paths escaping the artifac
   try{
     await assert.rejects(createOptimizedExportWorkspace({root,files:[]},{maxDimension:12}),/maxDimension/);
     await assert.rejects(createOptimizedExportWorkspace({root,files:[{path:'../outside',size:0}]}),/invalid_export_asset_path/);
+    await assert.rejects(createOptimizedExportWorkspace({root,files:[{path:String.raw`..\\outside`,size:0}]}),/invalid_export_asset_path/);
   }finally{fs.rmSync(root,{recursive:true,force:true});}
 });
