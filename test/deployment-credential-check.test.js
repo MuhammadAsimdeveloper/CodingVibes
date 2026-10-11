@@ -65,7 +65,7 @@ test('Cloudflare credential probe requires active token and access to the config
   let accountRequested=false;
   const inactive=await verifyDeploymentCredential('cloudflare',{
     env:{CLOUDFLARE_API_TOKEN:'expired',CLOUDFLARE_ACCOUNT_ID:'account-123'},
-    fetchImpl:async()=>{accountRequested=true;return jsonResponse({success:true,result:{status:'inactive'}});}
+    fetchImpl:async(url)=>{if(String(url).endsWith('/accounts/account-123'))accountRequested=true;return jsonResponse({success:true,result:{status:'inactive'}});}
   });
   assert.equal(inactive.status,'BLOCKED');
   assert.equal(accountRequested,false);
