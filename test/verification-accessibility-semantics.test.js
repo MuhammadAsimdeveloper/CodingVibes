@@ -1,6 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assessAccessibilitySemantics,assessBrowserQuality} from '../src/verification/playwright.js';
+import {assessAccessibilitySemantics,assessBrowserQuality,assessTextContrast} from '../src/verification/playwright.js';
+
+test('text contrast audit enforces WCAG-style 4.5:1 and large-text 3:1 ratios',()=>{
+  const pass=assessTextContrast([
+    {text:'Body text',ratio:7.1,minimum:4.5},
+    {text:'Large heading',ratio:3.2,minimum:3}
+  ]);
+  assert.equal(pass.ok,true);
+  assert.equal(pass.checkedCount,2);
+  assert.equal(pass.failures.length,0);
+
+  const fail=assessTextContrast([
+    {text:'Low contrast body',ratio:3.8,minimum:4.5},
+    {text:'Low contrast heading',ratio:2.2,minimum:3}
+  ]);
+  assert.equal(fail.ok,false);
+  assert.equal(fail.failures.length,2);
+  assert.match(fail.failures.join(' '),/3.8:1 is below 4.5:1/);
+  assert.match(fail.failures.join(' '),/2.2:1 is below 3:1/);
+});
+
+test('contrast audit reports complex image backgrounds as skipped rather than claiming a pass',()=>{
+  const result=assessTextContrast([
+    {text:'Photo overlay text',minimum:4.5,skippedReason:'complex_background_or_color'},
+    {text:'Unknown contrast',ratio:NaN,minimum:4.5}
+  ]);
+  assert.equal(result.ok,true);
+  assert.equal(result.checkedCount,0);
+  assert.equal(result.skippedCount,2);
+  assert.equal(result.skipped[0].reason,'complex_background_or_color');
+});
 
 test('accessibility semantics accept decorative empty-alt images and a coherent heading/form structure',()=>{
   const result=assessAccessibilitySemantics({
