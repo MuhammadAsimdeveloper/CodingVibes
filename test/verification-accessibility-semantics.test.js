@@ -23,7 +23,7 @@ test('accessibility semantics report missing image alternatives, unnamed fields 
     linksWithoutName:1,
     formControlsWithoutName:2,
     interactiveAriaHidden:1,
-    headingLevels:[2,1,3]
+    headingLevels:[2,2,3]
   });
   assert.equal(result.ok,false);
   assert.match(result.failures.join(' '),/image\(s\) missing an alt attribute/);
