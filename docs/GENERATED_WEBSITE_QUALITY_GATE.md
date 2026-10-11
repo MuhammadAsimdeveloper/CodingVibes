@@ -38,7 +38,7 @@
 | 6 | robots.txt | IMPLEMENTED FOUNDATION | Validate deployed sitemap URL and private-route exclusions. |
 | 7 | sitemap.xml | IMPLEMENTED FOUNDATION | Validate absolute URLs and only public/indexable routes. |
 | 8 | Open Graph image | IMPLEMENTED FOUNDATION | Verify real image URL, response, format, and dimensions. |
-| 9 | Alt text on meaningful images | PARTIAL | Audit generated HTML; empty alt only for decorative assets. |
+| 9 | Alt text on meaningful images | PARTIAL / BROWSER CHECKED | Browser verification now fails images without an `alt` attribute while allowing empty `alt` for decorative assets. Content quality and whether meaningful images have descriptive text still need review. |
 | 10 | Responsive mobile breakpoints | PARTIAL / VERIFY | Responsive CSS and mobile CTA behavior exist; add systematic overflow/layout assertions at mobile, tablet, and desktop sizes. |
 | 11 | Sticky mobile CTA | IMPLEMENTED + BROWSER VERIFIED | Mobile-only contact CTA with tab-persistent dismissal; browser smoke verifies visibility and dismissal at a 390px viewport. Keep overlap and keyboard regression coverage. |
 | 12 | Loading states | IMPLEMENTED + BROWSER VERIFIED | Contact submission disables the button, shows a sending state and sets aria-busy; browser smoke verifies these states. Other async actions still need coverage. |
@@ -74,8 +74,8 @@
 1. Browser-test primary CTA placement and visibility at common mobile/desktop sizes.
 2. [x] Add an optional mobile CTA with dismissal; verify viewport visibility, keyboard operation, and overlap in browser tests.
 3. Validate titles, descriptions, canonical URLs, robots directives, sitemap membership, OG/Twitter metadata, favicon and manifest for every generated route.
-4. Check meaningful image alt text and decorative-image semantics.
-5. Test responsive overflow, navigation, focus, contrast, and reduced motion.
+4. [x] Browser-test missing image-alt attributes, accessible names for links/buttons/form fields, interactive `aria-hidden` and heading order; generated templates now ship keyboard-visible focus outlines, forced-colors focus styling, and 44px minimum primary control targets.
+5. Continue with contrast, focus visibility regression across every template, keyboard interactions, responsive overflow, and reduced-motion checks; automated semantic checks do not replace assistive-technology review.
 
 ### P1 — Privacy-aware analytics
 1. Distinguish Build Vibe's internal analytics from analytics installed on customer websites.
