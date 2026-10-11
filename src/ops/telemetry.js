@@ -1,5 +1,5 @@
 const DEFAULT_MAX_ROUTES=100;
-function safeRoute(pathname){const value=String(pathname||'/').split('?')[0].replace(/[\u0000-\u001f\u007f]/g,'').trim()||'/';return value.length>160?value.slice(0,160):value;}
+function safeRoute(pathname){const value=String(pathname||'/').split('?')[0].replace(/[\u0000-\u001f\u007f]/g,'').trim()||'/';const route=value.replace(/(^|\/)[A-Za-z0-9_-]{20,}(?=\/|$)/g,'$1:id');return route.length>160?route.slice(0,160):route;}
 export function requestLogEvent({requestId='',method='GET',path='/',status=200,durationMs=0,at=new Date()}={}){
   const code=Number.isInteger(Number(status))?Number(status):500;
   const verb=String(method||'GET').toUpperCase().replace(/[^A-Z]/g,'').slice(0,12)||'UNKNOWN';
