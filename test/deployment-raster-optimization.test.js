@@ -18,6 +18,41 @@ function makePng(width,height){
   return PNG.sync.write(image,{compressionLevel:1});
 }
 
+function makeTransparentEdgePng(width,height){
+  const image=new PNG({width,height});
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    const i=(y*width+x)*4;
+    if(x<width/2){
+      image.data[i]=(x*37+y*19)%256;
+      image.data[i+1]=0;
+      image.data[i+2]=(x*29+y*7)%256;
+      image.data[i+3]=255;
+    }else{
+      image.data[i]=0;image.data[i+1]=255;image.data[i+2]=0;image.data[i+3]=0;
+    }
+  }
+  return PNG.sync.write(image,{compressionLevel:1});
+}
+
+test('PNG resizing premultiplies alpha to avoid transparent RGB halos',async()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-raster-alpha-'));
+  try{
+    const original=makeTransparentEdgePng(1024,512);
+    fs.writeFileSync(path.join(root,'transparent-edge.png'),original);
+    const workspace=await createOptimizedExportWorkspace({root,files:[{path:'transparent-edge.png',size:original.length}]},{maxDimension:256});
+    try{
+      assert.equal(workspace.report.optimized,1);
+      const image=PNG.sync.read(fs.readFileSync(path.join(workspace.root,'transparent-edge.png')));
+      assert.equal(image.width,256);
+      assert.equal(image.height,128);
+      for(let i=0;i<image.data.length;i+=4){
+        if(image.data[i+3]>0)assert.equal(image.data[i+1],0,'fully transparent green pixels must not tint partially opaque output pixels');
+      }
+      assert.deepEqual(fs.readFileSync(path.join(root,'transparent-edge.png')),original,'resizing must not mutate source pixels');
+    }finally{workspace.cleanup();}
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
 test('export raster optimization resizes oversized PNGs in an isolated copy and preserves paths',async()=>{
   const sourceRoot=fs.mkdtempSync(path.join(os.tmpdir(),'build-vibe-raster-source-'));
   try{
