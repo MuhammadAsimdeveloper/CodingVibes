@@ -16,7 +16,7 @@ async function jsonFetch(url,{token,method='GET',body,headers={}}={}){
  return data;
 }
 function authRequired(provider){return Object.assign(new Error(provider+'_not_connected'),{code:'PROVIDER_NOT_CONNECTED',status:409})}
-function contentTypeFor(file){const e=path.extname(file).toLowerCase();return({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.mp4':'video/mp4','.webm':'video/webm'})[e]||'application/octet-stream'}
+function contentTypeFor(file){const e=path.extname(file).toLowerCase();return({'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.avif':'image/avif','.gif':'image/gif','.bmp':'image/bmp','.ico':'image/x-icon','.mp4':'video/mp4','.m4v':'video/x-m4v','.mov':'video/quicktime','.webm':'video/webm','.mp3':'audio/mpeg','.m4a':'audio/mp4','.aac':'audio/aac','.ogg':'audio/ogg','.opus':'audio/opus','.pdf':'application/pdf','.woff':'font/woff','.woff2':'font/woff2'})[e]||'application/octet-stream'}
 function ensureStatic(artifact,provider){if(artifact.deploymentMetadata.serverRequired)throw Object.assign(new Error(provider+' direct publishing is not available for server-required projects. Export the complete project or use a Node/shared-host adapter.'),{code:'SERVER_RUNTIME_REQUIRED',status:409});}
 async function gitEnv(token){return {...process.env,GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'http.https://github.com/.extraheader',GIT_CONFIG_VALUE_0:'AUTHORIZATION: basic '+Buffer.from('x-access-token:'+token).toString('base64')}}
 
@@ -50,7 +50,7 @@ export const PROVIDERS={
    const workspace=await createOptimizedExportWorkspace(artifact);
    try{
     const files=[];
-    for(const f of workspace.files){const data=fs.readFileSync(path.join(workspace.root,f.path)),digest=crypto.createHash('sha1').update(f.path).digest('hex');const up=await fetch('https://api.vercel.com/v2/files',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/octet-stream','x-vercel-digest':digest},body:data});if(!up.ok&&up.status!==200)throw new Error('Vercel file upload failed for '+f.path);files.push({file:f.path,sha:digest,size:data.length});}
+    for(const f of workspace.files){const data=fs.readFileSync(path.join(workspace.root,f.path)),digest=crypto.createHash('sha1').update(data).digest('hex');const up=await fetch('https://api.vercel.com/v2/files',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/octet-stream','x-vercel-digest':digest},body:data});if(!up.ok&&up.status!==200)throw new Error('Vercel file upload failed for '+f.path);files.push({file:f.path,sha:digest,size:data.length});}
     const data=await jsonFetch('https://api.vercel.com/v13/deployments',{token,method:'POST',body:{name:safeName(options.projectName||artifact.projectMetadata.name),files,projectSettings:{framework:artifact.framework==='static-html'?null:artifact.framework,buildCommand:artifact.buildCommand||undefined,outputDirectory:artifact.outputDirectory||undefined},target:options.target||'production',meta:{codingvibesArtifact:'v1'}}});
     return{status:data.readyState||'published',deploymentId:data.id,url:data.url?(data.url.startsWith('http')?data.url:'https://'+data.url):null,commitSha:options.commitSha||null,providerProject:data.projectId||data.name,optimization:workspace.report};
    }finally{workspace.cleanup();}
@@ -89,7 +89,7 @@ export const PROVIDERS={
   async deploy({artifact,credentials,options={}}){
     if(!credentials?.accessToken)throw authRequired('hostinger');
     const result=await PROVIDERS.github.deploy({artifact,credentials,options:{...options,repoName:options.repoName||artifact.projectMetadata.name,branch:options.branch||'main'}});
-    return {status:'ready_for_hostinger',deploymentId:result.deploymentId,url:result.url,branch:result.branch,commitSha:result.commitSha,providerProject:result.providerProject,nextStep:'In Hostinger: Websites → Add Website → Node.js Web App → Import Git Repository, select the repository and deploy.'};
+    return {status:'ready_for_hostinger',deploymentId:result.deploymentId,url:result.url,branch:result.branch,commitSha:result.commitSha,providerProject:result.providerProject,optimization:result.optimization||null,nextStep:'In Hostinger: Websites → Add Website → Node.js Web App → Import Git Repository, select the repository and deploy.'};
   },
   status:async({credentials,deploymentId})=>credentials?.accessToken?{status:'ready_for_hostinger',deploymentId:deploymentId||null,nextStep:'Connect the published GitHub repository from Hostinger Node.js Web Apps and deploy.'}:authRequired('hostinger')
  },
