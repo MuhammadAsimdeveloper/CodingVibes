@@ -1,20 +1,15 @@
 # Changelog
 
-## [Unreleased] — generated raster optimization in ZIP export paths (2026-10-11)
+## [Unreleased] — export optimization, accessibility and deployment preflight (2026-10-11)
 
-- Added an isolated export workspace so optimization never mutates project source files.
-- Oversized PNG assets are resized with RGBA interpolation and PNG re-encoding; assets retain their original relative paths so HTML/CSS references remain valid. Output is accepted only when it clears a size-saving threshold; malformed, oversized, unsupported or non-beneficial cases keep their source bytes.
-- The Sharp encoder is detected optionally for same-format JPEG/WebP/AVIF optimization. Without Sharp, those formats are conservatively preserved.
-- Wired the workspace into manual ZIP export, Netlify ZIP deployment, and Build Vibe Cloud ZIP deployment. Results include a bounded optimization report. Direct-file upload providers are not yet covered.
-- Added regression tests for resizing/path preservation, unchanged source files, text/unsupported asset preservation, and path validation. CI status is pending for this commit series.
-
-## [Unreleased] — deployment-wide raster optimization and generated-site accessibility (2026-10-11)
-
-- Extended the isolated export optimizer from ZIP-based deployment to GitHub, Vercel and Cloudflare Pages direct-upload paths, preserving original project source, file paths and HTML/CSS references. Provider results include a bounded optimization report.
-- Added PNG dimension preflight before decode to avoid allocating from oversized declared dimensions, and reject cross-format file-extension mismatches when Sharp is available.
-- Generated-site browser verification now checks missing image-alt attributes, accessible names for links/buttons/form fields, interactive `aria-hidden`, exactly one H1 and skipped heading levels.
-- Generated styles now apply visible focus outlines, forced-colors focus handling and 44px minimum targets for primary interactive controls; checkbox/radio sizing remains consistent. Existing reduced-motion support is retained.
-- Added direct-upload provider mocks, raster safety regressions, generated CSS assertions, semantic accessibility tests, keyboard-focus/touch-target browser checks, and a read-only deployment credential probe. Credential results omit tokens, distinguish BLOCKED from UNVERIFIED, and explicitly do not claim write access. The latest branch head must pass fresh CI; real production provider probes and staging deployment remain operator-run.
+- ZIP exports store already-compressed media without redundant DEFLATE; text/source files remain compressed.
+- Added isolated-copy raster optimization in manual ZIP, Netlify, Build Vibe Cloud, GitHub, Vercel and Cloudflare Pages paths. Oversized PNGs can be resized/re-encoded when the result clears the savings threshold; original source files and relative paths are preserved.
+- PNG optimization uses the optional `pngjs` fallback. JPEG/WebP/AVIF resizing requires an installed Sharp encoder; without Sharp, these formats remain unchanged. Reports are bounded and attached to export/deployment results.
+- Added dimension/path guards before PNG decode, ZIP media byte-preservation tests, and direct-upload provider tests including Vercel digest correctness and Cloudflare 3D model MIME types.
+- Generated-site browser verification checks missing alt attributes, unnamed controls/links/form fields, interactive `aria-hidden`, H1/heading hierarchy, visible keyboard focus, primary interactive target dimensions and horizontal overflow.
+- Generated CSS includes visible focus outlines, forced-colors support and 44px minimum primary control targets. Existing reduced-motion support is retained.
+- Added `npm run deployment:credentials` for sanitized, read-only provider probes. Authentication checks do not prove write permissions; the Build Vibe Cloud adapter remains `UNVERIFIED` without a documented non-mutating probe.
+- Current source includes broader automated regression coverage. A fresh Build Vibe CI + CodeQL + Dependency Review result is required for the final PR head; production deployment, monitoring, backup/recovery, contrast/visual-quality budgets and real provider write access remain distinct release gates.
 
 ## 13.0.0 — 2026-10-07
 
@@ -32,7 +27,7 @@ All notable Build Vibe changes are recorded here.
 - ZIP exports now store already-compressed PNG/JPEG/WebP/AVIF/GIF/BMP, common audio/video, PDF, ZIP/gzip/Brotli and WOFF font assets without an additional DEFLATE pass.
 - Text and source files remain DEFLATE-compressed. Asset payload bytes, paths and references remain unchanged.
 - Added regression tests for media-byte preservation and exact HTML content round-tripping.
-- Scope note: this reduces archive CPU/wasted compression; generated-raster resizing/re-encoding is still a separate unfinished task and is not claimed complete.
+- Scope note: archive packaging preserves original bytes, while the isolated export optimizer can resize oversized PNG assets when it produces meaningful savings. Non-PNG raster resizing depends on an installed Sharp encoder.
 
 ## [Unreleased] — platform-specific generated app icons (2026-10-11)
 
